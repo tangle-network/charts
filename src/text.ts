@@ -72,29 +72,42 @@ export function wrap(
   face: Face = "sans",
   maxLines = 2,
 ): { lines: string[]; truncated: boolean } {
-  const tokens = text.match(/[^\s\-/_·]+[\-/_·]?|\s+|[\-/_·]/g) ?? [text];
+  const fits = (s: string) => textWidth(s, size, face) <= width;
   const lines: string[] = [];
+  // glue[i] joins lines[i] to lines[i + 1] when the tail is re-joined for truncation.
+  const glue: string[] = [];
   let line = "";
-  for (const token of tokens) {
-    if (/^\s+$/.test(token)) {
-      if (line) line += " ";
-      continue;
-    }
-    const candidate = line + token;
-    if (textWidth(candidate.trimEnd(), size, face) <= width || !line.trim()) {
-      line = candidate;
+  const breakLine = (next: string, joiner: string) => {
+    lines.push(line);
+    glue.push(joiner);
+    line = next;
+  };
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    const joined = line ? `${line} ${word}` : word;
+    if (fits(joined)) {
+      line = joined;
+    } else if (fits(word)) {
+      // A space is the preferred break: "gpt-5.6-terra (no-web)" never splits inside "(no-web)".
+      if (line) breakLine(word, " ");
+      else line = word;
     } else {
-      lines.push(line.trimEnd());
-      line = token;
+      // Only a word too wide for a whole line breaks after -, /, _ or ·.
+      const pieces = word.match(/[^\-/_·]+[\-/_·]?|[\-/_·]/g) ?? [word];
+      for (const [index, piece] of pieces.entries()) {
+        const joiner = index === 0 ? " " : "";
+        const candidate = line ? `${line}${joiner}${piece}` : piece;
+        if (fits(candidate) || !line) line = candidate;
+        else breakLine(piece, joiner);
+      }
     }
   }
-  if (line.trim()) lines.push(line.trimEnd());
-  if (lines.length <= maxLines && lines.every((l) => textWidth(l, size, face) <= width)) {
+  if (line) lines.push(line);
+  if (lines.length <= maxLines && lines.every(fits)) {
     return { lines, truncated: false };
   }
   const kept = lines.slice(0, maxLines);
-  let last = lines.slice(maxLines - 1).reduce((acc, l) => (acc ? `${acc}${/[\-/_·]$/.test(acc) ? "" : " "}${l}` : l), "");
-  while (last.length > 1 && textWidth(`${last}…`, size, face) > width) last = last.slice(0, -1);
+  let last = lines.slice(maxLines - 1).reduce((acc, l, i) => (i === 0 ? l : `${acc}${glue[maxLines - 2 + i]}${l}`), "");
+  while (last.length > 1 && !fits(`${last}…`)) last = last.slice(0, -1);
   kept[maxLines - 1] = `${last.trimEnd()}…`;
   return { lines: kept, truncated: true };
 }
