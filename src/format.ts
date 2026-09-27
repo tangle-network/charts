@@ -24,6 +24,11 @@ export function usd(value: number): string {
   return `$${value.toFixed(4)}`;
 }
 
+/** Axis ticks: "$30", "$2.5", "$0.05". */
+export function usdTick(value: number): string {
+  return `$${Number(value.toPrecision(2)).toLocaleString("en-US", { maximumFractionDigits: 4 })}`;
+}
+
 export function duration(ms: number): string {
   const s = ms / 1000;
   if (s < 60) return `${Math.round(s)} s`;

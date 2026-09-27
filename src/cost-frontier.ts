@@ -15,7 +15,7 @@
  * never computes dominance itself).
  */
 
-import { costText, intervalGap, intervalName, kn, pct, usd } from "./format.js";
+import { costText, intervalGap, intervalName, kn, pct, usd, usdTick } from "./format.js";
 import { log, logDomain, logTicks } from "./scale.js";
 import { circle, line, polyline, svgRoot, text, titled, WIDE } from "./svg.js";
 import { type Column, table } from "./table.js";
@@ -157,7 +157,7 @@ function plot(costed: RateRow[], unplaced: RateRow[], drawLine: boolean, o: Cost
   }
   for (const t of logTicks(lo, hi)) {
     out += line(x(t), bottom, x(t), bottom + 4, "tgc-axis");
-    out += text(x(t), bottom + 18, usd(t), { cls: "tgc-ink-muted tgc-num", anchor: "middle" });
+    out += text(x(t), bottom + 18, usdTick(t), { cls: "tgc-ink-muted tgc-num", anchor: "middle" });
   }
   out += text((left + right) / 2, bottom + 40, "Cost per solved task, log scale, cheaper to the right", {
     cls: "tgc-ink-muted",
@@ -181,6 +181,12 @@ function plot(costed: RateRow[], unplaced: RateRow[], drawLine: boolean, o: Cost
   }
 
   const obstacles: Box[] = placed.map((p) => ({ x0: p.x - 6, y0: p.y - 6, x1: p.x + 6, y1: p.y + 6 }));
+  // Interval lines are obstacles too, so a label never sits on one.
+  for (const p of placed) {
+    if (intervalGap(p.row.interval) === null) {
+      obstacles.push({ x0: p.x - 2, y0: y(p.row.interval!.upper), x1: p.x + 2, y1: y(p.row.interval!.lower) });
+    }
+  }
   const bounds: Box = { x0: 0, y0: top - 8, x1: WIDE, y1: bottom - 2 };
   const labels: string[] = [];
   const numbered = new Map<string, string>();

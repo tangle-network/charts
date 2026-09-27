@@ -7,7 +7,7 @@
  * App Grade tiles fill by tier and F is an outline; U (unable to measure) is a
  * dashed outline and an integrity-flagged grade is a struck outline. Runner
  * verification fills solved tiles with the accent. A lens matrix (`show:
- * "means"`) draws one tinted cell per mean.
+ * "means"`) prints each mean with a bar on one shared scale.
  *
  * Refuses: a fill for an attempt without a grade (outline with a dot); a zero
  * for a cell that never ran ("·"); counts that do not add up; any column order
@@ -15,7 +15,7 @@
  */
 
 import { kn, TIERS_BEST_FIRST, tierSummary, tierTotal, usd } from "./format.js";
-import { circle, line, NARROW, rect, svgRoot, text, titled, WIDE } from "./svg.js";
+import { circle, hbar, line, NARROW, rect, svgRoot, text, titled, WIDE } from "./svg.js";
 import { table } from "./table.js";
 import { capitalize, listJoin, plural, textBlock, textWidth, wrap } from "./text.js";
 import type { Exclusion, Figure, MatrixCell, Refusal, Setup, Tier, TierCounts } from "./types.js";
@@ -25,8 +25,8 @@ export interface TaskMatrixOptions {
   passTier?: Tier;
   /** "attempts" draws a tile per attempt; "means" draws one tinted cell per mean. */
   show?: "attempts" | "means";
-  /** Singular, lower-case nouns for rows and columns. */
-  nouns?: { task: string; setup: string };
+  /** Singular, lower-case nouns for rows, columns and one attempt. */
+  nouns?: { task: string; setup: string; attempt?: string };
   /** The columns grade the same attempts (judges on one set of plants): the finding reports agreement. */
   agreement?: boolean;
   id?: string;
@@ -123,7 +123,7 @@ export function taskMatrix(
 ): Figure | Refusal {
   const id = o.id ?? "task-matrix";
   const means = o.show === "means";
-  const noun = o.nouns ?? { task: "task", setup: "setup" };
+  const noun = { task: "task", setup: "setup", attempt: "attempt", ...o.nouns };
   if (tasks.length === 0 || setupsIn.length === 0) return { id, refused: `No ${noun.task} or no ${noun.setup} to draw.` };
   const setups = setupsIn.every((s) => s.rank !== null) ? [...setupsIn].sort((a, b) => a.rank! - b.rank!) : setupsIn;
 
@@ -196,8 +196,8 @@ export function taskMatrix(
     );
     const graded = tierTotal(all.tiers) + all.u + all.f;
     finding = graded
-      ? `${graded} graded ${plural(graded, "attempt")}: ${tierSummary(all.tiers, all.u, all.f)}.`
-      : `No attempt in this matrix is graded.`;
+      ? `${graded} graded ${plural(graded, noun.attempt)}: ${tierSummary(all.tiers, all.u, all.f)}.`
+      : `No ${noun.attempt} in this matrix is graded.`;
   }
 
   const attempts = cells.reduce((s, c) => s + (c.attempts ?? 0), 0);
@@ -205,24 +205,26 @@ export function taskMatrix(
   const excluded = (o.excluded ?? []).reduce((s, e) => s + e.count, 0);
   const lede = means
     ? `${ran} of ${tasks.length * setups.length} cells scored, over ${tasksN} and ${setups.length} ${plural(setups.length, noun.setup)}.`
-    : `${attempts} ${plural(attempts, "attempt")} over ${tasksN} and ${setups.length} ${plural(setups.length, noun.setup)}${excluded ? `; ${excluded} more excluded` : ""}.`;
+    : `${attempts} ${plural(attempts, noun.attempt)} over ${tasksN} and ${setups.length} ${plural(setups.length, noun.setup)}${excluded ? `; ${excluded} more excluded` : ""}.`;
 
   const kinds = new Set<TileKind>();
   if (!means) for (const cell of cells) for (const k of tilesOf(cell)) kinds.add(k);
   const tiered = cells.some((c) => c.tiers !== null);
   const read = means
-    ? `Each cell is one ${noun.setup}'s mean on one ${noun.task}; a deeper tint is a higher mean, and · marks a pair never scored.`
+    ? `Each cell is one ${noun.setup}'s mean on one ${noun.task}, printed and drawn as a bar on a shared scale; · marks a pair never scored.`
     : tiered
-      ? `One tile per attempt, best first: tiles fill by App Grade tier and an outline is F${o.passTier ? `; ${o.passTier} or better passes` : ""}. Tile order is not run order.`
-      : `One tile per attempt: a filled tile passed and an outline did not. Tile order is not run order.`;
+      ? `One tile per ${noun.attempt}, best first: tiles fill by App Grade tier and an outline is F${o.passTier ? `; ${o.passTier} or better passes` : ""}. Tile order is not run order.`
+      : `One tile per ${noun.attempt}: a filled tile passed and an outline did not. Tile order is not run order.`;
 
   const method = means
-    ? "Each cell is the producer's mean score for that pair; the library computes nothing."
+    ? `Each cell is the producer's mean score for one ${noun.setup} on one ${noun.task}.`
     : [
-        tiered ? `Tiles show the App Grade tier of each attempt${o.passTier ? `, and ${o.passTier} or better counts as a pass` : ""}.` : "Filled tiles are the attempts the producer marks solved.",
-        kinds.has("unmeasured") ? "U marks an attempt the grader could not measure." : "",
+        tiered
+          ? `Tiles show the App Grade tier of each ${noun.attempt}${o.passTier ? `, and ${o.passTier} or better counts as a pass` : ""}.`
+          : `Filled tiles are the ${plural(2, noun.attempt)} the producer marks solved.`,
+        kinds.has("unmeasured") ? `U marks ${noun.attempt === "attempt" ? "an attempt" : `a ${noun.attempt}`} the grader could not measure.` : "",
         kinds.has("flagged") ? "A struck tile is a grade that failed an integrity check and awaits human review; it never counts as a pass." : "",
-        kinds.has("ungraded") ? "A dotted outline is an attempt with no grade." : "",
+        kinds.has("ungraded") ? `A dotted outline is ${noun.attempt === "attempt" ? "an attempt" : `a ${noun.attempt}`} with no grade.` : "",
       ]
         .filter(Boolean)
         .join(" ");
@@ -243,6 +245,8 @@ export function taskMatrix(
     ]),
   );
 
+  // Means share one scale from 0 to the larger of 1 and the largest mean.
+  const scaleMax = Math.max(1, ...cells.map((c) => c.mean ?? 0));
   const legendKinds = [...kinds].sort(
     (a, b) =>
       ["S", "A", "B", "C", "solved", "F", "open", "flagged", "unmeasured", "ungraded"].indexOf(a) -
@@ -255,14 +259,14 @@ export function taskMatrix(
     lede,
     read,
     svg: {
-      wide: wideMatrix(tasks, setups, at, means, legendKinds, o),
-      narrow: narrowMatrix(tasks, setups, at, means, legendKinds, o),
+      wide: wideMatrix(tasks, setups, at, means, legendKinds, o, scaleMax),
+      narrow: narrowMatrix(tasks, setups, at, means, legendKinds, o, scaleMax),
     },
     table: tableHtml,
     note: {
       method,
-      n: means ? `${ran} scored cells.` : `${attempts} ${plural(attempts, "attempt")} in ${ran} cells.`,
-      exclusions: (o.excluded ?? []).map((e) => `${e.count} ${plural(e.count, "attempt")} excluded: ${e.why}.`),
+      n: means ? `${ran} scored cells.` : `${attempts} ${plural(attempts, noun.attempt)} in ${ran} cells.`,
+      exclusions: (o.excluded ?? []).map((e) => `${e.count} ${plural(e.count, noun.attempt)} excluded: ${e.why}.`),
     },
   };
 }
@@ -270,16 +274,15 @@ export function taskMatrix(
 type At = (task: string, setup: Setup) => MatrixCell | undefined;
 
 /** Tiles and the count for one cell, wrapped within `width`. Returns markup and height. */
-function cellMarks(cell: MatrixCell | undefined, x: number, y: number, width: number, means: boolean) {
+function cellMarks(cell: MatrixCell | undefined, x: number, y: number, width: number, means: boolean, scaleMax = 1) {
   const label = cellText(cell, means);
   if (means) {
     if (!cell || cell.mean === null) return { svg: text(x, y + 16, "·", { cls: "tgc-ink-muted tgc-num" }), h: 24 };
-    const v = Math.max(0, Math.min(1, cell.mean));
+    const barX = x + 44;
+    const barW = Math.max(0, (Math.max(0, cell.mean) / scaleMax) * (width - 52));
     return {
-      svg:
-        rect(x, y + 2, width - 4, 22, "tgc-mean", `rx="2" style="--v:${v.toFixed(3)}"`) +
-        text(x + 6, y + 17, label, { cls: "tgc-ink tgc-num" }),
-      h: 28,
+      svg: text(x, y + 16, label, { cls: "tgc-ink tgc-num" }) + hbar(barX, y + 8, barW, 10, "tgc-bar"),
+      h: 24,
     };
   }
   if (!cell || cell.attempts === null || cell.attempts === 0) {
@@ -319,7 +322,7 @@ function legend(kinds: TileKind[], width: number, y: number, o: TaskMatrixOption
   return { svg, h: (row + 1) * 20 };
 }
 
-function wideMatrix(tasks: string[], setups: Setup[], at: At, means: boolean, kinds: TileKind[], o: TaskMatrixOptions): string {
+function wideMatrix(tasks: string[], setups: Setup[], at: At, means: boolean, kinds: TileKind[], o: TaskMatrixOptions, scaleMax: number): string {
   const labelW = 196;
   const x0 = 208;
   const colW = (WIDE - x0) / setups.length;
@@ -339,7 +342,7 @@ function wideMatrix(tasks: string[], setups: Setup[], at: At, means: boolean, ki
     let marks = "";
     for (const [j, s] of setups.entries()) {
       const cell = at(task, s);
-      const m = cellMarks(cell, x0 + j * colW, y, colW - 8, means);
+      const m = cellMarks(cell, x0 + j * colW, y, colW - 8, means, scaleMax);
       h = Math.max(h, m.h);
       marks += titled(describe(task, s, cell, means), m.svg);
     }
@@ -351,7 +354,7 @@ function wideMatrix(tasks: string[], setups: Setup[], at: At, means: boolean, ki
   return svgRoot(WIDE, y + 10 + lg.h + 4, head + body + lg.svg);
 }
 
-function narrowMatrix(tasks: string[], setups: Setup[], at: At, means: boolean, kinds: TileKind[], o: TaskMatrixOptions): string {
+function narrowMatrix(tasks: string[], setups: Setup[], at: At, means: boolean, kinds: TileKind[], o: TaskMatrixOptions, scaleMax: number): string {
   const cellW = 128;
   const labelW = NARROW - cellW - 8;
   let y = 0;
@@ -365,7 +368,7 @@ function narrowMatrix(tasks: string[], setups: Setup[], at: At, means: boolean, 
     for (const task of tasks) {
       const label = wrap(task, labelW, 12, "sans", 2);
       const cell = at(task, s);
-      const m = cellMarks(cell, NARROW - cellW, y, cellW, means);
+      const m = cellMarks(cell, NARROW - cellW, y, cellW, means, scaleMax);
       const h = Math.max(label.lines.length * 16 + 8, m.h);
       body += titled(describe(task, s, cell, means), textBlock(label.lines, 0, y + 16, 16, `class="tgc-ink" font-size="12"`) + m.svg);
       y += h + 2;

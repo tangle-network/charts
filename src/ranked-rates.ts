@@ -112,7 +112,7 @@ export function rankedRates(input: RateRow[], o: RankedRatesOptions): Figure | R
 
   const bases = [...new Set(rows.filter((r) => r.cost.perSolvedUsd !== null).map((r) => r.cost.basis))];
   const method = [
-    `${capitalize(o.measure)} is ${plural(2, noun.attempt)} passed over ${plural(2, noun.attempt)}${o.passTier ? `, a pass being App Grade ${o.passTier} or better` : ""}.`,
+    `${capitalize(o.measure)} is the share of ${plural(2, noun.attempt)} that passed${o.passTier ? `; a pass is App Grade ${o.passTier} or better` : ""}.`,
     intervalNames.length ? `Intervals: ${intervalNames.join(", ")}, per ${noun.setup}.` : "",
     bases.length ? `Cost per pass is model spend over passes, ${bases.map(basisPhrase).join(" or ")}.` : "",
     layout.median ? `Median run is the median wall time of one ${noun.attempt}.` : "",
@@ -182,8 +182,7 @@ function basisPhrase(basis: RateRow["cost"]["basis"]): string {
 function barMarks(row: RateRow, x0: number, x1: number, y: number, o: RankedRatesOptions): string {
   const w = x1 - x0;
   const at = (v: number) => x0 + Math.max(0, Math.min(1, v)) * w;
-  let out = rect(x0, y, w, 12, "tgc-track");
-  out += hbar(x0, y, at(row.rate) - x0, 12, "tgc-bar");
+  let out = hbar(x0, y, at(row.rate) - x0, 12, "tgc-bar");
   let end = at(row.rate);
   if (row.interval && intervalGap(row.interval) === null) {
     const lo = at(row.interval.lower);
@@ -206,7 +205,6 @@ function barMarks(row: RateRow, x0: number, x1: number, y: number, o: RankedRate
           : rect(cursor, sy, Math.max(0, segment - 2), 6, `tgc-tier-${tier.toLowerCase()}`);
       cursor += segment;
     }
-    if (tierTotal(row.tiers) < row.attempts) out += rect(cursor, sy, x0 + w - cursor, 6, "tgc-track");
     if (o.passTier) {
       const passing = TIERS_BEST_FIRST.filter((t) => tierAtLeast(t, o.passTier!)).reduce((s, t) => s + row.tiers![t], 0);
       const tx = x0 + (passing / row.attempts) * w;
@@ -234,10 +232,10 @@ function wide(rows: RateRow[], layout: Layout, noun: { setup: string }, o: Ranke
   const labelX = layout.ranked ? 32 : 0;
   const labelW = layout.ranked ? 200 : 232;
   const x0 = 248;
-  const extra = (layout.cost ? 80 : 0) + (layout.median ? 72 : 0);
+  const extra = (layout.cost ? 104 : 0) + (layout.median ? 80 : 0);
   const knRight = WIDE - extra;
   const x1 = knRight - 96;
-  const costRight = knRight + 80;
+  const costRight = knRight + 104;
   const top = 34;
   let body = "";
   let y = top;
@@ -270,7 +268,9 @@ function wide(rows: RateRow[], layout: Layout, noun: { setup: string }, o: Ranke
   }
   const bottom = y;
   let grid = "";
-  for (const t of TICKS) grid += line(x0 + t * (x1 - x0), top - 4, x0 + t * (x1 - x0), bottom, "tgc-gridline");
+  if (rows.some((r) => drawable(r.estimate))) {
+    for (const t of TICKS) grid += line(x0 + t * (x1 - x0), top - 4, x0 + t * (x1 - x0), bottom, "tgc-gridline");
+  }
   let head = text(labelX, 16, capitalize(noun.setup), { cls: "tgc-ink-muted" });
   head += text(x0, 16, capitalize(o.measure), { cls: "tgc-ink-muted" });
   head += text(knRight, 16, "Passed", { cls: "tgc-ink-muted", anchor: "end" });

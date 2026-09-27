@@ -192,9 +192,6 @@
 .tgc-pt-front {
   fill: var(--chart-accent);
 }
-.tgc-track {
-  fill: var(--chart-grid);
-}
 .tgc-gridline {
   stroke: var(--chart-grid);
   stroke-width: 1;
@@ -267,9 +264,6 @@
 /* Neutral tint for counts: never the accent, capped at half strength so ink keeps 6:1. */
 .tgc-tint {
   fill: color-mix(in srgb, var(--chart-muted) calc(var(--s, 0) * 50%), transparent);
-}
-.tgc-mean {
-  fill: color-mix(in srgb, var(--chart-accent) calc(var(--v, 0) * 50%), transparent);
 }
 
 @media print {
