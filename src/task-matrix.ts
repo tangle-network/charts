@@ -17,7 +17,7 @@
 import { kn, TIERS_BEST_FIRST, tierSummary, tierTotal, usd } from "./format.js";
 import { circle, line, NARROW, rect, svgRoot, text, titled, WIDE } from "./svg.js";
 import { table } from "./table.js";
-import { capitalize, plural, textBlock, textWidth, wrap } from "./text.js";
+import { capitalize, listJoin, plural, textBlock, textWidth, wrap } from "./text.js";
 import type { Exclusion, Figure, MatrixCell, Refusal, Setup, Tier, TierCounts } from "./types.js";
 
 export interface TaskMatrixOptions {
@@ -27,6 +27,8 @@ export interface TaskMatrixOptions {
   show?: "attempts" | "means";
   /** Singular, lower-case nouns for rows and columns. */
   nouns?: { task: string; setup: string };
+  /** The columns grade the same attempts (judges on one set of plants): the finding reports agreement. */
+  agreement?: boolean;
   id?: string;
   excluded?: Exclusion[];
 }
@@ -159,18 +161,29 @@ export function taskMatrix(
     finding = leaderId
       ? `${setups.find((s) => s.id === leaderId)!.label} has the highest mean on ${count} of ${tasksN}.`
       : `No ${noun.setup} has the highest mean on any ${noun.task}.`;
-  } else if (passRule) {
-    const k = tasks.filter((task) => setups.every((s) => (at(task, s)?.solved ?? 0) > 0)).length;
-    finding =
-      k === 0
-        ? `No ${noun.task} passed for every ${noun.setup}.`
-        : `${k} of ${tasksN} passed at least once for every ${noun.setup}.`;
-  } else if (setups.length > 1) {
+  } else if (o.agreement && setups.length > 1) {
     const k = tasks.filter((task) => new Set(setups.map((s) => signature(at(task, s)))).size === 1).length;
     finding =
       k === tasks.length
         ? `Every ${noun.setup} gave the same grades on all ${tasksN}.`
         : `Every ${noun.setup} gave the same grades on ${k} of ${tasksN}.`;
+  } else if (passRule) {
+    const everywhere = tasks.filter((task) => setups.every((s) => (at(task, s)?.solved ?? 0) > 0)).length;
+    const perSetup = setups.map((s) => ({ s, k: tasks.filter((task) => (at(task, s)?.solved ?? 0) > 0).length }));
+    const most = Math.max(...perSetup.map((x) => x.k));
+    const leaders = perSetup.filter((x) => x.k === most).map((x) => x.s.label);
+    const rest = perSetup.filter((x) => x.k !== most);
+    if (setups.length > 1 && everywhere > 0) {
+      finding = `${everywhere} of ${tasksN} passed at least once for every ${noun.setup}.`;
+    } else if (most === 0) {
+      finding = `No ${noun.task} passed for any ${noun.setup}.`;
+    } else {
+      const tail =
+        rest.length && rest.every((x) => x.k === 0)
+          ? `; ${rest.length === 1 ? rest[0]!.s.label : `every other ${noun.setup}`} on none`
+          : "";
+      finding = `${listJoin(leaders)} passed at least once on ${most} of ${tasksN}${tail}.`;
+    }
   } else {
     const all = cells.reduce(
       (acc, c) => {
@@ -181,7 +194,10 @@ export function taskMatrix(
       },
       { tiers: { S: 0, A: 0, B: 0, C: 0, F: 0 } as TierCounts, u: 0, f: 0 },
     );
-    finding = `${setups[0]!.label} graded ${tasksN}: ${tierSummary(all.tiers, all.u, all.f)}.`;
+    const graded = tierTotal(all.tiers) + all.u + all.f;
+    finding = graded
+      ? `${graded} graded ${plural(graded, "attempt")}: ${tierSummary(all.tiers, all.u, all.f)}.`
+      : `No attempt in this matrix is graded.`;
   }
 
   const attempts = cells.reduce((s, c) => s + (c.attempts ?? 0), 0);
