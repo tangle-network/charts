@@ -223,7 +223,7 @@ function narrowList(rows: RateRow[]): string {
 }
 
 function unplacedText(rows: RateRow[]): string {
-  return listJoin(rows.map((r) => `${r.label}, ${unplacedReason(r)}`));
+  return listJoin(rows.map((r) => `${r.label} (${unplacedReason(r)})`));
 }
 
 function plot(costed: RateRow[], unplaced: RateRow[], drawLine: boolean, o: CostFrontierOptions) {
