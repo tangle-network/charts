@@ -72,7 +72,9 @@ export function comparisonIntervals(
   );
   const finding =
     clears.length === drawn.length
-      ? `Each of the ${drawn.length} ${plural(drawn.length, "step")} clears its registered minimum effect.`
+      ? drawn.length === 1
+        ? "The step clears its registered minimum effect."
+        : `Each of the ${drawn.length} steps clears its registered minimum effect.`
       : clears.length === 0
         ? `No step clears its registered minimum effect.`
         : `${clears.length} of ${drawn.length} steps clear their registered minimum effect.`;
@@ -160,7 +162,7 @@ function draw(drawn: Drawn[], domain: [number, number], width: number, plotX: nu
       marks += rect(elo, barY + 9, Math.max(ehi - elo, 2), 2, "tgc-ci-exact");
     }
     const me = x(row.minimumEffect!);
-    marks += line(me, barY - 5, me, barY + 16, "tgc-threshold");
+    marks += line(me, barY - 8, me, barY + 20, "tgc-threshold");
     body += titled(
       `${title} · ${row.pairs} pairs · ${pts(row.interval!.lower)} to ${pts(row.interval!.upper)} · minimum effect ${pts(row.minimumEffect!)}`,
       marks,
