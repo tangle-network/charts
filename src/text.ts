@@ -93,7 +93,7 @@ export function wrap(
     return { lines, truncated: false };
   }
   const kept = lines.slice(0, maxLines);
-  let last = lines.slice(maxLines - 1).join(" ");
+  let last = lines.slice(maxLines - 1).reduce((acc, l) => (acc ? `${acc}${/[\-/_·]$/.test(acc) ? "" : " "}${l}` : l), "");
   while (last.length > 1 && textWidth(`${last}…`, size, face) > width) last = last.slice(0, -1);
   kept[maxLines - 1] = `${last.trimEnd()}…`;
   return { lines: kept, truncated: true };
@@ -112,6 +112,17 @@ export function textBlock(
     .map((line, i) => `<tspan x="${x}" dy="${i === 0 ? 0 : lineHeight}">${esc(line)}</tspan>`)
     .join("");
   return `<text x="${x}" y="${y}" ${attrs}>${spans}</text>`;
+}
+
+/** Joins `parts` with " · ", starting a new line wherever the next part would pass `width`. */
+export function fitLines(parts: string[], width: number, size: number, face: Face = "sans"): string[] {
+  const lines: string[] = [];
+  for (const part of parts) {
+    const last = lines[lines.length - 1];
+    if (last !== undefined && textWidth(`${last} · ${part}`, size, face) <= width) lines[lines.length - 1] = `${last} · ${part}`;
+    else lines.push(part);
+  }
+  return lines;
 }
 
 export function plural(count: number, one: string, many = `${one}s`): string {

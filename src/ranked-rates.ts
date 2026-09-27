@@ -29,7 +29,7 @@ import {
 } from "./format.js";
 import { hbar, line, NARROW, rect, svgRoot, text, titled, WIDE } from "./svg.js";
 import { type Column, table } from "./table.js";
-import { capitalize, plural, textBlock, textWidth, wrap } from "./text.js";
+import { capitalize, fitLines, plural, textBlock, wrap } from "./text.js";
 import type { Exclusion, Figure, RateRow, Refusal, Tier } from "./types.js";
 
 export interface RankedRatesOptions {
@@ -311,12 +311,7 @@ function narrow(rows: RateRow[], layout: Layout, o: RankedRatesOptions): string 
       ...(layout.cost ? [`${costText(row.cost, row.solved)} per pass`] : []),
       ...(layout.median ? [row.medianWallMs === null ? "run time unknown" : `${duration(row.medianWallMs)} run`] : []),
     ];
-    const factLines: string[] = [];
-    for (const fact of facts) {
-      const last = factLines[factLines.length - 1];
-      if (last && textWidth(`${last} · ${fact}`, 12, "mono") <= NARROW) factLines[factLines.length - 1] = `${last} · ${fact}`;
-      else factLines.push(fact);
-    }
+    const factLines = fitLines(facts, NARROW, 12, "mono");
     marks += textBlock(factLines, 0, cy + 12, 16, `class="tgc-ink-muted tgc-num" font-size="12"`);
     body += titled(hoverText(row), marks);
     y = cy + factLines.length * 16 + 4;

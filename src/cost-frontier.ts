@@ -1,18 +1,17 @@
 /**
- * `costFrontier`: which setup gives the most solves per dollar.
+ * `costFrontier`: which setup gives the most passes per dollar.
  *
- * y is the measure on a fixed 0–1 axis. x is cost per solved task on a log
+ * y is the measure on a fixed 0–1 axis. x is cost per pass on a log
  * scale, reversed so cheaper sits right and better is always up and right. A
  * point on the producer's frontier is an accent disc; any other point is a
  * hollow muted circle, and an estimated cost is never a filled disc. An ink
  * line joins frontier points. Every point is labelled directly; a label that
  * collides everywhere becomes a number listed in the table. A setup with no
- * solve or an unknown cost is listed under the axis, never placed at an
+ * pass or an unknown cost is listed under the axis, never placed at an
  * origin a log axis does not have. On a phone the plot becomes a list sorted
  * by the measure, with the same point marks, a rate bar and the cost as text.
  *
- * Refuses: the whole figure when fewer than two setups have a cost per solved
- * task; the frontier line unless two or more rows carry `onFront: true` (it
+ * Refuses: the whole figure when fewer than two setups have a cost per pass; the frontier line unless two or more rows carry `onFront: true` (it
  * never computes dominance itself).
  */
 
@@ -20,7 +19,7 @@ import { costText, drawable, estimateNote, intervalGap, intervalName, kn, pct, u
 import { log, logDomain, logTicks } from "./scale.js";
 import { circle, hbar, line, NARROW, polyline, svgRoot, text, titled, WIDE } from "./svg.js";
 import { type Column, table } from "./table.js";
-import { capitalize, listJoin, textBlock, textWidth, wrap } from "./text.js";
+import { capitalize, fitLines, listJoin, textBlock, textWidth, wrap } from "./text.js";
 import type { Figure, RateRow, Refusal } from "./types.js";
 
 export interface CostFrontierOptions {
@@ -52,7 +51,7 @@ export function costFrontier(rows: RateRow[], o: CostFrontierOptions): Figure | 
   if (costed.length < 2) {
     return {
       id,
-      refused: `Fewer than two setups have a cost per solved task (${costed.length} of ${rows.length}); ${unplacedText(unplaced)}.`,
+      refused: `Fewer than two setups have a cost per pass (${costed.length} of ${rows.length}); ${unplacedText(unplaced)}.`,
     };
   }
   const front = costed.filter((row) => row.onFront === true);
@@ -66,29 +65,29 @@ export function costFrontier(rows: RateRow[], o: CostFrontierOptions): Figure | 
   let finding: string;
   if (cheapestFront && top.cost.perSolvedUsd !== null && cheapestFront.id !== top.id) {
     const saving = 1 - cheapestFront.cost.perSolvedUsd! / top.cost.perSolvedUsd;
-    finding = `${cheapestFront.label} costs ${usd(cheapestFront.cost.perSolvedUsd!)} per solved task${est(cheapestFront)}, ${pct(saving)} less than ${top.label}.`;
+    finding = `${cheapestFront.label} costs ${usd(cheapestFront.cost.perSolvedUsd!)} per pass${est(cheapestFront)}, ${pct(saving)} less than ${top.label}.`;
   } else if (cheapestFront && cheapestFront.id === top.id) {
-    finding = `${top.label} leads on both ${o.measure} and cost per solved task.`;
+    finding = `${top.label} leads on both ${o.measure} and cost per pass.`;
   } else {
     const cheapest = [...costed].sort((a, b) => a.cost.perSolvedUsd! - b.cost.perSolvedUsd!)[0]!;
-    finding = `${cheapest.label} has the lowest cost per solved task, ${usd(cheapest.cost.perSolvedUsd!)}${est(cheapest)}.`;
+    finding = `${cheapest.label} has the lowest cost per pass, ${usd(cheapest.cost.perSolvedUsd!)}${est(cheapest)}.`;
   }
   const lede =
-    `${costed.length} of ${rows.length} setups have a cost per solved task; ` +
+    `${costed.length} of ${rows.length} setups have a cost per pass; ` +
     (drawLine
       ? `${front.length} sit on the producer's frontier.`
       : front.length === 1
         ? "1 sits on the producer's frontier."
         : "the producer computed no frontier.");
   const read =
-    `Up is a higher ${o.measure}; right is cheaper per solved task.` +
+    `Up is a higher ${o.measure}; right is cheaper per pass.` +
     (drawLine ? " Filled points sit on the frontier; the line joins them." : "") +
     (costed.some((r) => r.cost.basis !== "receipts") ? " A hollow accent ring is a frontier point with an estimated cost." : "");
 
   const intervals = [...new Set(costed.filter((r) => intervalGap(r.interval) === null).map((r) => intervalName(r.interval!)))];
   const bases = [...new Set(costed.map((r) => r.cost.basis))];
   const method = [
-    `Cost per solved task is model spend over solved attempts, ${bases.map((b) => (b === "receipts" ? "from router receipts" : b === "estimated" ? "estimated, not billed" : "from an unrecorded source")).join(" or ")}.`,
+    `Cost per pass is model spend over passed attempts, ${bases.map((b) => (b === "receipts" ? "from router receipts" : b === "estimated" ? "estimated, not billed" : "from an unrecorded source")).join(" or ")}.`,
     "The frontier is the producer's: no setup off it is both cheaper and higher.",
     intervals.length ? `Vertical lines: ${intervals.join(", ")} on the ${o.measure}.` : "",
   ]
@@ -98,8 +97,8 @@ export function costFrontier(rows: RateRow[], o: CostFrontierOptions): Figure | 
   const columns: Column[] = [
     { label: "Setup" },
     { label: capitalize(o.measure), numeric: true },
-    { label: "Solved", numeric: true },
-    { label: "Cost per solve", numeric: true },
+    { label: "Passed", numeric: true },
+    { label: "Cost per pass", numeric: true },
     { label: "Cost basis" },
     { label: "On frontier" },
   ];
@@ -115,7 +114,7 @@ export function costFrontier(rows: RateRow[], o: CostFrontierOptions): Figure | 
 
   const { svg, numbered } = plot(costed, unplaced, drawLine, o);
   const tableHtml = table(
-    `${capitalize(o.measure)} and cost per solved task`,
+    `${capitalize(o.measure)} and cost per pass`,
     numbered.size ? [{ label: "Setup" }, { label: "Mark", numeric: true }, ...columns.slice(1)] : columns,
     numbered.size
       ? sorted.map((row, i) => [tableRows[i]![0]!, numbered.get(row.id) ?? "", ...tableRows[i]!.slice(1)])
@@ -166,13 +165,14 @@ function narrowList(rows: RateRow[]): string {
       marks += text(end + 6, cy + 9.5, pct(row.rate), { cls: "tgc-ink tgc-num" });
       cy += 16;
     }
-    const count = `${kn(row.solved, row.attempts)} solved${drawable(row.estimate) ? "" : `, ${estimateNote(row.estimate, row.attempts)}`}`;
+    const count = `${kn(row.solved, row.attempts)} passed${drawable(row.estimate) ? "" : `, ${estimateNote(row.estimate, row.attempts)}`}`;
     const fact = placed
-      ? `${count} · ${costText(row.cost, row.solved)} per solve${row.onFront ? " · frontier" : ""}`
+      ? `${count} · ${costText(row.cost, row.solved)} per pass${row.onFront ? " · on the frontier" : ""}`
       : `${count} · not placed`;
-    marks += text(0, cy + 12, fact, { cls: "tgc-ink-muted tgc-num" });
+    const facts = fitLines(fact.split(" · "), NARROW, 12, "mono");
+    marks += textBlock(facts, 0, cy + 12, 16, `class="tgc-ink-muted tgc-num" font-size="12"`);
     out += titled(`${row.label} · ${fact}`, marks);
-    y = cy + 20;
+    y = cy + 4 + facts.length * 16;
     if (i < rows.length - 1) out += line(0, y + 2, NARROW, y + 2, "tgc-rule");
     y += 10;
   }
@@ -186,7 +186,7 @@ function narrowList(rows: RateRow[]): string {
 }
 
 function unplacedText(rows: RateRow[]): string {
-  return listJoin(rows.map((r) => `${r.label}, ${r.solved === 0 ? "0 solved" : "cost unknown"}`));
+  return listJoin(rows.map((r) => `${r.label}, ${r.solved === 0 ? "0 passed" : "cost unknown"}`));
 }
 
 function plot(costed: RateRow[], unplaced: RateRow[], drawLine: boolean, o: CostFrontierOptions) {
@@ -208,7 +208,7 @@ function plot(costed: RateRow[], unplaced: RateRow[], drawLine: boolean, o: Cost
     out += line(x(t), bottom, x(t), bottom + 4, "tgc-axis");
     out += text(x(t), bottom + 18, usdTick(t), { cls: "tgc-ink-muted tgc-num", anchor: "middle" });
   }
-  out += text((left + right) / 2, bottom + 40, "Cost per solved task, log scale, cheaper to the right", {
+  out += text((left + right) / 2, bottom + 40, "Cost per pass, log scale, cheaper to the right", {
     cls: "tgc-ink-muted",
     anchor: "middle",
   });
@@ -272,7 +272,7 @@ function plot(costed: RateRow[], unplaced: RateRow[], drawLine: boolean, o: Cost
   for (const p of placed) {
     const cls = p.row.onFront ? (p.estimated ? "tgc-pt-est" : "tgc-pt-front") : "tgc-pt";
     out += titled(
-      `${p.row.label} · ${pct(p.row.rate)} ${o.measure} · ${costText(p.row.cost, p.row.solved)} per solved task${p.row.onFront ? " · on the frontier" : ""}`,
+      `${p.row.label} · ${pct(p.row.rate)} ${o.measure} · ${costText(p.row.cost, p.row.solved)} per pass${p.row.onFront ? " · on the frontier" : ""}`,
       circle(p.x, p.y, 4, cls),
     );
   }
