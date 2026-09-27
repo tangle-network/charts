@@ -322,9 +322,20 @@ function legend(kinds: TileKind[], width: number, y: number, o: TaskMatrixOption
   return { svg, h: (row + 1) * 20 };
 }
 
+/** Narrowest setup column the grid draws: room for three tiles and a count. */
+const MIN_COL = 76;
+const GRID_X0 = 208;
+const BLOCK_GAP = 24;
+
+/**
+ * The wide render. Setups are columns while each column fits its tiles and
+ * count; with more setups than that, the wide render draws one block per
+ * setup, as the phone view does, two blocks to a row.
+ */
 function wideMatrix(tasks: string[], setups: Setup[], at: At, means: boolean, kinds: TileKind[], o: TaskMatrixOptions, scaleMax: number): string {
+  if ((WIDE - GRID_X0) / setups.length < MIN_COL) return blockColumns(tasks, setups, at, means, kinds, o, scaleMax);
   const labelW = 196;
-  const x0 = 208;
+  const x0 = GRID_X0;
   const colW = (WIDE - x0) / setups.length;
   let head = "";
   let headH = 0;
@@ -354,26 +365,51 @@ function wideMatrix(tasks: string[], setups: Setup[], at: At, means: boolean, ki
   return svgRoot(WIDE, y + 10 + lg.h + 4, head + body + lg.svg);
 }
 
-function narrowMatrix(tasks: string[], setups: Setup[], at: At, means: boolean, kinds: TileKind[], o: TaskMatrixOptions, scaleMax: number): string {
+/** One setup's block at `width`: its name, then one row per task. Drawn at the origin. */
+function setupBlock(tasks: string[], s: Setup, at: At, means: boolean, width: number, scaleMax: number): { svg: string; h: number } {
   const cellW = 128;
-  const labelW = NARROW - cellW - 8;
+  const labelW = width - cellW - 8;
+  let y = 0;
+  const head = wrap(s.label, width, 14, "sans-semibold", 2);
+  let svg = textBlock(head.lines, 0, y + 16, 18, `class="tgc-ink" font-size="14" font-weight="600"`);
+  y += head.lines.length * 18 + 8;
+  svg += line(0, y, width, y, "tgc-rule");
+  y += 2;
+  for (const task of tasks) {
+    const label = wrap(task, labelW, 12, "sans", 2);
+    const cell = at(task, s);
+    const m = cellMarks(cell, width - cellW, y, cellW, means, scaleMax);
+    const h = Math.max(label.lines.length * 16 + 8, m.h);
+    svg += titled(describe(task, s, cell, means), textBlock(label.lines, 0, y + 16, 16, `class="tgc-ink" font-size="12"`) + m.svg);
+    y += h + 2;
+  }
+  return { svg, h: y };
+}
+
+/** Setup blocks two to a row, in the given order: left then right, top to bottom. */
+function blockColumns(tasks: string[], setups: Setup[], at: At, means: boolean, kinds: TileKind[], o: TaskMatrixOptions, scaleMax: number): string {
+  const width = (WIDE - BLOCK_GAP) / 2;
+  const blocks = setups.map((s) => setupBlock(tasks, s, at, means, width, scaleMax));
+  let body = "";
+  let y = 0;
+  for (let i = 0; i < blocks.length; i += 2) {
+    const pair = blocks.slice(i, i + 2);
+    pair.forEach((b, j) => {
+      body += `<g transform="translate(${j * (width + BLOCK_GAP)} ${y})">${b.svg}</g>`;
+    });
+    y += Math.max(...pair.map((b) => b.h)) + 16;
+  }
+  const lg = legend(kinds, WIDE, y, o);
+  return svgRoot(WIDE, y + lg.h + 4, body + lg.svg);
+}
+
+function narrowMatrix(tasks: string[], setups: Setup[], at: At, means: boolean, kinds: TileKind[], o: TaskMatrixOptions, scaleMax: number): string {
   let y = 0;
   let body = "";
   for (const s of setups) {
-    const head = wrap(s.label, NARROW, 14, "sans-semibold", 2);
-    body += textBlock(head.lines, 0, y + 16, 18, `class="tgc-ink" font-size="14" font-weight="600"`);
-    y += head.lines.length * 18 + 8;
-    body += line(0, y, NARROW, y, "tgc-rule");
-    y += 2;
-    for (const task of tasks) {
-      const label = wrap(task, labelW, 12, "sans", 2);
-      const cell = at(task, s);
-      const m = cellMarks(cell, NARROW - cellW, y, cellW, means, scaleMax);
-      const h = Math.max(label.lines.length * 16 + 8, m.h);
-      body += titled(describe(task, s, cell, means), textBlock(label.lines, 0, y + 16, 16, `class="tgc-ink" font-size="12"`) + m.svg);
-      y += h + 2;
-    }
-    y += 16;
+    const b = setupBlock(tasks, s, at, means, NARROW, scaleMax);
+    body += `<g transform="translate(0 ${y})">${b.svg}</g>`;
+    y += b.h + 16;
   }
   const lg = legend(kinds, NARROW, y, o);
   return svgRoot(NARROW, y + lg.h + 4, body + lg.svg);

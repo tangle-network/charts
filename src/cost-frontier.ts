@@ -48,6 +48,7 @@ export function costFrontier(rows: RateRow[], o: CostFrontierOptions): Figure | 
   const id = o.id ?? "cost-frontier";
   const costed = rows.filter((row) => row.cost.perSolvedUsd !== null && row.cost.perSolvedUsd > 0);
   const unplaced = rows.filter((row) => !costed.includes(row));
+  if (costed.length === 0) return { id, refused: `No setup has a cost per pass, so cost is not drawn.` };
   if (costed.length < 2) {
     return {
       id,

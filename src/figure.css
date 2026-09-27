@@ -107,6 +107,10 @@
   font-size: 12px;
   line-height: 16px;
   color: var(--chart-ink);
+  /* A host page's table rules must not restyle the figure's table. */
+  border: 0;
+  border-radius: 0;
+  background: none;
 }
 .tgc-table caption {
   text-align: left;
@@ -120,6 +124,11 @@
   text-align: left;
   vertical-align: top;
   font-weight: 400;
+  font-size: inherit;
+  color: inherit;
+  background: none;
+  text-transform: none;
+  letter-spacing: normal;
 }
 .tgc-table thead th {
   color: var(--chart-ink-muted);
