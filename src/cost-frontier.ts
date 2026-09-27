@@ -8,7 +8,8 @@
  * line joins frontier points. Every point is labelled directly; a label that
  * collides everywhere becomes a number listed in the table. A setup with no
  * solve or an unknown cost is listed under the axis, never placed at an
- * origin a log axis does not have.
+ * origin a log axis does not have. On a phone the plot becomes a list sorted
+ * by the measure, with the same point marks, a rate bar and the cost as text.
  *
  * Refuses: the whole figure when fewer than two setups have a cost per solved
  * task; the frontier line unless two or more rows carry `onFront: true` (it
@@ -17,9 +18,9 @@
 
 import { costText, intervalGap, intervalName, kn, pct, usd, usdTick } from "./format.js";
 import { log, logDomain, logTicks } from "./scale.js";
-import { circle, line, polyline, svgRoot, text, titled, WIDE } from "./svg.js";
+import { circle, hbar, line, NARROW, polyline, svgRoot, text, titled, WIDE } from "./svg.js";
 import { type Column, table } from "./table.js";
-import { capitalize, listJoin, plural, textWidth, wrap } from "./text.js";
+import { capitalize, listJoin, textBlock, textWidth, wrap } from "./text.js";
 import type { Figure, RateRow, Refusal } from "./types.js";
 
 export interface CostFrontierOptions {
@@ -126,7 +127,7 @@ export function costFrontier(rows: RateRow[], o: CostFrontierOptions): Figure | 
     finding,
     lede,
     read,
-    svg: { wide: svg, narrow: null },
+    svg: { wide: svg, narrow: narrowList(sorted, o) },
     table: tableHtml,
     note: {
       method,
@@ -134,6 +135,40 @@ export function costFrontier(rows: RateRow[], o: CostFrontierOptions): Figure | 
       exclusions: unplaced.length ? [`Not placed: ${unplacedText(unplaced)}.`] : [],
     },
   };
+}
+
+/**
+ * The phone view: a list sorted by the measure. Each row keeps the plot's
+ * point mark, a rate bar and the cost as text; a log axis does not fit 358 px.
+ */
+function narrowList(rows: RateRow[], o: CostFrontierOptions): string {
+  const x1 = 300;
+  let out = "";
+  let y = 4;
+  for (const [i, row] of rows.entries()) {
+    const placed = row.cost.perSolvedUsd !== null && row.cost.perSolvedUsd > 0;
+    const label = wrap(row.label, NARROW - 16, 14);
+    let marks = placed
+      ? circle(4, y + 10, 4, row.onFront ? (row.cost.basis === "receipts" ? "tgc-pt-front" : "tgc-pt-est") : "tgc-pt")
+      : "";
+    marks += textBlock(label.lines, 16, y + 14, 18, `class="tgc-ink" font-size="14"`);
+    let cy = y + label.lines.length * 18 + 6;
+    marks += hbar(0, cy, row.rate * x1, 10, "tgc-bar");
+    marks += text(row.rate * x1 + 6, cy + 9.5, pct(row.rate), { cls: "tgc-ink tgc-num" });
+    cy += 16;
+    const fact = placed
+      ? `${costText(row.cost, row.solved)} per solved task${row.onFront ? " · on the frontier" : ""}`
+      : `not placed: ${row.solved === 0 ? "0 solved" : "cost unknown"}`;
+    marks += text(0, cy + 12, fact, { cls: "tgc-ink-muted tgc-num" });
+    out += titled(`${row.label} · ${pct(row.rate)} ${o.measure} · ${fact}`, marks);
+    y = cy + 20;
+    if (i < rows.length - 1) out += line(0, y + 2, NARROW, y + 2, "tgc-rule");
+    y += 10;
+  }
+  for (const t of [0, 0.5, 1]) {
+    out += text(t * x1, y + 6, pct(t), { cls: "tgc-ink-muted tgc-num", anchor: t === 0 ? "start" : t === 1 ? "end" : "middle" });
+  }
+  return svgRoot(NARROW, y + 12, out);
 }
 
 function unplacedText(rows: RateRow[]): string {
