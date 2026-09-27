@@ -16,7 +16,7 @@
  * never computes dominance itself).
  */
 
-import { costText, intervalGap, intervalName, kn, pct, usd, usdTick } from "./format.js";
+import { costText, drawable, estimateNote, intervalGap, intervalName, kn, pct, usd, usdTick } from "./format.js";
 import { log, logDomain, logTicks } from "./scale.js";
 import { circle, hbar, line, NARROW, polyline, svgRoot, text, titled, WIDE } from "./svg.js";
 import { type Column, table } from "./table.js";
@@ -127,7 +127,7 @@ export function costFrontier(rows: RateRow[], o: CostFrontierOptions): Figure | 
     finding,
     lede,
     read,
-    svg: { wide: svg, narrow: narrowList(sorted, o) },
+    svg: { wide: svg, narrow: narrowList(sorted) },
     table: tableHtml,
     note: {
       method,
@@ -141,7 +141,7 @@ export function costFrontier(rows: RateRow[], o: CostFrontierOptions): Figure | 
  * The phone view: a list sorted by the measure. Each row keeps the plot's
  * point mark, a rate bar and the cost as text; a log axis does not fit 358 px.
  */
-function narrowList(rows: RateRow[], o: CostFrontierOptions): string {
+function narrowList(rows: RateRow[]): string {
   const x1 = 300;
   let out = "";
   let y = 4;
@@ -153,22 +153,36 @@ function narrowList(rows: RateRow[], o: CostFrontierOptions): string {
       : "";
     marks += textBlock(label.lines, 16, y + 14, 18, `class="tgc-ink" font-size="14"`);
     let cy = y + label.lines.length * 18 + 6;
-    marks += hbar(0, cy, row.rate * x1, 10, "tgc-bar");
-    marks += text(row.rate * x1 + 6, cy + 9.5, pct(row.rate), { cls: "tgc-ink tgc-num" });
-    cy += 16;
+    // The same rule as rankedRates: no bar over too few units, only the count.
+    if (drawable(row.estimate)) {
+      let end = row.rate * x1;
+      marks += hbar(0, cy, end, 10, "tgc-bar");
+      if (intervalGap(row.interval) === null) {
+        const lo = row.interval!.lower * x1;
+        const hi = row.interval!.upper * x1;
+        marks += line(lo, cy + 5, hi, cy + 5, "tgc-whisker") + line(lo, cy + 1, lo, cy + 9, "tgc-whisker") + line(hi, cy + 1, hi, cy + 9, "tgc-whisker");
+        end = Math.max(end, hi);
+      }
+      marks += text(end + 6, cy + 9.5, pct(row.rate), { cls: "tgc-ink tgc-num" });
+      cy += 16;
+    }
+    const count = `${kn(row.solved, row.attempts)} solved${drawable(row.estimate) ? "" : `, ${estimateNote(row.estimate, row.attempts)}`}`;
     const fact = placed
-      ? `${costText(row.cost, row.solved)} per solved task${row.onFront ? " · on the frontier" : ""}`
-      : `not placed: ${row.solved === 0 ? "0 solved" : "cost unknown"}`;
+      ? `${count} · ${costText(row.cost, row.solved)} per solve${row.onFront ? " · frontier" : ""}`
+      : `${count} · not placed`;
     marks += text(0, cy + 12, fact, { cls: "tgc-ink-muted tgc-num" });
-    out += titled(`${row.label} · ${pct(row.rate)} ${o.measure} · ${fact}`, marks);
+    out += titled(`${row.label} · ${fact}`, marks);
     y = cy + 20;
     if (i < rows.length - 1) out += line(0, y + 2, NARROW, y + 2, "tgc-rule");
     y += 10;
   }
-  for (const t of [0, 0.5, 1]) {
-    out += text(t * x1, y + 6, pct(t), { cls: "tgc-ink-muted tgc-num", anchor: t === 0 ? "start" : t === 1 ? "end" : "middle" });
+  if (rows.some((r) => drawable(r.estimate))) {
+    for (const t of [0, 0.5, 1]) {
+      out += text(t * x1, y + 6, pct(t), { cls: "tgc-ink-muted tgc-num", anchor: t === 0 ? "start" : t === 1 ? "end" : "middle" });
+    }
+    y += 12;
   }
-  return svgRoot(NARROW, y + 12, out);
+  return svgRoot(NARROW, y, out);
 }
 
 function unplacedText(rows: RateRow[]): string {
