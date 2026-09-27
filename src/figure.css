@@ -1,0 +1,292 @@
+/* @tangle-network/charts — figure block and mark styles.
+ *
+ * Every colour is a --chart-* token from @tangle-network/brand tokens.css, so a
+ * figure follows the page theme. A standalone document without brand tokens
+ * embeds `chartTokensCss` first. Fonts fall back to Inter and JetBrains Mono.
+ *
+ * Each figure carries a 720 px and a 358 px render. The swap follows the
+ * figure's own width (a container query), so a narrow column shows the phone
+ * render even on a wide screen. */
+
+.tgc-figure {
+  margin: 32px 0 0;
+  padding: 0;
+  max-width: 720px;
+  color: var(--chart-ink);
+  font-family: var(--font-sans, Inter, ui-sans-serif, system-ui, sans-serif);
+}
+
+.tgc-finding {
+  margin: 0 0 8px;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  color: var(--chart-ink);
+}
+
+.tgc-noteref {
+  margin-left: 2px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--chart-ink-muted);
+  text-decoration: none;
+  font-family: var(--font-mono, "JetBrains Mono", ui-monospace, monospace);
+}
+.tgc-noteref:hover,
+.tgc-noteref:focus-visible {
+  color: var(--chart-accent);
+  text-decoration: underline;
+}
+
+.tgc-lede {
+  margin: 0 0 16px;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--text-secondary, var(--chart-ink));
+}
+
+.tgc-plot {
+  container-type: inline-size;
+}
+.tgc-wide svg,
+.tgc-narrow svg {
+  display: block;
+  overflow: visible;
+}
+.tgc-narrow {
+  display: none;
+}
+.tgc-narrow svg {
+  max-width: 100%;
+  height: auto;
+}
+@container (max-width: 719.98px) {
+  .tgc-wide {
+    display: none;
+  }
+  .tgc-narrow {
+    display: block;
+  }
+}
+
+.tgc-read {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--chart-ink-muted);
+}
+
+.tgc-data {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 16px;
+}
+.tgc-data > summary {
+  cursor: pointer;
+  color: var(--chart-ink-muted);
+  width: fit-content;
+}
+.tgc-data > summary:hover {
+  color: var(--chart-ink);
+}
+.tgc-data[open] > summary {
+  margin-bottom: 8px;
+}
+
+.tgc-scroll {
+  overflow-x: auto;
+}
+.tgc-scroll:focus-visible {
+  outline: 2px solid var(--chart-accent);
+  outline-offset: 2px;
+}
+
+.tgc-table {
+  border-collapse: collapse;
+  min-width: 100%;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--chart-ink);
+}
+.tgc-table caption {
+  text-align: left;
+  padding: 0 0 8px;
+  color: var(--chart-ink-muted);
+}
+.tgc-table th,
+.tgc-table td {
+  padding: 6px 12px 6px 0;
+  border-bottom: 1px solid var(--chart-rule);
+  text-align: left;
+  vertical-align: top;
+  font-weight: 400;
+}
+.tgc-table thead th {
+  color: var(--chart-ink-muted);
+  white-space: nowrap;
+}
+.tgc-table tbody th {
+  position: sticky;
+  left: 0;
+  background: var(--chart-canvas, var(--depth-1, transparent));
+}
+.tgc-table .tgc-n {
+  font-family: var(--font-mono, "JetBrains Mono", ui-monospace, monospace);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.tgc-table thead .tgc-n {
+  font-family: inherit;
+}
+.tgc-table tbody tr:hover {
+  background: var(--chart-shade);
+}
+.tgc-narrow-table .tgc-table {
+  display: block;
+  overflow-x: auto;
+}
+
+.tgc-notes {
+  margin: 16px 0 0;
+  padding-left: 20px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--chart-ink-muted);
+}
+.tgc-notes li {
+  margin: 0 0 8px;
+  padding-left: 4px;
+}
+.tgc-notes li:target {
+  color: var(--chart-ink);
+}
+.tgc-backlink {
+  color: var(--chart-ink-muted);
+  text-decoration: none;
+}
+
+.tgc-refusals {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--chart-ink-muted);
+}
+
+/* Marks */
+.tgc-svg {
+  font-family: var(--font-sans, Inter, ui-sans-serif, system-ui, sans-serif);
+}
+.tgc-svg .tgc-num {
+  font-family: var(--font-mono, "JetBrains Mono", ui-monospace, monospace);
+  font-variant-numeric: tabular-nums;
+}
+.tgc-ink {
+  fill: var(--chart-ink);
+}
+.tgc-ink-muted {
+  fill: var(--chart-ink-muted);
+}
+.tgc-bar,
+.tgc-ci,
+.tgc-pt-front {
+  fill: var(--chart-accent);
+}
+.tgc-track {
+  fill: var(--chart-grid);
+}
+.tgc-gridline {
+  stroke: var(--chart-grid);
+  stroke-width: 1;
+}
+.tgc-rule {
+  stroke: var(--chart-rule);
+  stroke-width: 1;
+}
+.tgc-axis,
+.tgc-zero {
+  stroke: var(--chart-muted);
+  stroke-width: 1;
+}
+.tgc-whisker,
+.tgc-tick {
+  stroke: var(--chart-ink);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+.tgc-threshold {
+  stroke: var(--chart-ink);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+.tgc-front-line {
+  fill: none;
+  stroke: var(--chart-ink);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+.tgc-pt,
+.tgc-open {
+  fill: none;
+  stroke: var(--chart-muted);
+  stroke-width: 1.5;
+}
+.tgc-pt-est {
+  fill: none;
+  stroke: var(--chart-accent);
+  stroke-width: 2;
+}
+.tgc-pt-ci,
+.tgc-strike {
+  stroke: var(--chart-muted);
+  stroke-width: 1.5;
+}
+.tgc-leader {
+  stroke: var(--chart-muted);
+  stroke-width: 1;
+}
+.tgc-ci-exact,
+.tgc-dot {
+  fill: var(--chart-muted);
+}
+.tgc-dashed {
+  stroke-dasharray: 2 2;
+}
+.tgc-tier-c {
+  fill: var(--chart-tier-c);
+}
+.tgc-tier-b {
+  fill: var(--chart-tier-b);
+}
+.tgc-tier-a {
+  fill: var(--chart-tier-a);
+}
+.tgc-tier-s {
+  fill: var(--chart-tier-s);
+}
+/* Neutral tint for counts: never the accent, capped at half strength so ink keeps 6:1. */
+.tgc-tint {
+  fill: color-mix(in srgb, var(--chart-muted) calc(var(--s, 0) * 50%), transparent);
+}
+.tgc-mean {
+  fill: color-mix(in srgb, var(--chart-accent) calc(var(--v, 0) * 50%), transparent);
+}
+
+@media print {
+  .tgc-plot {
+    container-type: normal;
+  }
+  .tgc-wide {
+    display: block;
+  }
+  .tgc-narrow {
+    display: none;
+  }
+  .tgc-wide svg {
+    width: 100%;
+    height: auto;
+  }
+  .tgc-figure {
+    break-inside: avoid;
+  }
+}
