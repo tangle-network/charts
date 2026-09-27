@@ -308,7 +308,9 @@ function narrow(rows: RateRow[], layout: Layout, o: RankedRatesOptions): string 
     const facts = [
       `${kn(row.solved, row.attempts)} passed`,
       ...(drawable(row.estimate) ? [] : [estimateNote(row.estimate, row.attempts)]),
-      ...(layout.cost ? [`${costText(row.cost, row.solved)} per pass`] : []),
+      ...(layout.cost && !(row.solved === 0 && row.cost.perSolvedUsd === null)
+        ? [row.cost.perSolvedUsd === null ? "cost unknown" : `${costText(row.cost, row.solved)} per pass`]
+        : []),
       ...(layout.median ? [row.medianWallMs === null ? "run time unknown" : `${duration(row.medianWallMs)} run`] : []),
     ];
     const factLines = fitLines(facts, NARROW, 12, "mono");

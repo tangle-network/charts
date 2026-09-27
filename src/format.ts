@@ -71,9 +71,9 @@ export function estimateNote(estimate: Estimate, units: number): string {
   return "";
 }
 
-/** "$23.76", "$23.76 est.", "unknown", "no solve" */
+/** "$23.76", "$23.76 est.", "unknown", "no pass" */
 export function costText(cost: { perSolvedUsd: number | null; basis: CostBasis }, solved: number): string {
-  if (cost.perSolvedUsd === null) return solved === 0 ? "no solve" : "unknown";
+  if (cost.perSolvedUsd === null) return solved === 0 ? "no pass" : "unknown";
   return cost.basis === "receipts" ? usd(cost.perSolvedUsd) : `${usd(cost.perSolvedUsd)} est.`;
 }
 
