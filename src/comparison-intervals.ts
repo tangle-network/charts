@@ -59,7 +59,7 @@ export function comparisonIntervals(
     return {
       id,
       refused: rows.every((r) => r.interval === null)
-        ? "No comparison carries an interval."
+        ? `${rows.length} ${plural(rows.length, "comparison")} listed; none carries an interval.`
         : `No comparison can be drawn. ${refused.join("; ")}.`,
     };
   }
@@ -111,7 +111,7 @@ export function comparisonIntervals(
     row.interval!.upper,
     row.minimumEffect!,
     0,
-    ...(row.exactInterval ? [row.exactInterval.lower, row.exactInterval.upper] : []),
+    ...(intervalGap(row.exactInterval) === null ? [row.exactInterval!.lower, row.exactInterval!.upper] : []),
   ]);
   const span = Math.max(...values) - Math.min(...values) || 0.1;
   const domain: [number, number] = [Math.min(...values) - span * 0.08, Math.max(...values) + span * 0.08];

@@ -1,4 +1,4 @@
-import type { CostBasis, Estimate, Interval, IntervalMethod, Tier, TierCounts } from "./types.js";
+import type { CostBasis, Estimate, Interval, IntervalMethod, RateRow, Tier, TierCounts } from "./types.js";
 
 export const TIERS_BEST_FIRST: Tier[] = ["S", "A", "B", "C", "F"];
 const LADDER: Tier[] = ["F", "C", "B", "A", "S"];
@@ -71,10 +71,32 @@ export function estimateNote(estimate: Estimate, units: number): string {
   return "";
 }
 
+/**
+ * The cost per pass a figure may print or place, or null. Zero is not a cost:
+ * a run that passed spent something, so a zero means the spend was not
+ * recorded, and it prints "unknown", never "$0".
+ */
+export function perPass(cost: { perSolvedUsd: number | null }): number | null {
+  return cost.perSolvedUsd !== null && cost.perSolvedUsd > 0 ? cost.perSolvedUsd : null;
+}
+
 /** "$23.76", "$23.76 est.", "unknown", "no pass" */
 export function costText(cost: { perSolvedUsd: number | null; basis: CostBasis }, solved: number): string {
-  if (cost.perSolvedUsd === null) return solved === 0 ? "no pass" : "unknown";
-  return cost.basis === "receipts" ? usd(cost.perSolvedUsd) : `${usd(cost.perSolvedUsd)} est.`;
+  const value = perPass(cost);
+  if (value === null) return solved === 0 ? "no pass" : "unknown";
+  return cost.basis === "receipts" ? usd(value) : `${usd(value)} est.`;
+}
+
+/**
+ * The order rows are drawn in. Ranked rows keep their rank. Otherwise rows
+ * with enough units to draw a rate come first, highest rate first; rows with
+ * too few units follow, most units first, so a 1/1 row never heads the list.
+ */
+export function rateOrder<T extends Pick<RateRow, "rank" | "rate" | "estimate" | "attempts">>(rows: readonly T[]): T[] {
+  if (rows.length > 0 && rows.every((row) => row.rank !== null)) return [...rows].sort((a, b) => a.rank! - b.rank!);
+  const drawn = rows.filter((row) => drawable(row.estimate)).sort((a, b) => b.rate - a.rate);
+  const counted = rows.filter((row) => !drawable(row.estimate)).sort((a, b) => b.attempts - a.attempts);
+  return [...drawn, ...counted];
 }
 
 /** "2A 1F" */

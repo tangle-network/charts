@@ -5,7 +5,8 @@
  * bar on a shared 0–1 axis with the interval as an ink whisker, `passed/n`,
  * cost per pass and median run. An App Grade grader adds a tier strip under
  * the bar with a tick at the pass tier. Ranked rows keep their rank order;
- * unranked rows sort by rate, and the finding says no comparison backs it.
+ * unranked rows sort by rate, rows with too few units last, and the finding
+ * says no comparison backs the order.
  *
  * Refuses: a bar when the producer labels the estimate `none` or
  * `insufficient` (the row prints its count only); a whisker whose interval
@@ -22,6 +23,8 @@ import {
   intervalName,
   kn,
   pct,
+  perPass,
+  rateOrder,
   TIERS_BEST_FIRST,
   tierAtLeast,
   tierSummary,
@@ -63,12 +66,10 @@ export function rankedRates(input: RateRow[], o: RankedRatesOptions): Figure | R
   }
 
   const ranked = input.every((row) => row.rank !== null);
-  const rows = ranked
-    ? [...input].sort((a, b) => a.rank! - b.rank!)
-    : [...input].sort((a, b) => b.rate - a.rate);
+  const rows = rateOrder(input);
   const layout: Layout = {
     ranked,
-    cost: rows.some((r) => r.cost.perSolvedUsd !== null || r.cost.basis !== "unknown" || r.cost.receipts !== null),
+    cost: rows.some((r) => perPass(r.cost) !== null || r.cost.basis !== "unknown" || r.cost.receipts !== null),
     median: rows.some((r) => r.medianWallMs !== null),
   };
   const bars = rows.filter((row) => drawable(row.estimate));
@@ -81,22 +82,20 @@ export function rankedRates(input: RateRow[], o: RankedRatesOptions): Figure | R
   const attempts = rows.reduce((sum, row) => sum + row.attempts, 0);
   const setupsN = `${rows.length} ${plural(rows.length, noun.setup)}`;
   const top = rows[0]!;
-  const uniqueTop = rows.length === 1 || rows[1]!.rate < top.rate;
+  const uniqueTop = bars.length === 1 || (bars.length > 1 && bars[1]!.rate < top.rate);
 
   const finding = ranked
     ? `${top.label} ranks first, passing ${pct(top.rate)} of ${plural(2, noun.attempt)}.`
-    : rows.length === 1 && drawable(top.estimate)
-      ? `${top.label} passes ${pct(top.rate)} of ${top.attempts} ${plural(top.attempts, noun.attempt)}.`
-      : drawable(top.estimate) && uniqueTop
-        ? `${top.label} has the highest ${o.measure}, ${pct(top.rate)} of ${top.attempts} ${plural(top.attempts, noun.attempt)}; no comparison backs the order.`
-        : `Sorted by ${o.measure}; no comparison backs the order.`;
+    : bars.length === 0
+      ? `No ${noun.setup} has enough units to draw a ${o.measure}.`
+      : rows.length === 1
+        ? `${top.label} passes ${pct(top.rate)} of ${top.attempts} ${plural(top.attempts, noun.attempt)}.`
+        : uniqueTop
+          ? `${top.label} has the highest ${o.measure}, ${pct(top.rate)} of ${top.attempts} ${plural(top.attempts, noun.attempt)}; no comparison backs the order.`
+          : `Sorted by ${o.measure}; no comparison backs the order.`;
   const lede =
     `${passed} of ${attempts} ${plural(attempts, noun.attempt)} passed across ${setupsN}.` +
-    (noBar.length === rows.length
-      ? ` No ${noun.setup} has enough units to draw a rate.`
-      : noBar.length
-        ? ` ${noBar.length} of ${setupsN} have too few units to draw a rate.`
-        : "");
+    (noBar.length && bars.length ? ` ${noBar.length} of ${setupsN} have too few units to draw a rate; they come last.` : "");
 
   const intervalNames = [...new Set(whiskers.map((row) => intervalName(row.interval!)))];
   const read = bars.length
@@ -110,7 +109,7 @@ export function rankedRates(input: RateRow[], o: RankedRatesOptions): Figure | R
         .join(" ")
     : `Counts show ${plural(2, noun.attempt)} passed; no ${noun.setup} has enough units to draw a rate.`;
 
-  const bases = [...new Set(rows.filter((r) => r.cost.perSolvedUsd !== null).map((r) => r.cost.basis))];
+  const bases = [...new Set(rows.filter((r) => perPass(r.cost) !== null).map((r) => r.cost.basis))];
   const method = [
     `${capitalize(o.measure)} is the share of ${plural(2, noun.attempt)} that passed${o.passTier ? `; a pass is App Grade ${o.passTier} or better` : ""}.`,
     intervalNames.length ? `Intervals: ${intervalNames.join(", ")}, per ${noun.setup}.` : "",
@@ -224,7 +223,7 @@ function hoverText(row: RateRow): string {
     parts.push(`${intervalName(row.interval)} ${pct(row.interval.lower)}–${pct(row.interval.upper)}`);
   }
   if (row.tiers) parts.push(tierSummary(row.tiers));
-  if (row.cost.perSolvedUsd !== null) parts.push(`${costText(row.cost, row.solved)} per pass`);
+  if (perPass(row.cost) !== null) parts.push(`${costText(row.cost, row.solved)} per pass`);
   return parts.join(" · ");
 }
 
@@ -250,7 +249,7 @@ function wide(rows: RateRow[], layout: Layout, noun: { setup: string }, o: Ranke
       : text(x0, y + 18, estimateNote(row.estimate, row.attempts), { cls: "tgc-ink-muted" });
     marks += text(knRight, y + 18, kn(row.solved, row.attempts), { cls: "tgc-ink tgc-num", anchor: "end" });
     if (layout.cost) {
-      const billed = row.cost.perSolvedUsd !== null && row.cost.basis === "receipts";
+      const billed = perPass(row.cost) !== null && row.cost.basis === "receipts";
       marks += text(costRight, y + 18, costText(row.cost, row.solved), {
         cls: billed ? "tgc-ink tgc-num" : "tgc-ink-muted tgc-num",
         anchor: "end",
@@ -308,8 +307,8 @@ function narrow(rows: RateRow[], layout: Layout, o: RankedRatesOptions): string 
     const facts = [
       `${kn(row.solved, row.attempts)} passed`,
       ...(drawable(row.estimate) ? [] : [estimateNote(row.estimate, row.attempts)]),
-      ...(layout.cost && !(row.solved === 0 && row.cost.perSolvedUsd === null)
-        ? [row.cost.perSolvedUsd === null ? "cost unknown" : `${costText(row.cost, row.solved)} per pass`]
+      ...(layout.cost && !(row.solved === 0 && perPass(row.cost) === null)
+        ? [perPass(row.cost) === null ? "cost unknown" : `${costText(row.cost, row.solved)} per pass`]
         : []),
       ...(layout.median ? [row.medianWallMs === null ? "run time unknown" : `${duration(row.medianWallMs)} run`] : []),
     ];
