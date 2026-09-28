@@ -2,9 +2,9 @@
  * `rankedRates`: which setup passes most, and how uncertain is each rate.
  *
  * One row per setup: rank (only when every row is ranked), label, an accent
- * bar on a shared 0–1 axis with the interval as an ink whisker, `passed/n`,
+ * bar on a shared 0–1 axis with an eligible interval as an ink whisker, `passed/n`,
  * cost per pass and median run. An App Grade grader adds a tier strip under
- * the bar with a tick at the pass tier. Ranked rows keep their rank order;
+ * the bar with a tick at the pass tier. Bootstrap rows with ranks keep their order;
  * unranked rows sort by rate, rows with too few units last, and the finding
  * says no comparison backs the order.
  *
@@ -19,11 +19,12 @@ import {
   drawable,
   duration,
   estimateNote,
-  intervalGap,
   intervalName,
   kn,
   pct,
   perPass,
+  rateDataGap,
+  rateIntervalGap,
   rateOrder,
   TIERS_BEST_FIRST,
   tierAtLeast,
@@ -59,13 +60,21 @@ export function rankedRates(input: RateRow[], o: RankedRatesOptions): Figure | R
   const noun = o.nouns ?? { attempt: "attempt", setup: "setup" };
   if (input.length === 0) return { id, refused: `No ${noun.setup} has an ${noun.attempt}.` };
   for (const row of input) {
-    const expected = row.attempts > 0 ? row.solved / row.attempts : 0;
-    if (row.solved > row.attempts || Math.abs(row.rate - expected) > 1e-6) {
-      return { id, refused: `${row.label}: rate ${row.rate} disagrees with ${kn(row.solved, row.attempts)} passed.` };
+    const gap = rateDataGap(row);
+    if (gap) return { id, refused: `${row.label}: ${gap}.` };
+    if (row.tiers) {
+      if (TIERS_BEST_FIRST.some((tier) => !Number.isInteger(row.tiers![tier]) || row.tiers![tier] < 0)) {
+        return { id, refused: `${row.label}: tier counts must be nonnegative whole numbers.` };
+      }
+      if (tierTotal(row.tiers) > row.attempts) return { id, refused: `${row.label}: tier counts exceed attempts.` };
+      if (o.passTier) {
+        const passing = TIERS_BEST_FIRST.filter((tier) => tierAtLeast(tier, o.passTier!)).reduce((sum, tier) => sum + row.tiers![tier], 0);
+        if (passing !== row.solved) return { id, refused: `${row.label}: ${row.solved} passes disagree with ${passing} grades at ${o.passTier} or better.` };
+      }
     }
   }
 
-  const ranked = input.every((row) => row.rank !== null);
+  const ranked = input.every((row) => row.rank !== null && row.estimate === "bootstrap");
   const rows = rateOrder(input);
   const layout: Layout = {
     ranked,
@@ -74,8 +83,8 @@ export function rankedRates(input: RateRow[], o: RankedRatesOptions): Figure | R
   };
   const bars = rows.filter((row) => drawable(row.estimate));
   const noBar = rows.filter((row) => !drawable(row.estimate));
-  const whiskers = bars.filter((row) => intervalGap(row.interval) === null);
-  const noWhisker = bars.filter((row) => intervalGap(row.interval) !== null);
+  const whiskers = bars.filter((row) => rateIntervalGap(row) === null);
+  const noWhisker = bars.filter((row) => rateIntervalGap(row) !== null);
   const tiered = rows.some((row) => row.tiers !== null);
 
   const passed = rows.reduce((sum, row) => sum + row.solved, 0);
@@ -121,7 +130,7 @@ export function rankedRates(input: RateRow[], o: RankedRatesOptions): Figure | R
   const exclusions = [
     ...(o.excluded ?? []).map((e) => `${e.count} ${plural(e.count, noun.attempt)} excluded: ${e.why}.`),
     ...(noBar.length ? [`No bar for ${noBar.map((r) => `${r.label} (${estimateNote(r.estimate, r.attempts)})`).join(", ")}.`] : []),
-    ...(noWhisker.length ? [`No whisker for ${noWhisker.map((r) => `${r.label} (${intervalGap(r.interval)})`).join(", ")}.`] : []),
+    ...(noWhisker.length ? [`No whisker for ${noWhisker.map((r) => `${r.label} (${rateIntervalGap(r)})`).join(", ")}.`] : []),
   ];
 
   const columns: Column[] = [
@@ -143,9 +152,9 @@ export function rankedRates(input: RateRow[], o: RankedRatesOptions): Figure | R
       String(row.solved),
       String(row.attempts),
       drawable(row.estimate) ? pct(row.rate) : estimateNote(row.estimate, row.attempts),
-      row.interval
-        ? `${pct(row.interval.lower)}–${pct(row.interval.upper)} (${intervalGap(row.interval) ?? intervalName(row.interval)})`
-        : "none recorded",
+      rateIntervalGap(row) === null
+        ? `${pct(row.interval!.lower)}–${pct(row.interval!.upper)} (${intervalName(row.interval!)}, n=${row.attempts})`
+        : `not drawn (${rateIntervalGap(row)})`,
       ...(tiered
         ? [row.tiers ? [tierSummary(row.tiers), offLadder ? `${offLadder} off the ladder` : ""].filter(Boolean).join(" · ") || "none" : "not graded"]
         : []),
@@ -183,7 +192,7 @@ function barMarks(row: RateRow, x0: number, x1: number, y: number, o: RankedRate
   const at = (v: number) => x0 + Math.max(0, Math.min(1, v)) * w;
   let out = hbar(x0, y, at(row.rate) - x0, 12, "tgc-bar");
   let end = at(row.rate);
-  if (row.interval && intervalGap(row.interval) === null) {
+  if (row.interval && rateIntervalGap(row) === null) {
     const lo = at(row.interval.lower);
     const hi = at(row.interval.upper);
     out += line(lo, y + 6, hi, y + 6, "tgc-whisker");
@@ -219,7 +228,7 @@ function hoverText(row: RateRow): string {
     `${kn(row.solved, row.attempts)} passed`,
     drawable(row.estimate) ? pct(row.rate) : estimateNote(row.estimate, row.attempts),
   ];
-  if (row.interval && intervalGap(row.interval) === null) {
+  if (row.interval && rateIntervalGap(row) === null) {
     parts.push(`${intervalName(row.interval)} ${pct(row.interval.lower)}–${pct(row.interval.upper)}`);
   }
   if (row.tiers) parts.push(tierSummary(row.tiers));

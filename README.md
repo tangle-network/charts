@@ -15,6 +15,12 @@ The library draws and never decides.
 Ranks, intervals, frontier membership, estimate labels and pass counts come from the producer: a board record, a VerticalBench report or an agent-eval lens.
 A figure function returns a `Refusal` in place of a figure it cannot draw honestly, for example a bar over too few units, an interval that names no method, or a frontier the producer did not compute.
 
+The producer's `estimate` controls rate marks: `descriptive` draws a rate bar, while an interval whisker also requires `bootstrap` and named interval metadata.
+Recorded intervals on descriptive rows are marked as not drawn in the data table and note.
+A missing, zero, or unproven cost prints `unknown`; zero passes print `no pass`.
+Rank numbers require every row to carry both a rank and a `bootstrap` estimate.
+Malformed rates, intervals, matrix counts, and breakdown counts return a refusal instead of a misleading mark.
+
 It has no runtime dependencies and uses no DOM, so it runs in a Worker, a build step or a browser.
 
 ## Use

@@ -25,16 +25,22 @@ export function breakdown(input: BreakdownInput, o: BreakdownOptions): Figure | 
   const id = o.id ?? "breakdown";
   const { reasons, setups } = input;
   if (reasons.length === 0 || setups.length === 0) return { id, refused: `No ${o.measure} to break down.` };
+  for (const setup of setups) {
+    if (setup.n !== null && (!Number.isInteger(setup.n) || setup.n < 0)) return { id, refused: `${setup.label}: invalid denominator.` };
+  }
   const count = new Map<string, number | null>();
   for (const c of input.counts) {
     if (!reasons.includes(c.reason) || !setups.some((s) => s.id === c.setup)) {
       return { id, refused: `A count names ${c.reason} × ${c.setup}, which is not in the reason and setup lists.` };
     }
+    const key = `${c.reason}\u0000${c.setup}`;
+    if (count.has(key)) return { id, refused: `Two counts for ${c.reason} × ${c.setup}.` };
+    if (c.count !== null && (!Number.isInteger(c.count) || c.count < 0)) return { id, refused: `${c.reason} × ${c.setup}: invalid count.` };
     const n = setups.find((s) => s.id === c.setup)!.n;
     if (c.count !== null && n !== null && c.count > n) {
       return { id, refused: `${c.reason} × ${c.setup}: ${c.count} exceeds the column's ${n} attempts.` };
     }
-    count.set(`${c.reason}\u0000${c.setup}`, c.count);
+    count.set(key, c.count);
   }
   const get = (reason: string, setup: string) => count.get(`${reason}\u0000${setup}`) ?? null;
 

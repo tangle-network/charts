@@ -56,6 +56,9 @@ export function intervalGap(interval: Interval | null): string | null {
   if (!interval) return "no interval";
   const missing = [interval.level === null ? "level" : "", interval.method === null ? "method" : ""].filter(Boolean);
   if (missing.length) return `the interval names no ${missing.join(" or ")}`;
+  if (!(interval.method! in METHOD_NAME)) return "the interval method is unknown";
+  if (!Number.isFinite(interval.level) || interval.level! <= 0 || interval.level! >= 1) return "the interval level is outside 0–1";
+  if (!Number.isFinite(interval.lower) || !Number.isFinite(interval.upper)) return "the interval bounds are not finite";
   if (!(interval.lower <= interval.upper)) return "the interval bounds are out of order";
   return null;
 }
@@ -76,15 +79,39 @@ export function estimateNote(estimate: Estimate, units: number): string {
  * a run that passed spent something, so a zero means the spend was not
  * recorded, and it prints "unknown", never "$0".
  */
-export function perPass(cost: { perSolvedUsd: number | null }): number | null {
-  return cost.perSolvedUsd !== null && cost.perSolvedUsd > 0 ? cost.perSolvedUsd : null;
+export function perPass(cost: { perSolvedUsd: number | null; basis: CostBasis }): number | null {
+  return cost.basis !== "unknown" && cost.perSolvedUsd !== null && Number.isFinite(cost.perSolvedUsd) && cost.perSolvedUsd > 0
+    ? cost.perSolvedUsd
+    : null;
 }
 
 /** "$23.76", "$23.76 est.", "unknown", "no pass" */
 export function costText(cost: { perSolvedUsd: number | null; basis: CostBasis }, solved: number): string {
+  if (solved === 0) return "no pass";
   const value = perPass(cost);
-  if (value === null) return solved === 0 ? "no pass" : "unknown";
+  if (value === null) return "unknown";
   return cost.basis === "receipts" ? usd(value) : `${usd(value)} est.`;
+}
+
+/** A rate whisker needs the producer's inferential estimate label as well as interval metadata. */
+export function rateIntervalGap(row: Pick<RateRow, "estimate" | "interval">): string | null {
+  if (row.estimate !== "bootstrap") return `${row.estimate} estimate`;
+  const gap = intervalGap(row.interval);
+  if (gap) return gap;
+  if (row.interval!.lower < 0 || row.interval!.upper > 1) return "the rate interval is outside 0–1";
+  return null;
+}
+
+/** Check the source arithmetic before using a rate in a finding or a mark. */
+export function rateDataGap(row: Pick<RateRow, "solved" | "attempts" | "rate" | "estimate">): string | null {
+  if (!Number.isInteger(row.attempts) || row.attempts < 0 || !Number.isInteger(row.solved) || row.solved < 0 || row.solved > row.attempts) {
+    return "passed and attempt counts are invalid";
+  }
+  if (!Number.isFinite(row.rate) || row.rate < 0 || row.rate > 1) return "rate is outside 0–1";
+  if (row.attempts > 0 && Math.abs(row.rate - row.solved / row.attempts) > 1e-6) return "rate disagrees with passed/attempts";
+  if (row.attempts === 0 && row.rate !== 0) return "rate has no attempts";
+  if (drawable(row.estimate) && row.attempts === 0) return "drawable estimate has no attempts";
+  return null;
 }
 
 /**
@@ -93,7 +120,9 @@ export function costText(cost: { perSolvedUsd: number | null; basis: CostBasis }
  * too few units follow, most units first, so a 1/1 row never heads the list.
  */
 export function rateOrder<T extends Pick<RateRow, "rank" | "rate" | "estimate" | "attempts">>(rows: readonly T[]): T[] {
-  if (rows.length > 0 && rows.every((row) => row.rank !== null)) return [...rows].sort((a, b) => a.rank! - b.rank!);
+  if (rows.length > 0 && rows.every((row) => row.rank !== null && row.estimate === "bootstrap")) {
+    return [...rows].sort((a, b) => a.rank! - b.rank!);
+  }
   const drawn = rows.filter((row) => drawable(row.estimate)).sort((a, b) => b.rate - a.rate);
   const counted = rows.filter((row) => !drawable(row.estimate)).sort((a, b) => b.attempts - a.attempts);
   return [...drawn, ...counted];

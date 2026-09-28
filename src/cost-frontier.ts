@@ -17,7 +17,7 @@
  * plotted rows carry `onFront: true` (it never computes dominance itself).
  */
 
-import { costText, drawable, estimateNote, intervalGap, intervalName, kn, pct, perPass, rateOrder, usd, usdTick } from "./format.js";
+import { costText, drawable, estimateNote, intervalName, kn, pct, perPass, rateDataGap, rateIntervalGap, rateOrder, usd, usdTick } from "./format.js";
 import { log, logDomain, logTicks } from "./scale.js";
 import { circle, hbar, line, NARROW, polyline, svgRoot, text, titled, WIDE } from "./svg.js";
 import { type Column, table } from "./table.js";
@@ -70,7 +70,7 @@ function crosses(box: Box, a: [number, number], b: [number, number]): boolean {
 }
 
 /** A row the plot can place: a cost per pass and enough units for its height. */
-const plottable = (row: RateRow) => perPass(row.cost) !== null && drawable(row.estimate);
+const plottable = (row: RateRow) => row.solved > 0 && perPass(row.cost) !== null && drawable(row.estimate);
 
 /** Why a row is listed under the axis instead of placed. */
 function unplacedReason(row: RateRow): string {
@@ -81,9 +81,13 @@ function unplacedReason(row: RateRow): string {
 
 export function costFrontier(rows: RateRow[], o: CostFrontierOptions): Figure | Refusal {
   const id = o.id ?? "cost-frontier";
+  for (const row of rows) {
+    const gap = rateDataGap(row);
+    if (gap) return { id, refused: `${row.label}: ${gap}.` };
+  }
   const costed = rows.filter(plottable);
   const unplaced = rateOrder(rows.filter((row) => !plottable(row)));
-  if (!rows.some((row) => perPass(row.cost) !== null)) return { id, refused: `No setup has a cost per pass, so cost is not drawn.` };
+  if (!rows.some((row) => row.solved > 0 && perPass(row.cost) !== null)) return { id, refused: `No setup has a cost per pass, so cost is not drawn.` };
   if (costed.length < 2) {
     return {
       id,
@@ -116,15 +120,15 @@ export function costFrontier(rows: RateRow[], o: CostFrontierOptions): Figure | 
         ? "1 sits on the producer's frontier."
         : "the producer computed no frontier.");
   const read =
-    `Up is a higher ${o.measure}; right is cheaper per pass.` +
+    `Higher ${o.measure} and lower cost per pass are better; on the wide plot, better is up and right.` +
     (drawLine ? " Filled points sit on the frontier; the line joins them." : "") +
     (costed.some((r) => r.onFront && r.cost.basis !== "receipts") ? " A hollow accent ring is a frontier point with an estimated cost." : "");
 
-  const intervals = [...new Set(costed.filter((r) => intervalGap(r.interval) === null).map((r) => intervalName(r.interval!)))];
+  const intervals = [...new Set(costed.filter((r) => rateIntervalGap(r) === null).map((r) => intervalName(r.interval!)))];
   const bases = [...new Set(costed.map((r) => r.cost.basis))];
   const method = [
     `Cost per pass is model spend over passed attempts, ${bases.map((b) => (b === "receipts" ? "from router receipts" : b === "estimated" ? "estimated, not billed" : "from an unrecorded source")).join(" or ")}.`,
-    "The frontier is the producer's: no setup off it is both cheaper and higher.",
+    front.length ? "The frontier is the producer's: no setup off it is both cheaper and higher." : "The producer did not compute a frontier.",
     intervals.length ? `Vertical lines: ${intervals.join(", ")} on the ${o.measure}.` : "",
   ]
     .filter(Boolean)
@@ -134,6 +138,7 @@ export function costFrontier(rows: RateRow[], o: CostFrontierOptions): Figure | 
     { label: "Setup" },
     { label: capitalize(o.measure), numeric: true },
     { label: "Passed", numeric: true },
+    { label: "Interval" },
     { label: "Cost per pass", numeric: true },
     { label: "Cost basis" },
     { label: "On frontier" },
@@ -143,6 +148,9 @@ export function costFrontier(rows: RateRow[], o: CostFrontierOptions): Figure | 
     row.label,
     drawable(row.estimate) ? pct(row.rate) : estimateNote(row.estimate, row.attempts),
     kn(row.solved, row.attempts),
+    rateIntervalGap(row) === null
+      ? `${pct(row.interval!.lower)}–${pct(row.interval!.upper)} (${intervalName(row.interval!)}, n=${row.attempts})`
+      : `not drawn (${rateIntervalGap(row)})`,
     costText(row.cost, row.solved),
     row.cost.basis,
     row.onFront === null ? "not computed" : row.onFront ? "yes" : "no",
@@ -167,7 +175,10 @@ export function costFrontier(rows: RateRow[], o: CostFrontierOptions): Figure | 
     note: {
       method,
       n: `${rows.reduce((s, r) => s + r.attempts, 0)} attempts over ${rows.length} setups.`,
-      exclusions: unplaced.length ? [`Not placed: ${unplacedText(unplaced)}.`] : [],
+      exclusions: [
+        ...(unplaced.length ? [`Not placed: ${unplacedText(unplaced)}.`] : []),
+        ...costed.filter((r) => rateIntervalGap(r) !== null).map((r) => `No interval for ${r.label}: ${rateIntervalGap(r)}.`),
+      ],
     },
   };
 }
@@ -192,7 +203,7 @@ function narrowList(rows: RateRow[]): string {
     if (drawable(row.estimate)) {
       let end = row.rate * x1;
       marks += hbar(0, cy, end, 10, "tgc-bar");
-      if (intervalGap(row.interval) === null) {
+      if (rateIntervalGap(row) === null) {
         const lo = row.interval!.lower * x1;
         const hi = row.interval!.upper * x1;
         marks += line(lo, cy + 5, hi, cy + 5, "tgc-whisker") + line(lo, cy + 1, lo, cy + 9, "tgc-whisker") + line(hi, cy + 1, hi, cy + 9, "tgc-whisker");
@@ -208,7 +219,10 @@ function narrowList(rows: RateRow[]): string {
       : `${count} · ${reason}not plotted`;
     const facts = fitLines(fact.split(" · "), NARROW, 12, "mono");
     marks += textBlock(facts, 0, cy + 12, 16, `class="tgc-ink-muted tgc-num" font-size="12"`);
-    out += titled(`${row.label} · ${fact}`, marks);
+    const interval = rateIntervalGap(row) === null
+      ? ` · ${intervalName(row.interval!)} interval ${pct(row.interval!.lower)}–${pct(row.interval!.upper)}, n=${row.attempts}`
+      : "";
+    out += titled(`${row.label} · ${fact}${interval}`, marks);
     y = cy + 4 + facts.length * 16;
     if (i < rows.length - 1) out += line(0, y + 2, NARROW, y + 2, "tgc-rule");
     y += 10;
@@ -237,7 +251,7 @@ function plot(costed: RateRow[], unplaced: RateRow[], drawLine: boolean, o: Cost
   // y starts at 0 and ends at the first fifth above every rate and interval,
   // so low rates do not crowd the bottom of an empty plot.
   const highest = Math.max(
-    ...costed.map((r) => Math.max(r.rate, intervalGap(r.interval) === null ? r.interval!.upper : 0)),
+    ...costed.map((r) => Math.max(r.rate, rateIntervalGap(r) === null ? r.interval!.upper : 0)),
   );
   const yMax = Math.min(1, Math.max(0.2, Math.ceil(highest * 5 - 1e-9) / 5));
   const yStep = yMax <= 0.4 ? 0.1 : 0.2;
@@ -269,7 +283,7 @@ function plot(costed: RateRow[], unplaced: RateRow[], drawLine: boolean, o: Cost
     : [];
   if (drawLine) out += polyline(frontLine, "tgc-front-line");
   for (const p of placed) {
-    if (intervalGap(p.row.interval) === null) {
+    if (rateIntervalGap(p.row) === null) {
       out += line(p.x, y(p.row.interval!.lower), p.x, y(p.row.interval!.upper), "tgc-pt-ci");
     }
   }
@@ -277,7 +291,7 @@ function plot(costed: RateRow[], unplaced: RateRow[], drawLine: boolean, o: Cost
   const obstacles: Box[] = placed.map((p) => ({ x0: p.x - 6, y0: p.y - 6, x1: p.x + 6, y1: p.y + 6 }));
   // Interval lines are obstacles too, so a label never sits on one.
   for (const p of placed) {
-    if (intervalGap(p.row.interval) === null) {
+    if (rateIntervalGap(p.row) === null) {
       obstacles.push({ x0: p.x - 2, y0: y(p.row.interval!.upper), x1: p.x + 2, y1: y(p.row.interval!.lower) });
     }
   }
@@ -319,7 +333,7 @@ function plot(costed: RateRow[], unplaced: RateRow[], drawLine: boolean, o: Cost
   for (const p of placed) {
     const cls = p.row.onFront ? (p.estimated ? "tgc-pt-est" : "tgc-pt-front") : "tgc-pt";
     out += titled(
-      `${p.row.label} · ${pct(p.row.rate)} ${o.measure} · ${costText(p.row.cost, p.row.solved)} per pass${p.row.onFront ? " · on the frontier" : ""}`,
+      `${p.row.label} · ${pct(p.row.rate)} ${o.measure} · ${kn(p.row.solved, p.row.attempts)} passed · ${costText(p.row.cost, p.row.solved)} per pass${rateIntervalGap(p.row) === null ? ` · ${intervalName(p.row.interval!)} interval ${pct(p.row.interval!.lower)}–${pct(p.row.interval!.upper)}, n=${p.row.attempts}` : ""}${p.row.onFront ? " · on the frontier" : ""}`,
       circle(p.x, p.y, 4, cls),
     );
   }
