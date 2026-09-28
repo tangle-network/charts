@@ -21,6 +21,7 @@ Intervals without support are marked as not drawn in the data table and note.
 A missing, zero, or unproven cost prints `unknown`; zero passes print `no pass`.
 Rank numbers require every row to carry both a rank and a `bootstrap` estimate.
 Malformed rates, intervals, matrix counts, and breakdown counts return a refusal instead of a misleading mark.
+An interval whisker is omitted when its bounds exclude the row's rate.
 
 It has no runtime dependencies and uses no DOM, so it runs in a Worker, a build step or a browser.
 

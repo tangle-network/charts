@@ -75,9 +75,9 @@ export function estimateNote(estimate: Estimate, units: number): string {
 }
 
 /**
- * The cost per pass a figure may print or place, or null. Zero is not a cost:
- * a run that passed spent something, so a zero means the spend was not
- * recorded, and it prints "unknown", never "$0".
+ * The positive cost per pass this figure can print or place, or null.
+ * A zero value needs a separate verified-free representation; this field alone
+ * cannot distinguish a free run from missing spend, so it prints "unknown".
  */
 export function perPass(cost: { perSolvedUsd: number | null; basis: CostBasis }): number | null {
   return cost.basis !== "unknown" && cost.perSolvedUsd !== null && Number.isFinite(cost.perSolvedUsd) && cost.perSolvedUsd > 0
@@ -94,8 +94,9 @@ export function costText(cost: { perSolvedUsd: number | null; basis: CostBasis }
 }
 
 /** Wilson can describe an eligible rate; clustered bootstrap needs the producer's bootstrap class. */
-export function rateIntervalGap(row: Pick<RateRow, "estimate" | "interval">): string | null {
+export function rateIntervalGap(row: Pick<RateRow, "estimate" | "interval" | "rate">): string | null {
   if (!drawable(row.estimate)) return `${row.estimate} estimate`;
+  if (!Number.isFinite(row.rate) || row.rate < 0 || row.rate > 1) return "rate is outside 0–1";
   const gap = intervalGap(row.interval);
   if (gap) return gap;
   if (row.interval!.method === "mcnemar-exact") return "exact McNemar applies to paired comparisons, not rates";
@@ -103,6 +104,9 @@ export function rateIntervalGap(row: Pick<RateRow, "estimate" | "interval">): st
     return `descriptive estimate does not support ${intervalName(row.interval!)}`;
   }
   if (row.interval!.lower < 0 || row.interval!.upper > 1) return "the rate interval is outside 0–1";
+  if (row.rate < row.interval!.lower - 1e-6 || row.rate > row.interval!.upper + 1e-6) {
+    return "the rate falls outside its interval";
+  }
   return null;
 }
 
