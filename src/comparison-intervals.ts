@@ -34,8 +34,14 @@ function gaps(row: ComparisonRow): string[] {
   const out: string[] = [];
   const gap = intervalGap(row.interval);
   if (gap) out.push(gap);
+  if (row.exactInterval !== null) {
+    const exactGap = intervalGap(row.exactInterval);
+    if (exactGap) out.push(`exact interval: ${exactGap}`);
+  }
   if (row.pairs === null) out.push("no pair count");
+  else if (!Number.isInteger(row.pairs) || row.pairs <= 0) out.push("invalid pair count");
   if (row.minimumEffect === null) out.push("no registered minimum effect");
+  else if (!Number.isFinite(row.minimumEffect)) out.push("invalid registered minimum effect");
   return out;
 }
 
@@ -59,7 +65,7 @@ export function comparisonIntervals(
     return {
       id,
       refused: rows.every((r) => r.interval === null)
-        ? "No comparison carries an interval."
+        ? `${rows.length} ${plural(rows.length, "comparison")} listed; none carries an interval.`
         : `No comparison can be drawn. ${refused.join("; ")}.`,
     };
   }
@@ -96,14 +102,16 @@ export function comparisonIntervals(
     { label: "Interval", numeric: true },
     { label: "Exact interval", numeric: true },
   ];
-  const fmt = (i: ComparisonRow["interval"]) =>
-    i && intervalGap(i) === null ? `${pts(i.lower)} to ${pts(i.upper)} (${intervalName(i)})` : i ? `${pts(i.lower)} to ${pts(i.upper)} (${intervalGap(i)})` : "none";
+  const fmt = (i: ComparisonRow["interval"], n: number | null) =>
+    i && intervalGap(i) === null
+      ? `${pts(i.lower)} to ${pts(i.upper)} (${intervalName(i)}, n=${n})`
+      : i ? `not drawn (${intervalGap(i)})` : "none";
   const tableRows = rows.map((row) => [
     title(row),
     row.pairs === null ? "not recorded" : String(row.pairs),
     row.minimumEffect === null ? "none registered" : pts(row.minimumEffect),
-    fmt(row.interval),
-    fmt(row.exactInterval),
+    fmt(row.interval, row.pairs),
+    fmt(row.exactInterval, row.pairs),
   ]);
 
   const values = drawn.flatMap(({ row }) => [
@@ -111,7 +119,7 @@ export function comparisonIntervals(
     row.interval!.upper,
     row.minimumEffect!,
     0,
-    ...(row.exactInterval ? [row.exactInterval.lower, row.exactInterval.upper] : []),
+    ...(intervalGap(row.exactInterval) === null ? [row.exactInterval!.lower, row.exactInterval!.upper] : []),
   ]);
   const span = Math.max(...values) - Math.min(...values) || 0.1;
   const domain: [number, number] = [Math.min(...values) - span * 0.08, Math.max(...values) + span * 0.08];
@@ -164,7 +172,7 @@ function draw(drawn: Drawn[], domain: [number, number], width: number, plotX: nu
     const me = x(row.minimumEffect!);
     marks += line(me, barY - 8, me, barY + 20, "tgc-threshold");
     body += titled(
-      `${title} · ${row.pairs} pairs · ${pts(row.interval!.lower)} to ${pts(row.interval!.upper)} · minimum effect ${pts(row.minimumEffect!)}`,
+      `${title} · ${row.pairs} pairs · ${intervalName(row.interval!)} interval ${pts(row.interval!.lower)} to ${pts(row.interval!.upper)}${rateExactTitle(row)} · minimum effect ${pts(row.minimumEffect!)}`,
       marks,
     );
   }
@@ -176,3 +184,8 @@ function draw(drawn: Drawn[], domain: [number, number], width: number, plotX: nu
   return svgRoot(width, y + 24, axis + body);
 }
 
+function rateExactTitle(row: ComparisonRow): string {
+  return intervalGap(row.exactInterval) === null
+    ? ` · ${intervalName(row.exactInterval!)} exact interval ${pts(row.exactInterval!.lower)} to ${pts(row.exactInterval!.upper)}`
+    : "";
+}

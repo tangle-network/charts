@@ -14,7 +14,7 @@
  * but the given rank.
  */
 
-import { kn, TIERS_BEST_FIRST, tierSummary, tierTotal, usd } from "./format.js";
+import { kn, TIERS_BEST_FIRST, tierAtLeast, tierSummary, tierTotal, usd } from "./format.js";
 import { circle, hbar, line, NARROW, rect, svgRoot, text, titled, WIDE } from "./svg.js";
 import { table } from "./table.js";
 import { capitalize, listJoin, plural, textBlock, textWidth, wrap } from "./text.js";
@@ -106,7 +106,7 @@ function describe(task: string, setup: Setup, cell: MatrixCell | undefined, mean
   else parts.push(`${cell.attempts} ${plural(cell.attempts!, "attempt")}`);
   const tiers = tierSummary(cell.tiers, cell.unmeasured, cell.flagged);
   if (tiers) parts.push(tiers);
-  if (cell.costUsd !== null) parts.push(usd(cell.costUsd));
+  if (cell.costUsd !== null) parts.push(cell.costUsd > 0 ? usd(cell.costUsd) : "cost unknown");
   return parts.join(" · ").replace(`${setup.label} · `, `${setup.label}: `);
 }
 
@@ -134,10 +134,25 @@ export function taskMatrix(
       return { id, refused: `A cell names ${cell.task} × ${cell.setup}, which is not in the ${noun.task} and ${noun.setup} lists.` };
     }
     if (byKey.has(key)) return { id, refused: `Two cells for ${cell.task} × ${cell.setup}.` };
+    const counts = [cell.attempts, cell.solved, cell.unmeasured, cell.flagged];
+    if (counts.some((n) => n !== null && n !== undefined && (!Number.isInteger(n) || n < 0))) {
+      return { id, refused: `${cell.task} × ${cell.setup}: counts must be nonnegative whole numbers.` };
+    }
+    if (cell.tiers && TIERS_BEST_FIRST.some((tier) => !Number.isInteger(cell.tiers![tier]) || cell.tiers![tier] < 0)) {
+      return { id, refused: `${cell.task} × ${cell.setup}: tier counts must be nonnegative whole numbers.` };
+    }
+    if (cell.mean !== null && !Number.isFinite(cell.mean)) return { id, refused: `${cell.task} × ${cell.setup}: mean is not finite.` };
+    if (cell.costUsd !== null && (!Number.isFinite(cell.costUsd) || cell.costUsd < 0)) {
+      return { id, refused: `${cell.task} × ${cell.setup}: cost is invalid.` };
+    }
     if (!means && cell.attempts !== null) {
       const graded = tierTotal(cell.tiers) + (cell.flagged ?? 0) + (cell.unmeasured ?? 0);
       if (graded > cell.attempts || (cell.solved !== null && cell.solved > cell.attempts)) {
         return { id, refused: `${cell.task} × ${cell.setup}: grades or passes exceed its ${cell.attempts} attempts.` };
+      }
+      if (o.passTier && cell.tiers && cell.solved !== null) {
+        const passing = TIERS_BEST_FIRST.filter((tier) => tierAtLeast(tier, o.passTier!)).reduce((sum, tier) => sum + cell.tiers![tier], 0);
+        if (passing !== cell.solved) return { id, refused: `${cell.task} × ${cell.setup}: ${cell.solved} passes disagree with ${passing} grades at ${o.passTier} or better.` };
       }
     }
     byKey.set(key, cell);
@@ -239,7 +254,7 @@ export function taskMatrix(
         const main = cellText(cell, means);
         const extra =
           !means && cell && cell.solved !== null && cell.tiers ? ` · ${tierSummary(cell.tiers, cell.unmeasured, cell.flagged)}` : "";
-        const cost = cell && cell.costUsd !== null ? ` · ${usd(cell.costUsd)}` : "";
+        const cost = cell && cell.costUsd !== null ? ` · ${cell.costUsd > 0 ? usd(cell.costUsd) : "cost unknown"}` : "";
         return main === "·" ? "not run" : `${main}${extra}${cost}`;
       }),
     ]),
@@ -414,4 +429,3 @@ function narrowMatrix(tasks: string[], setups: Setup[], at: At, means: boolean, 
   const lg = legend(kinds, NARROW, y, o);
   return svgRoot(NARROW, y + lg.h + 4, body + lg.svg);
 }
-
