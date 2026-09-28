@@ -93,11 +93,15 @@ export function costText(cost: { perSolvedUsd: number | null; basis: CostBasis }
   return cost.basis === "receipts" ? usd(value) : `${usd(value)} est.`;
 }
 
-/** A rate whisker needs the producer's inferential estimate label as well as interval metadata. */
+/** Wilson can describe an eligible rate; clustered bootstrap needs the producer's bootstrap class. */
 export function rateIntervalGap(row: Pick<RateRow, "estimate" | "interval">): string | null {
-  if (row.estimate !== "bootstrap") return `${row.estimate} estimate`;
+  if (!drawable(row.estimate)) return `${row.estimate} estimate`;
   const gap = intervalGap(row.interval);
   if (gap) return gap;
+  if (row.interval!.method === "mcnemar-exact") return "exact McNemar applies to paired comparisons, not rates";
+  if (row.estimate === "descriptive" && row.interval!.method !== "wilson") {
+    return `descriptive estimate does not support ${intervalName(row.interval!)}`;
+  }
   if (row.interval!.lower < 0 || row.interval!.upper > 1) return "the rate interval is outside 0–1";
   return null;
 }
