@@ -63,5 +63,4 @@ pnpm --filter @tangle-network/charts build     # fails when src/css.generated.ts
 
 ## Release
 
-The package is private until its first npm publish.
-npm trusted publishing needs the package to exist before a trusted publisher can be added, so the first version is published once by an owner, then `npm trust github @tangle-network/charts --file release.yml --repo tangle-network/brand --allow-publish` hands later versions to the release workflow.
+Versions publish from the brand release workflow through npm trusted publishing, like `@tangle-network/brand` and `@tangle-network/ui`.
