@@ -149,7 +149,7 @@ export function costFrontier(rows: RateRow[], o: CostFrontierOptions): Figure | 
     drawable(row.estimate) ? pct(row.rate) : estimateNote(row.estimate, row.attempts),
     kn(row.solved, row.attempts),
     rateIntervalGap(row) === null
-      ? `${pct(row.interval!.lower)}–${pct(row.interval!.upper)} (${intervalName(row.interval!)}, n=${row.attempts})`
+      ? `${pct(row.interval!.lower)}–${pct(row.interval!.upper)} (${intervalName(row.interval!)}, ${row.attempts} attempts)`
       : `not drawn (${rateIntervalGap(row)})`,
     costText(row.cost, row.solved),
     row.cost.basis,
@@ -220,7 +220,7 @@ function narrowList(rows: RateRow[]): string {
     const facts = fitLines(fact.split(" · "), NARROW, 12, "mono");
     marks += textBlock(facts, 0, cy + 12, 16, `class="tgc-ink-muted tgc-num" font-size="12"`);
     const interval = rateIntervalGap(row) === null
-      ? ` · ${intervalName(row.interval!)} interval ${pct(row.interval!.lower)}–${pct(row.interval!.upper)}, n=${row.attempts}`
+      ? ` · ${intervalName(row.interval!)} interval ${pct(row.interval!.lower)}–${pct(row.interval!.upper)}, ${row.attempts} attempts`
       : "";
     out += titled(`${row.label} · ${fact}${interval}`, marks);
     y = cy + 4 + facts.length * 16;
@@ -333,7 +333,7 @@ function plot(costed: RateRow[], unplaced: RateRow[], drawLine: boolean, o: Cost
   for (const p of placed) {
     const cls = p.row.onFront ? (p.estimated ? "tgc-pt-est" : "tgc-pt-front") : "tgc-pt";
     out += titled(
-      `${p.row.label} · ${pct(p.row.rate)} ${o.measure} · ${kn(p.row.solved, p.row.attempts)} passed · ${costText(p.row.cost, p.row.solved)} per pass${rateIntervalGap(p.row) === null ? ` · ${intervalName(p.row.interval!)} interval ${pct(p.row.interval!.lower)}–${pct(p.row.interval!.upper)}, n=${p.row.attempts}` : ""}${p.row.onFront ? " · on the frontier" : ""}`,
+      `${p.row.label} · ${pct(p.row.rate)} ${o.measure} · ${kn(p.row.solved, p.row.attempts)} passed · ${costText(p.row.cost, p.row.solved)} per pass${rateIntervalGap(p.row) === null ? ` · ${intervalName(p.row.interval!)} interval ${pct(p.row.interval!.lower)}–${pct(p.row.interval!.upper)}, ${p.row.attempts} attempts` : ""}${p.row.onFront ? " · on the frontier" : ""}`,
       circle(p.x, p.y, 4, cls),
     );
   }

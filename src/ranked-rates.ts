@@ -164,7 +164,7 @@ export function rankedRates(input: RateRow[], o: RankedRatesOptions): Figure | R
       String(row.attempts),
       drawable(row.estimate) ? pct(row.rate) : estimateNote(row.estimate, row.attempts),
       rateIntervalGap(row) === null
-        ? `${pct(row.interval!.lower)}–${pct(row.interval!.upper)} (${intervalName(row.interval!)}, n=${row.attempts})`
+        ? `${pct(row.interval!.lower)}–${pct(row.interval!.upper)} (${intervalName(row.interval!)}, ${row.attempts} attempts)`
         : `not drawn (${rateIntervalGap(row)})`,
       ...(tiered
         ? [row.tiers ? [tierSummary(row.tiers), offLadder ? `${offLadder} off the ladder` : ""].filter(Boolean).join(" · ") || "none" : "not graded"]
