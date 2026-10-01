@@ -1,5 +1,11 @@
 # @tangle-network/charts
 
+## 0.1.12
+
+### Patch Changes
+
+- 01a2deb: Add plot presentation without visible method or data controls, retaining complete accessible tables and larger vertical-axis tick labels. Existing report and chart presentation outputs remain unchanged.
+
 ## 0.1.11
 
 ### Patch Changes
