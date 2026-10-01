@@ -53,6 +53,14 @@ describe("recorded scalar bars", () => {
     expect(isRefusal(metricBars([{ id: "a", label: "A", value: 0 }, { id: "a", label: "B", value: 1 }], bars))).toBe(true);
     expect(isRefusal(metricBars([{ id: "a", label: "A", value: 0 }], { ...bars, domain: [0.1, 1] }))).toBe(true);
   });
+  it("preserves fractional recorded confidence without rounding to 100%", () => {
+    for (const [level, label] of [[0.999, "99.9%"], [0.955, "95.5%"], [1e-7, "0.00001%"]] as const) {
+      const f = figure(metricBars([{ id: "a", label: "A", value: 0.25, interval: { ...interval, level } }], bars));
+      expect(f.table).toContain(`${label} task-clustered bootstrap`);
+      expect(f.svg.wide).toContain(`${label} task-clustered bootstrap`);
+      expect(f.table).not.toContain("100%");
+    }
+  });
   it("refuses a serialized unsupported interval method without accepting prototype keys", () => {
     const row = JSON.parse(JSON.stringify({ id: "a", label: "A", value: 0.25, interval: { ...interval, method: "toString" } }));
     expect(isRefusal(metricBars([row], bars))).toBe(true);

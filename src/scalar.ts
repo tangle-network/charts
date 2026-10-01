@@ -1,5 +1,5 @@
 /** Validation and display of recorded scalar observations; no statistics are computed here. */
-import { intervalGap, intervalName, METHOD_NAME } from "./format.js";
+import { intervalGap, METHOD_NAME } from "./format.js";
 import type { Interval } from "./types.js";
 
 export interface Observations {
@@ -40,6 +40,15 @@ export function observationLabel(observations?: Observations): string {
   return observations ? `${observations.count ?? "unknown"} ${observations.label}` : "observation count unknown";
 }
 
+/** Shift the recorded decimal level, without rounding it to a different confidence. */
+function confidencePercent(level: number): string {
+  const [coefficient, exponent] = String(level).split("e-")
+  const decimal = exponent ? `0.${"0".repeat(Number(exponent) - 1)}${coefficient!.replace(".", "")}` : coefficient!
+  const digits = decimal.slice(2).padEnd(2, "0")
+  const fraction = digits.slice(2).replace(/0+$/, "")
+  return `${Number(digits.slice(0, 2))}${fraction ? `.${fraction}` : ""}%`
+}
+
 export function scalarIntervalLabel(interval: Interval | null | undefined, unit: string, format?: (value: number) => string): string {
-  return interval ? `${scalarLabel(interval.lower, unit, format)}–${scalarLabel(interval.upper, unit, format)} (${intervalName(interval)})` : "not recorded";
+  return interval ? `${scalarLabel(interval.lower, unit, format)}–${scalarLabel(interval.upper, unit, format)} (${confidencePercent(interval.level!)} ${METHOD_NAME[interval.method!]})` : "not recorded";
 }

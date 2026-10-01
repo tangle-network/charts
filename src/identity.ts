@@ -20,4 +20,3 @@ export function identityGap(rows: readonly { id: string }[], identities: Readonl
   }
   return null;
 }
-
