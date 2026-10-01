@@ -21,6 +21,8 @@ Intervals without support are marked as not drawn in the data table and note.
 Cost-per-pass figures print `unknown` for missing, zero, or unproven cost; zero passes print `no pass`.
 A matrix preserves an observed zero cost as $0 and omits a null cost.
 Rank numbers require every row to carry both a rank and a `bootstrap` estimate.
+For an unranked descriptive report, `rankedRates` accepts `order: "input"` to retain the producer's row order and make no ranking claim.
+The default keeps supported ranks or sorts unranked rows by observed rate.
 Malformed rates, intervals, matrix counts, and breakdown counts return a refusal instead of a misleading mark.
 Unmeasured and flagged matrix attempts keep distinct marks and table counts, even without tier grades.
 An interval whisker is omitted when its bounds exclude the row's rate.

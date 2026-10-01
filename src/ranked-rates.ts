@@ -6,7 +6,8 @@
  * cost per pass and median run. An App Grade grader adds a tier strip under
  * the bar with a tick at the pass tier. Bootstrap rows with ranks keep their order;
  * unranked rows sort by rate, rows with too few units last, and the finding
- * says no comparison backs the order.
+ * says no comparison backs the order. Explicit input order keeps unranked rows
+ * where the producer placed them and makes no ranking claim.
  *
  * Refuses: a bar when the producer labels the estimate `none` or
  * `insufficient` (the row prints its count only); a whisker whose interval
@@ -39,6 +40,8 @@ import type { Exclusion, Figure, RateRow, Refusal, Tier } from "./types.js";
 export interface RankedRatesOptions {
   /** What the rate measures, lower case: "solve rate". */
   measure: string;
+  /** Preserve unranked input order instead of sorting observed rates. */
+  order?: "input";
   /** The App Grade tier a pass needs; marks the tier strip. */
   passTier?: Tier;
   /** Singular, lower-case nouns: what one unit of `attempts` is, and what a row is. */
@@ -59,6 +62,10 @@ export function rankedRates(input: RateRow[], o: RankedRatesOptions): Figure | R
   const id = o.id ?? "ranked-rates";
   const noun = o.nouns ?? { attempt: "attempt", setup: "setup" };
   if (input.length === 0) return { id, refused: `No ${noun.setup} has an ${noun.attempt}.` };
+  if (o.order !== undefined && o.order !== "input") return { id, refused: "Unknown row order." };
+  if (o.order === "input" && input.some((row) => row.rank !== null)) {
+    return { id, refused: "Input order requires unranked rows." };
+  }
   for (const row of input) {
     const gap = rateDataGap(row);
     if (gap) return { id, refused: `${row.label}: ${gap}.` };
@@ -75,7 +82,7 @@ export function rankedRates(input: RateRow[], o: RankedRatesOptions): Figure | R
   }
 
   const ranked = input.every((row) => row.rank !== null && row.estimate === "bootstrap");
-  const rows = rateOrder(input);
+  const rows = o.order === "input" ? [...input] : rateOrder(input);
   const layout: Layout = {
     ranked,
     cost: rows.some((r) => perPass(r.cost) !== null || r.cost.basis !== "unknown" || r.cost.receipts !== null),
@@ -97,14 +104,18 @@ export function rankedRates(input: RateRow[], o: RankedRatesOptions): Figure | R
     ? `${top.label} ranks first, passing ${pct(top.rate)} of ${plural(2, noun.attempt)}.`
     : bars.length === 0
       ? `No ${noun.setup} has enough units to draw a ${o.measure}.`
-      : rows.length === 1
+      : o.order === "input"
+        ? `${capitalize(o.measure)} by ${noun.setup}; no ranking is claimed.`
+        : rows.length === 1
         ? `${top.label} passes ${pct(top.rate)} of ${top.attempts} ${plural(top.attempts, noun.attempt)}.`
         : uniqueTop
           ? `${top.label} has the highest ${o.measure}, ${pct(top.rate)} of ${top.attempts} ${plural(top.attempts, noun.attempt)}; no comparison backs the order.`
           : `Sorted by ${o.measure}; no comparison backs the order.`;
   const lede =
     `${passed} of ${attempts} ${plural(attempts, noun.attempt)} passed across ${setupsN}.` +
-    (noBar.length && bars.length ? ` ${noBar.length} of ${setupsN} have too few units to draw a rate; they come last.` : "");
+    (noBar.length && bars.length
+      ? ` ${noBar.length} of ${setupsN} have too few units to draw a rate${o.order === "input" ? "." : "; they come last."}`
+      : "");
 
   const intervalNames = [...new Set(whiskers.map((row) => intervalName(row.interval!)))];
   const read = bars.length
