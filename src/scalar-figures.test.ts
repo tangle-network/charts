@@ -28,6 +28,15 @@ describe("recorded scalar bars", () => {
     expect(f.svg.wide).not.toContain('tgc-whisker');
     expect(f.svg.wide).toContain('mean composite score: 0 score · 13 tasks');
   });
+  it("keeps tiny recorded values distinct from zero and full values in accessible data", () => {
+    const f = figure(metricBars([{ id: "a", label: "A", value: 1e-9, observations: { count: 13, label: "tasks" } }], bars));
+    expect(f.table).toContain("1e-9 score");
+    expect(f.svg.wide).toContain("mean composite score: 1e-9 score");
+    const full = figure(metricBars([{ id: "a", label: "A", value: 0.1234567890123456 }], bars));
+    expect(full.table).toContain("0.1234567890123456 score");
+    expect(full.svg.wide).toContain("mean composite score: 0.1234567890123456 score");
+    expect(full.svg.wide).toContain("…");
+  });
   it("draws only the supplied interval, preserving bounds and method in data", () => {
     const f = figure(metricBars([{ id: "a", label: "A", value: 0.25, interval, observations: { count: 13, label: "tasks" } }], bars));
     expect(f.table).toContain('0.1 score–0.4 score (95% task-clustered bootstrap)');

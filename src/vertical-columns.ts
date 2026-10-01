@@ -58,7 +58,7 @@ export function verticalColumns(rows: VerticalColumn[], viewport: number, measur
         marks += line(x - 5, lo, x + 5, lo, "tgc-whisker") + line(x - 5, hi, x + 5, hi, "tgc-whisker");
       }
       // Values remain above short bars; no minimum bar height can turn zero into a positive rate.
-      marks += text(scalarLayout ? x : x + barWidth / 2 + 7, Math.max(top - 8, y - 9), row.valueLabel, { size: 15, weight: 600, anchor: "middle", cls: "tgc-ink tgc-num" });
+      marks += text(scalarLayout ? x : x + barWidth / 2 + 7, Math.max(top - 8, y - 9), scalarLayout ? wrap(row.valueLabel, slot - 12, 15, "mono", 1).lines[0]! : row.valueLabel, { size: 15, weight: 600, anchor: "middle", cls: "tgc-ink tgc-num" });
     } else {
       marks += text(x, bottom - 12, row.valueLabel, { anchor: "middle", cls: "tgc-ink-muted" });
     }

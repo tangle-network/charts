@@ -9,7 +9,7 @@ export interface Observations {
 }
 
 export function domainGap(domain: [number, number]): string | null {
-  return domain.length !== 2 || !domain.every(Number.isFinite) || domain[0] >= domain[1]
+  return domain.length !== 2 || !domain.every(Number.isFinite) || domain[0] >= domain[1] || !Number.isFinite(domain[1] - domain[0])
     ? "The axis needs two finite, increasing bounds."
     : null;
 }
@@ -32,7 +32,7 @@ export function scalarGap(value: number | null, interval: Interval | null | unde
 }
 
 export function scalarLabel(value: number, unit: string, format?: (value: number) => string): string {
-  const number = format ? format(value) : String(Math.round(value * 1e6) / 1e6);
+  const number = format ? format(value) : String(value);
   return `${number}${unit ? ` ${unit}` : ""}`;
 }
 
