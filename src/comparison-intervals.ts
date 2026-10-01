@@ -161,6 +161,7 @@ function draw(drawn: Drawn[], domain: [number, number], width: number, plotX: nu
       barY = y + label.lines.length * 18 + 22;
       y = barY + 24;
     }
+    if (labelW === 0) marks += line(x(0), barY - 8, x(0), barY + 20, "tgc-zero");
     const lo = x(row.interval!.lower);
     const hi = x(row.interval!.upper);
     marks += rect(lo, barY, Math.max(hi - lo, 2), 6, "tgc-ci");
@@ -177,7 +178,7 @@ function draw(drawn: Drawn[], domain: [number, number], width: number, plotX: nu
     );
   }
   const zero = x(0);
-  let axis = line(zero, rowsTop, zero, y, "tgc-zero");
+  let axis = labelW > 0 ? line(zero, rowsTop, zero, y, "tgc-zero") : "";
   for (const t of linearTicks(domain[0], domain[1], width > 400 ? 6 : 3)) {
     axis += text(x(t), y + 16, pts(t), { cls: "tgc-ink-muted tgc-num", anchor: "middle" });
   }

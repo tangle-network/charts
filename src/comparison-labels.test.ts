@@ -44,5 +44,8 @@ describe("comparison difference labels", () => {
     expect(lineOffsets.length).toBeGreaterThan(1);
     const pairY = Number(pairs[1]!.match(/\by="([^"]+)"/)![1]);
     expect(pairY).toBeGreaterThan(labelY + lineOffsets.reduce((sum, offset) => sum + offset, 0));
+    const zeroLine = figure.svg.narrow.match(/<line class="tgc-zero"[^>]*\by1="([^"]+)"/);
+    if (!zeroLine) throw new Error("the phone figure must retain a zero reference");
+    expect(Number(zeroLine[1])).toBeGreaterThanOrEqual(pairY);
   });
 });
