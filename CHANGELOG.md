@@ -1,5 +1,11 @@
 # @tangle-network/charts
 
+## 0.1.8
+
+### Patch Changes
+
+- 7c17f1d: Describe supported effects as pairwise comparisons and identify the shared tasks passed by every setup.
+
 ## 0.1.7
 
 ### Patch Changes
