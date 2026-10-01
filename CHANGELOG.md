@@ -1,5 +1,11 @@
 # @tangle-network/charts
 
+## 0.1.11
+
+### Patch Changes
+
+- 7fc069e: Add input-ordered scalar bars and recorded trajectories with explicit domains, observation counts and missing-value gaps. Reuse vertical rate geometry without changing existing rate figures or inferring ranks, intervals or scores.
+
 ## 0.1.10
 
 ### Patch Changes
