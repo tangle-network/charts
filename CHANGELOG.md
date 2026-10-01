@@ -1,5 +1,11 @@
 # @tangle-network/charts
 
+## 0.1.5
+
+### Patch Changes
+
+- 859a51a: Allow unranked rate figures to retain explicit input order with neutral findings.
+
 ## 0.1.4
 
 ### Patch Changes
