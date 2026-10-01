@@ -1,7 +1,7 @@
 /**
  * `comparisonIntervals`: is each step in an order real.
  *
- * One row per comparison, "{favored} over {other}", with the pair count. x is
+ * One row per comparison, "{favored} − {other}", with the pair count. x is
  * the difference in points with a muted zero line. The clustered interval is a
  * 6 px accent bar, the exact interval a 2 px muted bar under it, and a dashed
  * ink tick marks the row's registered minimum effect. There is no point
@@ -157,8 +157,8 @@ function draw(drawn: Drawn[], domain: [number, number], width: number, plotX: nu
     } else {
       const label = wrap(title, width, 14);
       marks += textBlock(label.lines, 0, y + 14, 18, `class="tgc-ink" font-size="14"`);
-      marks += text(width, y + 14, `${row.pairs} pairs`, { cls: "tgc-ink-muted tgc-num", anchor: "end" });
-      barY = y + label.lines.length * 18 + 4;
+      marks += text(0, y + 14 + label.lines.length * 18, `${row.pairs} pairs`, { cls: "tgc-ink-muted tgc-num" });
+      barY = y + label.lines.length * 18 + 22;
       y = barY + 24;
     }
     const lo = x(row.interval!.lower);

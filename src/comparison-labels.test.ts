@@ -29,4 +29,20 @@ describe("comparison difference labels", () => {
     expect(figure.finding).toBe("The step clears its registered minimum effect.");
     expect(figure.table).toContain("Terra − Luna");
   });
+  it("keeps the pair count below long comparison labels on a phone", () => {
+    const longLabels = [
+      { id: "terra", label: "opencode · gpt-5.6-terra (no-web)", rank: null },
+      { id: "luna", label: "opencode · gpt-5.6-luna (no-web)", rank: null },
+    ];
+    const figure = comparisonIntervals([retained], longLabels, { measure: "solve rate" });
+    if (isRefusal(figure) || !figure.svg.narrow) throw new Error("retained comparison should have a phone figure");
+    const label = figure.svg.narrow.match(/<text\b[^>]*font-size="14"[^>]*>([\s\S]*?)<\/text>/);
+    const pairs = figure.svg.narrow.match(/<text\b([^>]*)>26 pairs<\/text>/);
+    if (!label || !pairs) throw new Error("the phone figure must include the label and pair count");
+    const labelY = Number(label[0].match(/\by="([^"]+)"/)![1]);
+    const lineOffsets = [...label[1]!.matchAll(/\bdy="([^"]+)"/g)].map((match) => Number(match[1]));
+    expect(lineOffsets.length).toBeGreaterThan(1);
+    const pairY = Number(pairs[1]!.match(/\by="([^"]+)"/)![1]);
+    expect(pairY).toBeGreaterThan(labelY + lineOffsets.reduce((sum, offset) => sum + offset, 0));
+  });
 });
