@@ -1,5 +1,12 @@
 # @tangle-network/charts
 
+## 0.1.4
+
+### Patch Changes
+
+- 1ce585f: Preserve unmeasured and flagged attempts in non-tier task matrices.
+  Show those counts in the accessible table and refuse overlapping observation counts.
+
 ## 0.1.3
 
 ### Patch Changes
