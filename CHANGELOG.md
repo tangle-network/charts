@@ -1,5 +1,11 @@
 # @tangle-network/charts
 
+## 0.1.3
+
+### Patch Changes
+
+- 720de9a: Normalize the shared neutral palette and regenerate standalone chart tokens so charts follow the palette. Make user message cards wrap in narrow layouts.
+
 ## 0.1.2
 
 ### Patch Changes
