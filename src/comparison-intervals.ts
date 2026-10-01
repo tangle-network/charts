@@ -52,7 +52,7 @@ export function comparisonIntervals(
 ): Figure | Refusal {
   const id = o.id ?? "comparison-intervals";
   const name = (setupId: string) => setups.find((s) => s.id === setupId)?.label ?? setupId;
-  const title = (row: ComparisonRow) => `${name(row.favored)} over ${name(row.other)}`;
+  const title = (row: ComparisonRow) => `${name(row.favored)} − ${name(row.other)}`;
   if (rows.length === 0) return { id, refused: "No comparison was registered." };
   const drawn: Drawn[] = [];
   const refused: string[] = [];
