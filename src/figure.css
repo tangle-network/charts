@@ -293,3 +293,19 @@
     break-inside: avoid;
   }
 }
+
+/* Chart-led surfaces keep supporting text in the native disclosure. */
+.tgc-figure-chart { max-width: none; margin: 0; }
+.tgc-figure-chart .tgc-wide svg { width: 100%; height: auto; }
+.tgc-wide:has(.tgc-vertical), .tgc-narrow:has(.tgc-vertical) { overflow-x: auto; }
+.tgc-vertical { width: 100%; }
+.tgc-narrow .tgc-vertical { max-width: none; }
+.tgc-column-hit { fill: transparent; stroke: transparent; stroke-width: 2; }
+.tgc-column:focus-visible { outline: none; }
+.tgc-column:focus-visible .tgc-column-hit { stroke: var(--chart-accent); }
+.tgc-vertical-bar { fill: var(--chart-accent); }
+/* Identity assets keep their approved colors on a white plate in either theme. */
+.tgc-logo-plate { fill: #fff; stroke: var(--chart-rule); }
+.tgc-column-tip { opacity: 0; pointer-events: none; }
+.tgc-tip-bg { fill: var(--chart-ink); }
+.tgc-tip-ink { fill: var(--chart-canvas); }

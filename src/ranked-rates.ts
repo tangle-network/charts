@@ -32,12 +32,22 @@ import {
   tierSummary,
   tierTotal,
 } from "./format.js";
+import { verticalRates, identityGap } from "./vertical-rates.js";
 import { hbar, line, NARROW, rect, svgRoot, text, titled, WIDE } from "./svg.js";
 import { type Column, table } from "./table.js";
 import { capitalize, fitLines, plural, textBlock, wrap } from "./text.js";
 import type { Exclusion, Figure, RateRow, Refusal, Tier } from "./types.js";
 
+export interface RateIdentity {
+  model?: { label: string; src: string };
+  harness?: { label: string; src: string };
+}
+
 export interface RankedRatesOptions {
+  /** Vertical columns on the same full 0–100% scale; horizontal is the default. */
+  orientation?: "vertical";
+  /** Explicit display identities keyed by setup id; never inferred from labels. */
+  identities?: Readonly<Record<string, RateIdentity>>;
   /** What the rate measures, lower case: "solve rate". */
   measure: string;
   /** Preserve unranked input order instead of sorting observed rates. */
@@ -60,6 +70,9 @@ interface Layout {
 
 export function rankedRates(input: RateRow[], o: RankedRatesOptions): Figure | Refusal {
   const id = o.id ?? "ranked-rates";
+  if (o.orientation !== undefined && o.orientation !== "vertical") return { id, refused: "Unknown bar orientation." };
+  const identityProblem = identityGap(input, o.identities);
+  if (identityProblem) return { id, refused: identityProblem };
   const noun = o.nouns ?? { attempt: "attempt", setup: "setup" };
   if (input.length === 0) return { id, refused: `No ${noun.setup} has an ${noun.attempt}.` };
   if (o.order !== undefined && o.order !== "input") return { id, refused: "Unknown row order." };
@@ -181,7 +194,9 @@ export function rankedRates(input: RateRow[], o: RankedRatesOptions): Figure | R
     finding,
     lede,
     read,
-    svg: { wide: wide(rows, layout, noun, o), narrow: narrow(rows, layout, o) },
+    svg: o.orientation === "vertical"
+      ? { wide: verticalRates(rows, WIDE, layout.ranked, o), narrow: verticalRates(rows, NARROW, layout.ranked, o), interactive: true }
+      : { wide: wide(rows, layout, noun, o), narrow: narrow(rows, layout, o) },
     table: table(`${capitalize(o.measure)} by ${noun.setup}`, columns, tableRows),
     note: {
       method,

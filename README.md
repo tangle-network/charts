@@ -68,3 +68,17 @@ pnpm --filter @tangle-network/charts build     # fails when src/css.generated.ts
 ## Release
 
 Versions publish from the brand release workflow through npm trusted publishing, like `@tangle-network/brand` and `@tangle-network/ui`.
+
+### Chart-first vertical rates
+
+`rankedRates(rows, { measure: 'pass rate', orientation: 'vertical', order: 'input', identities })` draws vertical bars on a full 0–100% axis.
+`order: 'input'` keeps unranked producer order; omit it to keep the existing ordering behavior.
+Optional `identities` maps setup IDs to `model` and `harness` marks, each with an explicit `{ label, src }`.
+Images must use same-origin absolute paths or HTTPS URLs; the library never infers a provider from a model name.
+Hover or focus a column to read its actual count, eligible interval, known cost and run time.
+Zero has no positive bar, and ineligible estimates keep their count without a bar.
+
+Use `renderFigure(figure, noteNumber, { presentation: 'chart' })` for a chart-first surface.
+The plot fills its container; data, reading instructions and method stay in a closed disclosure.
+The default report presentation, underlying table and note links remain available.
+Many columns keep a readable minimum width and scroll horizontally.

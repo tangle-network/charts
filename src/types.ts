@@ -108,8 +108,8 @@ export interface Figure {
   lede: string;
   /** How to read the marks. */
   read: string;
-  /** 720 px and 358 px renders; a null narrow render means the table is the phone view. */
-  svg: { wide: string; narrow: string | null };
+  /** Wide and phone renders; vertical columns retain a readable minimum width. Null means the phone view uses the table. */
+  svg: { wide: string; narrow: string | null; interactive?: boolean };
   /** An HTML table with every number the plot shows. */
   table: string;
   note: { method: string; n: string; exclusions: string[] };

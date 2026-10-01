@@ -1,10 +1,10 @@
-export { renderFigure, renderNotes, renderRefusals } from "./block.js";
+export { type RenderFigureOptions, renderFigure, renderNotes, renderRefusals } from "./block.js";
 export { type BreakdownOptions, breakdown } from "./breakdown.js";
 export { type ComparisonIntervalsOptions, comparisonIntervals } from "./comparison-intervals.js";
 export { type CostFrontierOptions, costFrontier } from "./cost-frontier.js";
 export { chartTokensCss, figureCss } from "./css.generated.js";
 export { rateOrder } from "./format.js";
-export { type RankedRatesOptions, rankedRates } from "./ranked-rates.js";
+export { type RateIdentity, type RankedRatesOptions, rankedRates } from "./ranked-rates.js";
 export { type TaskMatrixOptions, taskMatrix } from "./task-matrix.js";
 export {
   type BreakdownInput,
