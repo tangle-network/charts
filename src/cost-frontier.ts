@@ -112,13 +112,13 @@ export function costFrontier(rows: RateRow[], o: CostFrontierOptions): Figure | 
     const cheapest = [...costed].sort((a, b) => cost(a) - cost(b))[0]!;
     finding = `${cheapest.label} has the lowest cost per pass, ${usd(cost(cheapest))}${est(cheapest)}.`;
   }
+  const lowest = Math.min(...costed.map(cost));
+  const highest = Math.max(...costed.map(cost));
   const lede =
-    `${costed.length} of ${rows.length} setups are plotted; ` +
-    (drawLine
-      ? `${front.length} sit on the producer's frontier.`
-      : front.length === 1
-        ? "1 sits on the producer's frontier."
-        : "the producer computed no frontier.");
+    (lowest === highest
+      ? `Cost per pass is ${usd(lowest)}.`
+      : `Cost per pass ranges from ${usd(lowest)} to ${usd(highest)}.`) +
+    (costed.some((row) => row.cost.basis === "estimated") ? " Costs include estimates." : "");
   const read =
     `Higher ${o.measure} and lower cost per pass are better; on the wide plot, better is up and right.` +
     (drawLine ? " Filled points sit on the frontier; the line joins them." : "") +
@@ -128,7 +128,7 @@ export function costFrontier(rows: RateRow[], o: CostFrontierOptions): Figure | 
   const bases = [...new Set(costed.map((r) => r.cost.basis))];
   const method = [
     `Cost per pass is model spend over passed attempts, ${bases.map((b) => (b === "receipts" ? "from router receipts" : b === "estimated" ? "estimated, not billed" : "from an unrecorded source")).join(" or ")}.`,
-    front.length ? "The frontier is the producer's: no setup off it is both cheaper and higher." : "The producer did not compute a frontier.",
+    front.length ? `A frontier setup has no alternative with both lower cost and higher ${o.measure}.` : "",
     intervals.length ? `Vertical lines: ${intervals.join(", ")} on the ${o.measure}.` : "",
   ]
     .filter(Boolean)

@@ -76,14 +76,17 @@ export function comparisonIntervals(
       row.interval!.lower > row.minimumEffect! &&
       (intervalGap(row.exactInterval) !== null || row.exactInterval!.lower > row.minimumEffect!),
   );
-  const finding =
-    clears.length === drawn.length
-      ? drawn.length === 1
-        ? "The comparison clears its registered minimum effect."
-        : `Each of the ${drawn.length} comparisons clears its registered minimum effect.`
-      : clears.length === 0
-        ? `No comparison clears its registered minimum effect.`
-        : `${clears.length} of ${drawn.length} comparisons clear their registered minimum effect.`;
+  const minimum = drawn[0]!.row.minimumEffect!;
+  const sameMinimum = drawn.every(({ row }) => row.minimumEffect === minimum);
+  const pluralSubject = clears.length > 1 && clears.length < drawn.length;
+  const difference = drawn.every(({ row }) => row.minimumEffect! >= 0) ? "improvement" : "difference";
+  const requirement = sameMinimum
+    ? `the required ${difference} of more than ${new Intl.NumberFormat("en-US", { maximumFractionDigits: 12 }).format(minimum * 100)} percentage points in ${o.measure}`
+    : `${pluralSubject ? "their" : "its"} required ${difference}${pluralSubject ? "s" : ""}`;
+  const subject = clears.length === drawn.length
+    ? drawn.length === 1 ? "The comparison" : "Every comparison"
+    : clears.length === 0 ? "No comparison" : `${clears.length} of ${drawn.length} comparisons`;
+  const finding = `${subject} ${pluralSubject ? "support" : "supports"} ${requirement}.`;
   const pairs = drawn.reduce((s, d) => s + d.row.pairs!, 0);
   const lede = `${drawn.length} ${plural(drawn.length, "comparison")} over ${pairs} paired ${plural(pairs, "attempt")}${refused.length ? `; ${refused.length} not drawn` : ""}.`;
   const names = [...new Set(drawn.map((d) => intervalName(d.row.interval!)))];
