@@ -309,3 +309,13 @@
 .tgc-column-tip { opacity: 0; pointer-events: none; }
 .tgc-tip-bg { fill: var(--chart-ink); }
 .tgc-tip-ink { fill: var(--chart-canvas); }
+
+.tgc-series-line { fill: none; stroke: var(--chart-accent); stroke-width: 2; stroke-linejoin: round; }
+.tgc-series-point { fill: var(--chart-accent); stroke: var(--chart-canvas); stroke-width: 1; }
+.tgc-series-hit { fill: transparent; stroke: transparent; }
+.tgc-series-observation:focus-visible { outline: none; }
+.tgc-series-observation:focus-visible .tgc-series-hit { stroke: var(--chart-ink); stroke-width: 2; }
+.tgc-series-tip { opacity: 0; pointer-events: none; }
+
+.tgc-scalar-table { min-width: 620px; }
+.tgc-scalar-table tbody th { min-width: 180px; max-width: 260px; }

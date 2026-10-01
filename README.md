@@ -82,3 +82,42 @@ Use `renderFigure(figure, noteNumber, { presentation: 'chart' })` for a chart-fi
 The plot fills its container; data, reading instructions and method stay in a closed disclosure.
 The default report presentation, underlying table and note links remain available.
 Many columns keep a readable minimum width and scroll horizontally.
+
+### Recorded scalar values and histories
+
+`metricBars` draws continuous scores or counts on an explicit zero-based axis.
+It preserves input order and draws no rank.
+A known zero has no positive bar; a null value prints `not measured`.
+Observation counts use the caller's explicit unit.
+
+```ts
+import { isRefusal, metricBars, renderFigure, renderRefusals } from "@tangle-network/charts";
+
+const figure = metricBars([
+  { id: "a", label: "Setup A", value: 0, observations: { count: 13, label: "tasks" } },
+  { id: "b", label: "Setup B", value: null, observations: { count: 0, label: "tasks" } },
+], { measure: "mean composite score", unit: "score", domain: [0, 1] });
+const html = isRefusal(figure) ? renderRefusals([figure]) : renderFigure(figure, 1, { presentation: "chart" });
+```
+
+`timeSeries` draws recorded scalar values at strictly increasing, finite positions.
+The caller includes every configured position, with null for a missing observation.
+Null breaks the line; the library never interpolates a missing value.
+
+```ts
+import { isRefusal, renderFigure, renderRefusals, timeSeries } from "@tangle-network/charts";
+
+const figure = timeSeries([{ id: "a", label: "Setup A", points: [
+  { x: 1, y: 0, observations: { count: 13, label: "tasks" } },
+  { x: 2, y: null, observations: { count: 0, label: "tasks" } },
+  { x: 3, y: 0.5, observations: { count: 5, label: "tasks" } },
+] }], { x: { label: "shot", domain: [1, 3] }, y: { label: "mean composite score", unit: "score", domain: [0, 1] } });
+const html = isRefusal(figure) ? renderRefusals([figure]) : renderFigure(figure, 1, { presentation: "chart" });
+```
+
+Both examples show behavior controls, not benchmark results.
+Both functions refuse out-of-domain values, invalid intervals and measured values with zero observations.
+Intervals arrive with their recorded bounds, confidence level and method; neither function computes them.
+Optional annotations carry independent recorded facts, such as all checks passing.
+Hover or focus a mark for its value, observation count, interval and annotation.
+The data table retains missing positions and full labels.

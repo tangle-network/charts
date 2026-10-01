@@ -4,7 +4,8 @@ export { type ComparisonIntervalsOptions, comparisonIntervals } from "./comparis
 export { type CostFrontierOptions, costFrontier } from "./cost-frontier.js";
 export { chartTokensCss, figureCss } from "./css.generated.js";
 export { rateOrder } from "./format.js";
-export { type RateIdentity, type RankedRatesOptions, rankedRates } from "./ranked-rates.js";
+export { type RateIdentity } from "./identity.js";
+export { type RankedRatesOptions, rankedRates } from "./ranked-rates.js";
 export { type TaskMatrixOptions, taskMatrix } from "./task-matrix.js";
 export {
   type BreakdownInput,
@@ -23,3 +24,7 @@ export {
   type Tier,
   type TierCounts,
 } from "./types.js";
+
+export { metricBars, type MetricBarsOptions, type MetricRow } from "./metric-bars.js";
+export { timeSeries, type TimePoint, type TimeSeriesOptions, type TimeSeriesRow } from "./time-series.js";
+export { type Observations } from "./scalar.js";

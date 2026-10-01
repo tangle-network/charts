@@ -32,16 +32,12 @@ import {
   tierSummary,
   tierTotal,
 } from "./format.js";
-import { verticalRates, identityGap } from "./vertical-rates.js";
+import { verticalRates } from "./vertical-rates.js";
+import { identityGap, type RateIdentity } from "./identity.js";
 import { hbar, line, NARROW, rect, svgRoot, text, titled, WIDE } from "./svg.js";
 import { type Column, table } from "./table.js";
 import { capitalize, fitLines, plural, textBlock, wrap } from "./text.js";
 import type { Exclusion, Figure, RateRow, Refusal, Tier } from "./types.js";
-
-export interface RateIdentity {
-  model?: { label: string; src: string };
-  harness?: { label: string; src: string };
-}
 
 export interface RankedRatesOptions {
   /** Vertical columns on the same full 0–100% scale; horizontal is the default. */
