@@ -67,6 +67,13 @@ describe("rate figure order", () => {
     expect(result.table).toContain(">Rank<");
   });
 
+  it("refuses an unknown order arriving from serialized caller options", () => {
+    const options = { measure: "solve rate", ...JSON.parse('{"order":"score-descending"}') };
+    expect(rankedRates([row("Measured", 9)], options)).toEqual({
+      id: "ranked-rates", refused: "Unknown row order.",
+    });
+  });
+
   it("refuses input order for ranked rows rather than concealing their rank", () => {
     const result = rankedRates([row("Ranked", 9, { rank: 1 })], { measure: "solve rate", order: "input" });
     expect(result).toEqual({ id: "ranked-rates", refused: "Input order requires unranked rows." });
