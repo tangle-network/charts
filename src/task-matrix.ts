@@ -62,9 +62,18 @@ function tilesOf(cell: MatrixCell): TileKind[] {
     return out;
   }
   if (cell.solved !== null) {
-    return [...Array(cell.solved).fill("solved"), ...Array(attempts - cell.solved).fill("open")];
+    return [
+      ...Array(cell.solved).fill("solved"),
+      ...Array(attempts - cell.solved - (cell.flagged ?? 0) - (cell.unmeasured ?? 0)).fill("open"),
+      ...Array(cell.flagged ?? 0).fill("flagged"),
+      ...Array(cell.unmeasured ?? 0).fill("unmeasured"),
+    ];
   }
-  return Array(attempts).fill("ungraded");
+  return [
+    ...Array(attempts - (cell.flagged ?? 0) - (cell.unmeasured ?? 0)).fill("ungraded"),
+    ...Array(cell.flagged ?? 0).fill("flagged"),
+    ...Array(cell.unmeasured ?? 0).fill("unmeasured"),
+  ];
 }
 
 function tile(kind: TileKind, x: number, y: number): string {
@@ -94,7 +103,9 @@ function cellText(cell: MatrixCell | undefined, means: boolean): string {
   if (cell.attempts === 0) return "none counted";
   if (cell.solved !== null) return kn(cell.solved, cell.attempts!);
   if (cell.tiers) return tierSummary(cell.tiers, cell.unmeasured, cell.flagged);
-  return `${cell.attempts}`;
+  return tierSummary(null, cell.unmeasured, cell.flagged)
+    ? `${cell.attempts} · ${tierSummary(null, cell.unmeasured, cell.flagged)}`
+    : `${cell.attempts}`;
 }
 
 function describe(task: string, setup: Setup, cell: MatrixCell | undefined, means: boolean): string {
@@ -147,7 +158,7 @@ export function taskMatrix(
     }
     if (!means && cell.attempts !== null) {
       const graded = tierTotal(cell.tiers) + (cell.flagged ?? 0) + (cell.unmeasured ?? 0);
-      if (graded > cell.attempts || (cell.solved !== null && cell.solved > cell.attempts)) {
+      if (graded > cell.attempts || (cell.solved !== null && cell.solved + (cell.flagged ?? 0) + (cell.unmeasured ?? 0) > cell.attempts)) {
         return { id, refused: `${cell.task} × ${cell.setup}: grades or passes exceed its ${cell.attempts} attempts.` };
       }
       if (o.passTier && cell.tiers && cell.solved !== null) {
@@ -229,7 +240,7 @@ export function taskMatrix(
     ? `Each cell is one ${noun.setup}'s mean on one ${noun.task}, printed and drawn as a bar on a shared scale; · marks a pair never scored.`
     : tiered
       ? `One tile per ${noun.attempt}, best first: tiles fill by App Grade tier and an outline is F${o.passTier ? `; ${o.passTier} or better passes` : ""}. Tile order is not run order.`
-      : `One tile per ${noun.attempt}: a filled tile passed and an outline did not. Tile order is not run order.`;
+      : `One tile per ${noun.attempt}: a filled tile passed and a plain outline did not. Dashed, dotted, and struck tiles keep their separate observation states. Tile order is not run order.`;
 
   const method = means
     ? `Each cell is the producer's mean score for one ${noun.setup} on one ${noun.task}.`
@@ -253,8 +264,9 @@ export function taskMatrix(
         const cell = at(task, s);
         const main = cellText(cell, means);
         const extra =
-          !means && cell && cell.solved !== null && cell.tiers ? ` · ${tierSummary(cell.tiers, cell.unmeasured, cell.flagged)}` : "";
-        const cost = cell && cell.costUsd !== null ? ` · ${cell.costUsd > 0 ? usd(cell.costUsd) : "cost unknown"}` : "";
+          !means && cell && cell.solved !== null && (cell.tiers || cell.unmeasured || cell.flagged)
+            ? ` · ${tierSummary(cell.tiers, cell.unmeasured, cell.flagged)}` : "";
+        const cost = cell && cell.costUsd !== null ? ` · ${usd(cell.costUsd)}` : "";
         return main === "·" ? "not run" : `${main}${extra}${cost}`;
       }),
     ]),
