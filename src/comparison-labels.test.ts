@@ -16,7 +16,8 @@ describe("comparison difference labels", () => {
       expect(content).toContain("Terra − Luna");
       expect(content).not.toContain("Terra over Luna");
     }
-    expect(figure.finding).toBe("No step clears its registered minimum effect.");
+    expect(figure.finding).toBe("No comparison clears its registered minimum effect.");
+    expect(figure.read).toContain("A comparison is supported when");
     expect(figure.table).toContain("26");
     expect(figure.table).toContain("40");
     expect(retained.interval).toEqual({ lower: -0.153846, upper: 0.076923, level: 0.95, method: "task-cluster-bootstrap" });
@@ -26,8 +27,17 @@ describe("comparison difference labels", () => {
     const supported = { ...retained, interval: { ...retained.interval!, lower: 0.6, upper: 0.8 }, exactInterval: { ...retained.exactInterval!, lower: 0.55, upper: 0.85 } };
     const figure = comparisonIntervals([supported], setups, { measure: "solve rate" });
     if (isRefusal(figure)) throw new Error(figure.refused);
-    expect(figure.finding).toBe("The step clears its registered minimum effect.");
+    expect(figure.finding).toBe("The comparison clears its registered minimum effect.");
     expect(figure.table).toContain("Terra − Luna");
+  });
+  it("names comparisons when only some registered effects are supported", () => {
+    const supported = { ...retained, interval: { ...retained.interval!, lower: 0.6, upper: 0.8 }, exactInterval: { ...retained.exactInterval!, lower: 0.55, upper: 0.85 } };
+    const figure = comparisonIntervals([retained, supported], setups, { measure: "solve rate" });
+    if (isRefusal(figure)) throw new Error(figure.refused);
+    expect(figure.finding).toBe("1 of 2 comparisons clear their registered minimum effect.");
+    const all = comparisonIntervals([supported, supported], setups, { measure: "solve rate" });
+    if (isRefusal(all)) throw new Error(all.refused);
+    expect(all.finding).toBe("Each of the 2 comparisons clears its registered minimum effect.");
   });
   it("keeps the pair count below long comparison labels on a phone", () => {
     const longLabels = [

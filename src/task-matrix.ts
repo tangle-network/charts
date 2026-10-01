@@ -200,7 +200,7 @@ export function taskMatrix(
     const leaders = perSetup.filter((x) => x.k === most).map((x) => x.s.label);
     const rest = perSetup.filter((x) => x.k !== most);
     if (setups.length > 1 && everywhere > 0) {
-      finding = `${everywhere} of ${tasksN} passed at least once for every ${noun.setup}.`;
+      finding = `Every ${noun.setup} passed at least once on ${everywhere} shared ${plural(everywhere, noun.task)} out of ${tasks.length}.`;
     } else if (most === 0) {
       finding = `No ${noun.task} passed for any ${noun.setup}.`;
     } else {

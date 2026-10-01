@@ -70,7 +70,7 @@ export function comparisonIntervals(
     };
   }
 
-  // A step is backed only when every interval drawn for it clears the minimum effect.
+  // A comparison is supported only when every interval drawn for it clears the minimum effect.
   const clears = drawn.filter(
     ({ row }) =>
       row.interval!.lower > row.minimumEffect! &&
@@ -79,11 +79,11 @@ export function comparisonIntervals(
   const finding =
     clears.length === drawn.length
       ? drawn.length === 1
-        ? "The step clears its registered minimum effect."
-        : `Each of the ${drawn.length} steps clears its registered minimum effect.`
+        ? "The comparison clears its registered minimum effect."
+        : `Each of the ${drawn.length} comparisons clears its registered minimum effect.`
       : clears.length === 0
-        ? `No step clears its registered minimum effect.`
-        : `${clears.length} of ${drawn.length} steps clear their registered minimum effect.`;
+        ? `No comparison clears its registered minimum effect.`
+        : `${clears.length} of ${drawn.length} comparisons clear their registered minimum effect.`;
   const pairs = drawn.reduce((s, d) => s + d.row.pairs!, 0);
   const lede = `${drawn.length} ${plural(drawn.length, "comparison")} over ${pairs} paired ${plural(pairs, "attempt")}${refused.length ? `; ${refused.length} not drawn` : ""}.`;
   const names = [...new Set(drawn.map((d) => intervalName(d.row.interval!)))];
@@ -93,7 +93,7 @@ export function comparisonIntervals(
   const read =
     `Each bar is the ${names.join(" or ")} interval on the difference in ${o.measure}` +
     (exactNames.length ? `; the thin bar under it is the ${exactNames.join(" or ")} interval` : "") +
-    ". A step is backed when every bar lies wholly right of the dashed minimum effect.";
+    ". A comparison is supported when every bar lies wholly right of the dashed minimum effect.";
 
   const columns: Column[] = [
     { label: "Comparison" },

@@ -14,6 +14,23 @@ const cell = (overrides: Partial<MatrixCell> = {}): MatrixCell => ({
 });
 
 describe("task matrix observation states", () => {
+  it("distinguishes shared passed tasks from each setup's separate successes", () => {
+    const tasks = ["shared", "left-only", "right-only"];
+    const agents = [{ id: "left", label: "Left", rank: null }, { id: "right", label: "Right", rank: null }];
+    const cells = tasks.flatMap((task) => agents.map((agent) => cell({
+      task, setup: agent.id,
+      solved: task === "shared" || task === `${agent.id}-only` ? 2 : 0,
+    })));
+    const figure = taskMatrix(tasks, agents, cells);
+    if (isRefusal(figure)) throw new Error(figure.refused);
+    expect(figure.finding).toBe("Every setup passed at least once on 1 shared task out of 3.");
+    expect(figure.table.match(/2\/3/g)).toHaveLength(4);
+    expect(figure.table.match(/0\/3/g)).toHaveLength(2);
+    const custom = taskMatrix(tasks, agents, cells, { nouns: { task: "case", setup: "agent" } });
+    if (isRefusal(custom)) throw new Error(custom.refused);
+    expect(custom.finding).toBe("Every agent passed at least once on 1 shared case out of 3.");
+  });
+
   it("preserves unmeasured attempts in the plot, table, and method without calling them failures", () => {
     const figure = taskMatrix(["task"], setups, [cell({ unmeasured: 2 })]);
     expect(isRefusal(figure)).toBe(false);
