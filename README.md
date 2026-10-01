@@ -129,3 +129,8 @@ The complete data table remains available to assistive technology.
 This presentation has no visible finding, method text, disclosure or table control.
 Vertical plot axes use larger tick labels.
 The existing report and chart presentations keep their output and paper behavior.
+
+Plot presentation uses labels of at least 14px and numeric axes of 15px.
+Dedicated phone SVGs retain their intended width inside a keyboard-accessible scroll region.
+Wide plots reserve side gutters so enlarged labels remain visible.
+These typography rules do not apply to report or chart presentation.

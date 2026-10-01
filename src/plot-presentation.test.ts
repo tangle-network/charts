@@ -7,6 +7,8 @@ it("plot presentation renders existing marks and complete accessible data withou
   const html = renderFigure(figure, 1, { presentation: "plot" });
   expect(html).toContain(figure.svg.wide);
   expect(html).toContain(figure.svg.narrow);
+  expect(html).toContain('class="tgc-narrow tgc-phone-plot" role="region"');
+  expect(html).toContain('tabindex="0" style="--tgc-phone-width:358px"');
   expect(html).toContain(`<div class="tgc-accessible-data">${figure.table}</div>`);
   expect(html).toContain('role="group"');
   expect(html).not.toMatch(/<details|<summary|<p|tgc-finding|tgc-lede|tgc-read|href="#note/);

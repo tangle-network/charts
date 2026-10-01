@@ -8,7 +8,7 @@
  */
 
 import { esc } from "./text.js";
-import { WIDE } from "./svg.js";
+import { NARROW, WIDE } from "./svg.js";
 import type { Figure, Refusal } from "./types.js";
 
 const slug = (id: string) => id.replace(/[^a-z0-9-]+/gi, "-").toLowerCase();
@@ -27,7 +27,7 @@ export function renderFigure(f: Figure, noteNumber: number, options: RenderFigur
     : `<div class="tgc-narrow tgc-narrow-table">${f.table}</div>`;
   if (options.presentation === "plot") {
     const phonePlot = f.svg.narrow
-      ? `<div class="tgc-narrow">${f.svg.narrow}</div>`
+      ? `<div class="tgc-narrow tgc-phone-plot" role="region" aria-label="${esc(f.finding)} chart" tabindex="0" style="--tgc-phone-width:${NARROW}px">${f.svg.narrow}</div>`
       : `<div class="tgc-narrow tgc-wide-fallback" role="region" aria-label="${esc(f.finding)} chart" tabindex="0" style="--tgc-fallback-width:${WIDE}px">${f.svg.wide}</div>`;
     return [
       `<figure class="tgc-figure tgc-figure-chart tgc-figure-plot" id="fig-${id}" aria-label="${esc(f.finding)}">`,
