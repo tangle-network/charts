@@ -1,5 +1,11 @@
 # @tangle-network/charts
 
+## 0.1.9
+
+### Patch Changes
+
+- ec66e0e: Show the cost-per-pass range, identify estimated costs, and explain the required improvement in comparison findings.
+
 ## 0.1.8
 
 ### Patch Changes
