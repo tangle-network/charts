@@ -1,5 +1,11 @@
 # @tangle-network/charts
 
+## 0.1.13
+
+### Patch Changes
+
+- c0ac043: Make plot presentation labels at least 14px and numeric axes 15px, retain readable phone SVG dimensions with keyboard scrolling, and reserve wide-chart gutters for enlarged labels. Existing report and chart presentation outputs remain unchanged.
+
 ## 0.1.12
 
 ### Patch Changes
