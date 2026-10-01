@@ -18,7 +18,8 @@ A figure function returns a `Refusal` in place of a figure it cannot draw honest
 The producer's `estimate` controls rate marks: `descriptive` draws a rate bar and may show a named Wilson score interval when that estimate meets the producer's unit threshold.
 Task-clustered bootstrap intervals require a `bootstrap` estimate.
 Intervals without support are marked as not drawn in the data table and note.
-A missing, zero, or unproven cost prints `unknown`; zero passes print `no pass`.
+Cost-per-pass figures print `unknown` for missing, zero, or unproven cost; zero passes print `no pass`.
+A matrix preserves an observed zero cost as $0 and omits a null cost.
 Rank numbers require every row to carry both a rank and a `bootstrap` estimate.
 Malformed rates, intervals, matrix counts, and breakdown counts return a refusal instead of a misleading mark.
 Unmeasured and flagged matrix attempts keep distinct marks and table counts, even without tier grades.
