@@ -8,22 +8,33 @@
  */
 
 import { esc } from "./text.js";
+import { WIDE } from "./svg.js";
 import type { Figure, Refusal } from "./types.js";
 
 const slug = (id: string) => id.replace(/[^a-z0-9-]+/gi, "-").toLowerCase();
 
 export interface RenderFigureOptions {
-  /** Plot first, with interpretation and source details in a closed disclosure. */
-  presentation?: "chart";
+  /** Chart uses a closed data disclosure; plot keeps only the SVG and accessible data. */
+  presentation?: "chart" | "plot";
 }
 
 export function renderFigure(f: Figure, noteNumber: number, options: RenderFigureOptions = {}): string {
-  if (options.presentation !== undefined && options.presentation !== "chart") throw new Error("renderFigure: unknown presentation.");
+  if (options.presentation !== undefined && options.presentation !== "chart" && options.presentation !== "plot") throw new Error("renderFigure: unknown presentation.");
   const id = slug(f.id);
   const plotLabel = `${f.finding} ${f.lede}`;
   const narrow = f.svg.narrow
     ? `<div class="tgc-narrow">${f.svg.narrow}</div>`
     : `<div class="tgc-narrow tgc-narrow-table">${f.table}</div>`;
+  if (options.presentation === "plot") {
+    const phonePlot = f.svg.narrow
+      ? `<div class="tgc-narrow">${f.svg.narrow}</div>`
+      : `<div class="tgc-narrow tgc-wide-fallback" role="region" aria-label="${esc(f.finding)} chart" tabindex="0" style="--tgc-fallback-width:${WIDE}px">${f.svg.wide}</div>`;
+    return [
+      `<figure class="tgc-figure tgc-figure-chart tgc-figure-plot" id="fig-${id}" aria-label="${esc(f.finding)}">`,
+      `<div class="tgc-plot" role="${f.svg.interactive ? "group" : "img"}" aria-label="${esc(plotLabel)}"><div class="tgc-wide">${f.svg.wide}</div>${phonePlot}</div>`,
+      `<div class="tgc-accessible-data">${f.table}</div></figure>`,
+    ].join("");
+  }
   if (options.presentation === "chart") {
     return [
       `<figure class="tgc-figure tgc-figure-chart" id="fig-${id}" aria-label="${esc(f.finding)}">`,

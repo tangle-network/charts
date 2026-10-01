@@ -121,3 +121,11 @@ Intervals arrive with their recorded bounds, confidence level and method; neithe
 Optional annotations carry independent recorded facts, such as all checks passing.
 Hover or focus a mark for its value, observation count, interval and annotation.
 The data table retains missing positions and full labels.
+
+### Plots without visible report controls
+
+Use `renderFigure(figure, noteNumber, { presentation: "plot" })` to show the responsive plot alone.
+The complete data table remains available to assistive technology.
+This presentation has no visible finding, method text, disclosure or table control.
+Vertical plot axes use larger tick labels.
+The existing report and chart presentations keep their output and paper behavior.
