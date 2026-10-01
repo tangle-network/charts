@@ -1,5 +1,11 @@
 # @tangle-network/charts
 
+## 0.1.6
+
+### Patch Changes
+
+- 3b323a4: Label rate interval counts as attempts instead of implying an independent sample size.
+
 ## 0.1.5
 
 ### Patch Changes
