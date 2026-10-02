@@ -2,7 +2,7 @@
 import { domainGap, observationLabel, type Observations, scalarGap, scalarIntervalLabel, scalarLabel } from "./scalar.js";
 import { circle, line, NARROW, polyline, rect, text, WIDE } from "./svg.js";
 import { table } from "./table.js";
-import { capitalize, esc, textBlock, wrap } from "./text.js";
+import { capitalize, esc, textBlock, textWidth, wrap } from "./text.js";
 import type { Figure, Interval, Refusal } from "./types.js";
 
 export interface TimePoint {
@@ -60,13 +60,15 @@ export function timeSeries(rows: TimeSeriesRow[], o: TimeSeriesOptions): Figure 
 }
 
 function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel: (x: number) => string, yLabel: (y: number) => string, facts: (row: TimeSeriesRow, point: TimePoint) => string[]): string {
-  const left = 64, right = width - 24, top = 36, bottom = 260;
+  const ticks = Array.from({ length: 5 }, (_, i) => o.y.domain[0] + i / 4 * (o.y.domain[1] - o.y.domain[0]));
+  // Unit-bearing labels need their measured width, including monospace fallback.
+  const left = Math.max(64, ...ticks.map((value) => Math.ceil(textWidth(yLabel(value), 12, "mono")) + 20));
+  const right = width - 24, top = 36, bottom = 260;
   const px = (x: number) => left + (x - o.x.domain[0]) / (o.x.domain[1] - o.x.domain[0]) * (right - left);
   const py = (y: number) => bottom - (y - o.y.domain[0]) / (o.y.domain[1] - o.y.domain[0]) * (bottom - top);
   let marks = text(left, 18, o.y.label, { cls: "tgc-ink-muted" });
-  for (let i = 0; i <= 4; i++) {
-    const y = o.y.domain[0] + i / 4 * (o.y.domain[1] - o.y.domain[0]);
-    marks += line(left, py(y), right, py(y), i === 0 ? "tgc-axis" : "tgc-gridline") + text(left - 8, py(y) + 4, yLabel(y), { anchor: "end", cls: "tgc-ink-muted tgc-num", size: 11 });
+  for (const [i, y] of ticks.entries()) {
+    marks += line(left, py(y), right, py(y), i === 0 ? "tgc-axis" : "tgc-gridline") + text(left - 8, py(y) + 4, yLabel(y), { anchor: "end", cls: "tgc-ink-muted tgc-num", size: 12 });
   }
   const xs = [...new Set(rows.flatMap((row) => row.points.map((point) => point.x)))].sort((a, b) => a - b);
   const tickStep = Math.max(1, Math.ceil(xs.length / (width < 720 ? 5 : 10)));

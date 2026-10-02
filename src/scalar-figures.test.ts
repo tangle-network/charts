@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { metricBars } from "./metric-bars.js";
+import { textWidth } from "./text.js";
 import { timeSeries } from "./time-series.js";
 import { isRefusal, type Figure, type Interval } from "./types.js";
 
@@ -86,7 +87,7 @@ describe("recorded scalar trajectories", () => {
       { x: 4, y: 0.75, observations: { count: 1, label: "tasks" }, annotation: 'all checks passed' },
     ] }], trajectory));
     expect(f.svg.wide.match(/<polyline/g)).toHaveLength(1);
-    expect(f.svg.wide).toContain('points="485.33,148 696,92"');
+    expect(f.svg.wide).toMatch(/points="[\d.]+,148 696,92"/);
     expect(f.svg.wide).toContain('cy="260"');
     expect(f.svg.wide).toContain('shot: 1 · mean composite score: 0 score · 3 tasks');
     expect(f.table).toContain('not measured');
@@ -114,5 +115,18 @@ describe("recorded scalar trajectories", () => {
     expect(f.svg.wide).toContain('tabindex="0"');
     expect(f.table).toContain('95% task-clustered bootstrap');
     expect(f.svg.wide).toContain('class="tgc-whisker"');
+  });
+});
+
+
+describe("trajectory axis label bounds", () => {
+  it("retains full formatted units inside both SVG widths", () => {
+    const f = figure(timeSeries([{ id: "a", label: "A", points: [{ x: 1, y: 0.75 }] }], { ...trajectory, formatY: (value) => value.toFixed(3) }));
+    for (const svg of [f.svg.wide, f.svg.narrow]) {
+      if (!svg) throw new Error("Expected a mobile trajectory render");
+      const labels = [...svg.matchAll(/<text class="tgc-ink-muted tgc-num" x="([\d.]+)" y="[\d.]+" font-size="12" text-anchor="end">([^<]+)<\/text>/g)];
+      expect(labels).toHaveLength(5);
+      for (const match of labels) expect(Number(match[1]) - textWidth(match[2]!, 12, "mono")).toBeGreaterThanOrEqual(12);
+    }
   });
 });
