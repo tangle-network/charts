@@ -1,5 +1,16 @@
 # @tangle-network/charts
 
+## 0.2.0
+
+### Minor Changes
+
+- 9e54159: Add the isolated, optional React entrypoint with the Agent App extent sparkline and the stabilized Platform stacked-bar renderer. Preserve the dependency-free static root and figure.css; leave application data mapping, aggregation, currency and portal tooltips outside Charts.
+
+### Patch Changes
+
+- a8e787f: Size trajectory axis gutters from their formatted labels so units remain visible on phones.
+- 4fc2643: Refuse formatted trajectory labels that leave no room for a valid phone x axis.
+
 ## 0.1.13
 
 ### Patch Changes
