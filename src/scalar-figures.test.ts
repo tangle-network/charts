@@ -141,3 +141,12 @@ it("refuses formatted labels that would reverse the phone x axis", () => {
   if (!isRefusal(result)) throw new Error("Expected the unusable layout to be refused");
   expect(result.refused).toContain("Use a shorter formatter or unit");
 });
+
+
+it("refuses labels that leave a positive plot but a negative legend width", () => {
+  const result = timeSeries([{ id: "a", label: "Full recorded series identity", points: [{ x: 1, y: 0.25 }, { x: 2, y: 0.75 }] }], {
+    ...trajectory,
+    formatY: () => "x".repeat(32),
+  });
+  expect(isRefusal(result)).toBe(true);
+});

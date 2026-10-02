@@ -46,7 +46,8 @@ export function timeSeries(rows: TimeSeriesRow[], o: TimeSeriesOptions): Figure 
   const xLabel = (x: number) => o.formatX ? o.formatX(x) : String(x);
   const yLabel = (y: number) => scalarLabel(y, o.y.unit, o.formatY);
   const ticks = Array.from({ length: 5 }, (_, i) => o.y.domain[0] + i / 4 * (o.y.domain[1] - o.y.domain[0]));
-  if (axisGutter(ticks, yLabel) >= NARROW - 48) return { id, refused: "Formatted y-axis labels leave no room for the phone chart. Use a shorter formatter or unit." };
+  // Keep 32px for the legend stroke/offset and at least 32px for its text.
+  if (axisGutter(ticks, yLabel) >= NARROW - 24 - 64) return { id, refused: "Formatted y-axis labels leave no room for the phone chart. Use a shorter formatter or unit." };
   const flat = rows.flatMap((row) => row.points.map((point) => ({ row, point })));
   const measured = flat.filter(({ point }) => point.y !== null);
   const facts = (row: TimeSeriesRow, point: TimePoint) => [row.label, `${o.x.label}: ${xLabel(point.x)}`, `${o.y.label}: ${point.y === null ? "not measured" : yLabel(point.y)}`, observationLabel(point.observations), ...(point.interval ? [`Interval: ${scalarIntervalLabel(point.interval, o.y.unit, o.formatY)}`] : []), ...(point.annotation ? [point.annotation] : [])];
