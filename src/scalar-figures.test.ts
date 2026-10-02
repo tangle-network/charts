@@ -130,3 +130,14 @@ describe("trajectory axis label bounds", () => {
     }
   });
 });
+
+
+it("refuses formatted labels that would reverse the phone x axis", () => {
+  const result = timeSeries([{ id: "a", label: "A", points: [{ x: 1, y: 0.25 }, { x: 2, y: 0.75 }] }], {
+    ...trajectory,
+    formatY: (value) => `${value.toFixed(3)} requests per second per active worker shard`,
+  });
+  expect(isRefusal(result)).toBe(true);
+  if (!isRefusal(result)) throw new Error("Expected the unusable layout to be refused");
+  expect(result.refused).toContain("Use a shorter formatter or unit");
+});
