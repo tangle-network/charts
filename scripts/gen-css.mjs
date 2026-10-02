@@ -22,6 +22,7 @@ const OUT = path.join(root, 'src', 'css.generated.ts')
 const css = fs.readFileSync(TOKENS, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
 const blocks = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(([, sel, body]) => ({
   selectors: sel.split(',').map((s) => s.trim()),
+  colorScheme: body.match(/(?:^|;)\s*color-scheme\s*:\s*(light|dark)\s*;/)?.[1],
   decls: new Map([...body.matchAll(/(--[a-z0-9-]+)\s*:\s*([^;]+);/g)].map(([, k, v]) => [k, v.trim()])),
 }))
 const find = (label, test) => {
@@ -29,8 +30,8 @@ const find = (label, test) => {
   if (!block) throw new Error(`gen-css: no ${label} block in ${TOKENS}`)
   return block.decls
 }
-const darkSpine = find('dark spine', (b) => b.selectors.includes('.dark') && b.decls.has('--text-primary'))
-const lightSpine = find('light spine', (b) => b.selectors.includes('.light') && b.decls.has('--text-primary'))
+const darkSpine = find('dark spine', (b) => b.selectors.includes('.dark') && b.colorScheme === 'dark' && b.decls.has('--text-primary'))
+const lightSpine = find('light spine', (b) => b.selectors.includes('.light') && b.colorScheme === 'light' && b.decls.has('--text-primary'))
 const chartBase = find('chart', (b) => b.decls.has('--chart-ink'))
 const chartLight = find('light chart', (b) => b.selectors.includes('.light') && b.decls.has('--chart-accent') && !b.decls.has('--chart-ink'))
 
