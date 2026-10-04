@@ -1,5 +1,11 @@
 # @tangle-network/charts
 
+## 0.3.0
+
+### Minor Changes
+
+- e019ec2: Extract Intelligence's waterfall timing, axis and row primitives for use by trace viewers and recorded runs. Preserve timestamp offsets, clipped-span markers, and caller-owned hierarchy, selection and failure semantics.
+
 ## 0.2.0
 
 ### Minor Changes
