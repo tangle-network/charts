@@ -126,20 +126,27 @@ it("packs an isolated static root and optional React entrypoint", () => {
     symlinkSync(dirname(require.resolve("@types/react/package.json")), join(consumer, "node_modules/@types/react"), "dir");
     writeFileSync(join(consumer, "react.mjs"), `
       import assert from "node:assert/strict";
-      import { Sparkline, StackedBarChart, sparklineGeometry } from "@tangle-network/charts/react";
+      import { Sparkline, StackedBarChart, sparklineGeometry, WaterfallHeader, WaterfallRow,
+        waterfallSpanGeometry } from "@tangle-network/charts/react";
       assert.equal(typeof Sparkline, "function"); assert.equal(typeof StackedBarChart, "function");
+      assert.equal(typeof WaterfallHeader, "function"); assert.equal(typeof WaterfallRow, "function");
+      assert.equal(waterfallSpanGeometry(20, 30, { startMs: 0, endMs: 100 }).offsetPct, 20);
       assert.equal(sparklineGeometry([1, null, 3]).gaps, 1);
       assert.equal(typeof document, "undefined");
     `);
     execFileSync(process.execPath, ["react.mjs"], { cwd: consumer, stdio: "pipe", timeout: 30_000 });
     writeFileSync(join(consumer, "react.tsx"), `
-      import { Sparkline, StackedBarChart, type StackedBarBucket } from "@tangle-network/charts/react";
+      import { Sparkline, StackedBarChart, WaterfallHeader, WaterfallRow,
+        type StackedBarBucket, type WaterfallWindow } from "@tangle-network/charts/react";
       const buckets: StackedBarBucket[] = [{ id: "b", label: "B", total: 0, segments: [{ seriesId: "s", value: 0 }] }];
       const glyph = <Sparkline values={[1, null, -1]} label="Delta" />;
       const chart = <StackedBarChart label="Units" buckets={buckets} maxValue={1}
         series={[{ id: "s", label: "S", color: "currentColor" }]} formatValue={String}
         selectedBucketId={null} onSelectionChange={() => {}} />;
-      void glyph; void chart;
+      const window: WaterfallWindow = { startMs: 0, endMs: 100 };
+      const axis = <WaterfallHeader windowMs={100} />;
+      const row = <WaterfallRow label="Recorded tool" startMs={20} endMs={30} window={window} />;
+      void glyph; void chart; void axis; void row;
     `);
     writeFileSync(join(consumer, "tsconfig.json"), JSON.stringify({
       ...staticConfig, files: ["react.tsx"], compilerOptions: {

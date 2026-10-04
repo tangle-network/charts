@@ -1,6 +1,17 @@
 # @tangle-network/charts
 
-Benchmark figures as static SVG and HTML tables.
+Benchmark figures as static SVG and HTML tables, plus optional React timing primitives.
+
+`WaterfallHeader`, `WaterfallTimeAxis`, `WaterfallBar` and `WaterfallRow` from
+`@tangle-network/charts/react` own the timing presentation extracted from
+Intelligence's trace viewer. Supply actual span start/end milliseconds and the
+same `{ startMs, endMs }` window to every row. Hierarchy, selection, attribution,
+formatting and failure interpretation stay with the consumer. The original
+minimum/clipped marker remains visible; its tooltip reports the actual duration.
+Set `--waterfall-timing-width`, `--waterfall-duration-width` and the existing
+`--intel-waterfall-*` colors for the consumer's layout and theme. No stylesheet,
+router or React DOM dependency is required.
+
 Five figures cover the decisions a benchmark reader makes:
 
 | Figure | Question |

@@ -13,3 +13,11 @@ export { StackedBarChart } from "./stacked-bar-chart.js";
 export type {
   StackedBarChartProps, StackedBarBucket, StackedBarSegment, StackedBarSeries,
 } from "./stacked-bar-chart.js";
+export {
+  WaterfallTimeAxis, WaterfallBar, WaterfallRow, WaterfallHeader,
+  waterfallSpanGeometry, waterfallTicks, formatWaterfallDuration,
+} from "./waterfall.js";
+export type {
+  WaterfallWindow, WaterfallSpanGeometry, WaterfallTimeAxisProps,
+  WaterfallBarProps, WaterfallRowProps, WaterfallHeaderProps,
+} from "./waterfall.js";
