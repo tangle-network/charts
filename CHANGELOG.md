@@ -1,5 +1,11 @@
 # @tangle-network/charts
 
+## 0.4.0
+
+### Minor Changes
+
+- 74c372e: Add reusable React renderers and CSS for live operational charts, with caller-owned labels, colors, links, and actions.
+
 ## 0.3.1
 
 ### Patch Changes
