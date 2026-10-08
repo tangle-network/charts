@@ -2,6 +2,8 @@
 
 Benchmark figures as static SVG and HTML tables, plus optional React timing primitives.
 
+The React entry also exports `DayBars`, `HBars`, `Histogram`, `Lines`, `Meter`, `Spark`, and `Gantt` for live operational pages. Import `@tangle-network/charts/react/live.css` for their layout and set `--chart-live-*` theme tokens on an ancestor. Data, state colors, destination links, labels, and interpretation remain with the caller. `DayBars` accepts an `onOpen(index)` action with keyboard activation.
+
 `WaterfallHeader`, `WaterfallTimeAxis`, `WaterfallBar` and `WaterfallRow` from
 `@tangle-network/charts/react` own the timing presentation extracted from
 Intelligence's trace viewer. Supply actual span start/end milliseconds and the

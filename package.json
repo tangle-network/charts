@@ -14,7 +14,8 @@
   },
   "homepage": "https://github.com/tangle-network/brand/tree/main/packages/charts",
   "sideEffects": [
-    "./dist/figure.css"
+    "./dist/figure.css",
+    "./dist/react/live.css"
   ],
   "files": [
     "dist",
@@ -27,6 +28,7 @@
       "default": "./dist/index.js"
     },
     "./figure.css": "./dist/figure.css",
+    "./react/live.css": "./dist/react/live.css",
     "./react": {
       "types": "./dist/react/index.d.ts",
       "import": "./dist/react/index.js",
@@ -43,7 +45,7 @@
   },
   "scripts": {
     "gen:css": "node scripts/gen-css.mjs",
-    "build": "node scripts/gen-css.mjs --check && tsdown && cp src/figure.css dist/figure.css"
+    "build": "node scripts/gen-css.mjs --check && tsdown && cp src/figure.css dist/figure.css && cp src/react/live.css dist/react/live.css"
   },
   "devDependencies": {
     "tsdown": "^0.23.0",

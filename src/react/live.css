@@ -1,0 +1,27 @@
+/* Shared live charts. Consumers may set --chart-live-* tokens on an ancestor. */
+.ov-empty { margin: 0; color: var(--chart-live-faint, #777); font-size: .9em; }
+.ov-plot { position: relative; min-width: 0; }
+.ov-plot svg { display: block; overflow: visible; }
+line.ov-gridline { stroke: color-mix(in srgb, var(--chart-live-faint, #777) 22%, transparent); stroke-width: 1; }
+.ov-axis { fill: var(--chart-live-muted, #666); font: .8em var(--chart-live-font-mono, monospace); font-variant-numeric: tabular-nums; }
+.ov-crosshair { stroke: var(--chart-live-faint, #777); stroke-dasharray: 3 3; }
+.ov-tip { position: absolute; z-index: 4; display: grid; gap: .25em; min-width: 12em; max-width: 18em; padding: .6em .75em; background: var(--chart-live-raised, #fff); border: 1px solid var(--chart-live-border, #aaa); border-radius: 8px; box-shadow: 0 10px 24px -12px #000; font-size: .85em; pointer-events: none; }
+.ov-tip-line { display: grid; grid-template-columns: auto 1fr auto; gap: .6em; align-items: center; color: var(--chart-live-muted, #666); }
+.ov-tip-line b { color: var(--chart-live-fg, #222); font-variant-numeric: tabular-nums; }
+.ov-hbars { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, max-content) minmax(33%, 1fr) max-content; gap: .25em .7em; }
+.ov-hbars li { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; }
+.ov-hbars li > a, .ov-hbars li > div { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; row-gap: .15em; align-items: center; padding: .3em .4em; border-radius: 6px; color: inherit; text-decoration: none; }
+.ov-hbars-more { grid-column: 1 / -1; padding: .1em .4em; font-size: .8em; color: var(--chart-live-faint, #777); }
+.ov-hbars li > a:hover, .ov-hbars li > div:hover { background: var(--chart-live-hover, #eee); text-decoration: none; }
+.ov-hbar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .95em; color: var(--chart-live-fg, #222); }
+.ov-hbar-track { height: .7em; border-radius: 3px; background: color-mix(in srgb, var(--chart-live-faint, #777) 14%, transparent); overflow: hidden; }
+.ov-hbar-track > span { display: block; height: 100%; border-radius: 3px; }
+.ov-hbar-value { font: .9em var(--chart-live-font-mono, monospace); font-variant-numeric: tabular-nums; text-align: right; color: var(--chart-live-fg, #222); }
+.ov-hbar-note { grid-column: 1 / -1; font-size: .78em; color: var(--chart-live-faint, #777); }
+.ov-meter { display: grid; gap: .3em; min-width: 0; }
+.ov-meter-track { display: block; height: .7em; border-radius: 3px; background: color-mix(in srgb, var(--chart-live-faint, #777) 14%, transparent); overflow: hidden; }
+.ov-meter-track > span { display: block; height: 100%; border-radius: 3px; }
+.ov-meter-text { font: .85em var(--chart-live-font-mono, monospace); font-variant-numeric: tabular-nums; color: var(--chart-live-muted, #666); }
+.ov-spark { display: block; width: 8em; height: 1.6em; }
+.ov-spark-empty { font-size: .8em; color: var(--chart-live-faint, #777); }
+.ov-tip-line i { display: inline-block; width: .7em; height: .7em; border-radius: 3px; margin-right: .4em; vertical-align: -.05em; }
