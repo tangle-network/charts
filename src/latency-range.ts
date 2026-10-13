@@ -14,28 +14,37 @@ export function latencyRange(rows: LatencyRangeRow[], o: LatencyRangeOptions): F
   if (new Set(rows.map(r => r.id)).size !== rows.length) return { id, refused: "Duplicate latency row ids." };
   for (const r of rows) {
     if (!Number.isInteger(r.n) || r.n < o.minN) return { id, refused: `${r.label}: n=${r.n} is below the stated minimum n=${o.minN}.` };
-    if (!Number.isFinite(r.p50Ms) || !Number.isFinite(r.p95Ms) || r.p50Ms < 0 || r.p95Ms < r.p50Ms) return { id, refused: `${r.label}: invalid p50 or p95.` };
+    if (!Number.isFinite(r.p50Ms) || !Number.isFinite(r.p95Ms) || r.p50Ms <= 0 || r.p95Ms < r.p50Ms) return { id, refused: `${r.label}: invalid p50 or p95 for a log axis.` };
   }
   const breached = rows.filter(r => r.p95Ms > o.sloMs);
   const fmt = (ms: number) => `${(ms / 1000).toFixed(1)} s`;
-  const max = Math.max(o.sloMs * 1.15, ...rows.map(r => r.p95Ms)) * 1.06;
+  const min = Math.min(o.sloMs, ...rows.map(r => r.p50Ms)) / 1.5;
+  const max = Math.max(o.sloMs, ...rows.map(r => r.p95Ms)) * 1.12;
   return {
     id,
     finding: `${breached.length} of ${rows.length} ${plural(rows.length, "range")} exceed the ${fmt(o.sloMs)} p95 SLO.`,
     lede: `${rows.length} ${plural(rows.length, "setup")}; each has at least ${o.minN} observations.`,
-    read: "The dot is p50; the bar runs from p50 to p95. The dashed rule is the p95 SLO. Input order is preserved.",
-    svg: { wide: draw(rows, o, max, WIDE), narrow: draw(rows, o, max, NARROW) },
+    read: "The dot is p50; the bar runs from p50 to p95 on a logarithmic time axis. The dashed rule is the p95 SLO. Input order is preserved.",
+    svg: { wide: draw(rows, o, min, max, WIDE), narrow: draw(rows, o, min, max, NARROW) },
     table: table(`${capitalize(o.measure)} by setup`, [{ label: "Setup" }, { label: "p50", numeric: true }, { label: "p95", numeric: true }, { label: "n", numeric: true }, { label: "p95 SLO" }], rows.map(r => [r.label, fmt(r.p50Ms), fmt(r.p95Ms), String(r.n), r.p95Ms > o.sloMs ? "breach" : "pass"])),
-    note: { method: `Recorded p50 and p95 in milliseconds; producer supplies quantiles. The p95 SLO is ${fmt(o.sloMs)}.`, n: `${rows.reduce((s, r) => s + r.n, 0)} observations across ${rows.length} rows; minimum n=${o.minN} per row.`, exclusions: [] },
+    note: { method: `Recorded p50 and p95 in milliseconds on a logarithmic time axis; producer supplies quantiles. The p95 SLO is ${fmt(o.sloMs)}.`, n: `${rows.reduce((s, r) => s + r.n, 0)} observations across ${rows.length} rows; minimum n=${o.minN} per row.`, exclusions: [] },
   };
 }
 
-function draw(rows: LatencyRangeRow[], o: LatencyRangeOptions, max: number, width: number): string {
+function draw(rows: LatencyRangeRow[], o: LatencyRangeOptions, min: number, max: number, width: number): string {
   const phone = width === NARROW, left = phone ? 12 : 148, right = phone ? 48 : 92;
-  const plotW = width - left - right, top = phone ? 28 : 32, rowH = phone ? 63 : 39;
-  const scale = (ms: number) => left + ms / max * plotW;
+  const plotW = width - left - right, top = phone ? 43 : 48, rowH = phone ? 63 : 39;
+  const scale = (ms: number) => left + (Math.log(ms) - Math.log(min)) / (Math.log(max) - Math.log(min)) * plotW;
   let body = line(scale(o.sloMs), top - 11, scale(o.sloMs), top + rows.length * rowH, "tgc-threshold");
   body += text(scale(o.sloMs) + 3, 15, `SLO ${(o.sloMs / 1000).toFixed(0)} s`, { size: 11, cls: "tgc-ink-muted tgc-num" });
+  for (let exponent = Math.floor(Math.log10(min)); exponent <= Math.ceil(Math.log10(max)); exponent++) {
+    for (const step of [1, 5]) {
+      const tick = step * 10 ** exponent;
+      if (tick <= min || tick >= max || Math.abs(scale(tick) - scale(o.sloMs)) < 19) continue;
+      body += line(scale(tick), top - 8, scale(tick), top + rows.length * rowH, "tgc-gridline");
+      body += text(scale(tick), top - 13, `${Number((tick / 1000).toPrecision(2))} s`, { size: 10, cls: "tgc-ink-muted tgc-num", anchor: "middle" });
+    }
+  }
   rows.forEach((r, i) => {
     const y = top + i * rowH;
     const label = wrap(r.label, phone ? width - 100 : left - 8, phone ? 13 : 13, "sans", 1);

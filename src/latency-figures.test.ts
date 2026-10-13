@@ -32,9 +32,11 @@ describe("operational latency figures", () => {
     if (isRefusal(figure)) return;
     expect(figure.svg.wide).toContain("tgc-range-dot-breach");
     expect(figure.svg.wide).toContain("tgc-threshold");
+    expect(figure.read).toContain("logarithmic");
     expect(figure.table).toContain("6.5 s");
     expect(isRefusal(latencyRange([{ ...rows[0]!, n: 4 }], options))).toBe(true);
     expect(isRefusal(latencyRange([{ ...rows[0]!, p95Ms: 2000 }], options))).toBe(true);
+    expect(isRefusal(latencyRange([{ ...rows[0]!, p50Ms: 0 }], options))).toBe(true);
   });
 
   it("preserves phase order and accounts for the unexplained tail", () => {
