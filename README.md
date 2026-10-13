@@ -94,8 +94,11 @@ Identity is carried by direct labels, never by hue.
 ## Develop
 
 ```sh
-pnpm --filter @tangle-network/charts gen:css   # after editing src/figure.css or brand tokens.css
-pnpm --filter @tangle-network/charts build     # fails when src/css.generated.ts is stale
+npm ci
+npm run gen:css       # after editing src/figure.css or Brand tokens
+npm run typecheck
+npm test
+npm run build         # fails when src/css.generated.ts is stale
 ```
 
 ## Release
