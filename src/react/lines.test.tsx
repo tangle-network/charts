@@ -19,7 +19,7 @@ describe("shared recorded Lines", () => {
     expect(screen.getByText("No history yet.")).toBeTruthy();
     rerender(<Lines series={[{ name: "A", color: "red", points: [[1, null]] }]} />);
     expect(screen.getByText("Not available")).toBeTruthy();
-    fireEvent.toggle(document.querySelector("details")!, { target: { open: true } });
+    fireEvent.click(document.querySelector("details summary")!);
     expect(screen.getByRole("table").textContent).toContain("Not available");
     rerender(<Lines series={series} xDomain={[5, 6]} />);
     expect(screen.getByText("No recorded points in this range.")).toBeTruthy();
@@ -29,7 +29,7 @@ describe("shared recorded Lines", () => {
     const { container } = render(<Lines series={series} xFormat={String} />);
     expect(container.querySelectorAll("svg path")).toHaveLength(1);
     expect(container.querySelector("svg path")!.getAttribute("d")).toMatch(/^M[^ ]+ L/);
-    fireEvent.toggle(container.querySelector("details")!, { target: { open: true } });
+    fireEvent.click(container.querySelector("details summary")!);
     expect(container.querySelectorAll("tbody tr")).toHaveLength(4);
     expect(container.querySelector("tbody")!.textContent).toContain("Not available");
     expect(container.innerHTML).not.toMatch(/NaN|Infinity/);
@@ -74,7 +74,7 @@ describe("shared recorded Lines", () => {
     fireEvent.keyDown(chart, { key: "End" });
     fireEvent.click(screen.getByRole("button", { name: "Open Recorded score at 4" }));
     expect(onSelect).toHaveBeenCalledWith({ seriesIndex: 0, pointIndex: 3, x: 4, y: 5 });
-    fireEvent.toggle(container.querySelector("details")!, { target: { open: true } });
+    fireEvent.click(container.querySelector("details summary")!);
     expect(container.querySelectorAll("tbody tr")).toHaveLength(4);
   });
   it("shares inspection while retaining each series' actual observation time", () => {
