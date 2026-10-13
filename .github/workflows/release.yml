@@ -1,0 +1,95 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: charts-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Build the release artifact
+        id: artifact
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/main
+          pnpm release
+          artifact_dir="$RUNNER_TEMP/charts-release"
+          mkdir -p "$artifact_dir"
+          filename="$(npm pack --json --ignore-scripts --pack-destination "$artifact_dir" | jq -r '.[0].filename')"
+          version="$(node -p 'JSON.parse(require("fs").readFileSync("package.json", "utf8")).version')"
+          spec="@tangle-network/charts@$version"
+          tag="v$version"
+          tarball="$artifact_dir/$filename"
+          manifest="$(tar -xzOf "$tarball" package/package.json)"
+          test "$(jq -r '.name + "@" + .version' <<<"$manifest")" = "$spec"
+          test "$(jq '[.. | strings | select(startswith("workspace:"))] | length' <<<"$manifest")" = 0
+          (cd "$artifact_dir" && sha256sum "$filename" > "$filename.sha256")
+          printf 'tarball=%s\nfilename=%s\nversion=%s\nspec=%s\ntag=%s\n' "$tarball" "$filename" "$version" "$spec" "$tag" >> "$GITHUB_OUTPUT"
+      - name: Publish or reconcile the official GitHub artifact
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARBALL: ${{ steps.artifact.outputs.tarball }}
+          FILENAME: ${{ steps.artifact.outputs.filename }}
+          TAG: ${{ steps.artifact.outputs.tag }}
+          SPEC: ${{ steps.artifact.outputs.spec }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            existing_dir="$RUNNER_TEMP/charts-existing-release"
+            mkdir -p "$existing_dir"
+            gh release download "$TAG" --pattern "$FILENAME" --dir "$existing_dir"
+            cmp "$TARBALL" "$existing_dir/$FILENAME"
+            echo "$SPEC already has an identical official release artifact"
+          else
+            notes="$RUNNER_TEMP/charts-release-notes.md"
+            printf '%s\n\nSource: `%s`\n\nThe attached npm-format package and SHA-256 digest are the official release artifacts. Npm publication follows the transferred trusted publisher.\n' "$SPEC" "$GITHUB_SHA" > "$notes"
+            gh release create "$TAG" "$TARBALL" "$TARBALL.sha256" --target "$GITHUB_SHA" --title "$SPEC" --notes-file "$notes"
+          fi
+      - name: Upgrade npm for trusted publishing
+        if: vars.NPM_TRUSTED_PUBLISHER_ENABLED == 'true'
+        run: npm install -g npm@12.1.0
+      - name: Publish the identical tarball through the transferred npm publisher
+        if: vars.NPM_TRUSTED_PUBLISHER_ENABLED == 'true'
+        env:
+          TARBALL: ${{ steps.artifact.outputs.tarball }}
+          SPEC: ${{ steps.artifact.outputs.spec }}
+          NPM_CONFIG_PROVENANCE: 'true'
+        run: |
+          set -euo pipefail
+          # setup-node writes a token placeholder that blocks OIDC fallback.
+          for config in "$HOME/.npmrc" "${NPM_CONFIG_USERCONFIG:-}" "$RUNNER_TEMP/.npmrc" "$GITHUB_WORKSPACE/.npmrc"; do
+            if [ -n "$config" ] && [ -f "$config" ]; then sed -i '/_authToken=/d' "$config"; fi
+          done
+          expected="sha512-$(openssl dgst -sha512 -binary "$TARBALL" | openssl base64 -A)"
+          error="$RUNNER_TEMP/charts-npm-view.err"
+          if observed="$(npm view "$SPEC" dist.integrity 2>"$error")"; then
+            test "$observed" = "$expected"
+            echo "$SPEC already matches the official artifact"
+          else
+            if ! grep -Eq 'E404|404 Not Found' "$error"; then cat "$error"; exit 1; fi
+            npm publish "$TARBALL" --access public --provenance
+            observed="$(npm view "$SPEC" dist.integrity)"
+            test "$observed" = "$expected"
+          fi

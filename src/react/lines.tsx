@@ -1,0 +1,400 @@
+import { useEffect, useId, useState } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
+
+export type LinePoint = readonly [x: number, y: number | null];
+export interface LineSeries {
+  name: string;
+  color: string;
+  points: readonly LinePoint[];
+  dots?: boolean;
+  label?: (x: number) => string;
+}
+export interface LineSelection {
+  seriesIndex: number;
+  pointIndex: number;
+  x: number;
+  y: number;
+}
+export interface LineReference { value: number; label: string; color?: string }
+export interface LineBand { min: number; max: number; label: string; color?: string }
+export interface LinesProps {
+  series: readonly LineSeries[];
+  format?: (value: number) => string;
+  /** Axis-only labels; defaults to format so caller units are preserved. */
+  yTickFormat?: (value: number) => string;
+  /** Human-readable positions in the readout. The default formats epoch milliseconds. */
+  xFormat?: (x: number) => string;
+  /** Short tick labels. Retained for existing consumers. */
+  axis?: (x: number) => string;
+  rows?: number;
+  label?: string;
+  /** Caller-owned range or display controls, composed beside the visible caption. */
+  controls?: ReactNode;
+  xLabel?: string;
+  yLabel?: string;
+  xDomain?: readonly [number, number];
+  yDomain?: readonly [number, number];
+  references?: readonly LineReference[];
+  bands?: readonly LineBand[];
+  endLabels?: boolean;
+  markers?: boolean;
+  curve?: "linear" | "step";
+  /** Stepped frontiers default to at-or-before; ordinary lines default to nearest. */
+  inspection?: "nearest" | "at-or-before";
+  /** Opens an observed point. Indices always refer to the supplied, unfiltered series. */
+  onSelect?: (point: LineSelection) => void;
+  /** Keeps historical observations visible while suppressing links the app cannot resolve. */
+  canSelect?: (point: LineSelection) => boolean;
+  /** Optional externally selected observation, addressed in the original supplied arrays. */
+  selectedPoint?: Pick<LineSelection, "seriesIndex" | "pointIndex"> | null;
+  emptyLabel?: string;
+  unavailableLabel?: string;
+  className?: string;
+}
+
+type Reading = LineSelection & { series: LineSeries };
+const selection = ({ seriesIndex, pointIndex, x, y }: Reading): LineSelection => ({ seriesIndex, pointIndex, x, y });
+const isValue = (y: number | null): y is number => y !== null && Number.isFinite(y);
+const compact = (value: number) => new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(value);
+const date = (x: number) => Number.isFinite(new Date(x).getTime()) ? new Date(x).toISOString().slice(0, 16).replace("T", " ") : String(x);
+const fraction = (value: number, min: number, max: number) =>
+  max === min ? 0.5 : Number.isFinite(max - min) ? (value - min) / (max - min) : (value / 2 - min / 2) / (max / 2 - min / 2);
+function domain(value: readonly [number, number] | undefined, name: string) {
+  if (value && (!value.every(Number.isFinite) || value[0] > value[1])) throw new RangeError(`Lines ${name} must be a finite, ordered domain`);
+}
+
+/** Linear, shared-axis observations with honest gaps and keyboard/touch inspection. */
+export function Lines({
+  series, format: suppliedFormat, yTickFormat, xFormat = date, axis, rows = 13, label = "Recorded history", controls, xLabel,
+  yLabel, xDomain, yDomain, references = [], bands = [], endLabels = false, markers = false,
+  curve = "linear", inspection = curve === "step" ? "at-or-before" : "nearest", onSelect, canSelect, selectedPoint, emptyLabel = "No history yet.", unavailableLabel = "Not available", className,
+}: LinesProps) {
+  const format = suppliedFormat ?? compact;
+  const [element, ref] = useState<HTMLDivElement | null>(null);
+  const [size, setSize] = useState({ width: 0, em: 16 });
+  const [inspectedX, setInspectedX] = useState<number | null>(null);
+  const [pinnedX, setPinnedX] = useState<number | null>(null);
+  const [focusedSeries, setFocusedSeries] = useState<number | null>(null);
+  const [tickWidth, setTickWidth] = useState(0);
+  const readoutId = useId();
+  useEffect(() => {
+    setInspectedX(null); setPinnedX(null); setFocusedSeries(selectedPoint?.seriesIndex ?? null);
+  }, [selectedPoint?.seriesIndex, selectedPoint?.pointIndex]);
+  useEffect(() => {
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => setSize({ width: Math.floor(entry!.contentRect.width), em: parseFloat(getComputedStyle(element).fontSize) || 16 }));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [element]);
+  domain(xDomain, "xDomain"); domain(yDomain, "yDomain");
+  if (!Number.isFinite(rows) || rows < 8) throw new RangeError("Lines rows must be finite and at least eight");
+  const readings: Reading[] = [];
+  series.forEach((entry, seriesIndex) => {
+    let previous = -Infinity;
+    entry.points.forEach(([x, y], pointIndex) => {
+      if (!Number.isFinite(x) || x <= previous) throw new RangeError("Lines positions must be finite and strictly increasing within each series");
+      previous = x;
+      if (isValue(y) && (!xDomain || (x >= xDomain[0] && x <= xDomain[1]))) readings.push({ x, y, seriesIndex, pointIndex, series: entry });
+    });
+  });
+  for (const reference of references) if (!Number.isFinite(reference.value)) throw new RangeError("Lines references must be finite");
+  for (const band of bands) if (!Number.isFinite(band.min) || !Number.isFinite(band.max) || band.min > band.max) throw new RangeError("Lines bands require finite, ordered bounds");
+  const plotClass = ["ov-plot ov-lines", className].filter(Boolean).join(" ");
+  const heading = (
+    <div className="ov-lines-heading">
+      <p className="ov-lines-caption">{label}</p>
+      {controls && <div className="ov-lines-controls">{controls}</div>}
+    </div>
+  );
+  if (!readings.length) {
+    const hasPoints = series.some((entry) => entry.points.length);
+    const hasValues = series.some((entry) => entry.points.some(([, value]) => isValue(value)));
+    return (
+      <div ref={ref} className={plotClass}>
+        {heading}
+        <p className="ov-empty">
+          {!hasPoints ? emptyLabel : !hasValues ? unavailableLabel : "No recorded points in this range."}
+        </p>
+        {hasPoints && <RecordedData series={series} label={label} xLabel={xLabel} yLabel={yLabel}
+          xFormat={xFormat} format={format} unavailableLabel={unavailableLabel} />}
+      </div>
+    );
+  }
+  const positions = [...new Set(readings.map(({ x }) => x))].sort((a, b) => a - b);
+  const [t0, t1] = xDomain ?? [positions[0]!, positions[positions.length - 1]!];
+  let lo = 0, hi = 0;
+  for (const { y } of readings) { lo = Math.min(lo, y); hi = Math.max(hi, y); }
+  for (const { value } of references) { lo = Math.min(lo, value); hi = Math.max(hi, value); }
+  for (const { min, max } of bands) { lo = Math.min(lo, min); hi = Math.max(hi, max); }
+  const [y0, y1] = yDomain ?? (lo === hi ? [lo - 1, hi + 1] : [lo, hi]);
+  if (readings.some(({ y }) => y < y0 || y > y1) || references.some(({ value }) => value < y0 || value > y1) || bands.some(({ min, max }) => min < y0 || max > y1)) throw new RangeError("Lines values and reference marks must lie inside yDomain");
+  const { width, em } = size;
+  const height = Math.round(rows * em);
+  const top = yLabel ? em * 2 : em;
+  const bottom = em * (xLabel ? 3 : 2);
+  const left = Math.max(em * 4, tickWidth + em * 0.75);
+  const showEndLabels = endLabels && width >= 640;
+  const right = showEndLabels ? em * 11 : em;
+  const plotW = Math.max(1, width - left - right), plotH = Math.max(1, height - top - bottom);
+  const x = (value: number) => left + fraction(value, t0, t1) * plotW;
+  const y = (value: number) => top + (1 - fraction(value, y0, y1)) * plotH;
+  const nearestPosition = (value: number) => positions.reduce((best, current) => Math.abs(current - value) < Math.abs(best - value) ? current : best, positions[0]!);
+  const selectedReading = selectedPoint ? readings.find((point) => point.seriesIndex === selectedPoint.seriesIndex && point.pointIndex === selectedPoint.pointIndex) : undefined;
+  const activeX = inspectedX ?? pinnedX ?? selectedReading?.x ?? null;
+  const active = activeX === null ? [] : series.flatMap((_, seriesIndex) => {
+    const entries = readings.filter((point) => point.seriesIndex === seriesIndex);
+    if (!entries.length) return [];
+    if (inspection === "at-or-before") return entries.filter((point) => point.x <= activeX).slice(-1);
+    return [entries.reduce((best, point) => Math.abs(point.x - activeX) < Math.abs(best.x - activeX) ? point : best)];
+  });
+  const focused = active.find((point) => point.seriesIndex === focusedSeries)
+    ?? (selectedReading && activeX === selectedReading.x ? active.find((point) => point.seriesIndex === selectedReading.seriesIndex) : undefined)
+    ?? active[0];
+  const last = series.flatMap((_, seriesIndex) => readings.filter((point) => point.seriesIndex === seriesIndex).slice(-1));
+  const labels = last.map((point) => ({ point, py: y(point.y) })).sort((a, b) => a.py - b.py);
+  const separation = Math.min(em * 1.4, plotH / Math.max(1, labels.length));
+  labels.forEach((entry, i) => { entry.py = Math.max(entry.py, top + i * separation, i ? labels[i - 1]!.py + separation : top); });
+  const shift = Math.max(0, (labels.at(-1)?.py ?? top) - top - plotH);
+  labels.forEach((entry) => { entry.py -= shift; });
+  const positionAt = (px: number) => {
+    const ratio = Math.max(0, Math.min(1, (px - left) / plotW));
+    return nearestPosition(t0 * (1 - ratio) + t1 * ratio);
+  };
+  const inspect = (clientX: number, svgLeft: number) => {
+    const px = clientX - svgLeft;
+    setInspectedX(px < left || px > left + plotW ? null : positionAt(px));
+  };
+  const openPointerPoint = (event: { clientX: number; clientY: number; currentTarget: SVGSVGElement }) => {
+    if (!onSelect) return;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const px = event.clientX - bounds.left, py = event.clientY - bounds.top;
+    let closest: Reading | undefined, distance = 24 ** 2;
+    for (const point of readings) {
+      const candidate = (x(point.x) - px) ** 2 + (y(point.y) - py) ** 2;
+      if (candidate <= distance) { closest = point; distance = candidate; }
+    }
+    if (closest && (!canSelect || canSelect(selection(closest)))) {
+      setFocusedSeries(closest.seriesIndex);
+      onSelect(selection(closest));
+    }
+  };
+  const keyboard = (event: KeyboardEvent<SVGSVGElement>) => {
+    if (event.key === "Escape") {
+      setInspectedX(null); setPinnedX(null); setFocusedSeries(selectedPoint?.seriesIndex ?? null);
+      return;
+    }
+    if ((event.key === "Enter" || event.key === " ") && onSelect) {
+      event.preventDefault();
+      if (focused && (!canSelect || canSelect(selection(focused)))) onSelect(selection(focused));
+      return;
+    }
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const current = activeX === null ? -1 : positions.indexOf(nearestPosition(activeX));
+    const index = event.key === "Home" ? 0 : event.key === "End" ? positions.length - 1 : event.key === "ArrowRight" ? Math.min(positions.length - 1, current + 1) : Math.max(0, current - 1);
+    setInspectedX(null); setPinnedX(positions[index]!);
+  };
+  const tick = axis ?? (xFormat === date ? (value: number) => date(value).slice(5, 10) : xFormat);
+  // Only the built-in raw-value formatter may shorten a phone tick. A caller's
+  // formatter may convert units, so its output is authoritative by default.
+  const yTick = yTickFormat ?? ((value: number) => {
+    const exact = format(value);
+    return !suppliedFormat && width > 0 && width < 520 && exact.length > 14 ? value.toExponential(2) : exact;
+  });
+  return (
+    <div ref={ref} className={plotClass} onPointerLeave={() => setInspectedX(null)}>
+      {heading}
+      <ul className="ov-lines-legend" aria-label="Series">
+        {last.map((point) => (
+          <li key={point.seriesIndex}>
+            <i style={{ background: point.series.color }} />
+            <span title={point.series.name}>{point.series.name}</span>
+          </li>
+        ))}
+      </ul>
+      {width > 0 && (
+        <svg
+          width={width} height={height} role="img" tabIndex={0} data-scale="linear"
+          aria-label={`${label}. Use Left and Right arrows to inspect recorded points${onSelect ? "; Enter opens a linked inspected record, when available" : ""}.`}
+          aria-describedby={readoutId}
+          onClick={openPointerPoint}
+          onKeyDown={keyboard}
+          onFocus={() => {
+            if (pinnedX === null && !selectedReading) setPinnedX(positions[0]!);
+          }}
+          onPointerMove={(event) => {
+            if (event.pointerType !== "touch") inspect(event.clientX, event.currentTarget.getBoundingClientRect().left);
+          }}
+          onPointerDown={(event) => {
+            if (event.pointerType !== "touch") return;
+            const svgLeft = event.currentTarget.getBoundingClientRect().left;
+            inspect(event.clientX, svgLeft);
+            setPinnedX(positionAt(event.clientX - svgLeft));
+          }}
+        >
+          {yLabel && <text x={left} y={em} className="ov-axis ov-axis-title">{yLabel}</text>}
+          {bands.map((band, index) => (
+            <g key={index}>
+              <rect x={left} y={y(band.max)} width={plotW}
+                height={Math.max(1, y(band.min) - y(band.max))}
+                fill={band.color ?? "var(--chart-live-faint, #777)"} opacity={0.1} />
+              <text x={left + em * .4} y={y(band.max) + em} className="ov-axis">{band.label}</text>
+            </g>
+          ))}
+          {[y0, y0 / 2 + y1 / 2, y1].filter((value, index, values) => values.indexOf(value) === index).map((value) => (
+            <g key={value}>
+              <line x1={left} x2={left + plotW} y1={y(value)} y2={y(value)} className="ov-gridline" />
+              <text
+                ref={(node) => {
+                  if (node && typeof node.getComputedTextLength === "function") {
+                    setTickWidth((current) => Math.max(current, node.getComputedTextLength()));
+                  }
+                }}
+                x={left - em * .5} y={y(value)} dominantBaseline="middle"
+                className="ov-axis" textAnchor="end" aria-label={format(value)}
+              >{yTick(value)}</text>
+            </g>
+          ))}
+          {references.map((reference, index) => (
+            <line key={index} x1={left} x2={left + plotW}
+              y1={y(reference.value)} y2={y(reference.value)} className="ov-reference"
+              style={{ stroke: reference.color, strokeDasharray: index % 2 ? "2 4" : "8 5" }} />
+          ))}
+          {[t0, t0 / 2 + t1 / 2, t1].filter((value, index, values) => values.indexOf(value) === index).map((value, index, values) => (
+            <text key={value} x={x(value)} y={height - em * (xLabel ? 1.8 : .5)} className="ov-axis"
+              textAnchor={index === 0 && values.length > 1 ? "start" : index === values.length - 1 && values.length > 1 ? "end" : "middle"}
+            >{tick(value)}</text>
+          ))}
+          {xLabel && <text x={left + plotW / 2} y={height - em * .35}
+            textAnchor="middle" className="ov-axis ov-axis-title">{xLabel}</text>}
+          {series.map((entry, seriesIndex) => {
+            const runs: Reading[][] = [];
+            let run: Reading[] = [];
+            const flush = () => { if (run.length) runs.push(run); run = []; };
+            entry.points.forEach(([px, py], pointIndex) => {
+              if (!isValue(py) || px < t0 || px > t1) { flush(); return; }
+              run.push({ x: px, y: py, seriesIndex, pointIndex, series: entry });
+            });
+            flush();
+            return (
+              <g key={seriesIndex}>
+                {!entry.dots && runs.filter((segment) => segment.length > 1).map((segment, index) => (
+                  <path key={index}
+                    d={segment.map((point, i) => i === 0 ? `M${x(point.x)},${y(point.y)}`
+                      : curve === "step" ? `H${x(point.x)}V${y(point.y)}` : `L${x(point.x)},${y(point.y)}`).join(" ")}
+                    fill="none" stroke={entry.color} strokeWidth={3} strokeLinejoin="round" strokeLinecap="round" />
+                ))}
+                {runs.flat().filter((point) => entry.dots || markers
+                  || runs.some((segment) => segment.length === 1 && segment[0] === point)).map((point) => (
+                  <circle key={point.pointIndex} cx={x(point.x)} cy={y(point.y)} r={3.5}
+                    fill={entry.color} className="ov-record-mark" />
+                ))}
+              </g>
+            );
+          })}
+          {showEndLabels && labels.map(({ point, py }) => (
+            <g key={point.seriesIndex}>
+              <path d={`M${x(point.x)},${y(point.y)}L${left + plotW + em * .5},${py}`}
+                stroke={point.series.color} opacity={.5} fill="none" />
+              <text x={left + plotW + em * .7} y={py} dominantBaseline="middle"
+                className="ov-axis" style={{ fill: point.series.color }}>
+                <title>{point.series.name}: {format(point.y)}</title>
+                {point.series.name.length > 14 ? `${point.series.name.slice(0, 13)}…` : point.series.name}
+              </text>
+            </g>
+          ))}
+          {width >= 640 && references.map((reference, index) => (
+            <text key={index} x={left + plotW} y={y(reference.value) - em * .4}
+              className="ov-axis ov-reference-label" textAnchor="end">
+              {reference.label} · {format(reference.value)}
+            </text>
+          ))}
+          {activeX !== null && <line x1={x(nearestPosition(activeX))} x2={x(nearestPosition(activeX))}
+            y1={top} y2={top + plotH} className="ov-crosshair" />}
+          {active.map((point) => <circle key={point.seriesIndex} cx={x(point.x)} cy={y(point.y)}
+            r={point === focused ? 6 : 4.5} fill={point.series.color} className="ov-record-mark ov-record-active" />)}
+        </svg>
+      )}
+      {width < 640 && references.length > 0 && (
+        <ul className="ov-lines-references" aria-label="Reference values">
+          {references.map((reference, index) => (
+            <li key={index}>
+              <i data-dotted={Boolean(index % 2)} style={{ borderColor: reference.color }} />
+              <span>{reference.label}</span><b>{format(reference.value)}</b>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div id={readoutId} className="ov-lines-readout" aria-live="polite" aria-atomic="true">
+        {focused ? <>
+          <div className="ov-lines-readings">
+            {active.map((point) => (
+              <label key={point.seriesIndex} className="ov-lines-reading" data-active={point === focused}>
+                {active.length > 1 && <input type="radio" name={readoutId}
+                  aria-label={`Inspect ${point.series.name}`} checked={point === focused}
+                  onChange={() => setFocusedSeries(point.seriesIndex)} />}
+                <i style={{ background: point.series.color }} />
+                <span className="ov-lines-reading-identity">
+                  <span title={point.series.label?.(point.x) ?? point.series.name}>
+                    {point.series.label?.(point.x) ?? point.series.name}
+                  </span>
+                  <time>{xFormat(point.x)}</time>
+                </span>
+                <b data-long={format(point.y).length > 18}>{format(point.y)}</b>
+              </label>
+            ))}
+          </div>
+          {onSelect && (
+            <div className="ov-lines-reading-action">
+              {(!canSelect || canSelect(selection(focused))) ? (
+                <button type="button"
+                  onClick={() => { if (!canSelect || canSelect(selection(focused))) onSelect(selection(focused)); }}
+                  aria-label={`Open ${focused.series.name} at ${xFormat(focused.x)}`}>
+                  Open point <span aria-hidden="true">↗</span>
+                </button>
+              ) : <span className="ov-lines-unlinked">No linked result</span>}
+            </div>
+          )}
+        </> : <p className="ov-lines-hint">Tap a point or use arrow keys to inspect its record.</p>}
+      </div>
+      <RecordedData series={series} label={label} xLabel={xLabel} yLabel={yLabel}
+        xFormat={xFormat} format={format} unavailableLabel={unavailableLabel} />
+    </div>
+  );
+}
+
+function RecordedData({ series, label, xLabel, yLabel, xFormat, format, unavailableLabel }:
+  Pick<LinesProps, "series" | "xLabel" | "yLabel"> & {
+    label: string;
+    xFormat: (x: number) => string;
+    format: (y: number) => string;
+    unavailableLabel: string;
+  }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <details className="ov-lines-data" onToggle={(event) => setOpen(event.currentTarget.open)}>
+      <summary>View recorded data</summary>
+      {open && <div>
+        <table>
+          <caption>{label}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Series</th>
+              <th scope="col">{xLabel ?? "Position"}</th>
+              <th scope="col">{yLabel ?? "Value"}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {series.flatMap((entry, seriesIndex) => entry.points.map(([px, py], pointIndex) => (
+              <tr key={`${seriesIndex}-${pointIndex}`}>
+                <th scope="row">{entry.name}</th>
+                <td>{xFormat(px)}</td>
+                <td>{isValue(py) ? format(py) : unavailableLabel}</td>
+              </tr>
+            )))}
+          </tbody>
+        </table>
+      </div>}
+    </details>
+  );
+}

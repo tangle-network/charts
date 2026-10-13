@@ -12,10 +12,11 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { createRequire } from 'node:module'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const root = path.join(here, '..')
-const TOKENS = path.join(root, '..', 'brand', 'src', 'styles', 'tokens.css')
+const TOKENS = createRequire(import.meta.url).resolve('@tangle-network/brand/styles/tokens.css')
 const FIGURE = path.join(root, 'src', 'figure.css')
 const OUT = path.join(root, 'src', 'css.generated.ts')
 
