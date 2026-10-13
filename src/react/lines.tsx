@@ -160,12 +160,18 @@ export function Lines({
     setInspectedX(null); setPinnedX(positions[index]!);
   };
   const tick = axis ?? (xFormat === date ? (value: number) => date(value).slice(5, 10) : xFormat);
+  // Keep exact values in the readout and data table while leaving room for the
+  // plot on phones when a caller's full value formatter is very long.
+  const yTick = (value: number) => {
+    const exact = format(value);
+    return width > 0 && width < 520 && exact.length > 14 ? compact(value) : exact;
+  };
   return <div ref={ref} className={["ov-plot ov-lines", className].filter(Boolean).join(" ")}>
     <ul className="ov-lines-legend" aria-label="Series">{last.map((point) => <li key={point.seriesIndex}><i style={{ background: point.series.color }} /><span>{point.series.name}</span><b>{format(point.y)}</b></li>)}</ul>
     {width > 0 && <svg width={width} height={height} role="img" aria-label={`${label}. Use Left and Right arrows to inspect recorded points${onSelect ? "; Enter opens a linked inspected record, when available" : ""}.`} tabIndex={0} aria-describedby={readoutId} data-scale="linear" onClick={openPointerPoint} onKeyDown={keyboard} onFocus={() => { if (pinnedX === null && !selectedReading) setPinnedX(positions[0]!); }} onPointerMove={(event) => { if (event.pointerType !== "touch") inspect(event.clientX); }} onPointerLeave={() => setInspectedX(null)} onPointerDown={(event) => { if (event.pointerType === "touch") { inspect(event.clientX); const px = event.clientX - event.currentTarget.getBoundingClientRect().left; setPinnedX(nearestPosition(t0 * (1 - Math.max(0, Math.min(1, (px - left) / plotW))) + t1 * Math.max(0, Math.min(1, (px - left) / plotW)))); } }}>
       {yLabel && <text x={left} y={em} className="ov-axis">{yLabel}</text>}
       {bands.map((band, index) => <g key={index}><rect x={left} y={y(band.max)} width={plotW} height={Math.max(1, y(band.min) - y(band.max))} fill={band.color ?? "var(--chart-live-faint, #777)"} opacity={0.1} /><text x={left + em * 0.4} y={y(band.max) + em} className="ov-axis">{band.label}</text></g>)}
-      {[y0, y0 / 2 + y1 / 2, y1].filter((value, index, array) => array.indexOf(value) === index).map((value, index) => <g key={index}><line x1={left} x2={left + plotW} y1={y(value)} y2={y(value)} className="ov-gridline" /><text ref={(node) => { if (node && typeof node.getComputedTextLength === "function") setTickWidth((current) => Math.max(current, node.getComputedTextLength())); }} x={left - em * 0.5} y={y(value)} dominantBaseline="middle" className="ov-axis" textAnchor="end">{format(value)}</text></g>)}
+      {[y0, y0 / 2 + y1 / 2, y1].filter((value, index, array) => array.indexOf(value) === index).map((value, index) => <g key={index}><line x1={left} x2={left + plotW} y1={y(value)} y2={y(value)} className="ov-gridline" /><text ref={(node) => { if (node && typeof node.getComputedTextLength === "function") setTickWidth((current) => Math.max(current, node.getComputedTextLength())); }} x={left - em * 0.5} y={y(value)} dominantBaseline="middle" className="ov-axis" textAnchor="end" aria-label={format(value)}>{yTick(value)}</text></g>)}
       {references.map((reference, index) => <g key={index}><line x1={left} x2={left + plotW} y1={y(reference.value)} y2={y(reference.value)} className="ov-reference" style={{ stroke: reference.color }} /><text x={left + plotW} y={y(reference.value) - em * 0.35} className="ov-axis" textAnchor="end">{reference.label} · {format(reference.value)}</text></g>)}
       {[t0, t0 / 2 + t1 / 2, t1].filter((value, index, array) => array.indexOf(value) === index).map((value, index, array) => <text key={value} x={x(value)} y={height - em * (xLabel ? 1.8 : 0.5)} className="ov-axis" textAnchor={index === 0 && array.length > 1 ? "start" : index === array.length - 1 && array.length > 1 ? "end" : "middle"}>{tick(value)}</text>)}
       {xLabel && <text x={left + plotW / 2} y={height - em * 0.35} textAnchor="middle" className="ov-axis">{xLabel}</text>}
