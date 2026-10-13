@@ -28,6 +28,7 @@ line.ov-gridline { stroke: color-mix(in srgb, var(--chart-live-faint, #777) 22%,
 .ov-lines svg { max-width: 100%; touch-action: pan-y; border-radius: .25em; }
 .ov-lines svg:focus-visible { outline: 2px solid var(--chart-live-focus, #8b7cf6); outline-offset: .2em; }
 .ov-reference { stroke: var(--chart-live-faint, #777); stroke-width: 1.25; stroke-dasharray: 5 5; }
+.ov-reference-label { paint-order: stroke fill; stroke: var(--chart-live-surface, #fff); stroke-width: 4px; stroke-linejoin: round; }
 .ov-lines-legend { display: flex; flex-wrap: wrap; align-items: center; gap: .5em 1.5em; margin: 0; padding: 0; list-style: none; color: var(--chart-live-fg, #222); font-size: .875em; }
 .ov-lines-legend li { display: flex; align-items: center; gap: .5em; min-width: 0; }
 .ov-lines-legend span { overflow-wrap: anywhere; }

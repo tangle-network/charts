@@ -129,6 +129,25 @@ describe("shared recorded Lines", () => {
     expect(container.textContent).toContain("Target");
     expect(container.innerHTML).not.toMatch(/NaN|Infinity/);
   });
+  it("keeps converted caller units on phone ticks and permits an explicit shorter tick", async () => {
+    vi.stubGlobal("ResizeObserver", class {
+      constructor(private callback: (entries: unknown[]) => void) {}
+      observe() { this.callback([{ contentRect: { width: 390 } }]); }
+      disconnect() {}
+    });
+    const value = 1_000_000_000_000_000;
+    const format = (raw: number) => `${(raw / 1000).toFixed(0)} s`;
+    const data = [{ name: "Elapsed", color: "red", points: [[1, value]] as const }];
+    const props = { series: data, format, yDomain: [0, value] as const, xFormat: String };
+    const { container, rerender } = render(<Lines {...props} />);
+    const labels = () => Array.from(container.querySelectorAll("svg text[aria-label]"));
+    expect(labels().map((node) => node.textContent)).toContain("1000000000000 s");
+    rerender(<Lines {...props} yTickFormat={(raw) => `${(raw / 1e15).toFixed(0)} Ps`} />);
+    const exact = labels().find((node) => node.getAttribute("aria-label") === "1000000000000 s")!;
+    expect(exact.textContent).toBe("1 Ps");
+    fireEvent.click(container.querySelector("details summary")!);
+    expect((await screen.findByRole("table")).textContent).toContain("1000000000000 s");
+  });
   it("rejects contradictory producer positions and values outside a named domain", () => {
     expect(() => render(<Lines series={[{ name: "A", color: "red", points: [[1, 1], [1, 2]] }]} />)).toThrow(/strictly increasing/);
     expect(() => render(<Lines series={series} yDomain={[0, 1]} />)).toThrow(/inside yDomain/);
