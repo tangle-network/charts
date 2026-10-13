@@ -56,8 +56,8 @@ it("packs an isolated static root and optional React entrypoint", () => {
   expect(Object.keys(manifest.dependencies ?? {})).toEqual([]);
   expect(Object.keys(manifest.optionalDependencies ?? {})).toEqual([]);
   expect(Object.keys(source).sort()).toEqual([
-    "breakdown", "chartTokensCss", "comparisonIntervals", "costFrontier", "figureCss", "isRefusal",
-    "metricBars", "rankedRates", "rateOrder", "renderFigure", "renderNotes", "renderRefusals", "taskMatrix", "timeSeries",
+    "breakdown", "chartTokensCss", "comparisonIntervals", "costFrontier", "figureCss", "heatmap", "isRefusal",
+    "latencyRange", "metricBars", "phaseWaterfall", "rankedRates", "rateOrder", "renderFigure", "renderNotes", "renderRefusals", "taskMatrix", "timeSeries",
   ].sort());
 
   // Build once here so a clean `pnpm test` does not depend on stale dist files.

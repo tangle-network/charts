@@ -1,5 +1,8 @@
 export { type RenderFigureOptions, renderFigure, renderNotes, renderRefusals } from "./block.js";
 export { type BreakdownOptions, breakdown } from "./breakdown.js";
+export { heatmap, type HeatmapCell, type HeatmapColumn, type HeatmapOptions, type HeatmapRow, type HeatmapStatus } from "./heatmap.js";
+export { latencyRange, type LatencyRangeOptions, type LatencyRangeRow } from "./latency-range.js";
+export { phaseWaterfall, type PhaseWaterfallOptions, type WaterfallPhase } from "./phase-waterfall.js";
 export { type ComparisonIntervalsOptions, comparisonIntervals } from "./comparison-intervals.js";
 export { type CostFrontierOptions, costFrontier } from "./cost-frontier.js";
 export { chartTokensCss, figureCss } from "./css.generated.js";

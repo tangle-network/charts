@@ -18,9 +18,9 @@
 
 .tgc-finding {
   margin: 0 0 8px;
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 600;
+  font-size: 18px;
+  line-height: 25px;
+  font-weight: 650;
   color: var(--chart-ink);
 }
 
@@ -40,8 +40,8 @@
 
 .tgc-lede {
   margin: 0 0 16px;
-  font-size: 14px;
-  line-height: 22px;
+  font-size: 15px;
+  line-height: 23px;
   color: var(--text-secondary, var(--chart-ink));
 }
 
@@ -71,8 +71,8 @@
 
 .tgc-read {
   margin: 8px 0 0;
-  font-size: 12px;
-  line-height: 16px;
+  font-size: 13px;
+  line-height: 18px;
   color: var(--chart-ink-muted);
 }
 
@@ -217,7 +217,7 @@
 .tgc-whisker,
 .tgc-tick {
   stroke: var(--chart-ink);
-  stroke-width: 1.5;
+  stroke-width: 2;
   stroke-linecap: round;
 }
 .tgc-threshold {
@@ -311,7 +311,21 @@
 .tgc-tip-ink { fill: var(--chart-canvas); }
 
 .tgc-series-line { fill: none; stroke: var(--chart-accent); stroke-width: 2; stroke-linejoin: round; }
-.tgc-series-point { fill: var(--chart-accent); stroke: var(--chart-canvas); stroke-width: 1; }
+.tgc-series-point { fill: var(--chart-accent); stroke: var(--chart-canvas); stroke-width: 2; }
+
+/* Semantic states stay tied to Brand status tokens. No-data has its own neutral mark. */
+.tgc-heat-pass { fill: color-mix(in srgb, var(--chart-pass, var(--status-running)) 19%, var(--chart-canvas)); stroke: var(--chart-pass, var(--status-running)); stroke-width: .8; }
+.tgc-heat-breach { fill: color-mix(in srgb, var(--chart-breach, var(--status-error)) 17%, var(--chart-canvas)); stroke: var(--chart-breach, var(--status-error)); stroke-width: .8; }
+.tgc-heat-no-data { fill: var(--chart-grid); stroke: var(--chart-rule); stroke-width: .8; }
+.tgc-heat-label { fill: var(--chart-ink); }
+.tgc-heat-missing { fill: var(--chart-ink-muted); }
+.tgc-wide:has(.tgc-heat-pass), .tgc-wide:has(.tgc-heat-breach) { overflow-x: auto; }
+.tgc-range-pass { fill: var(--chart-pass, var(--status-running)); }
+.tgc-range-breach { fill: var(--chart-breach, var(--status-error)); }
+.tgc-range-dot-pass { fill: var(--chart-canvas); stroke: var(--chart-pass, var(--status-running)); stroke-width: 3; }
+.tgc-range-dot-breach { fill: var(--chart-canvas); stroke: var(--chart-breach, var(--status-error)); stroke-width: 3; }
+.tgc-waterfall-bar { fill: var(--chart-accent); }
+.tgc-waterfall-unaccounted { fill: var(--chart-muted); }
 .tgc-series-hit { fill: transparent; stroke: transparent; }
 .tgc-series-observation:focus-visible { outline: none; }
 .tgc-series-observation:focus-visible .tgc-series-hit { stroke: var(--chart-ink); stroke-width: 2; }

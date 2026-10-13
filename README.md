@@ -24,6 +24,26 @@ Five figures cover the decisions a benchmark reader makes:
 | `taskMatrix` | Where does each setup succeed and fail? |
 | `breakdown` | Why do attempts fail? |
 
+Operational timings also have three static figures: `heatmap` for complete recorded matrices with producer supplied pass, breach and no-data states; `latencyRange` for p50 dots, p95 bars, a supplied SLO and a minimum observation count; and `phaseWaterfall` for ordered, disjoint phase durations with unaccounted wall time shown explicitly. They return the same `Figure | Refusal` contract.
+
+```ts
+import { heatmap, latencyRange, phaseWaterfall } from "@tangle-network/charts";
+
+heatmap(paths, harnesses.map(h => ({
+  id: h.id, label: h.label,
+  cells: paths.map(p => ({ status: h[p.id].status === "blocked" ? "no-data" : h[p.id].status,
+    value: h[p.id].p95Ms === null ? null : h[p.id].p95Ms / 1000 })),
+})), { measure: "p95 latency", unit: "s", statusRule: "5 s SLO" });
+
+latencyRange([{ id: "pi", label: "pi", p50Ms: 3572, p95Ms: 4102, n: 9 }],
+  { measure: "cold create", sloMs: 5000, minN: 5 });
+
+phaseWaterfall([{ id: "route", label: "Route", ms: 5 }, { id: "restore", label: "Restore", ms: 9500 }],
+  { measure: "create", totalMs: 30398 });
+```
+
+The producer maps its own blocked or absent states to `no-data`; Charts never assigns a status from a value. `latencyRange` refuses any row below `minN`; when the producer omits those rows, pass their reasons in `excluded` so the note names them. `phaseWaterfall` refuses phases whose sum exceeds the reported total because overlapping spans cannot be drawn as a cumulative waterfall. Its input order is retained, including zero-duration phases. The producer marks known unaccounted leaves with `kind: "unaccounted"`; Charts also marks any difference between their sum and `totalMs`.
+
 The library draws and never decides.
 Ranks, intervals, frontier membership, estimate labels and pass counts come from the producer: a board record, a VerticalBench report or an agent-eval lens.
 A figure function returns a `Refusal` in place of a figure it cannot draw honestly, for example a bar over too few units, an interval that names no method, or a frontier the producer did not compute.
@@ -74,13 +94,16 @@ Identity is carried by direct labels, never by hue.
 ## Develop
 
 ```sh
-pnpm --filter @tangle-network/charts gen:css   # after editing src/figure.css or brand tokens.css
-pnpm --filter @tangle-network/charts build     # fails when src/css.generated.ts is stale
+npm ci
+npm run gen:css       # after editing src/figure.css or Brand tokens
+npm run typecheck
+npm test
+npm run build         # fails when src/css.generated.ts is stale
 ```
 
 ## Release
 
-Versions publish from the brand release workflow through npm trusted publishing, like `@tangle-network/brand` and `@tangle-network/ui`.
+Versions publish from this repository's release workflow through npm trusted publishing. Merge the verified change, then push a `vX.Y.Z` tag matching `package.json`; the workflow runs frozen install, typecheck, tests, build, and `npm publish --provenance`.
 
 ### Chart-first vertical rates
 
