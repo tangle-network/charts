@@ -32,8 +32,8 @@ export function latencyRange(rows: LatencyRangeRow[], o: LatencyRangeOptions): F
 }
 
 function draw(rows: LatencyRangeRow[], o: LatencyRangeOptions, min: number, max: number, width: number): string {
-  const phone = width === NARROW, left = phone ? 12 : 148, right = phone ? 48 : 92;
-  const plotW = width - left - right, top = phone ? 43 : 48, rowH = phone ? 63 : 39;
+  const phone = width === NARROW, left = phone ? 122 : 148, right = phone ? 69 : 92;
+  const plotW = width - left - right, top = 48, rowH = phone ? 49 : 39;
   const scale = (ms: number) => left + (Math.log(ms) - Math.log(min)) / (Math.log(max) - Math.log(min)) * plotW;
   let body = line(scale(o.sloMs), top - 11, scale(o.sloMs), top + rows.length * rowH, "tgc-threshold");
   body += text(scale(o.sloMs) + 3, 15, `SLO ${(o.sloMs / 1000).toFixed(0)} s`, { size: 11, cls: "tgc-ink-muted tgc-num" });
@@ -47,13 +47,13 @@ function draw(rows: LatencyRangeRow[], o: LatencyRangeOptions, min: number, max:
   }
   rows.forEach((r, i) => {
     const y = top + i * rowH;
-    const label = wrap(r.label, phone ? width - 100 : left - 8, phone ? 13 : 13, "sans", 1);
-    body += titled(r.label, text(phone ? 12 : 2, y + (phone ? 0 : 5), label.lines[0]!, { size: 13, weight: 600 }));
-    const cy = y + (phone ? 22 : 0), status = r.p95Ms > o.sloMs ? "breach" : "pass";
+    const label = wrap(r.label, left - 10, phone ? 11 : 13, "sans", phone ? 2 : 1);
+    body += titled(r.label, label.lines.map((part, j) => text(2, y + 5 + j * 14, part, { size: phone ? 11 : 13, weight: 600 })).join(""));
+    const cy = y + (phone ? 7 : 0), status = r.p95Ms > o.sloMs ? "breach" : "pass";
     body += titled(`${r.label}: p50 ${(r.p50Ms / 1000).toFixed(1)} s; p95 ${(r.p95Ms / 1000).toFixed(1)} s; n=${r.n}; ${status}`,
       rect(scale(r.p50Ms), cy - 5, Math.max(2, scale(r.p95Ms) - scale(r.p50Ms)), 10, `tgc-range-${status}`, 'rx="5"') +
       circle(scale(r.p50Ms), cy, 6, `tgc-range-dot-${status}`));
-    body += text(width - 4, cy + 4, `${(r.p95Ms / 1000).toFixed(1)} · ${r.n}`, { cls: "tgc-ink tgc-num", anchor: "end", size: phone ? 11 : 12 });
+    body += text(width - 4, cy + 4, `${(r.p95Ms / 1000).toFixed(1)} · ${r.n}`, { cls: "tgc-ink tgc-num", anchor: "end", size: phone ? 10 : 12 });
   });
   return svgRoot(width, top + rows.length * rowH + 4, body);
 }

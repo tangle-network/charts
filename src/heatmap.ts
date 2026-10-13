@@ -58,7 +58,7 @@ function drawWide(columns: HeatmapColumn[], rows: HeatmapRow[], fmt: (value: num
   const width = Math.ceil(left + columns.length * (cellW + gap));
   let head = "", headHeight = 44;
   columns.forEach((c, i) => {
-    const label = wrap(c.label, cellW - 5, 10, "sans", 2);
+    const label = wrap(c.label, cellW - 5, 10, "sans", 3);
     head += titled(c.label, textBlock(label.lines, left + i * (cellW + gap) + cellW / 2, 14, 12, 'class="tgc-ink-muted" font-size="10" text-anchor="middle"'));
     headHeight = Math.max(headHeight, 12 + label.lines.length * 12 + 10);
   });
