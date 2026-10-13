@@ -54,7 +54,7 @@ function cellMark(cell: HeatmapCell, x: number, y: number, w: number, h: number,
 }
 
 function drawWide(columns: HeatmapColumn[], rows: HeatmapRow[], fmt: (value: number) => string): string {
-  const left = 122, gap = 4, cellW = Math.max(60, (WIDE - left - 8 - gap * (columns.length - 1)) / columns.length);
+  const left = 144, gap = 4, cellW = Math.max(58, (WIDE - left - 8 - gap * (columns.length - 1)) / columns.length);
   const width = Math.ceil(left + columns.length * (cellW + gap));
   let head = "", headHeight = 44;
   columns.forEach((c, i) => {

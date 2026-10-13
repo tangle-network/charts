@@ -42,7 +42,7 @@ phaseWaterfall([{ id: "route", label: "Route", ms: 5 }, { id: "restore", label: 
   { measure: "create", totalMs: 30398 });
 ```
 
-The producer maps its own blocked or absent states to `no-data`; Charts never assigns a status from a value. `phaseWaterfall` refuses phases whose sum exceeds the reported total because overlapping spans cannot be drawn as a cumulative waterfall. Its input order is retained, including zero-duration phases.
+The producer maps its own blocked or absent states to `no-data`; Charts never assigns a status from a value. `latencyRange` refuses any row below `minN`; when the producer omits those rows, pass their reasons in `excluded` so the note names them. `phaseWaterfall` refuses phases whose sum exceeds the reported total because overlapping spans cannot be drawn as a cumulative waterfall. Its input order is retained, including zero-duration phases. The producer marks known unaccounted leaves with `kind: "unaccounted"`; Charts also marks any difference between their sum and `totalMs`.
 
 The library draws and never decides.
 Ranks, intervals, frontier membership, estimate labels and pass counts come from the producer: a board record, a VerticalBench report or an agent-eval lens.

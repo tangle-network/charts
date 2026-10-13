@@ -5,7 +5,7 @@ import { capitalize, plural, wrap } from "./text.js";
 import type { Figure, Refusal } from "./types.js";
 
 export interface LatencyRangeRow { id: string; label: string; p50Ms: number; p95Ms: number; n: number }
-export interface LatencyRangeOptions { measure: string; sloMs: number; minN: number; id?: string }
+export interface LatencyRangeOptions { measure: string; sloMs: number; minN: number; excluded?: string[]; id?: string }
 
 export function latencyRange(rows: LatencyRangeRow[], o: LatencyRangeOptions): Figure | Refusal {
   const id = o.id ?? "latency-range";
@@ -23,11 +23,11 @@ export function latencyRange(rows: LatencyRangeRow[], o: LatencyRangeOptions): F
   return {
     id,
     finding: `${breached.length} of ${rows.length} ${plural(rows.length, "range")} exceed the ${fmt(o.sloMs)} p95 SLO.`,
-    lede: `${rows.length} ${plural(rows.length, "setup")}; each has at least ${o.minN} observations.`,
+    lede: `${rows.length} of ${rows.length + (o.excluded?.length ?? 0)} ${plural(rows.length + (o.excluded?.length ?? 0), "setup")} have at least ${o.minN} observations.`,
     read: "The dot is p50; the bar runs from p50 to p95 on a logarithmic time axis. The dashed rule is the p95 SLO. Input order is preserved.",
     svg: { wide: draw(rows, o, min, max, WIDE), narrow: draw(rows, o, min, max, NARROW) },
     table: table(`${capitalize(o.measure)} by setup`, [{ label: "Setup" }, { label: "p50", numeric: true }, { label: "p95", numeric: true }, { label: "n", numeric: true }, { label: "p95 SLO" }], rows.map(r => [r.label, fmt(r.p50Ms), fmt(r.p95Ms), String(r.n), r.p95Ms > o.sloMs ? "breach" : "pass"])),
-    note: { method: `Recorded p50 and p95 in milliseconds on a logarithmic time axis; producer supplies quantiles. The p95 SLO is ${fmt(o.sloMs)}.`, n: `${rows.reduce((s, r) => s + r.n, 0)} observations across ${rows.length} rows; minimum n=${o.minN} per row.`, exclusions: [] },
+    note: { method: `Recorded p50 and p95 in milliseconds on a logarithmic time axis; producer supplies quantiles. The p95 SLO is ${fmt(o.sloMs)}.`, n: `${rows.reduce((s, r) => s + r.n, 0)} observations across ${rows.length} rows; minimum n=${o.minN} per row.`, exclusions: o.excluded ?? [] },
   };
 }
 

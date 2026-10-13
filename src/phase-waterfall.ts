@@ -29,7 +29,9 @@ export function phaseWaterfall(phases: WaterfallPhase[], o: PhaseWaterfallOption
   const rows = all.map(p => { const start = cumulative; cumulative += p.ms; return { ...p, start }; });
   return {
     id,
-    finding: `${capitalize(largest.label)} takes the longest recorded phase: ${fmt(largest.ms)} of ${fmt(o.totalMs)}.`,
+    finding: largest.kind === "unaccounted"
+      ? `${capitalize(largest.label)} is the largest leaf, but its work is unaccounted: ${fmt(largest.ms)} of ${fmt(o.totalMs)}.`
+      : `${capitalize(largest.label)} takes the longest recorded phase: ${fmt(largest.ms)} of ${fmt(o.totalMs)}.`,
     lede: `${fmt(accounted)} in ${phases.length} ordered ${plural(phases.length, "leaf")}; ${fmt(namedUnaccounted)} producer-labelled unaccounted and ${fmt(unassigned)} unassigned remainder.`,
     read: "Each bar begins where the previous phase ends. Grey bars are producer-labelled unaccounted leaves or the unassigned remainder; zero phases remain listed without a positive bar.",
     svg: { wide: draw(rows, o.totalMs, WIDE, short), narrow: draw(rows, o.totalMs, NARROW, short) },
