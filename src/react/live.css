@@ -50,8 +50,10 @@ line.ov-gridline { stroke: color-mix(in srgb, var(--chart-live-faint, #777) 22%,
   letter-spacing: -.025em;
   overflow-wrap: anywhere;
 }
-.ov-lines-controls { display: flex; flex-wrap: wrap; gap: .25rem; }
+.ov-lines-controls { display: flex; flex-wrap: wrap; gap: .25rem; min-width: 0; max-width: 100%; }
 .ov-lines-controls :where(button, select) {
+  min-width: 0;
+  max-width: 100%;
   min-height: 2.75rem;
   padding: .5rem .875rem;
   border: 1px solid var(--chart-live-border, var(--md3-outline-variant, #ddd));
@@ -63,6 +65,7 @@ line.ov-gridline { stroke: color-mix(in srgb, var(--chart-live-faint, #777) 22%,
   cursor: pointer;
   touch-action: manipulation;
 }
+.ov-lines-controls select { text-overflow: ellipsis; }
 .ov-lines-controls button[aria-pressed="true"] {
   border-color: var(--chart-live-focus, var(--accent-text, #6366f1));
   background: hsl(var(--hsl-primary, 246 54% 51%));

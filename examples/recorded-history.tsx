@@ -72,6 +72,11 @@ function App() {
           controls={<>
             <button aria-pressed={!recent} onClick={() => setRecent(false)}>Full history</button>
             <button aria-pressed={recent} onClick={() => setRecent(true)}>Recent records</button>
+            {kind === "long" && (
+              <select aria-label="Progress measurement" defaultValue="score">
+                <option value="score">Recorded search quality score per accepted contribution (score points per contribution)</option>
+              </select>
+            )}
           </>}
           series={series}
           xLabel="Experiment"
