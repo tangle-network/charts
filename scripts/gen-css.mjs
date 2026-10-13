@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Writes src/css.generated.ts: `figureCss` (src/figure.css verbatim) and
 // `chartTokensCss` (the --chart-* tokens resolved to literal values per theme,
-// read from @tangle-network/brand tokens.css).
+// read from the pinned @tangle-network/brand package).
 //
 //   node scripts/gen-css.mjs           write the file
 //   node scripts/gen-css.mjs --check   exit 1 when the file is stale
@@ -15,7 +15,9 @@ import { fileURLToPath } from 'node:url'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const root = path.join(here, '..')
-const TOKENS = path.join(root, '..', 'brand', 'src', 'styles', 'tokens.css')
+const TOKENS = process.env.CHARTS_BRAND_TOKENS_PATH
+  ? path.resolve(process.env.CHARTS_BRAND_TOKENS_PATH)
+  : fileURLToPath(import.meta.resolve('@tangle-network/brand/styles/tokens.css'))
 const FIGURE = path.join(root, 'src', 'figure.css')
 const OUT = path.join(root, 'src', 'css.generated.ts')
 
@@ -47,6 +49,9 @@ function resolve(value, env, depth = 0) {
 function theme(spine, chart, canvas) {
   const env = new Map([...darkSpine, ...spine, ...chart])
   const out = [...chart.keys()].filter((k) => k.startsWith('--chart-')).map((k) => `${k}:${resolve(chart.get(k), env)}`)
+  // The heatmap uses the same semantic status colors as the host Brand theme.
+  out.push(`--chart-pass:${resolve(env.get('--status-running'), env)}`)
+  out.push(`--chart-breach:${resolve(env.get('--status-error'), env)}`)
   out.push(`--chart-canvas:${resolve(canvas, env)}`)
   return out.join(';')
 }
