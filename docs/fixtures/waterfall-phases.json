@@ -1,0 +1,230 @@
+{
+  "totalMs": 30398,
+  "phases": [
+    {
+      "id": "orchestrator.route_glue",
+      "label": "route glue",
+      "ms": 5
+    },
+    {
+      "id": "orchestrator.provision_options",
+      "label": "provision options",
+      "ms": 0
+    },
+    {
+      "id": "orchestrator.create_prep",
+      "label": "create prep",
+      "ms": 2
+    },
+    {
+      "id": "orchestrator.host_select",
+      "label": "host select",
+      "ms": 22
+    },
+    {
+      "id": "host-agent.workspace_preparation",
+      "label": "workspace preparation",
+      "ms": 1315
+    },
+    {
+      "id": "orchestrator.tls_issue_wait",
+      "label": "tls issue wait",
+      "ms": 0
+    },
+    {
+      "id": "host-agent.snapshot_restore",
+      "label": "snapshot restore",
+      "ms": 9500
+    },
+    {
+      "id": "orchestrator.container_config",
+      "label": "container config",
+      "ms": 2
+    },
+    {
+      "id": "orchestrator.signing_key_persist",
+      "label": "signing key persist",
+      "ms": 2
+    },
+    {
+      "id": "orchestrator.session_registration",
+      "label": "session registration",
+      "ms": 0
+    },
+    {
+      "id": "host-agent.image_ensure",
+      "label": "image ensure",
+      "ms": 103
+    },
+    {
+      "id": "host-agent.managed_home_storage_lookup",
+      "label": "managed home storage lookup",
+      "ms": 0
+    },
+    {
+      "id": "host-agent.sidecar_cert_provision",
+      "label": "sidecar cert provision",
+      "ms": 173
+    },
+    {
+      "id": "host-agent.egress_proxy_create",
+      "label": "egress proxy create",
+      "ms": 365
+    },
+    {
+      "id": "host-agent.container_start",
+      "label": "container start",
+      "ms": 257
+    },
+    {
+      "id": "host-agent.egress_registration_apply",
+      "label": "egress registration apply",
+      "ms": 73
+    },
+    {
+      "id": "host-agent.nix_profile_ready",
+      "label": "nix profile ready",
+      "ms": 0
+    },
+    {
+      "id": "host-agent.cache_ownership_repair",
+      "label": "cache ownership repair",
+      "ms": 303
+    },
+    {
+      "id": "host-agent.egress_ca_trust",
+      "label": "egress ca trust",
+      "ms": 110
+    },
+    {
+      "id": "host-agent.cargo_config_write",
+      "label": "cargo config write",
+      "ms": 103
+    },
+    {
+      "id": "host-agent.sidecar_idempotency_check",
+      "label": "sidecar idempotency check",
+      "ms": 0
+    },
+    {
+      "id": "host-agent.sidecar_tls_preflight",
+      "label": "sidecar tls preflight",
+      "ms": 0
+    },
+    {
+      "id": "host-agent.sidecar_workspace_prepare",
+      "label": "sidecar workspace prepare",
+      "ms": 0
+    },
+    {
+      "id": "host-agent.sidecar_exec_create",
+      "label": "sidecar exec create",
+      "ms": 1
+    },
+    {
+      "id": "host-agent.sidecar_module_load",
+      "label": "sidecar module load",
+      "ms": 311
+    },
+    {
+      "id": "host-agent.sidecar_init_egress_filter",
+      "label": "sidecar init egress filter",
+      "ms": 6
+    },
+    {
+      "id": "host-agent.sidecar_init_watchers",
+      "label": "sidecar init watchers",
+      "ms": 3
+    },
+    {
+      "id": "host-agent.sidecar_init_hygiene",
+      "label": "sidecar init hygiene",
+      "ms": 65
+    },
+    {
+      "id": "host-agent.sidecar_init_cli_auth",
+      "label": "sidecar init cli auth",
+      "ms": 4
+    },
+    {
+      "id": "host-agent.sidecar_init_prepare_homes",
+      "label": "sidecar init prepare homes",
+      "ms": 213
+    },
+    {
+      "id": "host-agent.sidecar_init_rehydrate_interactive",
+      "label": "sidecar init rehydrate interactive",
+      "ms": 2
+    },
+    {
+      "id": "host-agent.sidecar_init_guest_dns",
+      "label": "sidecar init guest dns",
+      "ms": 2
+    },
+    {
+      "id": "host-agent.sidecar_init_port_check",
+      "label": "sidecar init port check",
+      "ms": 3
+    },
+    {
+      "id": "host-agent.sidecar_init_ready",
+      "label": "sidecar init ready",
+      "ms": 19
+    },
+    {
+      "id": "host-agent.sidecar_listening_to_ready",
+      "label": "sidecar listening to ready",
+      "ms": 1
+    },
+    {
+      "id": "host-agent.warm_claim_acquire",
+      "label": "warm claim acquire",
+      "ms": 0
+    },
+    {
+      "id": "orchestrator.egress_capability_probe",
+      "label": "egress capability probe",
+      "ms": 28.39956200006418
+    },
+    {
+      "id": "orchestrator.network_isolation_probe",
+      "label": "network isolation probe",
+      "ms": 0.005385999800637364
+    },
+    {
+      "id": "orchestrator.storage_provision_begin",
+      "label": "storage provision begin",
+      "ms": 0.248016000026837
+    },
+    {
+      "id": "orchestrator.host_create_transport",
+      "label": "host create transport",
+      "ms": 470
+    },
+    {
+      "id": "orchestrator.inventory_fence_commit",
+      "label": "inventory fence commit",
+      "ms": 35.91663599992171
+    },
+    {
+      "id": "orchestrator.placement_commit",
+      "label": "placement commit",
+      "ms": 10.41676599998027
+    },
+    {
+      "id": "orchestrator.container_lookup",
+      "label": "container lookup",
+      "ms": 30
+    },
+    {
+      "id": "orchestrator.prep_unaccounted",
+      "label": "prep unaccounted",
+      "ms": 13415
+    },
+    {
+      "id": "orchestrator.create_unaccounted",
+      "label": "create unaccounted",
+      "ms": 2365.0136340002064
+    }
+  ]
+}

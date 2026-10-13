@@ -1,0 +1,1843 @@
+{
+  "at": "2026-10-13T21:21:10.787142+00:00",
+  "window": {
+    "from": "2026-10-10T21:20:49.719Z",
+    "to": "2026-10-13T21:20:49.719Z",
+    "selectBy": "recorded completion"
+  },
+  "sloMs": 5000,
+  "columns": [
+    {
+      "id": "create_cold",
+      "label": "Create cold"
+    },
+    {
+      "id": "create_warm",
+      "label": "Create warm"
+    },
+    {
+      "id": "first_model_new",
+      "label": "First model \u00b7 new"
+    },
+    {
+      "id": "first_model_reuse",
+      "label": "First model \u00b7 reuse"
+    },
+    {
+      "id": "first_model_resume",
+      "label": "First model \u00b7 resume"
+    },
+    {
+      "id": "suspend",
+      "label": "Suspend"
+    },
+    {
+      "id": "parked_resume",
+      "label": "Parked resume"
+    },
+    {
+      "id": "archive_resume",
+      "label": "Archive resume"
+    },
+    {
+      "id": "delete",
+      "label": "Delete"
+    }
+  ],
+  "rows": [
+    {
+      "id": "docker:pi",
+      "label": "pi \u00b7 docker",
+      "cells": [
+        {
+          "status": "pass",
+          "value": 4102,
+          "p50Ms": 3572,
+          "p95Ms": 4102,
+          "n": 9
+        },
+        {
+          "status": "pass",
+          "value": 813,
+          "p50Ms": 647,
+          "p95Ms": 813,
+          "n": 25
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "breach",
+          "value": 17313,
+          "p50Ms": 17313,
+          "p95Ms": 17313,
+          "n": 1
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "pass",
+          "value": 1779,
+          "p50Ms": 1779,
+          "p95Ms": 1779,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "id": "docker:codex",
+      "label": "codex \u00b7 docker",
+      "cells": [
+        {
+          "status": "breach",
+          "value": 28983,
+          "p50Ms": 5565,
+          "p95Ms": 28983,
+          "n": 20
+        },
+        {
+          "status": "breach",
+          "value": 11181,
+          "p50Ms": 922,
+          "p95Ms": 11181,
+          "n": 16
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "breach",
+          "value": 17610,
+          "p50Ms": 17610,
+          "p95Ms": 17610,
+          "n": 1
+        },
+        {
+          "status": "pass",
+          "value": 3553,
+          "p50Ms": 3553,
+          "p95Ms": 3553,
+          "n": 1
+        },
+        {
+          "status": "breach",
+          "value": 23510,
+          "p50Ms": 19643,
+          "p95Ms": 23510,
+          "n": 3
+        },
+        {
+          "status": "pass",
+          "value": 1519,
+          "p50Ms": 1519,
+          "p95Ms": 1519,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "id": "docker:claude-code",
+      "label": "claude-code \u00b7 docker",
+      "cells": [
+        {
+          "status": "breach",
+          "value": 17500,
+          "p50Ms": 3154,
+          "p95Ms": 17500,
+          "n": 10
+        },
+        {
+          "status": "breach",
+          "value": 17432,
+          "p50Ms": 653,
+          "p95Ms": 17432,
+          "n": 28
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "breach",
+          "value": 17056,
+          "p50Ms": 17056,
+          "p95Ms": 17056,
+          "n": 1
+        },
+        {
+          "status": "pass",
+          "value": 3846,
+          "p50Ms": 3222,
+          "p95Ms": 3846,
+          "n": 2
+        },
+        {
+          "status": "breach",
+          "value": 19332,
+          "p50Ms": 18695,
+          "p95Ms": 19332,
+          "n": 3
+        },
+        {
+          "status": "pass",
+          "value": 2393,
+          "p50Ms": 2393,
+          "p95Ms": 2393,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "id": "docker:kimi-code",
+      "label": "kimi-code \u00b7 docker",
+      "cells": [
+        {
+          "status": "pass",
+          "value": 3878,
+          "p50Ms": 3598,
+          "p95Ms": 3878,
+          "n": 5
+        },
+        {
+          "status": "pass",
+          "value": 682,
+          "p50Ms": 603,
+          "p95Ms": 682,
+          "n": 7
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "breach",
+          "value": 17283,
+          "p50Ms": 17283,
+          "p95Ms": 17283,
+          "n": 1
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "pass",
+          "value": 1847,
+          "p50Ms": 1847,
+          "p95Ms": 1847,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "id": "docker:hermes",
+      "label": "hermes \u00b7 docker",
+      "cells": [
+        {
+          "status": "pass",
+          "value": 3768,
+          "p50Ms": 3569,
+          "p95Ms": 3768,
+          "n": 5
+        },
+        {
+          "status": "pass",
+          "value": 896,
+          "p50Ms": 582,
+          "p95Ms": 896,
+          "n": 9
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "breach",
+          "value": 17170,
+          "p50Ms": 17170,
+          "p95Ms": 17170,
+          "n": 1
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "pass",
+          "value": 2312,
+          "p50Ms": 2312,
+          "p95Ms": 2312,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "id": "docker:openclaw",
+      "label": "openclaw \u00b7 docker",
+      "cells": [
+        {
+          "status": "pass",
+          "value": 3697,
+          "p50Ms": 3432,
+          "p95Ms": 3697,
+          "n": 4
+        },
+        {
+          "status": "pass",
+          "value": 849,
+          "p50Ms": 593,
+          "p95Ms": 849,
+          "n": 8
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "breach",
+          "value": 17637,
+          "p50Ms": 17637,
+          "p95Ms": 17637,
+          "n": 1
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "pass",
+          "value": 2703,
+          "p50Ms": 2703,
+          "p95Ms": 2703,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "id": "docker:nanoclaw",
+      "label": "nanoclaw \u00b7 docker",
+      "cells": [
+        {
+          "status": "pass",
+          "value": 3713,
+          "p50Ms": 3631,
+          "p95Ms": 3713,
+          "n": 5
+        },
+        {
+          "status": "pass",
+          "value": 736,
+          "p50Ms": 612,
+          "p95Ms": 736,
+          "n": 9
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "breach",
+          "value": 18704,
+          "p50Ms": 18704,
+          "p95Ms": 18704,
+          "n": 1
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "pass",
+          "value": 2005,
+          "p50Ms": 2005,
+          "p95Ms": 2005,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "id": "docker:prime",
+      "label": "prime \u00b7 docker",
+      "cells": [
+        {
+          "status": "pass",
+          "value": 3785,
+          "p50Ms": 3570,
+          "p95Ms": 3785,
+          "n": 5
+        },
+        {
+          "status": "pass",
+          "value": 801,
+          "p50Ms": 682,
+          "p95Ms": 801,
+          "n": 7
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "breach",
+          "value": 17973,
+          "p50Ms": 17973,
+          "p95Ms": 17973,
+          "n": 1
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "pass",
+          "value": 2775,
+          "p50Ms": 2775,
+          "p95Ms": 2775,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "id": "docker:opencode",
+      "label": "opencode \u00b7 docker",
+      "cells": [
+        {
+          "status": "breach",
+          "value": 30232,
+          "p50Ms": 5312,
+          "p95Ms": 30232,
+          "n": 389
+        },
+        {
+          "status": "breach",
+          "value": 20182,
+          "p50Ms": 691,
+          "p95Ms": 20182,
+          "n": 538
+        },
+        {
+          "status": "pass",
+          "value": 3495,
+          "p50Ms": 3156,
+          "p95Ms": 3495,
+          "n": 12
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "pass",
+          "value": 4660,
+          "p50Ms": 3310,
+          "p95Ms": 4660,
+          "n": 7
+        },
+        {
+          "status": "breach",
+          "value": 18182,
+          "p50Ms": 18182,
+          "p95Ms": 18182,
+          "n": 1
+        },
+        {
+          "status": "breach",
+          "value": 10311,
+          "p50Ms": 5751,
+          "p95Ms": 10311,
+          "n": 7
+        },
+        {
+          "status": "breach",
+          "value": 19601,
+          "p50Ms": 13671,
+          "p95Ms": 19601,
+          "n": 8
+        },
+        {
+          "status": "pass",
+          "value": 2206,
+          "p50Ms": 2206,
+          "p95Ms": 2206,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "id": "docker:amp",
+      "label": "amp \u00b7 docker",
+      "cells": [
+        {
+          "status": "pass",
+          "value": 3574,
+          "p50Ms": 3453,
+          "p95Ms": 3574,
+          "n": 6
+        },
+        {
+          "status": "pass",
+          "value": 837,
+          "p50Ms": 583,
+          "p95Ms": 837,
+          "n": 6
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "breach",
+          "value": 16277,
+          "p50Ms": 16277,
+          "p95Ms": 16277,
+          "n": 1
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "pass",
+          "value": 2651,
+          "p50Ms": 2651,
+          "p95Ms": 2651,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "id": "docker:factory-droids",
+      "label": "factory-droids \u00b7 docker",
+      "cells": [
+        {
+          "status": "pass",
+          "value": 3702,
+          "p50Ms": 3583,
+          "p95Ms": 3702,
+          "n": 4
+        },
+        {
+          "status": "pass",
+          "value": 746,
+          "p50Ms": 604,
+          "p95Ms": 746,
+          "n": 8
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "breach",
+          "value": 17459,
+          "p50Ms": 17459,
+          "p95Ms": 17459,
+          "n": 1
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "pass",
+          "value": 2741,
+          "p50Ms": 2741,
+          "p95Ms": 2741,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "id": "docker:forge",
+      "label": "forge \u00b7 docker",
+      "cells": [
+        {
+          "status": "pass",
+          "value": 4158,
+          "p50Ms": 3650,
+          "p95Ms": 4158,
+          "n": 5
+        },
+        {
+          "status": "pass",
+          "value": 779,
+          "p50Ms": 595,
+          "p95Ms": 779,
+          "n": 7
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "breach",
+          "value": 17262,
+          "p50Ms": 17262,
+          "p95Ms": 17262,
+          "n": 1
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "pass",
+          "value": 2934,
+          "p50Ms": 2934,
+          "p95Ms": 2934,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "id": "docker:acp",
+      "label": "acp \u00b7 docker",
+      "cells": [
+        {
+          "status": "pass",
+          "value": 3911,
+          "p50Ms": 3552,
+          "p95Ms": 3911,
+          "n": 5
+        },
+        {
+          "status": "pass",
+          "value": 795,
+          "p50Ms": 642,
+          "p95Ms": 795,
+          "n": 7
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "breach",
+          "value": 16336,
+          "p50Ms": 16336,
+          "p95Ms": 16336,
+          "n": 1
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "pass",
+          "value": 2276,
+          "p50Ms": 2276,
+          "p95Ms": 2276,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "id": "firecracker:pi",
+      "label": "pi \u00b7 firecracker",
+      "cells": [
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        }
+      ]
+    },
+    {
+      "id": "firecracker:codex",
+      "label": "codex \u00b7 firecracker",
+      "cells": [
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        }
+      ]
+    },
+    {
+      "id": "firecracker:claude-code",
+      "label": "claude-code \u00b7 firecracker",
+      "cells": [
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        }
+      ]
+    },
+    {
+      "id": "firecracker:kimi-code",
+      "label": "kimi-code \u00b7 firecracker",
+      "cells": [
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        }
+      ]
+    },
+    {
+      "id": "firecracker:hermes",
+      "label": "hermes \u00b7 firecracker",
+      "cells": [
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        }
+      ]
+    },
+    {
+      "id": "firecracker:openclaw",
+      "label": "openclaw \u00b7 firecracker",
+      "cells": [
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        }
+      ]
+    },
+    {
+      "id": "firecracker:nanoclaw",
+      "label": "nanoclaw \u00b7 firecracker",
+      "cells": [
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        }
+      ]
+    },
+    {
+      "id": "firecracker:prime",
+      "label": "prime \u00b7 firecracker",
+      "cells": [
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        }
+      ]
+    },
+    {
+      "id": "firecracker:opencode",
+      "label": "opencode \u00b7 firecracker",
+      "cells": [
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        }
+      ]
+    },
+    {
+      "id": "firecracker:amp",
+      "label": "amp \u00b7 firecracker",
+      "cells": [
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        }
+      ]
+    },
+    {
+      "id": "firecracker:factory-droids",
+      "label": "factory-droids \u00b7 firecracker",
+      "cells": [
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        }
+      ]
+    },
+    {
+      "id": "firecracker:forge",
+      "label": "forge \u00b7 firecracker",
+      "cells": [
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        }
+      ]
+    },
+    {
+      "id": "firecracker:acp",
+      "label": "acp \u00b7 firecracker",
+      "cells": [
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        },
+        {
+          "status": "no-data",
+          "value": null,
+          "p50Ms": null,
+          "p95Ms": null,
+          "n": 0
+        }
+      ]
+    }
+  ]
+}
