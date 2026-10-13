@@ -212,30 +212,16 @@ Selection is controlled by bucket ID. Hover, focus, click, Enter, Space and touc
 ### React and package-boundary checks
 
 ```sh
-pnpm exec vitest run packages/charts/src/react/sparkline.test.tsx packages/charts/src/react/stacked-bar-chart.test.tsx
-pnpm exec vitest run packages/charts/src/package-boundary.test.ts
-pnpm exec vitest run packages/charts
-pnpm --filter @tangle-network/charts exec tsc --noEmit
-pnpm --filter @tangle-network/charts build
+npm ci
+npm run typecheck
+npm test
+npm run build
 ```
 
-The package-boundary test builds and packs Charts, installs the tarball in an OS-temporary consumer with a normal offline npm install (no peer-omission flags), asserts React/React DOM/React types cannot resolve, and executes the static root without DOM globals. It compares root exports, static SVG/tables, Refusals, report/chart/plot HTML and CSS with the untouched source implementation, then compiles a static-only consumer with `lib: ["ES2022"]`, `types: []` and `skipLibCheck: false`. Only afterward does it supply the workspace React peer/types to verify the packed React runtime and declarations. It runs under the existing root `pnpm test`; no CI workflow or shared UI smoke-script changes are needed.
+The package-boundary test builds and packs Charts, installs the tarball in an OS-temporary consumer with a normal offline npm install (no peer-omission flags), asserts React/React DOM/React types cannot resolve, and executes the static root without DOM globals. It compares root exports, static SVG/tables, Refusals, report/chart/plot HTML and CSS with the untouched source implementation, then compiles a static-only consumer with `lib: ["ES2022"]`, `types: []` and `skipLibCheck: false`. Only afterward does it supply the installed React peer/types to verify the packed React runtime and declarations. It runs under `npm test`.
 
 The component tests cover gap/zero/one/equal/negative cases, controlled identity, keyboard/touch selection, nonvisual values and resize contracts. The jsdom resize check verifies fluid/minimum-width attributes and preserved selection, **not browser-computed layout**; The retained packed-browser fixture checks Chromium at 1100px and 390px, keyboard selection, emulated touch, light/dark Brand tokens, reduced motion, and top-layer positioning inside a transformed, paint-contained panel. It passes with React 18 and React 19; the React 18 consumer also compiles the packed declarations with React 18 types. Physical touch hardware and screen-reader audio remain unchecked.
 
-### Packed browser proof
+### Figure browser proof
 
-Build Charts, then run the reusable fixture from the repository root.
-Pass a tarball path to test a published artifact after downloading it with npm pack.
-
-```sh
-pnpm --filter @tangle-network/charts build
-PORT=46489 node scripts/charts-browser-smoke.mjs /absolute/path/to/charts.tgz
-python3 scripts/charts-browser-proof.py http://127.0.0.1:46489 /tmp/charts-proof
-```
-
-Set `CHARTS_REACT_VERSION=18` to install and check an isolated React 18 runtime and type consumer.
-The default fixture uses the installed workspace React peer and bundles only the packed Charts export.
-The fixture imports Brand token CSS and creates a transformed, paint-contained panel.
-It needs Python Playwright and Chromium at `/snap/bin/chromium`.
-Receipts and screenshots are in [the retained proof](../../docs/evidence/charts-react-189/README.md).
+`node scripts/render-figures.mjs` writes a comparison page from the retained fixtures and approved speed reference. `node scripts/capture-figures.mjs` uses Playwright Chromium to capture all three figures at phone and desktop widths in light and dark themes. The reviewed images are in [`docs/screenshots`](docs/screenshots).

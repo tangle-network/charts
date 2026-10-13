@@ -78,7 +78,7 @@ export const chartTokensCss: string = ${JSON.stringify(tokensCss)};
 if (process.argv.includes('--check')) {
   const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : ''
   if (current !== file) {
-    console.error('src/css.generated.ts is stale: run `pnpm --filter @tangle-network/charts gen:css`')
+    console.error('src/css.generated.ts is stale: run `npm run gen:css`')
     process.exit(1)
   }
 } else {
