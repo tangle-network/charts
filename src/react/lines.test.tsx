@@ -14,22 +14,23 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 const series = [{ name: "Recorded score", color: "#8b7cf6", points: [[1, 2], [2, null], [3, 4], [4, 5]] as const }];
 describe("shared recorded Lines", () => {
-  it("distinguishes empty, unavailable, and a range without observations", () => {
+  it("distinguishes empty, unavailable, and a range without observations", async () => {
     const { rerender } = render(<Lines series={[]} />);
     expect(screen.getByText("No history yet.")).toBeTruthy();
     rerender(<Lines series={[{ name: "A", color: "red", points: [[1, null]] }]} />);
     expect(screen.getByText("Not available")).toBeTruthy();
     fireEvent.click(document.querySelector("details summary")!);
-    expect(screen.getByRole("table").textContent).toContain("Not available");
+    expect((await screen.findByRole("table")).textContent).toContain("Not available");
     rerender(<Lines series={series} xDomain={[5, 6]} />);
     expect(screen.getByText("No recorded points in this range.")).toBeTruthy();
     expect(screen.getByRole("table").querySelectorAll("tbody tr")).toHaveLength(4);
   });
-  it("breaks a line at missing readings without inventing an observation", () => {
+  it("breaks a line at missing readings without inventing an observation", async () => {
     const { container } = render(<Lines series={series} xFormat={String} />);
     expect(container.querySelectorAll("svg path")).toHaveLength(1);
     expect(container.querySelector("svg path")!.getAttribute("d")).toMatch(/^M[^ ]+ L/);
     fireEvent.click(container.querySelector("details summary")!);
+    await screen.findByRole("table");
     expect(container.querySelectorAll("tbody tr")).toHaveLength(4);
     expect(container.querySelector("tbody")!.textContent).toContain("Not available");
     expect(container.innerHTML).not.toMatch(/NaN|Infinity/);
@@ -60,7 +61,7 @@ describe("shared recorded Lines", () => {
     fireEvent.click(screen.getByRole("img"), { clientX: 10, clientY: 200 });
     expect(onSelect).not.toHaveBeenCalled();
   });
-  it("retains unresolvable observations but offers and invokes actions only for linked records", () => {
+  it("retains unresolvable observations but offers and invokes actions only for linked records", async () => {
     const onSelect = vi.fn();
     const { container } = render(<Lines series={series} xDomain={[3, 4]} xFormat={String} markers onSelect={onSelect} canSelect={({ pointIndex }) => pointIndex === 3} />);
     const chart = screen.getByRole("img");
@@ -75,6 +76,7 @@ describe("shared recorded Lines", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open Recorded score at 4" }));
     expect(onSelect).toHaveBeenCalledWith({ seriesIndex: 0, pointIndex: 3, x: 4, y: 5 });
     fireEvent.click(container.querySelector("details summary")!);
+    await screen.findByRole("table");
     expect(container.querySelectorAll("tbody tr")).toHaveLength(4);
   });
   it("shares inspection while retaining each series' actual observation time", () => {
