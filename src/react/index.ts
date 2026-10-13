@@ -22,3 +22,4 @@ export type {
   WaterfallBarProps, WaterfallRowProps, WaterfallHeaderProps,
 } from "./waterfall.js";
 export { DayBars, HBars, Histogram, Lines, Meter, Spark, Gantt, LIVE_SERIES, formatCompact } from "./live.js";
+export type { LinesProps, LineSeries, LinePoint, LineSelection, LineReference, LineBand } from "./lines.js";

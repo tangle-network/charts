@@ -24,4 +24,27 @@ line.ov-gridline { stroke: color-mix(in srgb, var(--chart-live-faint, #777) 22%,
 .ov-meter-text { font: .85em var(--chart-live-font-mono, monospace); font-variant-numeric: tabular-nums; color: var(--chart-live-muted, #666); }
 .ov-spark { display: block; width: 8em; height: 1.6em; }
 .ov-spark-empty { font-size: .8em; color: var(--chart-live-faint, #777); }
+.ov-lines .ov-axis { font-size: .875em; }
+.ov-lines svg { max-width: 100%; touch-action: pan-y; border-radius: .25em; }
+.ov-lines svg:focus-visible { outline: 2px solid var(--chart-live-focus, #8b7cf6); outline-offset: .2em; }
+.ov-reference { stroke: var(--chart-live-faint, #777); stroke-width: 1.25; stroke-dasharray: 5 5; }
+.ov-lines-legend { display: flex; flex-wrap: wrap; align-items: center; gap: .5em 1.5em; margin: 0; padding: 0; list-style: none; color: var(--chart-live-fg, #222); font-size: .875em; }
+.ov-lines-legend li { display: flex; align-items: center; gap: .5em; min-width: 0; }
+.ov-lines-legend span { overflow-wrap: anywhere; }
+.ov-lines-legend b, .ov-lines-readout b { font-family: var(--chart-live-font-mono, monospace); font-variant-numeric: tabular-nums; }
+.ov-lines-legend i, .ov-lines-readout i { display: inline-block; flex: none; width: .6em; height: .6em; border-radius: 50%; }
+.ov-lines-readout { min-height: 3em; padding: .65em 0; border-top: 1px solid var(--chart-live-border, #ddd); font-size: .875em; color: var(--chart-live-fg, #222); }
+.ov-lines-readout > div { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, auto) auto; gap: .4em 1em; align-items: center; padding: .2em 0; }
+.ov-lines-readout span { display: flex; gap: .5em; align-items: center; min-width: 0; overflow-wrap: anywhere; }
+.ov-lines-unlinked, .ov-lines-readout time, .ov-lines-hint { color: var(--chart-live-muted, #666); }
+.ov-lines-readout button { min-height: 2.75rem; border: 1px solid var(--chart-live-border, #aaa); background: var(--chart-live-raised, #fff); color: var(--chart-live-fg, #222); border-radius: .35em; padding: .4em .6em; font: inherit; cursor: pointer; }
+@media (hover: hover) and (pointer: fine) { .ov-lines-readout button:hover { background: var(--chart-live-hover, #eee); } }
+.ov-lines-readout button:active { background: var(--chart-live-hover, #eee); }
+.ov-lines-readout button:focus-visible, .ov-lines-data summary:focus-visible { outline: 2px solid var(--chart-live-focus, #8b7cf6); outline-offset: .15em; }
+.ov-lines-data { color: var(--chart-live-muted, #666); font-size: .8em; }
+.ov-lines-data summary { width: fit-content; cursor: pointer; padding: .3em 0; }
+.ov-lines-data > div { overflow-x: auto; max-height: 20em; }
+.ov-lines-data table { border-collapse: collapse; width: 100%; text-align: left; }
+.ov-lines-data th, .ov-lines-data td { padding: .4em .6em; border-bottom: 1px solid var(--chart-live-border, #ddd); }
+@media (max-width: 480px) { .ov-lines-readout > div { grid-template-columns: minmax(0, 1fr) auto; } .ov-lines-readout time { grid-column: 1; } }
 .ov-tip-line i { display: inline-block; width: .7em; height: .7em; border-radius: 3px; margin-right: .4em; vertical-align: -.05em; }

@@ -1,6 +1,6 @@
 # @tangle-network/charts
 
-Benchmark figures as static SVG and HTML tables, plus optional React timing primitives.
+Shared charts for recorded research, benchmark figures and live application data.
 
 The React entry also exports `DayBars`, `HBars`, `Histogram`, `Lines`, `Meter`, `Spark`, and `Gantt` for live operational pages. Import `@tangle-network/charts/react/live.css` for their layout and set `--chart-live-*` theme tokens on an ancestor. Data, state colors, destination links, labels, and interpretation remain with the caller. `DayBars` accepts an `onOpen(index)` action with keyboard activation.
 
@@ -80,7 +80,18 @@ pnpm --filter @tangle-network/charts build     # fails when src/css.generated.ts
 
 ## Release
 
-Versions publish from the brand release workflow through npm trusted publishing, like `@tangle-network/brand` and `@tangle-network/ui`.
+This repo owns the source and release of `@tangle-network/charts`. The Release
+workflow builds and attaches the exact npm-format tarball and its SHA-256 digest
+to the matching GitHub release. Consumers can pin that public tarball while npm
+trusted-publisher ownership transfers from the former brand repo.
+
+Npm publication is disabled until the repository variable
+`NPM_TRUSTED_PUBLISHER_ENABLED` is explicitly enabled after that transfer. When
+enabled, the workflow publishes the same tarball rather than rebuilding it.
+Existing npm versions are retained for current consumers.
+
+[Migration and release requirements](docs/migration.md) record the source history,
+compatibility and old-source retirement requirements.
 
 ### Chart-first vertical rates
 
@@ -150,6 +161,57 @@ These typography rules do not apply to report or chart presentation.
 
 ## Optional React renderers
 
+`Lines` shows recorded histories on shared linear axes, with an optional stepped
+path for a caller-supplied frontier. Missing values break the path; the renderer
+does not compute records, interpolate gaps, compress time, or aggregate scores.
+Hover, tap, or use Left/Right and Home/End to inspect observed points. Each readout
+shows its actual observation time, even when series have different sample times.
+Ordinary lines inspect the nearest observed sample. Stepped frontiers inspect
+the last sample at or before the crosshair; future records are not shown as current.
+`inspection` can explicitly select either behavior.
+An app can keep its selected record visible with `selectedPoint`, addressed in
+the original series arrays. Changing that controlled record clears earlier
+pointer and keyboard inspection. Escape clears local inspection; an externally
+selected record remains visible until the app clears `selectedPoint`.
+The complete recorded data remains available through the data disclosure.
+
+```tsx
+import { Lines } from "@tangle-network/charts/react";
+import "@tangle-network/charts/react/live.css";
+
+<Lines
+  label="Recorded experiment scores"
+  series={recordedSeries}
+  xLabel="Experiment date"
+  yLabel="Score · higher is better"
+  xFormat={(time) => new Date(time).toLocaleString()}
+  axis={(time) => new Date(time).toLocaleDateString()}
+  yDomain={[0, 1]}
+  references={[{ value: baselineScore, label: "Baseline" }]}
+  markers
+  endLabels
+  onSelect={({ seriesIndex, pointIndex }) => openResult(recordedSeries[seriesIndex].points[pointIndex])}
+/>
+```
+
+The example names caller-owned records and a caller-owned baseline; it supplies
+no invented measurements. `onSelect` receives `{seriesIndex, pointIndex, x, y}`
+with indices into the original supplied arrays, including when `xDomain` narrows
+the visible range. Range controls and result navigation belong to the app.
+`bands` accepts recorded `{min, max, label, color?}` target or reference ranges.
+Colors and the `--chart-live-*` theme tokens belong to the caller. Direct end
+labels appear at desktop widths; phone layouts retain the legend and readout.
+`curve="step"` draws supplied frontier points; `curve="linear"` is the default.
+The existing `series`, `format`, `rows`, `axis`, `dots`, and per-series `label`
+props remain supported.
+When `onSelect` is provided, clicking or tapping within 24 pixels of an observed
+point opens that exact record. The nearest point is chosen in both axes; blank
+chart space does not open a result. The per-series readout buttons remain useful
+when recorded points overlap. Supply `canSelect(point)` when an app retains
+historical samples without a resolvable destination. Those samples remain drawn
+and disclosed, while pointer/keyboard activation is suppressed and their
+readout says "No linked result" instead of offering an enabled action.
+
 ```tsx
 import { useState } from "react";
 import { Sparkline, StackedBarChart } from "@tangle-network/charts/react";
@@ -174,7 +236,7 @@ export function RecordedUnits() {
 }
 ```
 
-Install React 18 or 19 in the consuming app. It is an **optional peer** so static-only consumers need neither React nor its types. There is no React DOM, chart framework or UI-package runtime dependency. The renderers need no generated stylesheet; `figure.css` remains exclusively the unchanged static-figure stylesheet. Supply application font/color styles and readable series colors. Apps with server/client component boundaries mark their interactive wrapper as a client component.
+Install React 18 or 19 in the consuming app. It is an **optional peer** so static-only consumers need neither React nor its types. There is no React DOM, chart framework or UI-package runtime dependency. Sparkline, StackedBarChart and the waterfall renderers need no generated stylesheet. Lines and the other live renderers use `react/live.css`; `figure.css` remains exclusively the static-figure stylesheet. Supply application font/color styles and readable series colors. Apps with server/client component boundaries mark their interactive wrapper as a client component.
 
 **Different scales, on purpose.** `Sparkline` ports Agent App's observed-extent scale; it does not implicitly include zero. Equal readings sit at mid-height, a single reading is a point, null/nonfinite samples retain their sample index and break the line, and finite negative readings are supported. Width/height props control its viewBox. Its accessible name describes the count, gaps, range and direction; the SVG description contains each sample's formatted value. It is not animated and has no selection interaction. The default `en-US` formatter retains Agent App's two-decimal behavior; pass `format={String}` or a domain-specific formatter when exact precision is important.
 
@@ -189,9 +251,9 @@ Selection is controlled by bucket ID. Hover, focus, click, Enter, Space and touc
 ### React and package-boundary checks
 
 ```sh
-pnpm exec vitest run packages/charts/src/react/sparkline.test.tsx packages/charts/src/react/stacked-bar-chart.test.tsx
-pnpm exec vitest run packages/charts/src/package-boundary.test.ts
-pnpm exec vitest run packages/charts
+pnpm exec vitest run src/react/sparkline.test.tsx src/react/stacked-bar-chart.test.tsx
+pnpm exec vitest run src/package-boundary.test.ts
+pnpm test
 pnpm --filter @tangle-network/charts exec tsc --noEmit
 pnpm --filter @tangle-network/charts build
 ```
@@ -215,4 +277,4 @@ Set `CHARTS_REACT_VERSION=18` to install and check an isolated React 18 runtime 
 The default fixture uses the installed workspace React peer and bundles only the packed Charts export.
 The fixture imports Brand token CSS and creates a transformed, paint-contained panel.
 It needs Python Playwright and Chromium at `/snap/bin/chromium`.
-Receipts and screenshots are in [the retained proof](../../docs/evidence/charts-react-189/README.md).
+Receipts and screenshots are in [the retained proof](https://github.com/tangle-network/brand/blob/1dd43f0/docs/evidence/charts-react-189/README.md).

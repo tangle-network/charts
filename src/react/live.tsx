@@ -206,82 +206,8 @@ export function Histogram({ bins, format = formatCompact, color = LIVE_SERIES[0]
   )
 }
 
-/** Lines over time on one axis (at most four series); the crosshair readout lists each series at the nearest time. A
- * `dots` series draws its points as marks (checkpoints) instead of a line; `axis` labels the time axis (default MM-DD). */
-export function Lines({ series, format = formatCompact, rows = 13, axis }: { series: { name: string; color: string; points: [number, number][]; dots?: boolean; label?: (t: number) => string }[]; format?: (v: number) => string; rows?: number; axis?: (t: number) => string }) {
-  const [ref, width, em] = useWidth<HTMLDivElement>()
-  const height = Math.round(rows * em)
-  const [hover, setHover] = useState<number | null>(null)
-  const all = series.flatMap((s) => s.points)
-  if (!all.length) return <p className="ov-empty">No history yet.</p>
-  const t0 = Math.min(...all.map((p) => p[0]))
-  const t1 = Math.max(...all.map((p) => p[0]))
-  const { top, ticks } = ticksFor(Math.max(...all.map((p) => p[1])))
-  const left = Math.round(3.4 * em)
-  const bottom = Math.round(1.8 * em)
-  const plotW = Math.max(0, width - left - 10)
-  const plotH = height - bottom - 8
-  const x = (t: number) => left + (t1 > t0 ? ((t - t0) / (t1 - t0)) * plotW : 0)
-  const y = (v: number) => 8 + plotH - (v / top) * plotH
-  const nearest = (points: [number, number][], t: number) => points.reduce((best, p) => (Math.abs(p[0] - t) < Math.abs(best[0] - t) ? p : best), points[0]!)
-  const day = (t: number) => new Date(t).toISOString().slice(5, 16).replace('T', ' ')
-  return (
-    <div
-      ref={ref}
-      className="ov-plot"
-      onMouseMove={(event) => {
-        const box = event.currentTarget.getBoundingClientRect()
-        const px = event.clientX - box.left
-        setHover(px >= left ? t0 + ((px - left) / Math.max(1, plotW)) * (t1 - t0) : null)
-      }}
-      onMouseLeave={() => setHover(null)}
-    >
-      {width > 0 && (
-        <svg width={width} height={height} role="img" aria-label={series.map((s) => s.name).join(', ')}>
-          {ticks.map((t) => (
-            <g key={t}>
-              <line x1={left} x2={width - 10} y1={y(t)} y2={y(t)} className="ov-gridline" />
-              <text x={left - em * 0.4} y={y(t)} dominantBaseline="middle" className="ov-axis" textAnchor="end">{format(t)}</text>
-            </g>
-          ))}
-          {[t0, (t0 + t1) / 2, t1].map((t, i) => (
-            <text key={i} x={x(t)} y={height - em * 0.35} className="ov-axis" textAnchor={i === 0 ? 'start' : i === 2 ? 'end' : 'middle'}>{axis ? axis(t) : day(t).slice(0, 5)}</text>
-          ))}
-          {series.map((s) =>
-            s.dots ? (
-              <g key={s.name}>
-                {s.points.map((p) => (
-                  <circle key={p[0]} cx={x(p[0])} cy={y(p[1])} r={Math.max(3, em / 5)} fill={s.color} stroke="var(--chart-live-surface, #fff)" strokeWidth={1.5} />
-                ))}
-              </g>
-            ) : (
-              <polyline key={s.name} fill="none" stroke={s.color} strokeWidth={Math.max(2, em / 8)} strokeLinejoin="round" points={s.points.map((p) => `${x(p[0])},${y(p[1])}`).join(' ')} />
-            ),
-          )}
-          {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={8} y2={8 + plotH} className="ov-crosshair" />}
-          {hover !== null &&
-            series.map((s) => {
-              const p = s.points.length ? nearest(s.points, hover) : null
-              return p ? <circle key={s.name} cx={x(p[0])} cy={y(p[1])} r={Math.max(4, em / 4)} fill={s.color} stroke="var(--chart-live-surface, #fff)" strokeWidth={2} /> : null
-            })}
-        </svg>
-      )}
-      {hover !== null && (
-        <Tooltip
-          tip={{
-            x: Math.min(x(hover) + 10, width - em * 14),
-            y: 8,
-            title: day(hover),
-            lines: series.filter((s) => s.points.length).map((s) => {
-              const p = nearest(s.points, hover)
-              return { label: s.label ? s.label(p[0]) : s.name, value: format(p[1]), color: s.color }
-            }),
-          }}
-        />
-      )}
-    </div>
-  )
-}
+export { Lines } from "./lines.js"
+export type { LinesProps, LineSeries, LinePoint, LineSelection, LineReference, LineBand } from "./lines.js"
 
 /** A used-of-total meter with its numbers. */
 export function Meter({ used, total, format = formatCompact, tone, text }: { used: number | null | undefined; total: number | null | undefined; format?: (v: number) => string; tone?: string; text?: string }) {
