@@ -40,12 +40,12 @@ describe("operational latency figures", () => {
   });
 
   it("preserves phase order and accounts for the unexplained tail", () => {
-    const figure = phaseWaterfall([{ id: "a", label: "Route", ms: 20 }, { id: "b", label: "Restore", ms: 60 }], { measure: "create", totalMs: 100 });
+    const figure = phaseWaterfall([{ id: "a", label: "Route", ms: 20 }, { id: "b", label: "Restore", ms: 60, kind: "unaccounted" }], { measure: "create", totalMs: 100 });
     expect(isRefusal(figure)).toBe(false);
     if (isRefusal(figure)) return;
-    expect(figure.table).toMatch(/Route[\s\S]*Restore[\s\S]*Unaccounted time/);
+    expect(figure.table).toMatch(/Route[\s\S]*Restore[\s\S]*Unassigned remainder/);
     expect(figure.svg.wide).toContain("tgc-waterfall-unaccounted");
-    expect(figure.lede).toContain("0.02 s unaccounted");
+    expect(figure.lede).toContain("0.06 s producer-labelled unaccounted and 0.02 s unassigned remainder");
     expect(isRefusal(phaseWaterfall([{ id: "a", label: "A", ms: 101 }], { measure: "create", totalMs: 100 }))).toBe(true);
   });
 });
