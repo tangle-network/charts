@@ -60,8 +60,8 @@ it("packs an isolated static root and optional React entrypoint", () => {
     "latencyRange", "metricBars", "phaseWaterfall", "rankedRates", "rateOrder", "renderFigure", "renderNotes", "renderRefusals", "taskMatrix", "timeSeries",
   ].sort());
 
-  // Build once here so a clean `pnpm test` does not depend on stale dist files.
-  execFileSync("pnpm", ["--filter", "@tangle-network/charts", "build"], { cwd: packageDir, stdio: "pipe", timeout: 90_000 });
+  // Build once here so a clean `npm test` does not depend on stale dist files.
+  execFileSync("npm", ["run", "build"], { cwd: packageDir, stdio: "pipe", timeout: 90_000 });
   const temp = mkdtempSync(join(tmpdir(), "charts-consumer-"));
   try {
     const packed = JSON.parse(execFileSync("npm", ["pack", "--json", "--ignore-scripts", "--pack-destination", temp], {
