@@ -108,6 +108,32 @@ describe("shared recorded Lines", () => {
     fireEvent.keyDown(screen.getByRole("img"), { key: "Enter" });
     expect(onSelect).toHaveBeenLastCalledWith({ seriesIndex: 1, pointIndex: 0, x: 1, y: 0 });
   });
+  it("has one dock action for the chosen series and preserves exact records through keyboard inspection", () => {
+    const onSelect = vi.fn();
+    const entries = [
+      { name: "A", color: "red", points: [[1, 2], [4, 9]] as const },
+      { name: "B", color: "blue", points: [[3, 5], [5, 8]] as const },
+    ];
+    const { rerender } = render(<Lines series={entries} curve="step" xFormat={String}
+      selectedPoint={{ seriesIndex: 1, pointIndex: 1 }} onSelect={onSelect} />);
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    fireEvent.click(screen.getByRole("radio", { name: "Inspect A" }));
+    fireEvent.keyDown(screen.getByRole("img"), { key: "Enter" });
+    expect(onSelect).toHaveBeenLastCalledWith({ seriesIndex: 0, pointIndex: 1, x: 4, y: 9 });
+    fireEvent.click(screen.getByRole("radio", { name: "Inspect B" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open B at 5" }));
+    expect(onSelect).toHaveBeenLastCalledWith({ seriesIndex: 1, pointIndex: 1, x: 5, y: 8 });
+    rerender(<Lines series={entries} curve="step" xFormat={String} xDomain={[3, 5]}
+      selectedPoint={{ seriesIndex: 0, pointIndex: 1 }} onSelect={onSelect}
+      canSelect={({ seriesIndex }) => seriesIndex === 1} />);
+    expect(screen.getByText("No linked result")).toBeTruthy();
+    onSelect.mockClear();
+    fireEvent.keyDown(screen.getByRole("img"), { key: "Enter" });
+    expect(onSelect).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("radio", { name: "Inspect B" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open B at 3" }));
+    expect(onSelect).toHaveBeenCalledWith({ seriesIndex: 1, pointIndex: 0, x: 3, y: 5 });
+  });
   it("replaces a keyboard pin when the app selects another record and retains that controlled record on Escape", () => {
     const onSelect = vi.fn();
     const { rerender } = render(<Lines series={series} xFormat={String} selectedPoint={{ seriesIndex: 0, pointIndex: 0 }} onSelect={onSelect} />);
@@ -119,6 +145,24 @@ describe("shared recorded Lines", () => {
     expect(onSelect).toHaveBeenLastCalledWith({ seriesIndex: 0, pointIndex: 2, x: 3, y: 4 });
     fireEvent.keyDown(screen.getByRole("img"), { key: "Escape" });
     expect(screen.getByRole("button", { name: "Open Recorded score at 3" })).toBeTruthy();
+  });
+  it("keeps an uncontrolled hovered sample while crossing into the dock, then clears on figure exit", () => {
+    const onSelect = vi.fn();
+    const entries = [
+      { name: "A", color: "red", points: [[1, 2], [4, 9]] as const },
+      { name: "B", color: "blue", points: [[1, 5], [4, 8]] as const },
+    ];
+    const { container } = render(<Lines series={entries} curve="step" xFormat={String} markers onSelect={onSelect} />);
+    const chart = screen.getByRole("img");
+    const point = container.querySelector("svg circle:last-of-type")!;
+    fireEvent.pointerMove(chart, { pointerType: "mouse", clientX: Number(point.getAttribute("cx")) });
+    const dock = container.querySelector(".ov-lines-readout")!;
+    fireEvent.pointerLeave(chart, { relatedTarget: dock });
+    fireEvent.click(screen.getByRole("radio", { name: "Inspect B" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open B at 4" }));
+    expect(onSelect).toHaveBeenCalledWith({ seriesIndex: 1, pointIndex: 1, x: 4, y: 8 });
+    fireEvent.pointerLeave(container.querySelector(".ov-lines")!, { relatedTarget: document.body });
+    expect(screen.queryByRole("button", { name: "Open B at 4" })).toBeNull();
   });
   it("draws a single zero, a flat negative series, reference lines and target bands on linear axes", () => {
     const { container, rerender } = render(<Lines series={[{ name: "Zero", color: "red", points: [[1, 0]] }]} xFormat={String} />);
@@ -142,9 +186,9 @@ describe("shared recorded Lines", () => {
     const { container, rerender } = render(<Lines {...props} />);
     const labels = () => Array.from(container.querySelectorAll("svg text[aria-label]"));
     expect(labels().map((node) => node.textContent)).toContain("1000000000000 s");
-    rerender(<Lines {...props} yTickFormat={(raw) => `${(raw / 1e15).toFixed(0)} Ps`} />);
+    rerender(<Lines {...props} yTickFormat={(raw) => `${(raw / 1e15).toFixed(0)} Ts`} />);
     const exact = labels().find((node) => node.getAttribute("aria-label") === "1000000000000 s")!;
-    expect(exact.textContent).toBe("1 Ps");
+    expect(exact.textContent).toBe("1 Ts");
     fireEvent.click(container.querySelector("details summary")!);
     expect((await screen.findByRole("table")).textContent).toContain("1000000000000 s");
   });

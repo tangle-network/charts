@@ -206,11 +206,29 @@ The existing `series`, `format`, `rows`, `axis`, `dots`, and per-series `label`
 props remain supported.
 When `onSelect` is provided, clicking or tapping within 24 pixels of an observed
 point opens that exact record. The nearest point is chosen in both axes; blank
-chart space does not open a result. The per-series readout buttons remain useful
-when recorded points overlap. Supply `canSelect(point)` when an app retains
+chart space does not open a result. The aligned inspection dock retains each
+series' actual timestamp. When records overlap, choose the series in the dock;
+its single action and keyboard activation open that exact original record.
+Supply `canSelect(point)` when an app retains
 historical samples without a resolvable destination. Those samples remain drawn
 and disclosed, while pointer/keyboard activation is suppressed and their
 readout says "No linked result" instead of offering an enabled action.
+
+`Lines` owns one figure frame, including its visible `label`, series key, plot,
+inspection dock and data disclosure. Pass caller-owned range or view controls
+through `controls` to place them beside the caption. Avoid a second surrounding
+chart card or a duplicate caption. Import the live stylesheet and use a Brand
+theme boundary; existing `--chart-live-*` overrides remain supported. Axis labels
+are at least 14px; dock text and controls are 16px. On phones, reference values
+sit in an aligned key below the plot instead of crossing its recorded points.
+`format` remains authoritative for caller units. Use `yTickFormat` only when the
+caller explicitly supplies a shorter axis label in the same measurement.
+
+[The composed recorded-history example](examples/recorded-history.tsx) uses the
+same public `Lines` interface and published Brand knot/tokens. Its values are
+clearly declared illustrative records, never benchmark results. The packed
+consumer producer serves it with `--lines`; desktop/phone and both theme scopes
+remain part of the normal browser evidence gate.
 
 ```tsx
 import { useState } from "react";

@@ -1,0 +1,36 @@
+body {
+  margin: 0;
+  background: var(--md3-surface);
+  color: var(--md3-on-surface);
+  font: 16px/1.5 var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+* { box-sizing: border-box; }
+.example-page { max-width: 68rem; margin: 0 auto; padding: 2rem clamp(1rem, 4vw, 3rem) 4rem; }
+.example-masthead { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.example-brand { display: flex; align-items: center; gap: .75rem; color: inherit; font-size: 1.25rem; font-weight: 600; text-decoration: none; letter-spacing: -.025em; }
+.example-brand > span:first-child { display: flex; }
+.example-brand-section { margin-left: .5rem; font-weight: 400; color: var(--md3-on-surface-variant); }
+.example-introduction { margin: clamp(2.5rem, 6vw, 5rem) 0 2rem; }
+.example-introduction h1 { margin: 0; font: 600 clamp(2.5rem, 6vw, 4.75rem)/1.05 var(--font-display); letter-spacing: -.055em; }
+.example-introduction p { max-width: 34rem; margin: 1rem 0 0; font-size: 1.125rem; color: var(--md3-on-surface-variant); }
+.example-figure { min-width: 0; }
+.example-footer { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem; margin: 1rem 0 2rem; color: var(--md3-on-surface-variant); }
+.example-footer p { margin: 0; }
+.example-footer output { text-align: right; color: var(--md3-on-surface); overflow-wrap: anywhere; }
+.example-settings { padding: 1rem 0; border-top: 1px solid var(--md3-outline-variant); }
+.example-settings summary { width: fit-content; min-height: 2.75rem; cursor: pointer; }
+.example-settings-content { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 1rem; padding-top: .75rem; }
+.example-settings label { display: grid; gap: .5rem; }
+.example-selection-controls { display: flex; gap: .5rem; flex-wrap: wrap; }
+.example-page :where(button, select) { min-height: 2.75rem; padding: .5rem .875rem; background: var(--md3-surface-container-lowest); border: 1px solid var(--md3-outline-variant); border-radius: var(--radius-md); color: inherit; font: inherit; cursor: pointer; touch-action: manipulation; }
+.example-page :is(button, select, summary, a):focus-visible { outline: 2px solid var(--accent-text); outline-offset: 3px; }
+.example-page button:active { transform: translateY(1px); }
+@media (max-width: 40rem) {
+  .example-page { padding-top: 1rem; }
+  .example-masthead > button { font-size: 1rem; }
+  .example-introduction { margin: 2.5rem 0 1.5rem; }
+  .example-footer, .example-settings-content { grid-template-columns: minmax(0, 1fr); gap: .75rem; }
+  .example-footer output { text-align: left; }
+  .example-selection-controls { display: grid; grid-template-columns: minmax(0, 1fr); }
+}
