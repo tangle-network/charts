@@ -21,9 +21,9 @@ const page = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta n
 :root{--chart-live-fg:var(--chart-ink);--chart-live-muted:var(--chart-ink-muted);--chart-live-faint:var(--chart-muted);--chart-live-surface:var(--chart-canvas);--chart-live-raised:var(--chart-canvas);--chart-live-border:var(--chart-rule)}
 *{box-sizing:border-box}body{margin:0;padding:16px;background:var(--chart-canvas);color:var(--chart-ink);font:14px/1.5 Inter,system-ui,sans-serif}
 section{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;padding:16px 0 24px;border-bottom:1px solid var(--chart-rule)}
-.panel{min-width:0}.panel h3{margin:0 0 8px;font:600 12px/1.4 ui-monospace,monospace;text-transform:uppercase;letter-spacing:.04em;color:var(--chart-ink-muted)}
+section.full{grid-template-columns:1fr}.panel{min-width:0}.panel>h3{margin:0 0 8px;font:600 12px/1.4 ui-monospace,monospace;text-transform:uppercase;letter-spacing:.04em;color:var(--chart-ink-muted)}
 .tgc-figure{margin:0}@media(max-width:900px){section{grid-template-columns:1fr}}</style></head>
-<body>${sections.map((id) => `<section id="${id}"></section>`).join('')}<script src="demo.js"></script></body></html>`
+<body>${sections.map((id) => `<section id="${id}"${['small-multiples', 'figure-view'].includes(id) ? ' class="full"' : ''}></section>`).join('')}<script src="demo.js"></script></body></html>`
 fs.writeFileSync(path.join(temp, 'index.html'), page)
 const knownBrowsers = ['/snap/bin/chromium', '/usr/bin/chromium', '/usr/bin/chromium-browser']
 const executablePath = process.env.CHROMIUM_BIN || knownBrowsers.find((file) => fs.existsSync(file))

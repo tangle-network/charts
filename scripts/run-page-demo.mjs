@@ -10,7 +10,7 @@ const clock = (ms) => new Date(ms).toISOString().slice(11, 16)
 const span = (a, b) => `${clock(a)}–${clock(b)} (${Math.round((b - a) / min)} min)`
 
 // A run that passed its check after its supervisor died and resumed: the shape the run page must show.
-const score = [[t, 0], [t + 40 * min, 3], [t + 70 * min, 5], [t + 140 * min, 8], [t + 150 * min, 10]]
+const score = [[t, 0], [t + 40 * min, 3], [t + 70 * min, 5], [t + 120 * min, 8], [t + 150 * min, 10]]
 const marks = [
   { at: t + 78 * min, label: 'supervisor died', kind: 'died' },
   { at: t + 150 * min, label: 'first pass', kind: 'pass' },

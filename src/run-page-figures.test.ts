@@ -29,7 +29,7 @@ describe("time series marks and bands", () => {
     expect(f.table.indexOf("first pass")).toBeLessThan(f.table.indexOf("supervisor died"));
     expect(f.table).toContain("<td>no data</td>");
     expect(f.read).toContain("dashed: deadline");
-    expect(f.note.exclusions).toContain("no trace: no data from hour 1.8 to hour 2.4.");
+    expect(f.note.exclusions).toContain("no trace: no data from hour 1.8 to 2.4.");
   });
 
   it("keeps a deadline after the last observation inside the axis without moving the data", () => {
@@ -84,7 +84,7 @@ describe("run timeline lanes", () => {
     expect(f.svg.wide).toContain('class="tgc-now"');
     expect(f.svg.wide).toContain("now 13:00");
     expect(f.lede).toBe("4 recorded spans; 1 open at 13:00; 1 without data (1.0 h).");
-    expect(f.table).toContain("<td>open</td>");
+    expect(f.table).toContain('<td class="tgc-n">open</td>');
     expect(f.table).toContain("supervisor down");
     expect(f.table).toContain("Recorded events by time");
     expect(f.note.exclusions).toEqual(["Driver: untraced 11:30 to 12:30 has no data."]);
