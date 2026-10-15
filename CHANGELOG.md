@@ -1,5 +1,15 @@
 # @tangle-network/charts
 
+## 0.6.0
+
+### Minor Changes
+
+- Add recorded `marks` and `bands` to static `timeSeries` and React `Lines`, listed in the table and under the plot.
+- Add the static `timeline` figure and multi-span `lanes`, `marks` and `now` on React `Gantt`; open spans run to `now`.
+- Add `segments` on React `Meter`; hatch the untraced remainder and `phaseWaterfall`'s unaccounted leaves.
+- Add the static `smallMultiples` figure with hatched no-data panels and early-end marks, and React `FigureView` to embed any static figure.
+- Give series a second channel: dashes and marker shapes on static `timeSeries` and React `Lines`.
+
 ## 0.4.0
 
 ### Minor Changes
