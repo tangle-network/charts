@@ -464,7 +464,8 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
   const gap = eventsGap(marks)
   if (gap) throw new RangeError(gap)
   if (now !== undefined && !Number.isFinite(now)) throw new RangeError('now must be a finite time.')
-  for (const lane of lanes) for (const s of lane.spans) {
+  // Lanes are validated; the original single-span `rows` keep their lenient drawing so existing pages never throw.
+  if (laneInput) for (const lane of lanes) for (const s of lane.spans) {
     if (!Number.isFinite(s.start) || (s.end !== null && (!Number.isFinite(s.end) || s.end < s.start))) throw new RangeError(`${lane.label}: span times must be finite and end at or after their start.`)
     if (s.end === null && (now === undefined || now < s.start)) throw new RangeError(`${lane.label}: an open span needs a now at or after its start.`)
   }
@@ -498,6 +499,9 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
             const y = top + i * rowH
             return (
               <g key={lane.id} data-lane={lane.id}>
+                {/* The whole row names every span on hover, as single-span rows always did. */}
+                <rect x={0} y={y} width={width} height={rowH} fill="transparent"
+                  onMouseEnter={() => setTip({ x: Math.min(x(ends(lane.spans.at(-1) ?? { end: t1 })) + 8, width - em * 16), y: Math.max(0, y - em), title: lane.label, lines: lane.spans.flatMap((s) => [{ label: s.end === null ? `${s.state} (open)` : s.state, value: span(s.start, ends(s)), color: hatched.has(s.state) ? undefined : colors[s.state] ?? fallback }, ...(s.note ? [{ label: s.note, value: '' }] : [])]) })} />
                 <text x={labelW - em * 0.5} y={y + rowH / 2} dominantBaseline="middle" textAnchor="end" className="ov-axis ov-gantt-label">
                   {lane.label.length > 26 ? `${lane.label.slice(0, 25)}…` : lane.label}
                 </text>

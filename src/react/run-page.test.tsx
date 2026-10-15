@@ -91,9 +91,10 @@ describe("Gantt lanes", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     expect(() => render(<Gantt {...props} lanes={lanes} />)).toThrow(RangeError);
     cleanup();
-    const { container } = render(<Gantt {...props} rows={[{ label: "Agent", start: t, end: t + h, state: "work" }]} />);
-    expect(container.querySelectorAll("[data-state]")).toHaveLength(1);
-    expect(screen.getByRole("img").getAttribute("aria-label")).toBe("1 agents over time");
+    // Recorded rows with a clock-skewed end keep drawing as before instead of throwing on an existing page.
+    const { container } = render(<Gantt {...props} rows={[{ label: "Agent", start: t, end: t + h, state: "work" }, { label: "Skewed", start: t + h, end: t, state: "work" }]} />);
+    expect(container.querySelectorAll("[data-state]")).toHaveLength(2);
+    expect(screen.getByRole("img").getAttribute("aria-label")).toBe("2 agents over time");
   });
 });
 
