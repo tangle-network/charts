@@ -311,7 +311,7 @@
 .tgc-tip-ink { fill: var(--chart-canvas); }
 
 .tgc-series-line { fill: none; stroke: var(--chart-accent); stroke-width: 2; stroke-linejoin: round; }
-.tgc-series-point { fill: var(--chart-accent); stroke: var(--chart-canvas); stroke-width: 2; }
+.tgc-series-point, .tgc-series-key { fill: var(--chart-accent); stroke: var(--chart-canvas); stroke-width: 2; }
 
 /* Semantic states stay tied to Brand status tokens. No-data has its own neutral mark. */
 .tgc-heat-pass { fill: color-mix(in srgb, var(--chart-pass, var(--status-running)) 19%, var(--chart-canvas)); stroke: var(--chart-pass, var(--status-running)); stroke-width: .8; }
@@ -325,7 +325,6 @@
 .tgc-range-dot-pass { fill: var(--chart-canvas); stroke: var(--chart-pass, var(--status-running)); stroke-width: 3; }
 .tgc-range-dot-breach { fill: var(--chart-canvas); stroke: var(--chart-breach, var(--status-error)); stroke-width: 3; }
 .tgc-waterfall-bar { fill: var(--chart-accent); }
-.tgc-waterfall-unaccounted { fill: var(--chart-muted); }
 .tgc-series-hit { fill: transparent; stroke: transparent; }
 .tgc-series-observation:focus-visible { outline: none; }
 .tgc-series-observation:focus-visible .tgc-series-hit { stroke: var(--chart-ink); stroke-width: 2; }
@@ -346,3 +345,26 @@
 
 .tgc-figure-plot .tgc-wide-fallback svg { min-width: var(--tgc-fallback-width); }
 .tgc-phone-plot:focus-visible, .tgc-wide-fallback:focus-visible { outline: 2px solid var(--chart-accent); outline-offset: 2px; }
+
+/* Recorded events and spans. Kinds differ by stroke pattern as well as token, so they read without colour. */
+.tgc-mark { stroke-width: 1.5; }
+.tgc-mark-pass { stroke: var(--chart-pass, var(--status-running)); }
+.tgc-mark-deadline { stroke: var(--chart-ink); stroke-dasharray: 5 3; }
+.tgc-mark-died { stroke: var(--chart-breach, var(--status-error)); stroke-width: 2; }
+.tgc-mark-event { stroke: var(--chart-ink-muted); stroke-dasharray: 1 3; stroke-linecap: round; }
+.tgc-mark-label { fill: var(--chart-ink); paint-order: stroke; stroke: var(--chart-canvas); stroke-width: 3px; stroke-linejoin: round; }
+.tgc-band-after-pass { fill: color-mix(in srgb, var(--chart-pass, var(--status-running)) 12%, transparent); }
+.tgc-band-idle { fill: var(--chart-shade); }
+/* Missing data: a neutral wash under hatch lines, never a zero-height mark. */
+.tgc-hatch-bg { fill: color-mix(in srgb, var(--chart-muted) 10%, transparent); }
+.tgc-hatch { fill: none; stroke: var(--chart-muted); stroke-width: 1; }
+.tgc-span { fill: var(--chart-accent); }
+.tgc-span-muted { fill: var(--chart-muted); }
+.tgc-span-open { stroke: var(--chart-ink); stroke-width: 1.5; stroke-dasharray: 3 2; }
+.tgc-now { stroke: var(--chart-ink); stroke-width: 1.5; }
+
+/* FigureView (React) picks the render by measured width; the wide plot fills its container. */
+.tgc-figure-view { max-width: none; margin: 0; }
+.tgc-view-plot svg { display: block; overflow: visible; }
+.tgc-view-wide svg { width: 100%; height: auto; }
+.tgc-view-narrow svg { max-width: 100%; height: auto; }

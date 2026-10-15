@@ -158,6 +158,42 @@ Optional annotations carry independent recorded facts, such as all checks passin
 Hover or focus a mark for its value, observation count, interval and annotation.
 The data table retains missing positions and full labels.
 
+### Run events, lanes, parts of a whole and small multiples
+
+A run page draws recorded events, never inferred ones. Every addition below has a static form (`Figure | Refusal`, no DOM) and a React form, takes its colours from Brand tokens through `var()`, and hatches missing data instead of drawing zero.
+
+| Need | Static | React |
+|---|---|---|
+| Vertical events (first pass, deadline, died) and shaded spans (after pass, idle, no data) | `timeSeries(rows, { ..., marks, bands })` | `<Lines marks bands>` |
+| Lanes of spans with marks; an open span runs to `now` | `timeline(lanes, { measure, now, marks })` | `<Gantt lanes now marks>` |
+| Part of a whole with untraced time hatched | `phaseWaterfall` (unaccounted leaves and the remainder are hatched) | `<Meter total segments>` |
+| One panel per arm on shared axes, with no-data panels and early ends | `smallMultiples(panels, { x, y, shared })` | `<FigureView figure>` |
+| Series that stay distinct without colour | later series add a dash and a marker shape | `series[].dash`, `series[].marker` |
+
+```ts
+type ChartMark = { at: number; label: string; kind: "pass" | "deadline" | "died" | "event" };
+type ChartBand = { from: number; to: number; label: string; kind: "after-pass" | "idle" | "missing" };
+type TimelineLane = { id: string; label: string; spans: Array<{ start: number; end: number | null; state: string; note?: string }> };
+type MultiplePanel = { id: string; label: string; unit?: string; domain?: [number, number]; points?: TimePoint[];
+  missing?: { why: string; detail?: string }; end?: { at: number; kind: ChartMark["kind"]; label?: string }; marks?: ChartMark[] };
+type MeterSegment = { label: string; value: number | null; color?: string; kind?: "measured" | "untraced" };
+```
+
+Mark kinds differ by stroke as well as colour: pass is solid, deadline dashed, died ends in a cross, and other events are dotted.
+Marks and bands appear in the figure's table (`Recorded events by …`) and, for React, in a text list under the plot.
+Static figures refuse marks or bands outside the x domain; React components throw `RangeError` for the same input, as `StackedBarChart` does.
+
+`timeline` refuses an open span without `now`, a span outside a supplied `start`/`end` window and reversed times. States named in `hatch` (default `missing`, `untraced`) are hatched; states in `muted` (default `idle`) use the muted tone.
+`Gantt` keeps its single-span `rows` input; `lanes` takes the same shape as `timeline`.
+
+`Meter` with `segments` draws each recorded part of `total`; the remainder no segment accounts for is hatched and labelled `untraced` (rename it with `untraced`). A null segment is listed as `not recorded` and takes no width; a missing total hatches the whole track. Parts that sum past the total throw.
+
+`smallMultiples` draws one panel per arm. A `missing` panel is hatched and reads `no data: <why>`; an `end` stops the line at a mark of its kind. It refuses mixed units, values outside the shared domain, points after an end and a missing panel that also carries data. `shared: "x"` keeps one x domain and requires each panel's own y `domain`. The lede counts `n of m <noun>s have data`.
+
+`FigureView` embeds any static `Figure | Refusal` in React: the wide render in containers of 720 px or more, the phone render (or the table, when a figure has none) below that, and the data, reading and method in a closed disclosure. A refusal renders as its sentence. Import `figure.css` for its styles.
+
+`node scripts/capture-run-page.mjs [dir]` (after `npm run build`) captures each addition at 1440 px light and 390 px dark; the reviewed images are `docs/screenshots/run-page-*.png`.
+
 ### Plots without visible report controls
 
 Use `renderFigure(figure, noteNumber, { presentation: "plot" })` to show the responsive plot alone.
