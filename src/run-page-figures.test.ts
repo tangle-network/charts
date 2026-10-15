@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isRefusal, phaseWaterfall, smallMultiples, timeline, timeSeries, type Figure, type MultiplePanel, type Refusal } from "./index.js";
+import { isRefusal, phaseWaterfall, smallMultiples, timeline, timeSeries, type Figure, type MultiplePanel, type Refusal, type SmallMultiplesOptions } from "./index.js";
 
 function figure(value: Figure | Refusal): Figure {
   if (isRefusal(value)) throw new Error(value.refused);
@@ -131,7 +131,7 @@ describe("small multiples", () => {
   });
 
   it("refuses mixed units, out-of-domain panels, points after the end and a missing panel with data", () => {
-    const refused = (list: MultiplePanel[], o = options) => { const r = smallMultiples(list, o); return isRefusal(r) ? r.refused : ""; };
+    const refused = (list: MultiplePanel[], o: SmallMultiplesOptions = options) => { const r = smallMultiples(list, o); return isRefusal(r) ? r.refused : ""; };
     expect(refused([{ ...panels[0]!, unit: "%" }])).toContain("Mixed units");
     expect(refused([{ id: "x", label: "X", points: [{ x: 0, y: 11 }] }])).toContain("outside the recorded axis domain");
     expect(refused([{ id: "x", label: "X", points: [{ x: 5, y: 1 }] }])).toContain("inside the shared domain");
