@@ -5,7 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { chromium } from 'playwright'
-import { build } from 'rolldown'
+import { rolldown } from 'rolldown'
 import { chartTokensCss, figureCss } from '../dist/index.js'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -14,7 +14,8 @@ const sections = ['marks-bands', 'lanes', 'segments', 'small-multiples', 'figure
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'charts-run-page-'))
 fs.mkdirSync(output, { recursive: true })
 // React reads process.env.NODE_ENV; a banner defines it for the browser bundle.
-await build({ input: path.join(root, 'scripts/run-page-demo.mjs'), platform: 'browser', output: { file: path.join(temp, 'demo.js'), format: 'iife', banner: 'var process={env:{NODE_ENV:"production"}};' } })
+const bundle = await rolldown({ input: path.join(root, 'scripts/run-page-demo.mjs'), platform: 'browser' })
+await bundle.write({ file: path.join(temp, 'demo.js'), format: 'iife', banner: 'var process={env:{NODE_ENV:"production"}};' })
 const live = fs.readFileSync(path.join(root, 'dist/react/live.css'), 'utf8')
 const page = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Run page charts</title><style>${chartTokensCss}\n${figureCss}\n${live}
 :root{--chart-live-fg:var(--chart-ink);--chart-live-muted:var(--chart-ink-muted);--chart-live-faint:var(--chart-muted);--chart-live-surface:var(--chart-canvas);--chart-live-raised:var(--chart-canvas);--chart-live-border:var(--chart-rule)}
