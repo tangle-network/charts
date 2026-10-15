@@ -22,3 +22,11 @@ export type {
   WaterfallBarProps, WaterfallRowProps, WaterfallHeaderProps,
 } from "./waterfall.js";
 export { DayBars, HBars, Histogram, Lines, Meter, Spark, Gantt, LIVE_SERIES, formatCompact } from "./live.js";
+export type { LineSeries, MeterSegment } from "./live.js";
+export { FigureView } from "./figure-view.js";
+export type { FigureViewProps } from "./figure-view.js";
+// Shapes shared with the static figures; type-only, so the static root stays React-free and vice versa.
+export type { BandKind, ChartBand, ChartMark, MarkKind } from "../events.js";
+export type { TimelineLane, TimelineSpan } from "../timeline.js";
+export type { MarkerShape } from "../svg.js";
+export type { Figure, Refusal } from "../types.js";

@@ -30,4 +30,7 @@ export {
 
 export { metricBars, type MetricBarsOptions, type MetricRow } from "./metric-bars.js";
 export { timeSeries, type TimePoint, type TimeSeriesOptions, type TimeSeriesRow } from "./time-series.js";
+export { type BandKind, type ChartBand, type ChartMark, type MarkKind } from "./events.js";
+export { timeline, type TimelineLane, type TimelineOptions, type TimelineSpan } from "./timeline.js";
+export { type MultiplePanel, smallMultiples, type SmallMultiplesOptions } from "./small-multiples.js";
 export { type Observations } from "./scalar.js";

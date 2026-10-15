@@ -25,3 +25,32 @@ line.ov-gridline { stroke: color-mix(in srgb, var(--chart-live-faint, #777) 22%,
 .ov-spark { display: block; width: 8em; height: 1.6em; }
 .ov-spark-empty { font-size: .8em; color: var(--chart-live-faint, #777); }
 .ov-tip-line i { display: inline-block; width: .7em; height: .7em; border-radius: 3px; margin-right: .4em; vertical-align: -.05em; }
+/* Recorded events and spans. Colours come from Brand tokens; kinds also differ by stroke pattern and glyph. */
+.ov-mark { stroke-width: 1.5; fill: none; }
+.ov-mark-pass { stroke: var(--chart-live-pass, var(--chart-pass, var(--status-running))); }
+.ov-mark-deadline { stroke: var(--chart-live-fg, var(--chart-ink)); stroke-dasharray: 5 3; }
+.ov-mark-died { stroke: var(--chart-live-danger, var(--chart-breach, var(--status-error))); stroke-width: 2; }
+.ov-mark-event { stroke: var(--chart-live-muted, var(--chart-ink-muted)); stroke-dasharray: 1 3; stroke-linecap: round; }
+.ov-mark-label { fill: var(--chart-live-fg, var(--chart-ink)); font-size: .75em; paint-order: stroke; stroke: var(--chart-live-surface, var(--chart-canvas)); stroke-width: 3px; stroke-linejoin: round; }
+.ov-band-after-pass { fill: color-mix(in srgb, var(--chart-live-pass, var(--chart-pass, var(--status-running))) 12%, transparent); }
+.ov-band-idle { fill: var(--chart-live-hover, var(--chart-shade)); }
+/* Missing data is hatched, never drawn as zero. */
+.ov-hatch-bg { fill: color-mix(in srgb, var(--chart-live-faint, var(--chart-muted)) 10%, transparent); }
+.ov-hatch { fill: none; stroke: var(--chart-live-faint, var(--chart-muted)); stroke-width: 1; }
+.ov-hatched { background: repeating-linear-gradient(135deg, var(--chart-live-faint, var(--chart-muted)) 0 1px, transparent 1px 5px), color-mix(in srgb, var(--chart-live-faint, var(--chart-muted)) 10%, transparent); }
+.ov-now { stroke: var(--chart-live-fg, var(--chart-ink)); stroke-width: 1.5; }
+.ov-gantt-open { stroke: var(--chart-live-fg, var(--chart-ink)); stroke-width: 1.5; stroke-dasharray: 3 2; }
+.ov-events, .ov-key, .ov-meter-key { list-style: none; margin: .4em 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: .2em 1em; font-size: .8em; color: var(--chart-live-muted, var(--chart-ink-muted)); }
+.ov-key li, .ov-events li, .ov-meter-key li { display: inline-flex; align-items: center; gap: .4em; }
+.ov-meter-key b { font-weight: 500; color: var(--chart-live-fg, var(--chart-ink)); font-family: var(--chart-live-font-mono, monospace); font-variant-numeric: tabular-nums; }
+.ov-meter-key i, .ov-event-swatch { display: inline-block; width: .8em; height: .8em; border-radius: 2px; }
+[data-segmented] > .ov-meter-track { display: flex; }
+[data-segmented] > .ov-meter-track > span { flex: none; border-radius: 0; }
+.ov-event-pass { border-left: 2px solid var(--chart-live-pass, var(--chart-pass, var(--status-running))); border-radius: 0; width: 0; }
+.ov-event-deadline { border-left: 2px dashed var(--chart-live-fg, var(--chart-ink)); border-radius: 0; width: 0; }
+.ov-event-died { border-left: 2px solid var(--chart-live-danger, var(--chart-breach, var(--status-error))); border-radius: 0; width: 0; }
+.ov-event-event { border-left: 2px dotted var(--chart-live-muted, var(--chart-ink-muted)); border-radius: 0; width: 0; }
+.ov-event-after-pass { background: color-mix(in srgb, var(--chart-live-pass, var(--chart-pass, var(--status-running))) 25%, transparent); }
+.ov-event-idle { background: var(--chart-live-hover, var(--chart-shade)); }
+.ov-event-missing { background: repeating-linear-gradient(135deg, var(--chart-live-faint, var(--chart-muted)) 0 1px, transparent 1px 4px); }
+.ov-refusal { margin: 0; color: var(--chart-live-muted, var(--chart-ink-muted)); font-size: .9em; }

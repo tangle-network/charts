@@ -1,5 +1,8 @@
 /** Reusable, em-scaled charts for live operational series. Values, labels and status colors belong to callers. */
 import { useEffect, useState } from 'react'
+import { type ChartBand, type ChartMark, eventsGap } from '../events.js'
+import { hatchPath, type MarkerShape, markerPath } from '../svg.js'
+import type { TimelineLane } from '../timeline.js'
 
 // Defaults for consumers that do not pass a series color.
 export const LIVE_SERIES = ['#8b7cf6', '#0ea5a0', '#c98500', '#e2508f', '#4a90e2'] as const
@@ -9,7 +12,7 @@ const formatShare = (value: number | null) => value === null || !Number.isFinite
 
 /** The rendered width and font size of an element, so an SVG chart draws at its real size and its geometry follows
  * the page's type. */
-function useWidth<T extends HTMLElement>() {
+export function useWidth<T extends HTMLElement>() {
   // A callback ref: a chart that first renders its empty message (no element) starts measuring when its plot mounts.
   const [element, ref] = useState<T | null>(null)
   const [size, setSize] = useState({ width: 0, em: 16 })
@@ -208,14 +211,18 @@ export function Histogram({ bins, format = formatCompact, color = LIVE_SERIES[0]
 
 /** Lines over time on one axis (at most four series); the crosshair readout lists each series at the nearest time. A
  * `dots` series draws its points as marks (checkpoints) instead of a line; `axis` labels the time axis (default MM-DD). */
-export function Lines({ series, format = formatCompact, rows = 13, axis }: { series: { name: string; color: string; points: [number, number][]; dots?: boolean; label?: (t: number) => string }[]; format?: (v: number) => string; rows?: number; axis?: (t: number) => string }) {
+export function Lines({ series, format = formatCompact, rows = 13, axis, marks = [], bands = [] }: { series: LineSeries[]; format?: (v: number) => string; rows?: number; axis?: (t: number) => string; marks?: ChartMark[]; bands?: ChartBand[] }) {
   const [ref, width, em] = useWidth<HTMLDivElement>()
   const height = Math.round(rows * em)
   const [hover, setHover] = useState<number | null>(null)
+  const gap = eventsGap(marks, bands)
+  if (gap) throw new RangeError(gap)
   const all = series.flatMap((s) => s.points)
   if (!all.length) return <p className="ov-empty">No history yet.</p>
-  const t0 = Math.min(...all.map((p) => p[0]))
-  const t1 = Math.max(...all.map((p) => p[0]))
+  // Marks and bands widen the time axis, so a deadline after the last point stays visible.
+  const times = [...all.map((p) => p[0]), ...marks.map((m) => m.at), ...bands.flatMap((b) => [b.from, b.to])]
+  const t0 = Math.min(...times)
+  const t1 = Math.max(...times)
   const { top, ticks } = ticksFor(Math.max(...all.map((p) => p[1])))
   const left = Math.round(3.4 * em)
   const bottom = Math.round(1.8 * em)
@@ -247,6 +254,9 @@ export function Lines({ series, format = formatCompact, rows = 13, axis }: { ser
           {[t0, (t0 + t1) / 2, t1].map((t, i) => (
             <text key={i} x={x(t)} y={height - em * 0.35} className="ov-axis" textAnchor={i === 0 ? 'start' : i === 2 ? 'end' : 'middle'}>{axis ? axis(t) : day(t).slice(0, 5)}</text>
           ))}
+          {bands.map((band, i) => (
+            <Band key={`band-${i}`} band={band} x={x(band.from)} y={8} width={x(band.to) - x(band.from)} height={plotH} />
+          ))}
           {series.map((s) =>
             s.dots ? (
               <g key={s.name}>
@@ -255,9 +265,17 @@ export function Lines({ series, format = formatCompact, rows = 13, axis }: { ser
                 ))}
               </g>
             ) : (
-              <polyline key={s.name} fill="none" stroke={s.color} strokeWidth={Math.max(2, em / 8)} strokeLinejoin="round" points={s.points.map((p) => `${x(p[0])},${y(p[1])}`).join(' ')} />
+              <g key={s.name} data-series={s.name} data-dash={s.dash ?? 'solid'} data-marker={s.marker}>
+                <polyline fill="none" stroke={s.color} strokeWidth={Math.max(2, em / 8)} strokeLinejoin="round" strokeLinecap={s.dash === 'dot' ? 'round' : undefined} strokeDasharray={dashArray(s.dash, em)} points={s.points.map((p) => `${x(p[0])},${y(p[1])}`).join(' ')} />
+                {s.marker && (s.points.length <= 30 ? s.points : s.points.slice(-1)).map((p) => (
+                  <path key={p[0]} d={markerPath(s.marker!, x(p[0]), y(p[1]), Math.max(3, em / 5))} fill={s.color} stroke="var(--chart-live-surface, var(--chart-canvas))" strokeWidth={1.5} />
+                ))}
+              </g>
             ),
           )}
+          {[...marks].sort((a, b) => a.at - b.at).map((mark, i) => (
+            <Mark key={`mark-${i}`} mark={mark} x={x(mark.at)} top={8} bottom={8 + plotH} row={i % 3} em={em} flip={x(mark.at) > left + plotW * 0.62} />
+          ))}
           {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={8} y2={8 + plotH} className="ov-crosshair" />}
           {hover !== null &&
             series.map((s) => {
@@ -279,12 +297,97 @@ export function Lines({ series, format = formatCompact, rows = 13, axis }: { ser
           }}
         />
       )}
+      {series.length > 1 && series.some((s) => s.dash || s.marker) && (
+        <ul className="ov-key" aria-label="Series">
+          {series.map((s) => (
+            <li key={s.name}>
+              <svg width={em * 2} height={em} aria-hidden="true">
+                <line x1={0} x2={em * 2} y1={em / 2} y2={em / 2} stroke={s.color} strokeWidth={Math.max(2, em / 8)} strokeDasharray={dashArray(s.dash, em)} strokeLinecap={s.dash === 'dot' ? 'round' : undefined} />
+                {s.marker && <path d={markerPath(s.marker, em, em / 2, Math.max(3, em / 5))} fill={s.color} />}
+              </svg>
+              {s.name}
+            </li>
+          ))}
+        </ul>
+      )}
+      <EventList marks={marks} bands={bands} format={axis ?? ((t) => day(t))} />
     </div>
   )
 }
 
-/** A used-of-total meter with its numbers. */
-export function Meter({ used, total, format = formatCompact, tone, text }: { used: number | null | undefined; total: number | null | undefined; format?: (v: number) => string; tone?: string; text?: string }) {
+/** A line series. `dash` and `marker` are a second channel, so arms stay distinct without colour. */
+export interface LineSeries {
+  name: string
+  color: string
+  points: [number, number][]
+  dots?: boolean
+  label?: (t: number) => string
+  dash?: 'solid' | 'dash' | 'dot'
+  marker?: MarkerShape
+}
+
+function dashArray(dash: LineSeries['dash'], em: number) {
+  return dash === 'dash' ? `${Math.round(em * 0.55)} ${Math.round(em * 0.3)}` : dash === 'dot' ? `0.1 ${Math.round(em * 0.35)}` : undefined
+}
+
+/** A shaded span under the data; a `missing` span is hatched because it has no data. */
+function Band({ band, x, y, width, height }: { band: ChartBand; x: number; y: number; width: number; height: number }) {
+  return (
+    <g data-band={band.kind} data-hatched={band.kind === 'missing' ? 'true' : undefined}>
+      <title>{band.label}</title>
+      <rect x={x} y={y} width={Math.max(0, width)} height={height} className={band.kind === 'missing' ? 'ov-hatch-bg' : `ov-band ov-band-${band.kind}`} />
+      {band.kind === 'missing' && <path d={hatchPath(x, y, width, height)} className="ov-hatch" />}
+    </g>
+  )
+}
+
+/** A vertical event rule with its label; kinds differ by stroke pattern and the died cross as well as colour. */
+function Mark({ mark, x, top, bottom, row, em, flip }: { mark: ChartMark; x: number; top: number; bottom: number; row: number; em: number; flip: boolean }) {
+  const s = Math.max(3, em / 4)
+  return (
+    <g data-mark={mark.kind}>
+      <title>{mark.label}</title>
+      <line x1={x} x2={x} y1={top} y2={bottom} className={`ov-mark ov-mark-${mark.kind}`} />
+      {mark.kind === 'died' && <path d={`M${x - s} ${bottom - 2 * s}L${x + s} ${bottom}M${x - s} ${bottom}L${x + s} ${bottom - 2 * s}`} className="ov-mark ov-mark-died" />}
+      <text x={flip ? x - em * 0.3 : x + em * 0.3} y={top + em * (0.9 + row)} textAnchor={flip ? 'end' : 'start'} className="ov-mark-label">{mark.label}</text>
+    </g>
+  )
+}
+
+/** Every mark and band as text, in time order: the table form of the events drawn on the plot. */
+function EventList({ marks, bands, format }: { marks: ChartMark[]; bands: ChartBand[]; format: (t: number) => string }) {
+  if (!marks.length && !bands.length) return null
+  const items = [
+    ...marks.map((m) => ({ at: m.at, kind: m.kind, text: `${m.label} · ${format(m.at)}` })),
+    ...bands.map((b) => ({ at: b.from, kind: b.kind, text: `${b.label} · ${format(b.from)} to ${format(b.to)}${b.kind === 'missing' ? ' · no data' : ''}` })),
+  ].sort((a, b) => a.at - b.at)
+  return (
+    <ul className="ov-events" aria-label="Recorded events">
+      {items.map((item, i) => (
+        <li key={i} data-kind={item.kind}>
+          <i className={`ov-event-swatch ov-event-${item.kind}`} aria-hidden="true" />
+          {item.text}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+/** One part of a whole. A null value is listed as not recorded and takes no width; `untraced` parts are hatched. */
+export interface MeterSegment {
+  label: string
+  value: number | null
+  color?: string
+  kind?: 'measured' | 'untraced'
+}
+
+// Brand chart tokens for segments without a caller colour.
+const SEGMENT_TONES = ['var(--chart-accent)', 'var(--chart-tier-c)', 'var(--chart-muted)'] as const
+
+/** A used-of-total meter with its numbers. With `segments` it is a part-of-whole bar: the remainder of `total` that no
+ * segment accounts for is drawn hatched and labelled `untraced`, and a missing total hatches the whole track. */
+export function Meter({ used, total, format = formatCompact, tone, text, segments, untraced = 'untraced' }: { used?: number | null | undefined; total: number | null | undefined; format?: (v: number) => string; tone?: string; text?: string; segments?: MeterSegment[]; untraced?: string }) {
+  if (segments) return <SegmentMeter segments={segments} total={total} format={format} text={text} untraced={untraced} />
   const share = used !== null && used !== undefined && total ? Math.min(1, used / total) : null
   return (
     <div className="ov-meter">
@@ -294,6 +397,42 @@ export function Meter({ used, total, format = formatCompact, tone, text }: { use
       <span className="ov-meter-text">
         {text ?? `${format(used ?? NaN)} of ${format(total ?? NaN)} · ${formatShare(share)}`}
       </span>
+    </div>
+  )
+}
+
+function SegmentMeter({ segments, total, format, text, untraced }: { segments: MeterSegment[]; total: number | null | undefined; format: (v: number) => string; text?: string; untraced: string }) {
+  for (const segment of segments) {
+    if (segment.value !== null && (!Number.isFinite(segment.value) || segment.value < 0)) throw new RangeError(`${segment.label}: a segment value must be a nonnegative finite number or null.`)
+  }
+  const known = segments.reduce((sum, segment) => sum + (segment.value ?? 0), 0)
+  const whole = total !== null && total !== undefined && Number.isFinite(total) && total > 0 ? total : null
+  if (whole !== null && known > whole * (1 + 1e-9)) throw new RangeError(`Segments sum to ${known}, more than the total ${whole}.`)
+  const remainder = whole === null ? 0 : whole - known
+  const parts = [
+    ...segments.map((segment, i) => ({ ...segment, color: segment.color ?? SEGMENT_TONES[i % SEGMENT_TONES.length], remainder: false })),
+    ...(remainder > whole! * 1e-9 ? [{ label: untraced, value: remainder, kind: 'untraced' as const, color: undefined, remainder: true }] : []),
+  ]
+  const share = (value: number) => (whole === null ? null : value / whole)
+  return (
+    <div className="ov-meter" data-segmented="true">
+      <span className={`ov-meter-track${whole === null ? ' ov-hatched' : ''}`} data-hatched={whole === null ? 'true' : undefined} aria-hidden="true">
+        {whole !== null && parts.filter((part) => part.value !== null && part.value > 0).map((part) => (
+          <span key={part.label} data-segment={part.label} data-hatched={part.kind === 'untraced' ? 'true' : undefined}
+            className={part.kind === 'untraced' ? 'ov-hatched' : undefined}
+            style={{ width: `${(part.value! / whole) * 100}%`, background: part.kind === 'untraced' ? undefined : part.color }} />
+        ))}
+      </span>
+      <ul className="ov-meter-key">
+        {parts.map((part) => (
+          <li key={part.label} data-segment={part.label}>
+            <i className={part.kind === 'untraced' || part.value === null ? 'ov-hatched' : undefined} style={part.kind === 'untraced' || part.value === null ? undefined : { background: part.color }} aria-hidden="true" />
+            <span>{part.label}</span>
+            <b>{part.value === null ? 'not recorded' : `${format(part.value)}${whole === null ? '' : ` · ${formatShare(share(part.value))}`}`}</b>
+          </li>
+        ))}
+      </ul>
+      <span className="ov-meter-text">{text ?? (whole === null ? 'total not recorded' : `${format(known)} of ${format(whole)} accounted · ${formatShare(known / whole)}`)}</span>
     </div>
   )
 }
@@ -315,48 +454,82 @@ export function Spark({ points, max = 1, color = LIVE_SERIES[0] }: { points: [nu
 }
 
 /** One bar per row on a shared time axis (who worked when): each row's bar spans its start to its end, coloured by its
- * state; hovering a row names it, its state and its span. Times are epoch ms; `axis` labels the time axis. */
-export function Gantt({ rows, colors, axis, span }: { rows: { label: string; start: number; end: number; state: string; note?: string }[]; colors: Record<string, string>; axis: (t: number) => string; span: (start: number, end: number) => string }) {
+ * state; hovering a span names it, its state and its span. Times are epoch ms; `axis` labels the time axis.
+ * `lanes` give a row several spans (the same shape as the static `timeline`); a span with `end: null` is open and runs
+ * to `now`. `marks` draw recorded events across every lane, and states in `hatch` are drawn hatched (no data). */
+export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], now, hatch = ['missing', 'untraced'] }: { rows?: { label: string; start: number; end: number; state: string; note?: string }[]; lanes?: TimelineLane[]; colors: Record<string, string>; axis: (t: number) => string; span: (start: number, end: number) => string; marks?: ChartMark[]; now?: number; hatch?: string[] }) {
   const [ref, width, em] = useWidth<HTMLDivElement>()
   const [tip, setTip] = useState<Tip | null>(null)
-  if (!rows.length) return <p className="ov-empty">No agent has started.</p>
+  const lanes: TimelineLane[] = laneInput ?? (rows ?? []).map((row, i) => ({ id: `${row.label}-${i}`, label: row.label, spans: [{ start: row.start, end: row.end, state: row.state, note: row.note }] }))
+  const gap = eventsGap(marks)
+  if (gap) throw new RangeError(gap)
+  if (now !== undefined && !Number.isFinite(now)) throw new RangeError('now must be a finite time.')
+  for (const lane of lanes) for (const s of lane.spans) {
+    if (!Number.isFinite(s.start) || (s.end !== null && (!Number.isFinite(s.end) || s.end < s.start))) throw new RangeError(`${lane.label}: span times must be finite and end at or after their start.`)
+    if (s.end === null && (now === undefined || now < s.start)) throw new RangeError(`${lane.label}: an open span needs a now at or after its start.`)
+  }
+  const spans = lanes.flatMap((lane) => lane.spans)
+  if (!spans.length) return <p className="ov-empty">No agent has started.</p>
+  const ends = (s: { end: number | null }) => s.end ?? now!
   const rowH = Math.round(1.25 * em)
   const labelW = Math.min(Math.round(13 * em), Math.round(width * 0.32))
-  const top = 4
+  const top = marks.length ? 4 + Math.round(Math.min(3, marks.length) * em + 0.3 * em) : 4
   const bottom = Math.round(1.8 * em)
-  const height = top + rows.length * rowH + bottom
-  const t0 = Math.min(...rows.map((row) => row.start))
-  const t1 = Math.max(...rows.map((row) => row.end), t0 + 60_000)
+  const height = top + lanes.length * rowH + bottom
+  const times = [...spans.flatMap((s) => [s.start, ends(s)]), ...marks.map((m) => m.at), ...(now === undefined ? [] : [now])]
+  const t0 = Math.min(...times)
+  const t1 = Math.max(...times, t0 + 60_000)
   const plotW = Math.max(0, width - labelW - 10)
   const x = (t: number) => labelW + ((t - t0) / (t1 - t0)) * plotW
-  const fallback = colors.unknown ?? '#8e8e8e'
+  const fallback = colors.unknown ?? 'var(--chart-live-faint, var(--chart-muted))'
+  const hatched = new Set(hatch)
+  const plotBottom = top + lanes.length * rowH
   return (
     <div ref={ref} className="ov-plot" onMouseLeave={() => setTip(null)}>
       {width > 0 && (
-        <svg width={width} height={height} role="img" aria-label={`${rows.length} agents over time`}>
+        <svg width={width} height={height} role="img" aria-label={`${lanes.length} ${laneInput ? 'lanes' : 'agents'} over time`}>
           {[0, 0.25, 0.5, 0.75, 1].map((f) => (
             <g key={f}>
-              <line x1={labelW + f * plotW} x2={labelW + f * plotW} y1={top} y2={top + rows.length * rowH} className="ov-gridline" />
+              <line x1={labelW + f * plotW} x2={labelW + f * plotW} y1={top} y2={plotBottom} className="ov-gridline" />
               <text x={labelW + f * plotW} y={height - em * 0.35} className="ov-axis" textAnchor={f === 0 ? 'start' : f === 1 ? 'end' : 'middle'}>{axis(t0 + f * (t1 - t0))}</text>
             </g>
           ))}
-          {rows.map((row, i) => {
+          {lanes.map((lane, i) => {
             const y = top + i * rowH
-            const color = colors[row.state] ?? fallback
             return (
-              <g key={`${row.label}-${i}`}
-                onMouseEnter={() => setTip({ x: Math.min(x(row.end) + 8, width - em * 16), y: Math.max(0, y - em), title: row.label, lines: [{ label: row.state, value: span(row.start, row.end), color }, ...(row.note ? [{ label: row.note, value: '' }] : [])] })}>
-                <rect x={0} y={y} width={width} height={rowH} fill="transparent" />
+              <g key={lane.id} data-lane={lane.id}>
                 <text x={labelW - em * 0.5} y={y + rowH / 2} dominantBaseline="middle" textAnchor="end" className="ov-axis ov-gantt-label">
-                  {row.label.length > 26 ? `${row.label.slice(0, 25)}…` : row.label}
+                  {lane.label.length > 26 ? `${lane.label.slice(0, 25)}…` : lane.label}
                 </text>
-                <rect x={x(row.start)} y={y + rowH * 0.18} width={Math.max(2, x(row.end) - x(row.start))} height={rowH * 0.64} rx={2} fill={color} />
+                {lane.spans.map((s, j) => {
+                  const color = colors[s.state] ?? fallback
+                  const bx = x(s.start), bw = Math.max(2, x(ends(s)) - bx), by = y + rowH * 0.18, bh = rowH * 0.64
+                  const open = s.end === null
+                  return (
+                    <g key={j} data-state={s.state} data-open={open ? 'true' : undefined} data-hatched={hatched.has(s.state) ? 'true' : undefined}
+                      onMouseEnter={() => setTip({ x: Math.min(bx + bw + 8, width - em * 16), y: Math.max(0, y - em), title: lane.label, lines: [{ label: open ? `${s.state} (open)` : s.state, value: span(s.start, ends(s)), color: hatched.has(s.state) ? undefined : color }, ...(s.note ? [{ label: s.note, value: '' }] : [])] })}>
+                      {hatched.has(s.state) ? (
+                        <>
+                          <rect x={bx} y={by} width={bw} height={bh} className="ov-hatch-bg" />
+                          <path d={hatchPath(bx, by, bw, bh, 4)} className="ov-hatch" />
+                        </>
+                      ) : (
+                        <rect x={bx} y={by} width={bw} height={bh} rx={2} fill={color} className={open ? 'ov-gantt-open' : undefined} />
+                      )}
+                    </g>
+                  )
+                })}
               </g>
             )
           })}
+          {now !== undefined && <line x1={x(now)} x2={x(now)} y1={top} y2={plotBottom} className="ov-now" data-now="true" />}
+          {[...marks].sort((a, b) => a.at - b.at).map((mark, i) => (
+            <Mark key={`mark-${i}`} mark={mark} x={x(mark.at)} top={4} bottom={plotBottom} row={i % 3} em={em} flip={x(mark.at) > labelW + plotW * 0.62} />
+          ))}
         </svg>
       )}
       <Tooltip tip={tip} />
+      <EventList marks={marks} bands={[]} format={axis} />
     </div>
   )
 }

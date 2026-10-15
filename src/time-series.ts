@@ -1,6 +1,7 @@
 /** Recorded trajectories. Explicit null observations break lines without interpolation. */
+import { type ChartBand, type ChartMark, drawBands, drawMarks, EVENTS_READ, eventsGap, eventsTable } from "./events.js";
 import { domainGap, observationLabel, type Observations, scalarGap, scalarIntervalLabel, scalarLabel } from "./scalar.js";
-import { circle, line, NARROW, polyline, rect, text, WIDE } from "./svg.js";
+import { circle, line, MARKER_SHAPES, markerPath, NARROW, polyline, rect, text, WIDE } from "./svg.js";
 import { table } from "./table.js";
 import { capitalize, esc, textBlock, textWidth, wrap } from "./text.js";
 import type { Figure, Interval, Refusal } from "./types.js";
@@ -25,6 +26,10 @@ export interface TimeSeriesOptions {
   y: { label: string; unit: string; domain: [number, number] };
   formatX?: (value: number) => string;
   formatY?: (value: number) => string;
+  /** Recorded vertical events on the x axis, such as the first pass, a deadline or a death. Listed in the table. */
+  marks?: ChartMark[];
+  /** Recorded shaded spans on the x axis, such as time after the first pass or idle time; `missing` is hatched. */
+  bands?: ChartBand[];
   id?: string;
 }
 
@@ -32,6 +37,8 @@ export function timeSeries(rows: TimeSeriesRow[], o: TimeSeriesOptions): Figure 
   const id = o.id ?? "time-series";
   const gap = domainGap(o.x.domain) ?? domainGap(o.y.domain);
   if (gap) return { id, refused: gap };
+  const events = eventsGap(o.marks, o.bands, o.x.domain);
+  if (events) return { id, refused: events };
   if (!rows.length || rows.every((row) => !row.points.length)) return { id, refused: "No trajectory observations recorded." };
   if (new Set(rows.map((row) => row.id)).size !== rows.length) return { id, refused: "Duplicate trajectory ids." };
   for (const row of rows) {
@@ -50,15 +57,17 @@ export function timeSeries(rows: TimeSeriesRow[], o: TimeSeriesOptions): Figure 
   if (axisGutter(ticks, yLabel) >= NARROW - 24 - 64) return { id, refused: "Formatted y-axis labels leave no room for the phone chart. Use a shorter formatter or unit." };
   const flat = rows.flatMap((row) => row.points.map((point) => ({ row, point })));
   const measured = flat.filter(({ point }) => point.y !== null);
+  const marks = o.marks ?? [], bands = o.bands ?? [];
+  const hasEvents = marks.length + bands.length > 0;
   const facts = (row: TimeSeriesRow, point: TimePoint) => [row.label, `${o.x.label}: ${xLabel(point.x)}`, `${o.y.label}: ${point.y === null ? "not measured" : yLabel(point.y)}`, observationLabel(point.observations), ...(point.interval ? [`Interval: ${scalarIntervalLabel(point.interval, o.y.unit, o.formatY)}`] : []), ...(point.annotation ? [point.annotation] : [])];
   return {
     id,
     finding: `${capitalize(o.y.label)} by ${o.x.label}.`,
     lede: `${measured.length} of ${flat.length} positions have a recorded value.`,
-    read: "Points show recorded values. Lines connect adjacent measured positions; missing positions break the line. Whiskers show recorded intervals.",
+    read: `Points show recorded values. Lines connect adjacent measured positions; missing positions break the line. Whiskers show recorded intervals.${hasEvents ? ` ${EVENTS_READ}` : ""}`,
     svg: { wide: plot(rows, o, WIDE, xLabel, yLabel, facts), narrow: plot(rows, o, NARROW, xLabel, yLabel, facts), interactive: true },
-    table: table(`${capitalize(o.y.label)} by ${o.x.label}`, [{ label: "Setup" }, { label: o.x.label, numeric: true }, { label: o.y.label, numeric: true }, { label: "Observations" }, { label: "Recorded interval" }, { label: "Recorded annotation" }], flat.map(({ row, point }) => [row.label, xLabel(point.x), point.y === null ? "not measured" : yLabel(point.y), observationLabel(point.observations), scalarIntervalLabel(point.interval, o.y.unit, o.formatY), point.annotation ?? ""])).replace('class="tgc-table"', 'class="tgc-table tgc-scalar-table"'),
-    note: { method: "Recorded scalar observations. Missing positions are not interpolated; no uncertainty or statistical comparison is inferred.", n: "Observation counts are recorded separately at each position.", exclusions: flat.filter(({ point }) => point.y === null).map(({ row, point }) => `${row.label}, ${o.x.label} ${xLabel(point.x)}: not measured.`) },
+    table: table(`${capitalize(o.y.label)} by ${o.x.label}`, [{ label: "Setup" }, { label: o.x.label, numeric: true }, { label: o.y.label, numeric: true }, { label: "Observations" }, { label: "Recorded interval" }, { label: "Recorded annotation" }], flat.map(({ row, point }) => [row.label, xLabel(point.x), point.y === null ? "not measured" : yLabel(point.y), observationLabel(point.observations), scalarIntervalLabel(point.interval, o.y.unit, o.formatY), point.annotation ?? ""])).replace('class="tgc-table"', 'class="tgc-table tgc-scalar-table"') + eventsTable(marks, bands, o.x.label, xLabel),
+    note: { method: "Recorded scalar observations. Missing positions are not interpolated; no uncertainty or statistical comparison is inferred.", n: "Observation counts are recorded separately at each position.", exclusions: [...flat.filter(({ point }) => point.y === null).map(({ row, point }) => `${row.label}, ${o.x.label} ${xLabel(point.x)}: not measured.`), ...bands.filter((band) => band.kind === "missing").map((band) => `${band.label}: no data from ${o.x.label} ${xLabel(band.from)} to ${xLabel(band.to)}.`)] },
   };
 }
 
@@ -77,6 +86,7 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
   const tickStep = Math.max(1, Math.ceil(xs.length / (width < 720 ? 5 : 10)));
   for (const [i, x] of xs.entries()) if (i % tickStep === 0 || i === xs.length - 1) marks += text(px(x), bottom + 20, xLabel(x), { anchor: "middle", cls: "tgc-ink-muted tgc-num" });
   marks += text((left + right) / 2, bottom + 43, o.x.label, { anchor: "middle", cls: "tgc-ink-muted" });
+  marks += drawBands(o.bands ?? [], px, top, bottom, xLabel);
   let legendY = bottom + 72;
   let points = "", tips = "", rules = "";
   let pointId = 0;
@@ -90,7 +100,8 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
       segment.push([x, y]);
       const pointFacts = facts(row, point);
       const key = pointId++;
-      let dot = circle(x, y, 10, "tgc-series-hit") + circle(x, y, 3.5, "tgc-series-point");
+      // The first series keeps a circle; later series add a shape as well as a dash, so identity survives without colour.
+      let dot = circle(x, y, 10, "tgc-series-hit") + (seriesIndex === 0 ? circle(x, y, 3.5, "tgc-series-point") : `<path class="tgc-series-point" d="${markerPath(MARKER_SHAPES[seriesIndex % MARKER_SHAPES.length]!, x, y, 3.5)}"/>`);
       if (point.interval) dot += line(x, py(point.interval.lower), x, py(point.interval.upper), "tgc-whisker") + line(x - 4, py(point.interval.lower), x + 4, py(point.interval.lower), "tgc-whisker") + line(x - 4, py(point.interval.upper), x + 4, py(point.interval.upper), "tgc-whisker");
       points += `<g class="tgc-series-observation" data-point="${key}" tabindex="0" role="img" aria-label="${esc(pointFacts.join(" · "))}"><title>${esc(pointFacts.join(" · "))}</title>${dot}</g>`;
       const tipWidth = Math.min(280, width - 24), tipX = Math.max(12, Math.min(width - tipWidth - 12, x - tipWidth / 2));
@@ -100,10 +111,11 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
     }
     flush();
     const label = wrap(row.label, right - left - 32, 12, "sans", 8);
-    marks += `<g style="stroke-dasharray:${dash}">${line(left, legendY - 4, left + 24, legendY - 4, "tgc-series-line")}</g>` + textBlock(label.lines, left + 32, legendY, 16, 'class="tgc-ink" font-size="12"');
+    marks += `<g style="stroke-dasharray:${dash}">${line(left, legendY - 4, left + 24, legendY - 4, "tgc-series-line")}</g>` + (rows.length > 1 ? `<path class="tgc-series-key" d="${markerPath(MARKER_SHAPES[seriesIndex % MARKER_SHAPES.length]!, left + 12, legendY - 4, 3.5)}"/>` : "") + textBlock(label.lines, left + 32, legendY, 16, 'class="tgc-ink" font-size="12"');
     legendY += label.lines.length * 16 + 8;
   }
-  return `<svg class="tgc-svg tgc-trajectories" xmlns="http://www.w3.org/2000/svg" width="${width}" height="${legendY + 12}" viewBox="0 0 ${width} ${legendY + 12}" role="group" aria-label="${esc(o.y.label)} by ${esc(o.x.label)}"><style>${rules}</style>${marks}${points}${tips}</svg>`;
+  const events = drawMarks(o.marks ?? [], px, top, bottom, left, right, xLabel);
+  return `<svg class="tgc-svg tgc-trajectories" xmlns="http://www.w3.org/2000/svg" width="${width}" height="${legendY + 12}" viewBox="0 0 ${width} ${legendY + 12}" role="group" aria-label="${esc(o.y.label)} by ${esc(o.x.label)}"><style>${rules}</style>${marks}${events}${points}${tips}</svg>`;
 }
 
 
