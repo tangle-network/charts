@@ -1,5 +1,11 @@
 # @tangle-network/charts
 
+## 0.7.0
+
+### Minor Changes
+
+- Add an optional caller-owned `description` on `StackedBarChart` buckets, appended to the bar name, the single live readout and the pointer tooltip, so consumers announce values the chart cannot derive (such as request counts) without a second live region.
+
 ## 0.6.0
 
 ### Minor Changes
