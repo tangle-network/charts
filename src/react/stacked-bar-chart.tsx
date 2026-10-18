@@ -24,6 +24,12 @@ export interface StackedBarBucket {
   readonly total: number | null;
   /** Stack order is input order. Charts neither groups nor sorts. */
   readonly segments: readonly StackedBarSegment[];
+  /**
+   * Caller-owned text about this bucket that the chart cannot derive, such as
+   * request counts. Appended to the bar's name, the live readout and the
+   * pointer tooltip; never parsed.
+   */
+  readonly description?: string;
 }
 export interface StackedBarChartProps {
   label: string;
@@ -117,7 +123,8 @@ export function StackedBarChart(props: StackedBarChartProps) {
   const summary = (bucket: StackedBarBucket) => `${bucket.label}: total ${formatted(bucket.total)}`
     + (hasGap(bucket) ? ` — ${unavailableLabel}` : "")
     + (bucket.segments.length ? ` — ${bucket.segments.map((segment) =>
-      `${bySeries.get(segment.seriesId)!.label} ${formatted(segment.value)}`).join(", ")}` : "");
+      `${bySeries.get(segment.seriesId)!.label} ${formatted(segment.value)}`).join(", ")}` : "")
+    + (bucket.description ? ` — ${bucket.description}` : "");
   const activeIndex = selectedBucketId === null ? -1 : buckets.findIndex(({ id }) => id === selectedBucketId);
   const activeBucket = activeIndex >= 0 ? buckets[activeIndex] : null;
 
@@ -263,6 +270,7 @@ export function StackedBarChart(props: StackedBarChartProps) {
           {activeBucket.segments.map((segment) => (
             <div key={segment.seriesId}>{bySeries.get(segment.seriesId)!.label}: {formatted(segment.value)}</div>
           ))}
+          {activeBucket.description && <div>{activeBucket.description}</div>}
         </div>
       )}
       {/* The persistent readout and table expose full values to keyboard and
