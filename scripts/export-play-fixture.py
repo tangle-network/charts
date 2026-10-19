@@ -8,8 +8,12 @@ writes the climb (`timeSeries` rows, ordinal categories, group bands, ruling and
 the digest in force at its time; a value is comparable only when its release held the contract under its checker
 and its manifest declares the bar's security precondition.
 
+    PUBLISHED='{"magnetar-rust-20261017c": 102, "magnetar-rust-20261018b": 5, "magnetar-rust-20261019b": 0}' \
     python3 scripts/export-play-fixture.py /mnt/traces/discovery-runs magnetar-rust-20261017c magnetar-rust-20261018b \
         magnetar-rust-20261019b > docs/fixtures/magnetar-play.json
+
+PUBLISHED is the play repository's tag count per run (`gh api repos/<owner>/<play repo>/tags`), which no run
+directory records.
 """
 import glob
 import hashlib
@@ -134,13 +138,18 @@ def main(root, runs):
         scorecard = json.load(open(os.path.join(d, "scorecard.json")))
         timing = scorecard.get("timing") or {}
         result = json.load(open(os.path.join(d, "result.json"))) if os.path.exists(os.path.join(d, "result.json")) else {}
+        reason = (result.get("cancellationReason") or "").split(":")[0]
+        ending = "stalled, cancelled" if reason == "stalled" else (result.get("reason") or ("live" if not timing.get("settledAt") else "settled"))
         groups.append({"run": run, "from": start, "to": len(columns) - 1, "start": timing.get("start"), "settled": timing.get("settledAt"),
-                       "ending": result.get("reason") or ("live" if not timing.get("settledAt") else "settled"),
+                       "ending": ending,
                        "checked": len(tags), "unscored": unscored, "superseded": superseded,
                        "withheld": sorted({g["tag"].split("/")[-1] for g in gates if g.get("verdict") in ("fail", "unknown")} - {g["tag"].split("/")[-1] for g in gates if g.get("verdict") == "pass"}),
                        "rows": len(checks) + len(gates), "untagged": sum(1 for r in checks if not r.get("tag"))})
         for r in rulings:
-            disputed = next((c for c in sorted(checks, key=lambda c: c["at"]) if c.get("tag") and verdict_line(c)[:80] == (r.get("line") or "")[:80]), None)
+            ordered = sorted(checks, key=lambda c: c["at"])
+            # The release a ruling decided on: the check whose line it disputes, else the newest checked release before it.
+            disputed = next((c for c in ordered if c.get("tag") and verdict_line(c)[:80] == (r.get("line") or "")[:80]), None) \
+                or next((c for c in reversed(ordered) if c.get("tag") and c["at"] <= r["at"]), None)
             rulings_all.append({"run": run, "ruling": r, "tag": disputed["tag"].split("/")[-1] if disputed else None,
                                 "newDigest": new_digest.get(r["dispute"]) or next((ck for t, ck in in_force if t == ms(r["at"])), None)})
         metrics_path = os.path.join(d, "magnetar-metrics.json")
@@ -159,13 +168,12 @@ def main(root, runs):
     current = digest_of_run[runs[-1]]
     ordered_by_age = [current] + [ck for ck in reversed(checker_order) if ck != current]
     color = {ck: i for i, ck in enumerate(ordered_by_age)}
+    # Where each checker came from: whichever came first, a run pressed with it or a ruling that created it.
+    births = [(ms(g["start"]), digest_of_run[g["run"]], f"{g['run'][-3:]} as pressed") for g in groups if g["start"] and digest_of_run[g["run"]]]
+    births += [(ms(r["ruling"]["at"]), r["newDigest"], f"{r['ruling']['by']} {r['ruling']['verdict']} {utc(ms(r['ruling']['at']))}") for r in rulings_all if r["newDigest"]]
     origin = {}
-    for g in runs:
-        if digest_of_run[g] and digest_of_run[g] not in origin:
-            origin[digest_of_run[g]] = f"{g[-3:]} as pressed"
-    for r in rulings_all:
-        if r["newDigest"] and r["newDigest"] not in origin:
-            origin[r["newDigest"]] = f"{r['ruling']['by']} {r['ruling']['verdict']} {utc(ms(r['ruling']['at']))}"
+    for _, ck, text in sorted(births):
+        origin.setdefault(ck, text)
 
     categories = []
     for i, c in enumerate(columns):
@@ -226,7 +234,8 @@ def main(root, runs):
     bands = []
     for g in groups:
         span = f"{utc(ms(g['start']))}–{utc(ms(g['settled'])) if g['settled'] else 'now'}" if g["start"] else ""
-        parts = [g["run"][-3:], span, f"{g['checked']} tags checked"]
+        published = json.loads(os.environ.get("PUBLISHED") or "{}").get(g["run"])
+        parts = [g["run"][-3:], span, f"{g['checked']} of {published} published tags checked" if published is not None and published >= g["checked"] else f"{g['checked']} tags checked"]
         if g["withheld"]:
             parts.append(f"{len(g['withheld'])} withheld")
         if g["superseded"]:
@@ -251,12 +260,13 @@ def main(root, runs):
         marks.append({"at": round(col["at"] - 0.32 + 0.22 * n, 3), "label": f"{effect} · {ruling['by']} {ruling['verdict']} {utc(ms(ruling['at']))}", "kind": "ruling"})
 
     def bar_point(e, value, kind):
-        failing = e["kind"] == "gate" and not e["held"]
         comparable = None if e["bits"] is None else e["bits"] >= BAR["precondition"]
         p = {"x": e["x"], "y": value, "label": e["tag"],
              "annotation": f"{e['tag']} @ {e['commit'][:8]} · {e['kind']} {e['verdict']} under {e['checker']} · manifest security_bits {e['bits']}"}
-        if failing:
+        if e["kind"] == "gate" and e["verdict"] == "fail":
             p.update({"verdict": "fail", "glyph": "cross"})
+        elif e["kind"] == "gate" and e["verdict"] == "unknown":
+            p["verdict"] = "unknown"
         else:
             p["comparable"] = comparable
         return p

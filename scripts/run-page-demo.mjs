@@ -3,6 +3,7 @@ import { createElement as h, Fragment } from 'react'
 import { createRoot } from 'react-dom/client'
 import { phaseWaterfall, renderFigure, smallMultiples, timeline, timeSeries } from '../dist/index.js'
 import { FigureView, Gantt, Lines, Meter } from '../dist/react/index.js'
+import magnetar from '../docs/fixtures/magnetar-play.json'
 
 const min = 60_000
 const t = Date.UTC(2026, 9, 15, 11, 0)
@@ -52,6 +53,12 @@ const channel = [
 ]
 const staticChannel = timeSeries(channel.map((s, i) => ({ id: String(i), label: s.name, points: s.points.map(([ms, y]) => ({ x: (ms - t) / 3_600_000, y })) })), { ...axes, id: 'channels' })
 
+// The focused play page's figures from real Magnetar records: the climb and the bar panels share one release axis.
+const stages = ['manifest', 'build', 'guests', 'keys', 'workloads', 'hidden']
+const climb = timeSeries(magnetar.climb.rows, { ...magnetar.climb.options, formatY: (p) => (p >= 1 ? 'SOLVED' : `${stages[Math.floor(p * 6 + 1e-9)]} stage`) })
+const si = (v) => (v >= 1e6 ? `${+(v / 1e6).toPrecision(3)}M` : v >= 1e3 ? `${+(v / 1e3).toPrecision(3)}k` : String(+v.toPrecision(3)))
+const bar = smallMultiples(magnetar.bar.panels.map((panel) => ({ ...panel, format: si })), magnetar.bar.options)
+
 const fig = (figure) => (figure.refused ? figure.refused : renderFigure(figure, 1, { presentation: 'chart' }))
 const panel = (title, child) => h('div', { className: 'panel' }, h('h3', null, title), child)
 const html = (markup) => h('div', { dangerouslySetInnerHTML: { __html: markup } })
@@ -79,6 +86,12 @@ const sections = {
   'figure-view': [
     panel('FigureView, wide container', h(FigureView, { figure: staticTimeline })),
     panel('FigureView, 358 px container', h('div', { style: { maxWidth: 358 } }, h(FigureView, { figure: staticTimeline }))),
+  ],
+  'play-climb': [
+    panel('Static timeSeries: Magnetar check progress by release, coloured by checker', html(fig(climb))),
+  ],
+  'play-bar': [
+    panel(`Static smallMultiples: against the paper's bar (${magnetar.bar.condition}; ${magnetar.bar.checkCondition})`, html(fig(bar))),
   ],
   'second-channel': [
     panel('React Lines, dash and marker channel', h(Lines, { series: channel, axis: clock, rows: 14 })),
