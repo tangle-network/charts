@@ -1,5 +1,11 @@
 # @tangle-network/charts
 
+## 0.9.1
+
+### Patch Changes
+
+- `timeSeries` sizes its y gutter to fit the strip name, so a long `y.strip` such as `undecided / unscored` is no longer cut off at the left edge. A strip name too long for the phone chart is refused, the same way an over-long y label is.
+
 ## 0.9.0
 
 ### Minor Changes
