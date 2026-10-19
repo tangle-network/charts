@@ -1,5 +1,16 @@
 # @tangle-network/charts
 
+## 0.9.0
+
+### Minor Changes
+
+- A point can carry what a release check recorded, not only a value: `verdict` (a pass is filled, a fail outlined, an undecided verdict dashed), `count` (`×n`), `firstAt` and `lastAt` (hover and table), `comparable` (`*` when false, `?` when unknown), a status `glyph` (`check` for a solve, `cross` for a failing candidate), its own `marker` shape and a short `label` such as `9/15`. A point with a verdict and no value goes in a strip under the plot (`y.strip` names it) and is never drawn at a height. Badges are placed after every mark and skipped where they would cover one; a key under the legend names the forms the data uses, with `markers` naming the shapes (`{ circle: "check", diamond: "gate" }`).
+- `timeSeries` takes `y.scale: "log"`, recorded `y.targets` (a shaded target band or a dashed stretch band, a line when `from` equals `to`) and caller-named `y.ticks`, such as check stages. `x.categories` makes x ordinal: weighted columns, several points per column spread across it, every full-width column labelled (turned 40° when level labels do not fit), and band bounds that name a category cover its column.
+- Bands gain `group`, a labelled bracket above the plot with a rule at each inner edge (a group may cover one position). An `event` mark whose `source` is `gap` stays off the data and takes a label row only after every other mark.
+- A row's `colorIndex` draws it in a fixed checker hue (0 is the current checker; past the fourth it is muted), and its dash follows the same index.
+- `smallMultiples` panels take `scale`, `targets` (named in a key under the panel title) and, on a shared x axis, their own `unit` and `format`; the figure takes `x.categories`, `columns`, `connect: false` and `markers`.
+- `TickOutcome` gains `lost`, a turn the platform lost without a kill. Attempt outcomes and checkers have one palette, exported as `OUTCOME_ORDER`, `OUTCOME_COLORS`, `checkerColor` and `CHECKER_HUES`, and defined once in `figure.css` as `light-dark()` pairs that follow the page's `color-scheme`. Both pass the dataviz palette validator on the light surface and on #161616 (`node scripts/palette-check.mjs <validate_palette.js>`). Timeline ticks take the outcome palette.
+
 ## 0.8.0
 
 ### Minor Changes

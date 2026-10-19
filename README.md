@@ -177,7 +177,7 @@ type ChartMark = { at: number; label: string; kind: "pass" | "deadline" | "died"
 type ChartBand = { from: number; to: number; label: string; kind: "after-pass" | "idle" | "missing" | "blocked" };
 type TimelineLane = { id: string; label: string; spans: Array<{ start: number; end: number | null; state: string; note?: string }>;
   parent?: string; depth?: number; ticks?: TimelineTick[]; detail?: string[] };
-type TimelineTick = { at: number; outcome: "ok" | "quota" | "rate-limit" | "oom" | "refused" | "aborted" | "other"; note?: string };
+type TimelineTick = { at: number; outcome: "ok" | "quota" | "lost" | "rate-limit" | "oom" | "refused" | "aborted" | "other"; note?: string };
 type MultiplePanel = { id: string; label: string; unit?: string; domain?: [number, number]; points?: TimePoint[];
   missing?: { why: string; detail?: string }; end?: { at: number; kind: ChartMark["kind"]; label?: string }; marks?: ChartMark[] };
 type MeterSegment = { label: string; value: number | null; color?: string; kind?: "measured" | "untraced" };
@@ -197,7 +197,7 @@ The window defaults to the extent of the data (spans, ticks and `now`), so a run
 Pass `start` (the run's start) to show time before the first span.
 
 Lanes form a tree through `parent`: each lane is drawn under its parent with a connector, siblings and roots keep their input order, and `depth` defaults to the parent's depth plus one. A stated depth that disagrees with the parent, a parent that is not a lane and a parent chain that loops are refused.
-`ticks` are recorded attempts, such as driver turns, at the time each ended: ok ticks rise above the bar and failed ticks drop below it in their outcome's colour (quota and rate-limit a light breach tone, oom, refused and other the breach tone, aborted ink), and the lane ends with its counts, `21✓ 250✗`. A lane without `ticks` shows no counts; an empty `ticks` shows `0✓ 0✗`. Ticks of one outcome within 2 px are drawn as one, with the count and the commonest `note` in its hover. An unknown outcome is refused.
+`ticks` are recorded attempts, such as driver turns, at the time each ended: ok ticks rise above the bar and failed ticks drop below it in their outcome's colour from the shared outcome palette (below), and the lane ends with its counts, `21✓ 250✗`. A lane without `ticks` shows no counts; an empty `ticks` shows `0✓ 0✗`. Ticks of one outcome within 2 px are drawn as one, with the count and the commonest `note` in its hover. An unknown outcome is refused.
 A mark with a `lane` is drawn on that lane only (a steer to one agent, a wake of the root) instead of across every lane; a lane that is not in the figure is refused.
 `detail` is the caller's facts about a lane (profile, model, status, attempts, cost, top error), one hover line each on the lane's label and every span, and a column of the lanes table.
 `collapsed` folds the named lanes' subtrees: descendants are hidden, the label gains `+N`, and the folded lane's ticks and counts total its subtree. Passing `collapsed`, even empty, makes each parent lane's label a fold toggle (`data-toggle`, a button with `aria-expanded`); `TimelineView` keeps the fold state and wires the toggles to a click, Enter or Space, returning focus to the toggle.
@@ -212,6 +212,44 @@ A mark with a `lane` is drawn on that lane only (a steer to one agent, a wake of
 `FigureView` embeds any static `Figure | Refusal` in React: the wide render in containers of 720 px or more, the phone render (or the table, when a figure has none) below that, and the data, reading and method in a closed disclosure. A refusal renders as its sentence. Import `figure.css` for its styles.
 
 `node scripts/capture-run-page.mjs [dir]` (after `npm run build`) captures each addition at 1440 px light and 390 px dark; the reviewed images are `docs/screenshots/run-page-*.png`.
+
+### Release checks: the climb and the bar
+
+A play's page asks how close its releases are to the check and to the goal's bar. `timeSeries` and `smallMultiples` draw it from the producer's recorded rows; Charts decides no verdict, comparability or checker.
+
+```ts
+const climb = timeSeries(rows, {
+  x: { label: "release", domain: [-0.5, 16.5], categories: tags.map((tag, at) => ({ at, label: tag })) },
+  y: { label: "check progress", unit: "", domain: [-0.05, 1.06], strip: "no score",
+    ticks: [...stages.map((label, i) => ({ at: i / stages.length, label })), { at: 1, label: "SOLVED" }] },
+  bands: [{ from: 0, to: 16, label: "18b · 5 published, 7 withheld", kind: "group" }],
+  marks: [{ at: 9.5, label: "10.5 h", kind: "event", source: "gap" }, { at: 13.47, label: "v4 · operator amendment 20:52Z", kind: "ruling" }],
+  markers: { circle: "check", diamond: "gate" },
+});
+// rows: one per checker (and run), `colorIndex` 0 for the current checker; points such as
+// { x: 13, y: 1, verdict: "pass", glyph: "check", marker: "circle", count: 3, firstAt, lastAt, annotation: line }
+// { x: 15, y: null, verdict: "unknown", marker: "diamond", label: "6/15", count: 12 }   → the strip, never a height
+```
+
+| Field | Drawn as |
+|---|---|
+| `verdict` | `pass` filled, `fail` outlined, `unknown` dashed; with `y: null`, a square in the strip under the plot (hatched when unknown) |
+| `count`, `firstAt`, `lastAt` | `×n` beside the mark; first and last times in the hover and the table |
+| `comparable` | `false` outlined with `*`, `null` outlined with `?` |
+| `glyph` | `✓` (`check`) or `✕` (`cross`), the only marks in the status tones |
+| `marker`, `label` | the mark's shape, named by the figure's `markers`; a short direct label such as `9/15` |
+| `y.scale`, `y.targets`, `y.ticks` | log10 y; target bands (dashed when `stretch`); caller-named gridlines |
+| `x.categories` | an ordinal axis of weighted columns; points sharing a column are spread across it |
+| `colorIndex` (row) | the checker palette, 0 current; dashes follow the index |
+
+The bar panels share the climb's columns: `smallMultiples(panels, { shared: "x", x: { label, domain, categories }, columns: 2, connect: false, markers })`, each panel with its own `unit`, `format`, `scale: "log"`, `domain` and `targets`. `docs/fixtures/magnetar-play.json` holds the Magnetar play's real 17c, 18b and 19b rows in these shapes (`docs/fixtures/export-magnetar-play.mjs` exports them on the Lab host), and `src/run-page-figures.test.ts` draws them.
+
+Attempt outcomes and checkers have one palette in every view. `OUTCOME_ORDER` is the stack order (ok, quota, lost, rate-limit, oom, refused, aborted, other; an open attempt is hatched, never an outcome); `OUTCOME_COLORS[outcome]` and `checkerColor(index)` return the `var(--chart-outcome-*)` and `var(--chart-checker-*)` tokens `figure.css` defines as `light-dark()` pairs, so they follow the page's `color-scheme`. Aborted and other share the neutral tone and always carry a label. `node scripts/palette-check.mjs <dataviz validate_palette.js>` checks both palettes, adjacent pairs in order, on the light surface and on #161616.
+
+| Play page figure | 1440 light | 390 dark |
+|---|---|---|
+| Climb | ![climb](docs/screenshots/run-page-play-climb-1440-light.png) | ![climb phone](docs/screenshots/run-page-play-climb-390-dark.png) |
+| Against the bar | ![bar](docs/screenshots/run-page-play-bar-1440-light.png) | ![bar phone](docs/screenshots/run-page-play-bar-390-dark.png) |
 
 ### Plots without visible report controls
 
