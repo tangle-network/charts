@@ -440,18 +440,35 @@ function SegmentMeter({ segments, total, format, text, untraced }: { segments: M
   )
 }
 
-/** A small line of one series for a row in a list (one hue; the row's label carries identity). */
-export function Spark({ points, max = 1, color = LIVE_SERIES[0] }: { points: [number, number][]; max?: number; color?: string }) {
+/** A small line of one series for a row in a list (one hue; the row's label carries identity). `max` sets the top of
+ * the scale (any positive value; the default 1 suits shares). With `label`, the line is an image with that name and
+ * hovering it reads the nearest point through `format` and `time`. */
+export function Spark({ points, max = 1, color = LIVE_SERIES[0], label, format = formatCompact, time }: { points: [number, number][]; max?: number; color?: string; label?: string; format?: (v: number) => string; time?: (t: number) => string }) {
+  const [hover, setHover] = useState<number | null>(null)
   if (points.length < 2) return <span className="ov-spark-empty">collecting</span>
   const t0 = points[0]![0]
   const t1 = points.at(-1)![0]
   const w = 160
   const h = 32
-  const domain = Math.max(1, max)
-  const d = points.map((p) => `${((p[0] - t0) / Math.max(1, t1 - t0)) * w},${h - 2 - (Math.min(domain, p[1]) / domain) * (h - 4)}`).join(' ')
+  const domain = max > 0 && Number.isFinite(max) ? max : 1
+  const px = (t: number) => ((t - t0) / Math.max(1, t1 - t0)) * w
+  const py = (v: number) => h - 2 - (Math.min(domain, v) / domain) * (h - 4)
+  const d = points.map((p) => `${px(p[0])},${py(p[1])}`).join(' ')
+  const hovered = hover === null ? null : points[hover]!
+  const reading = hovered ? `${time ? `${time(hovered[0])} · ` : ''}${format(hovered[1])}` : null
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="ov-spark" aria-hidden="true">
+    <svg viewBox={`0 0 ${w} ${h}`} className="ov-spark" role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : true}
+      onMouseLeave={label ? () => setHover(null) : undefined}
+      onMouseMove={label ? (event) => {
+        const box = event.currentTarget.getBoundingClientRect()
+        const t = t0 + ((event.clientX - box.left) / Math.max(1, box.width)) * (t1 - t0)
+        let best = 0
+        for (let i = 1; i < points.length; i++) if (Math.abs(points[i]![0] - t) < Math.abs(points[best]![0] - t)) best = i
+        setHover(best)
+      } : undefined}>
+      {label && <title>{reading ?? label}</title>}
       <polyline fill="none" stroke={color} strokeWidth={1.6} points={d} />
+      {hovered && <circle cx={px(hovered[0])} cy={py(hovered[1])} r={3} fill={color} stroke="var(--chart-live-surface, #fff)" strokeWidth={1.5} />}
     </svg>
   )
 }

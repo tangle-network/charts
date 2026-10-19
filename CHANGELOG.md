@@ -1,5 +1,11 @@
 # @tangle-network/charts
 
+## 0.13.0
+
+### Minor Changes
+
+- `Spark` honors any positive `max`, so a per-minute error rate of 0.02 fills the row instead of lying flat under a floor of 1; the default stays 1 for shares. With `label` it is an image with that name, and hovering reads the nearest point through `format` and an optional `time` formatter, with a dot on the line.
+
 ## 0.12.2
 
 ### Patch Changes
