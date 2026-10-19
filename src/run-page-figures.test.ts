@@ -216,6 +216,12 @@ describe("play page figures from the Magnetar runs", () => {
       expect(Math.min(...xs)).toBeGreaterThanOrEqual(0);
       expect(Math.max(...xs)).toBeLessThanOrEqual(358);
     }
+    // A long strip name widens the gutter: its right-aligned label ends at x and must start inside the figure.
+    const long = figure(timeSeries(fixture.climb.rows, { ...fixture.climb.options, y: { ...fixture.climb.options.y, strip: "undecided / unscored" } }));
+    for (const svg of [long.svg.wide, long.svg.narrow!]) {
+      const x = Number(/<text class="[^"]*" x="([\d.]+)"[^>]*>undecided \/ unscored<\/text>/.exec(svg)![1]);
+      expect(x).toBeGreaterThanOrEqual("undecided / unscored".length * 11 * 0.55);
+    }
   });
 
   it("colours every attempt outcome, lost included, from one palette", () => {
