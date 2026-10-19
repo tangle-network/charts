@@ -127,13 +127,16 @@ export interface MarkLabelOptions {
   window?: readonly [number, number];
 }
 
-/** Marks of one kind and verdict merge when under 3 px apart, or under 12 px apart with the same label (a re-checked tag). */
+/**
+ * Marks of one kind and verdict merge when under 3 px apart, or under 12 px apart with the same label (a re-checked
+ * tag). A ruling never merges: each ruling made or kept a check, so each keeps its own rule and label.
+ */
 function groupMarks(marks: readonly ChartMark[], px: (x: number) => number): MarkGroup[] {
   const groups: MarkGroup[] = [];
   for (const mark of [...marks].sort((a, b) => a.at - b.at)) {
     const x = px(mark.at), last = groups.at(-1), lead = last?.marks[0];
     const near = last && px(last.marks.at(-1)!.at);
-    if (last && lead!.kind === mark.kind && lead!.verdict === mark.verdict && (x - near! < 3 || (x - near! < 12 && markName(lead!) === markName(mark)))) last.marks.push(mark);
+    if (last && mark.kind !== "ruling" && lead!.kind === mark.kind && lead!.verdict === mark.verdict && (x - near! < 3 || (x - near! < 12 && markName(lead!) === markName(mark)))) last.marks.push(mark);
     else groups.push({ x, marks: [mark] });
   }
   return groups;

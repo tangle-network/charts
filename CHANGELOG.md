@@ -1,5 +1,13 @@
 # @tangle-network/charts
 
+## 0.12.0
+
+### Minor Changes
+
+- One palette with fixed meanings. `ok` attempts are the status green (they were blue, the current checker's hue), `lost` is cyan (it was green), and `other` has its own grey beside `aborted`'s. Checker hues are blue (current), magenta, cyan and violet, none of them a status colour: a play's first checker was green, so 17c's 29 failing magnetar-rust rows read as passes. `ENDING_ORDER` and `ENDING_COLORS` name how a run ended (solved green, not solved slate, died red, stalled amber, cancelled grey, live blue, never started hatched) for every view that colours runs. The palette check passes in both themes.
+- A failing verdict recorded without a value is a neutral ring in the strip under the plot, not an outline in its checker's hue.
+- Rulings never merge into one rule with a `(+1)` label: each ruling made or kept a check, so each keeps its own rule and label. Group bracket labels are drawn over event rules, so a rule no longer strikes through a run's span (`10-19 03:2.7Z`).
+
 ## 0.11.0
 
 ### Minor Changes

@@ -111,7 +111,7 @@ export function pointBadge(x: number, y: number, r: number, p: PointFields, limi
 export function stripMark(x: number, y: number, size: number, p: PointFields): string {
   const h = size / 2;
   if (p.verdict === "unknown") return `<g class="tgc-strip-mark tgc-point-undecided">${hatch(x - h, y - h, size, size, "tgc-strip-hatch")}${rect(x - h, y - h, size, size, "tgc-strip-edge")}</g>`;
-  return rect(x - h, y - h, size, size, p.verdict === "fail" ? "tgc-series-point tgc-point-outline" : "tgc-series-point");
+  return rect(x - h, y - h, size, size, p.verdict === "fail" ? "tgc-series-point tgc-point-outline tgc-strip-fail" : "tgc-series-point");
 }
 
 type Box = [number, number, number, number];

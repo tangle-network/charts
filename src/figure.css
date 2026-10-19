@@ -395,7 +395,8 @@
 .tgc-tick-rate-limit { stroke: var(--chart-outcome-rate-limit); }
 .tgc-tick-oom { stroke: var(--chart-outcome-oom); }
 .tgc-tick-refused { stroke: var(--chart-outcome-refused); }
-.tgc-tick-aborted, .tgc-tick-other { stroke: var(--chart-outcome-neutral); }
+.tgc-tick-aborted { stroke: var(--chart-outcome-neutral); }
+.tgc-tick-other { stroke: var(--chart-outcome-other); }
 /* Lane labels and counts keep a canvas halo, so rules and ticks under them never strike through the text. */
 .tgc-lane-label, .tgc-count { paint-order: stroke; stroke: var(--chart-canvas); stroke-width: 3px; stroke-linejoin: round; }
 .tgc-count { fill: var(--chart-ink); }
@@ -409,24 +410,36 @@
 .tgc-view-narrow svg { max-width: 100%; height: auto; }
 
 /*
- * One fixed palette for attempt outcomes and check versions in every view (src/outcomes.ts names them). Each is a
- * light-dark() pair picked by the page's color-scheme. Outcomes pass the dataviz colour-vision checks as adjacent
- * pairs in stack order (ok, quota, lost, rate-limit, oom, refused) on the light surface and on #161616; checkers pass
- * as adjacent series (current, then older). `scripts/palette-check.mjs` re-runs the validator. A page may override
- * any of these properties; :where() keeps them at zero specificity.
+ * One fixed palette in every view (src/outcomes.ts names them), each a light-dark() pair picked by the page's
+ * color-scheme. Green, red and amber are status colours and mean one thing everywhere: green is a turn or run that
+ * worked (an `ok` attempt, a solved run), red a run that died, amber a run stalled or a turn rate-limited. Outcomes
+ * pass the dataviz colour-vision checks as adjacent pairs in stack order (ok, quota, lost, rate-limit, oom, refused) on
+ * the light surface and on #161616; `aborted` and `other` are two distinct greys. Checkers take hues no status uses
+ * (blue for the current checker, then magenta, cyan and violet for older ones) and pass as adjacent series; their
+ * marks also carry a vN label. Run endings reuse those colours. `scripts/palette-check.mjs` re-runs the validator. A
+ * page may override any of these properties; :where() keeps them at zero specificity.
  */
 :where(:root) {
-  --chart-outcome-ok: light-dark(#2a78d6, #3987e5);
+  --chart-outcome-ok: light-dark(#1baf7a, #199e70);
   --chart-outcome-quota: light-dark(#eb6834, #d95926);
-  --chart-outcome-lost: light-dark(#1baf7a, #199e70);
+  --chart-outcome-lost: light-dark(#0f9fb8, #1a9cb3);
   --chart-outcome-rate-limit: light-dark(#eda100, #c98500);
   --chart-outcome-oom: light-dark(#e87ba4, #d55181);
   --chart-outcome-refused: light-dark(#6250d6, #9085e9);
   --chart-outcome-neutral: #898781;
+  --chart-outcome-other: #b5b3ac;
   --chart-checker-0: light-dark(#2a78d6, #3987e5);
-  --chart-checker-1: light-dark(#1baf7a, #199e70);
-  --chart-checker-2: light-dark(#6250d6, #9085e9);
-  --chart-checker-3: light-dark(#eda100, #c98500);
+  --chart-checker-1: light-dark(#b8478f, #c2408f);
+  --chart-checker-2: light-dark(#0f9fb8, #1a9cb3);
+  --chart-checker-3: light-dark(#6250d6, #8c7ce6);
+  /* How a run ended: solved green, died red, stalled amber, live blue; not solved and cancelled are neutral. */
+  --chart-ending-solved: var(--chart-outcome-ok);
+  --chart-ending-died: light-dark(#d03b3b, #e05252);
+  --chart-ending-stalled: var(--chart-outcome-rate-limit);
+  --chart-ending-live: var(--chart-checker-0);
+  --chart-ending-not-solved: light-dark(#6b7a90, #8494ab);
+  --chart-ending-cancelled: var(--chart-outcome-neutral);
+  --chart-ending-never-started: color-mix(in srgb, var(--chart-outcome-other) 45%, transparent);
 }
 /* A series drawn in a checker's hue; past the fourth hue it is muted and named by its label. */
 .tgc-checker-0 { --tgc-series: var(--chart-checker-0); }
@@ -438,6 +451,8 @@
 .tgc-series-point.tgc-point-outline { fill: var(--chart-canvas); stroke: var(--tgc-series, var(--chart-accent)); stroke-width: 1.75; }
 .tgc-series-point.tgc-point-undecided { fill: var(--chart-canvas); stroke: var(--tgc-series, var(--chart-accent)); stroke-width: 1.5; stroke-dasharray: 2 1.5; }
 .tgc-strip-hatch .tgc-hatch { stroke: var(--tgc-series, var(--chart-muted)); }
+/* A failing verdict without a value is a neutral ring: in its checker's hue it read as that checker passing. */
+.tgc-series-point.tgc-point-outline.tgc-strip-fail { stroke: var(--chart-ink-muted); }
 .tgc-strip-edge { fill: none; stroke: var(--tgc-series, var(--chart-muted)); stroke-width: 1.25; }
 .tgc-strip-observation:focus-visible { outline: none; }
 .tgc-strip-observation:focus-visible .tgc-series-hit { stroke: var(--chart-ink); stroke-width: 2; }
