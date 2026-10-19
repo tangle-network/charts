@@ -6,7 +6,7 @@
 import { logTicks } from "./scale.js";
 import { line, rect, text, titled } from "./svg.js";
 import { table } from "./table.js";
-import { textWidth } from "./text.js";
+import { esc, textWidth } from "./text.js";
 
 /** One column of an ordinal x axis. Points sit at a category's `at`; `weight` scales its width (default 1). */
 export interface XCategory { at: number; label: string; weight?: number }
@@ -130,7 +130,7 @@ export function drawTargets(targets: readonly YTarget[], py: (y: number) => numb
 export function targetKey(targets: readonly YTarget[], x: number, y: number, maxWidth: number): string {
   let out = "", at = x;
   for (const target of targets) {
-    const w = textWidth(target.label, 10) + 26;
+    const w = textWidth(target.label, 10) * 1.1 + 34;
     if (at + w - x > maxWidth) break;
     out += line(at, y - 3.5, at + 14, y - 3.5, `tgc-target-${target.kind}-edge`) + text(at + 18, y, target.label, { size: 10, cls: "tgc-target-label" });
     at += w;
@@ -168,4 +168,30 @@ export function xTicks(xs: number[], px: (x: number) => number, left: number, ri
     kept.push(x);
   }
   return kept;
+}
+
+const TURN = 40, SIN = Math.sin(TURN * Math.PI / 180), COS = Math.cos(TURN * Math.PI / 180);
+
+/** How ordinal column labels fit: all level, all turned 40°, or as many level ones as fit (`thin`). */
+export type ColumnLabelFit = "level" | "turned" | "thin";
+
+/** The fit for labels of `size` px in columns no narrower than `narrowest` px, and the extra height turned labels take. */
+export function columnLabelFit(labels: readonly string[], narrowest: number, size: number): { fit: ColumnLabelFit; extra: number } {
+  if (!labels.length) return { fit: "level", extra: 0 };
+  const widest = Math.max(...labels.map((l) => textWidth(l, size, "mono")));
+  if (widest + 4 <= narrowest) return { fit: "level", extra: 0 };
+  if (narrowest >= size + 2) return { fit: "turned", extra: Math.ceil(widest * SIN + size * COS - size) };
+  return { fit: "thin", extra: 0 };
+}
+
+/**
+ * Ordinal column labels with their baseline at `y`: every column level when they fit, every column turned 40° when
+ * the columns are at least a line high, otherwise as many level labels as fit.
+ */
+export function columnLabels(xs: number[], px: (x: number) => number, fit: ColumnLabelFit, left: number, right: number, width: number, label: (x: number) => string, size: number, y: number): string {
+  const level = (x: number) => text(px(x), y, label(x), { anchor: "middle", size, cls: "tgc-ink-muted tgc-num" });
+  if (fit === "level") return xs.map(level).join("");
+  if (fit === "thin") return xTicks(xs, px, left, right, width, label, size).map(level).join("");
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  return xs.map((x) => `<text class="tgc-ink-muted tgc-num tgc-turned" x="${r2(px(x) + 3)}" y="${r2(y - size / 2)}" font-size="${size}" text-anchor="end" transform="rotate(-${TURN} ${r2(px(x) + 3)} ${r2(y - size / 2)})">${esc(label(x))}</text>`).join("");
 }

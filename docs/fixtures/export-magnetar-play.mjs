@@ -96,7 +96,7 @@ for (const r of runs) {
     .sort((a, b) => a.first - b.first || Number(a.tag.slice(2)) - Number(b.tag.slice(2)))
   const scored = own.some((x) => x.score)
   const startAt = columns.length
-  if (!tags.length) columns.push({ at: columns.length, label: '', weight: 2, run: r.run, tag: null, first: r.start })
+  if (!tags.length) columns.push({ at: columns.length, label: '', weight: 3, run: r.run, tag: null, first: r.start })
   for (const t of tags) columns.push({ at: columns.length, label: t.tag, weight: scored ? 1 : 0.3, run: r.run, tag: t.tag, first: t.first })
   const gateVerdicts = (tag) => own.filter((x) => x.kind === 'gate' && x.tag === tag).map((x) => x.verdict)
   // Withheld: a failed or undecided gate and no held one. Superseded: every gate row was superseded.

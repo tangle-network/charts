@@ -160,10 +160,12 @@ export function verdictKey(points: readonly (PointFields & { y: number | null })
   ];
   let svg = "", at = x, line = 0;
   for (const item of items) {
-    const w = 16 + textWidth(item.label, 11) + 14;
+    // A text sign (×n) is wider than a mark; its label starts after it. Widths leave room for a wider fallback face.
+    const lead = item.label === "recorded rows" ? 24 : 16;
+    const w = lead + textWidth(item.label, 11) * 1.1 + 16;
     if (at > x && at + w - x > width) { at = x; line++; }
     const gy = y + 12 + line * 16;
-    svg += item.glyph(at, gy) + text(at + 16, gy, item.label, { size: 11, cls: "tgc-ink-muted" });
+    svg += item.glyph(at, gy) + text(at + lead, gy, item.label, { size: 11, cls: "tgc-ink-muted" });
     at += w;
   }
   return { svg: items.length ? `<g class="tgc-verdict-key">${svg}</g>` : "", height: items.length ? (line + 1) * 16 + 8 : 0 };

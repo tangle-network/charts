@@ -1,6 +1,6 @@
 {
  "source": {
-  "exportedAt": "2026-10-19T09:57:14.239Z",
+  "exportedAt": "2026-10-19T10:00:24.154Z",
   "host": "drew-gtr-pro",
   "root": "/mnt/traces/discovery-runs",
   "runs": [
@@ -855,7 +855,7 @@
      {
       "at": 45,
       "label": "",
-      "weight": 2
+      "weight": 3
      }
     ]
    },

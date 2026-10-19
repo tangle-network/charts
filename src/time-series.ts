@@ -1,5 +1,5 @@
 /** Recorded trajectories. Explicit null observations break lines without interpolation. */
-import { categoriesGap, drawTargets, logValueGap, targetsTable, type XCategory, xAxis, xTicks, type YScale, yAxisGap, yGridlines, type YTarget, type YTick, yScale } from "./axis.js";
+import { categoriesGap, columnLabelFit, columnLabels, drawTargets, logValueGap, targetsTable, type XCategory, xAxis, xTicks, type YScale, yAxisGap, yGridlines, type YTarget, type YTick, yScale } from "./axis.js";
 import { type ChartBand, type ChartMark, drawBands, drawGroups, drawMarks, EVENTS_READ, eventsGap, eventsTable, groupRowHeight, markLabelRows } from "./events.js";
 import { checkerClass } from "./outcomes.js";
 import { hasPointFields, placeBadges, POINT_COLUMNS, pointCells, pointFacts, type PointFields, pointFieldsGap, pointMark, stripMark, VERDICT_WORD, verdictKey } from "./points.js";
@@ -138,11 +138,16 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
   if (o.y.ticks?.length) marks += line(left, bottom, right, bottom, "tgc-axis");
   marks += drawTargets(o.y.targets ?? [], py, left, right, yLabel);
   const recordedXs = [...new Set(rows.flatMap((row) => row.points.map((point) => point.x)))].sort((a, b) => a - b);
-  // On an ordinal axis only full-width columns compete for labels; a compressed run is named by its group bracket.
+  // On an ordinal axis only full-width columns are labelled; a compressed run is named by its group bracket.
   const full = (o.x.categories ?? []).filter((c) => (c.weight ?? 1) >= 1).map((c) => c.at);
   const xs = (axis.ats ? (full.length ? full : axis.ats) : recordedXs).filter((x) => xLabel(x) !== "");
-  for (const x of xTicks(xs, px, left, right, width, xLabel)) marks += text(px(x), bottom + strip + 20, xLabel(x), { anchor: "middle", cls: "tgc-ink-muted tgc-num" });
-  marks += text((left + right) / 2, bottom + strip + 43, o.x.label, { anchor: "middle", cls: "tgc-ink-muted" });
+  let turn = 0;
+  if (axis.ats) {
+    const fit = columnLabelFit(xs.map(xLabel), Math.min(...xs.map((x) => axis.column(x)!)), 12);
+    turn = fit.extra;
+    marks += columnLabels(xs, px, fit.fit, left, right, width, xLabel, 12, bottom + strip + 20);
+  } else for (const x of xTicks(xs, px, left, right, width, xLabel)) marks += text(px(x), bottom + strip + 20, xLabel(x), { anchor: "middle", cls: "tgc-ink-muted tgc-num" });
+  marks += text((left + right) / 2, bottom + strip + turn + 43, o.x.label, { anchor: "middle", cls: "tgc-ink-muted" });
   marks += drawBands(o.bands ?? [], px, top, bottom, xLabel, undefined, axis.extent);
   marks += drawGroups(o.bands ?? [], axis.extent, top, bottom, left, right, xLabel);
   if (strip) marks += text(left - 8, bottom + 16, stripName, { anchor: "end", cls: "tgc-ink-muted", size: 11 }) + line(left, bottom + strip, right, bottom + strip, "tgc-gridline");
@@ -159,7 +164,7 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
     return at;
   };
   const plotX = spread(false), stripX = spread(true);
-  let legendY = bottom + strip + 72;
+  let legendY = bottom + strip + turn + 72;
   let points = "", tips = "", rules = "";
   // Badges are placed after every mark, so a badge never covers a mark drawn later.
   const placed: Array<[number, number, number, number]> = [];

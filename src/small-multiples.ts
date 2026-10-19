@@ -3,7 +3,7 @@
  * hatched "no data: <reason>" panel, never a zero line; a panel that stopped
  * early ends at its recorded end mark.
  */
-import { categoriesGap, drawTargets, logValueGap, targetKey, targetsTable, type XCategory, xAxis, xTicks, type YScale, yAxisGap, type YTarget, yScale } from "./axis.js";
+import { categoriesGap, columnLabelFit, columnLabels, drawTargets, logValueGap, targetKey, targetsTable, type XCategory, xAxis, type YScale, yAxisGap, type YTarget, yScale } from "./axis.js";
 import { type ChartMark, drawMarks, eventsGap, eventsTable, type MarkKind } from "./events.js";
 import { hasPointFields, placeBadges, POINT_COLUMNS, pointCells, pointFacts, pointFieldsGap, pointMark, verdictKey } from "./points.js";
 import { domainGap, observationLabel, scalarGap, scalarLabel } from "./scalar.js";
@@ -136,9 +136,20 @@ function domainOf(panel: MultiplePanel, o: SmallMultiplesOptions): [number, numb
 
 function draw(panels: MultiplePanel[], o: SmallMultiplesOptions, width: number, xLabel: (x: number) => string, yLabelOf: (p: MultiplePanel) => (y: number) => string, marksOf: (p: MultiplePanel) => ChartMark[]): string {
   const cols = width === NARROW ? 1 : Math.min(o.columns ?? 3, panels.length), gap = 16;
-  const panelW = (width - gap * (cols - 1)) / cols, panelH = width === NARROW ? 150 : 170;
-  // An ordinal axis labels as many full-width columns as fit; a continuous one its two ends.
+  const panelW = (width - gap * (cols - 1)) / cols;
+  // An ordinal axis labels its full-width columns (level, turned or thinned, alike in every panel); a continuous one its ends.
   const labelled = (o.x.categories ?? []).filter((c) => xLabel(c.at) !== "" && (c.weight ?? 1) >= 1).map((c) => c.at);
+  const gutterOf = (panel: MultiplePanel) => {
+    const domain = domainOf(panel, o) ?? o.y.domain, yLabel = yLabelOf(panel);
+    const logged = panel.scale === "log" ? logTicks(domain[0], domain[1]) : [];
+    const decades = logged.filter((v) => Number.isInteger(Math.log10(v)));
+    const ticks = panel.scale === "log" ? (decades.length >= 2 ? decades : logged.length >= 2 ? [logged[0]!, logged.at(-1)!] : [domain[0], domain[1]]) : [domain[0], domain[1]];
+    return { ticks, gutter: Math.max(...ticks.map((v) => Math.ceil(textWidth(yLabel(v), 10, "mono")) + 10), 40) };
+  };
+  const narrowestPlot = panelW - 6 - Math.max(...panels.map((p) => gutterOf(p).gutter));
+  const totalWeight = (o.x.categories ?? []).reduce((sum, c) => sum + (c.weight ?? 1), 0);
+  const labelFit = labelled.length ? columnLabelFit(labelled.map(xLabel), Math.min(...labelled.map((x) => (o.x.categories!.find((c) => c.at === x)!.weight ?? 1) / totalWeight * narrowestPlot)), 10) : { fit: "level" as const, extra: 0 };
+  const panelH = (width === NARROW ? 150 : 170) + labelFit.extra;
   let body = "";
   panels.forEach((panel, i) => {
     const ox = (i % cols) * (panelW + gap), oy = Math.floor(i / cols) * (panelH + gap);
@@ -146,11 +157,9 @@ function draw(panels: MultiplePanel[], o: SmallMultiplesOptions, width: number, 
     const yLabel = yLabelOf(panel);
     const log = panel.scale === "log";
     // A log panel labels its powers of ten (or its first and last tick); a linear panel its ends, gridded at the middle.
-    const logged = log ? logTicks(domain[0], domain[1]) : [];
-    const decades = logged.filter((v) => Number.isInteger(Math.log10(v)));
-    const yTicks = log ? (decades.length >= 2 ? decades : logged.length >= 2 ? [logged[0]!, logged.at(-1)!] : [domain[0], domain[1]]) : [domain[0], domain[1]];
-    const left = ox + Math.max(...yTicks.map((v) => Math.ceil(textWidth(yLabel(v), 10, "mono")) + 10), 40), right = ox + panelW - 6;
-    const top = oy + 40, bottom = oy + panelH - 24;
+    const { ticks: yTicks, gutter } = gutterOf(panel);
+    const left = ox + gutter, right = ox + panelW - 6;
+    const top = oy + 40, bottom = oy + panelH - 24 - labelFit.extra;
     const axis = xAxis(o.x.domain, o.x.categories, left, right);
     const px = axis.px;
     const py = yScale(domain, panel.scale, top, bottom);
@@ -176,7 +185,7 @@ function draw(panels: MultiplePanel[], o: SmallMultiplesOptions, width: number, 
     }
     // Bands are named in a key under the title: in a small panel an in-place label would cover the data.
     body += drawTargets(panel.targets ?? [], py, left, right, yLabel, false) + targetKey(panel.targets ?? [], ox + 2, oy + 30, panelW - 4);
-    if (labelled.length) for (const x of xTicks(labelled, px, left, right, right + 4, xLabel, 10)) body += text(px(x), bottom + 16, xLabel(x), { size: 10, anchor: "middle", cls: "tgc-ink-muted tgc-num" });
+    if (labelled.length) body += columnLabels(labelled, px, labelFit.fit, left, right, right + 4, xLabel, 10, bottom + 16);
     else body += text(left, bottom + 16, xLabel(o.x.domain[0]), { size: 10, cls: "tgc-ink-muted tgc-num" }) + text(right, bottom + 16, xLabel(o.x.domain[1]), { size: 10, anchor: "end", cls: "tgc-ink-muted tgc-num" });
     // Points sharing a column are spread across it in input order.
     const shared = new Map<number, TimePoint[]>();
