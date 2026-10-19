@@ -36,7 +36,9 @@ describe("time series marks and bands", () => {
     const plain = figure(timeSeries(score, axes));
     const f = figure(timeSeries(score, marked));
     expect(f.svg.wide).toMatch(/class="tgc-mark tgc-mark-deadline" x1="696"/);
-    expect(f.svg.wide.match(/<polyline[^>]*>/g)).toEqual(plain.svg.wide.match(/<polyline[^>]*>/g));
+    // Mark labels take a row above the plot, so the data keeps its x positions and only moves down with the plot.
+    const xs = (svg: string) => svg.match(/<polyline[^>]*>/g)!.map((p) => p.match(/points="([^"]*)"/)![1]!.split(" ").map((xy) => xy.split(",")[0]));
+    expect(xs(f.svg.wide)).toEqual(xs(plain.svg.wide));
   });
 
   it("leaves figures without events unchanged", () => {

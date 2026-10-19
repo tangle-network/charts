@@ -31,9 +31,23 @@ line.ov-gridline { stroke: color-mix(in srgb, var(--chart-live-faint, #777) 22%,
 .ov-mark-deadline { stroke: var(--chart-live-fg, var(--chart-ink)); stroke-dasharray: 5 3; }
 .ov-mark-died { stroke: var(--chart-live-danger, var(--chart-breach, var(--status-error))); stroke-width: 2; }
 .ov-mark-event { stroke: var(--chart-live-muted, var(--chart-ink-muted)); stroke-dasharray: 1 3; stroke-linecap: round; }
+.ov-mark-release { stroke: var(--chart-live-muted, var(--chart-ink-muted)); }
+.ov-mark-steer { stroke: var(--chart-live-accent, var(--chart-accent)); stroke-dasharray: 1 3; stroke-linecap: round; }
+.ov-mark-ruling { stroke: var(--chart-live-fg, var(--chart-ink)); stroke-dasharray: 6 2 1 2; }
+.ov-mark-wake { stroke: var(--chart-live-muted, var(--chart-ink-muted)); stroke-dasharray: 1 3; stroke-linecap: round; }
+.ov-mark-head { fill: var(--chart-live-muted, var(--chart-ink-muted)); stroke: var(--chart-live-surface, var(--chart-canvas)); stroke-width: 1; }
+[data-mark="steer"] .ov-mark-head { fill: var(--chart-live-accent, var(--chart-accent)); }
+[data-mark="ruling"] .ov-mark-head { fill: var(--chart-live-fg, var(--chart-ink)); }
+.ov-verdict-pass .ov-mark { stroke: var(--chart-live-pass, var(--chart-pass, var(--status-running))); }
+.ov-verdict-pass .ov-mark-head { fill: var(--chart-live-pass, var(--chart-pass, var(--status-running))); }
+.ov-verdict-fail .ov-mark { stroke: var(--chart-live-danger, var(--chart-breach, var(--status-error))); }
+.ov-verdict-fail .ov-mark-head { fill: var(--chart-live-danger, var(--chart-breach, var(--status-error))); }
+.ov-verdict-unknown .ov-mark { stroke: var(--chart-live-faint, var(--chart-muted)); }
+.ov-verdict-unknown .ov-mark-head { fill: var(--chart-live-faint, var(--chart-muted)); }
 .ov-mark-label { fill: var(--chart-live-fg, var(--chart-ink)); font-size: .75em; paint-order: stroke; stroke: var(--chart-live-surface, var(--chart-canvas)); stroke-width: 3px; stroke-linejoin: round; }
 .ov-band-after-pass { fill: color-mix(in srgb, var(--chart-live-pass, var(--chart-pass, var(--status-running))) 12%, transparent); }
 .ov-band-idle { fill: var(--chart-live-hover, var(--chart-shade)); }
+.ov-band-blocked { fill: color-mix(in srgb, var(--chart-live-danger, var(--chart-breach, var(--status-error))) 9%, transparent); }
 /* Missing data is hatched, never drawn as zero. */
 .ov-hatch-bg { fill: color-mix(in srgb, var(--chart-live-faint, var(--chart-muted)) 10%, transparent); }
 .ov-hatch { fill: none; stroke: var(--chart-live-faint, var(--chart-muted)); stroke-width: 1; }
@@ -49,7 +63,10 @@ line.ov-gridline { stroke: color-mix(in srgb, var(--chart-live-faint, #777) 22%,
 .ov-event-pass { border-left: 2px solid var(--chart-live-pass, var(--chart-pass, var(--status-running))); border-radius: 0; width: 0; }
 .ov-event-deadline { border-left: 2px dashed var(--chart-live-fg, var(--chart-ink)); border-radius: 0; width: 0; }
 .ov-event-died { border-left: 2px solid var(--chart-live-danger, var(--chart-breach, var(--status-error))); border-radius: 0; width: 0; }
-.ov-event-event { border-left: 2px dotted var(--chart-live-muted, var(--chart-ink-muted)); border-radius: 0; width: 0; }
+.ov-event-event, .ov-event-steer, .ov-event-wake { border-left: 2px dotted var(--chart-live-muted, var(--chart-ink-muted)); border-radius: 0; width: 0; }
+.ov-event-release { border-left: 2px solid var(--chart-live-muted, var(--chart-ink-muted)); border-radius: 0; width: 0; }
+.ov-event-ruling { border-left: 2px dashed var(--chart-live-fg, var(--chart-ink)); border-radius: 0; width: 0; }
+.ov-event-blocked { background: color-mix(in srgb, var(--chart-live-danger, var(--chart-breach, var(--status-error))) 25%, transparent); }
 .ov-event-after-pass { background: color-mix(in srgb, var(--chart-live-pass, var(--chart-pass, var(--status-running))) 25%, transparent); }
 .ov-event-idle { background: var(--chart-live-hover, var(--chart-shade)); }
 .ov-event-missing { background: repeating-linear-gradient(135deg, var(--chart-live-faint, var(--chart-muted)) 0 1px, transparent 1px 4px); }
