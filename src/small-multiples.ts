@@ -8,7 +8,7 @@ import { type ChartMark, drawMarks, eventsGap, eventsTable, type MarkKind } from
 import { hasPointFields, placeBadges, POINT_COLUMNS, pointCells, pointFacts, pointFieldsGap, pointMark, verdictKey } from "./points.js";
 import { domainGap, observationLabel, scalarGap, scalarLabel } from "./scalar.js";
 import { logTicks } from "./scale.js";
-import { circle, hatch, line, type MarkerShape, NARROW, polyline, svgRoot, text, titled, WIDE } from "./svg.js";
+import { circle, hatch, line, type MarkerShape, NARROW, polyline, svgRoot, text, titled, wideWidth } from "./svg.js";
 import { table } from "./table.js";
 import { capitalize, esc, plural, textBlock, textWidth, wrap } from "./text.js";
 import type { TimePoint } from "./time-series.js";
@@ -54,6 +54,8 @@ export interface SmallMultiplesOptions {
   markers?: Partial<Record<MarkerShape, string>>;
   formatX?: (value: number) => string;
   formatY?: (value: number) => string;
+  /** The wide render's width in pixels, such as the measured container (at least 720, the default). */
+  width?: number;
   id?: string;
 }
 
@@ -117,7 +119,7 @@ export function smallMultiples(panels: MultiplePanel[], o: SmallMultiplesOptions
     finding: `${capitalize(o.y.label)} by ${o.x.label}, one panel per ${noun}, on ${o.shared === "both" ? "shared axes" : "a shared x axis"}.`,
     lede: `${withData.length} of ${panels.length} ${plural(panels.length, noun)} have data${ended.length ? `; ${ended.length} ended before the window closed` : ""}.`,
     read: `Each panel is one ${noun} on ${o.shared === "both" ? "the same x and y axes" : "the same x axis; y axes differ per panel"}. Hatched panels have no data and name the reason. A vertical rule with a cross marks where a line ended.${recorded ? " A filled mark is a pass, an outline a fail; * is not comparable with the goal and ? of unknown comparability; ✓ marks a solve and ✕ a failing candidate." : ""}${targets.length ? " Shaded bands are recorded targets; dashed bands are stretch targets." : ""}${panels.some((p) => p.scale === "log") ? " Log-scale panels say so in their y labels." : ""}`,
-    svg: { wide: draw(panels, o, WIDE, xLabel, yLabelOf, marksOf), narrow: draw(panels, o, NARROW, xLabel, yLabelOf, marksOf) },
+    svg: { wide: draw(panels, o, wideWidth(o.width), xLabel, yLabelOf, marksOf), narrow: draw(panels, o, NARROW, xLabel, yLabelOf, marksOf) },
     table: table(`${capitalize(o.y.label)} by ${o.x.label} and ${noun}`, [{ label: capitalize(noun) }, { label: o.x.label, numeric: true }, { label: o.y.label, numeric: true }, { label: "Observations or detail" }, ...(recorded ? [{ label: "Label" }, ...POINT_COLUMNS, { label: "Recorded annotation" }] : [])], rows) + targets.map((p) => targetsTable(p.targets!, yLabelOf(p)).replace("<caption>Recorded targets</caption>", `<caption>${esc(p.label)}: recorded targets</caption>`)).join("") + eventsTable(events, [], o.x.label, xLabel),
     note: {
       method: "Recorded values per panel on explicit axis domains. Missing panels and positions are not interpolated or drawn as zero; no ranking is made.",

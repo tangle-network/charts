@@ -5,7 +5,7 @@
 import { type ChartBand, type ChartMark, drawBands, drawGroups, drawMarks, EVENTS_READ, eventsGap, eventsTable, groupRowHeight, markHead, markLabelRows, markName } from "./events.js";
 import { duration } from "./format.js";
 import { OUTCOME_ORDER, type TickOutcome } from "./outcomes.js";
-import { hatch, line, NARROW, rect, svgRoot, text, titled, WIDE } from "./svg.js";
+import { hatch, line, NARROW, rect, svgRoot, text, titled, wideWidth } from "./svg.js";
 import { table } from "./table.js";
 import { capitalize, esc, plural, textWidth, wrap } from "./text.js";
 import type { Figure, Refusal } from "./types.js";
@@ -51,6 +51,8 @@ export interface TimelineOptions {
    */
   collapsed?: string[];
   formatTime?: (ms: number) => string;
+  /** The wide render's width in pixels, such as the measured container (at least 720, the default). */
+  width?: number;
   id?: string;
 }
 
@@ -229,7 +231,7 @@ export function timeline(lanes: TimelineLane[], o: TimelineOptions): Figure | Re
       ...(hasTicks ? ["Each tick is one recorded attempt: ok ticks rise above the bar and failed ticks drop below it in their outcome's colour; the counts at the right are ok (✓) and failed (✗)."] : []),
       ...(marks.length + bands.length ? [EVENTS_READ] : []),
     ].join(" "),
-    svg: { wide: draw(WIDE), narrow: draw(NARROW), ...(folds ? { interactive: true } : {}) },
+    svg: { wide: draw(wideWidth(o.width)), narrow: draw(NARROW), ...(folds ? { interactive: true } : {}) },
     table: laneTable + table(`${capitalize(o.measure)} by lane`, [{ label: "Lane" }, { label: "State" }, { label: "Start", numeric: true }, { label: "End", numeric: true }, { label: "Duration", numeric: true }, { label: "Note" }],
       spans.map(({ lane, span }) => [lane.label, span.state, fmt(span.start), span.end === null ? "open" : fmt(span.end), duration(ends(span) - span.start), span.note ?? ""])) + eventsTable(marks, bands, "time", fmt),
     note: {
