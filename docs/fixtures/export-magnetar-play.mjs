@@ -159,9 +159,11 @@ series.sort((a, b) => a.colorIndex - b.colorIndex || a.id.localeCompare(b.id))
 
 // Bar panels: one point per (tag, commit) from the gate row's SCORE, else the latest scored check row; security bits
 // from magnetar.json in the check's cached build of that commit.
+// The check builds each commit once; any row of that commit names the build directory ("cached at <dir>").
+const buildOf = new Map()
+for (const x of rows) { const m = /cached at ([^\s)]+)/.exec(x.detail); if (m && x.commit && !buildOf.has(x.commit)) buildOf.set(x.commit, m[1]) }
 const bitsOf = (x) => {
-  const m = /cached at (\S+?)\)/.exec(x.detail)
-  const file = m && path.join(m[1], 'src', 'magnetar.json')
+  const file = buildOf.has(x.commit) && path.join(buildOf.get(x.commit), 'src', 'magnetar.json')
   return file && fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')).security_bits ?? null : null
 }
 const releases = new Map()

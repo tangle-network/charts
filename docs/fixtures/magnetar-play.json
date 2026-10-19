@@ -1,6 +1,6 @@
 {
  "source": {
-  "exportedAt": "2026-10-19T09:47:41.869Z",
+  "exportedAt": "2026-10-19T09:52:44.920Z",
   "host": "drew-gtr-pro",
   "root": "/mnt/traces/discovery-runs",
   "runs": [
@@ -1102,9 +1102,10 @@
       "x": 42,
       "y": 385792,
       "verdict": "fail",
-      "comparable": null,
+      "comparable": true,
       "marker": "diamond",
-      "annotation": "rc16 ca0416f0 · security bits unknown (magnetar.json in the check's build) · gate contract failed under v4"
+      "glyph": "cross",
+      "annotation": "rc16 ca0416f0 · declares 120-bit security (magnetar.json in the check's build) · gate contract failed under v4"
      }
     ],
     "targets": [
@@ -1215,9 +1216,10 @@
       "x": 42,
       "y": 319.08,
       "verdict": "fail",
-      "comparable": null,
+      "comparable": true,
       "marker": "diamond",
-      "annotation": "rc16 ca0416f0 · security bits unknown (magnetar.json in the check's build) · gate contract failed under v4"
+      "glyph": "cross",
+      "annotation": "rc16 ca0416f0 · declares 120-bit security (magnetar.json in the check's build) · gate contract failed under v4"
      }
     ],
     "targets": [
