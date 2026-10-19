@@ -94,7 +94,8 @@ export function timeSeries(rows: TimeSeriesRow[], o: TimeSeriesOptions): Figure 
   const groups = bands.some((band) => band.kind === "group");
   const stripName = o.y.strip?.trim() || "no value";
   // Keep 32px for the legend stroke/offset and at least 32px for its text.
-  if (axisGutter(grid, stripped.length ? stripName : undefined) >= NARROW - 24 - 64) return { id, refused: "Formatted y-axis labels or the strip name leave no room for the phone chart. Use a shorter formatter, unit or strip name." };
+  if (axisGutter(grid) >= NARROW - 24 - 64) return { id, refused: "Formatted y-axis labels leave no room for the phone chart. Use a shorter formatter or unit." };
+  if (stripped.length && axisGutter(grid, stripName) >= NARROW - 24 - 64) return { id, refused: "The strip name leaves no room for the phone chart. Use a shorter y.strip." };
   const valueText = (point: TimePoint) => point.y !== null ? yLabel(point.y) : point.verdict !== undefined ? `${stripName} (${VERDICT_WORD[point.verdict]})` : "not measured";
   const facts = (row: TimeSeriesRow, point: TimePoint) => [
     row.label, `${o.x.label}: ${xLabel(point.x)}`, `${o.y.label}: ${valueText(point)}`,
