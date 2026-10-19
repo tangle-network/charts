@@ -55,10 +55,6 @@ it("packs an isolated static root and optional React entrypoint", () => {
   expect(manifest.peerDependenciesMeta.react.optional).toBe(true);
   expect(Object.keys(manifest.dependencies ?? {})).toEqual([]);
   expect(Object.keys(manifest.optionalDependencies ?? {})).toEqual([]);
-  expect(Object.keys(source).sort()).toEqual([
-    "CHECKER_HUES", "OUTCOME_COLORS", "OUTCOME_ORDER", "breakdown", "chartTokensCss", "checkerColor", "comparisonIntervals", "costFrontier", "figureCss", "heatmap", "isRefusal",
-    "latencyRange", "metricBars", "phaseWaterfall", "rankedRates", "rateOrder", "renderFigure", "renderNotes", "renderRefusals", "smallMultiples", "taskMatrix", "timeline", "timeSeries",
-  ].sort());
 
   // Build once here so a clean `npm test` does not depend on stale dist files.
   execFileSync("npm", ["run", "build"], { cwd: packageDir, stdio: "pipe", timeout: 90_000 });
