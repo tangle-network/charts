@@ -1,5 +1,11 @@
 # @tangle-network/charts
 
+## 0.12.2
+
+### Patch Changes
+
+- `Lines` titles its crosshair tooltip with the caller's `axis` formatter when one is given, so the tooltip and the time axis read the same clock; it printed UTC `MM-DD HH:MM` beside a local `04:30 PM` axis.
+
 ## 0.12.1
 
 ### Patch Changes
