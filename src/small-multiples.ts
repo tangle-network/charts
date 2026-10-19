@@ -17,8 +17,13 @@ import type { Figure, Refusal } from "./types.js";
 export interface MultiplePanel {
   id: string;
   label: string;
-  /** The panel's recorded unit. Every panel must match the figure's y unit. */
+  /**
+   * The panel's recorded unit. With `shared: "both"` it must match the figure's y unit; with `shared: "x"` each panel
+   * may record its own (a rate, a size, a time), and the figure's y unit is the default for panels that set none.
+   */
   unit?: string;
+  /** `shared: "x"` only: formats this panel's y values in place of the figure's `formatY`. */
+  format?: (value: number) => string;
   /** The panel's own y domain; required when only the x axis is shared. */
   domain?: [number, number];
   /** `log` places values on a log10 scale and needs a positive domain. Default: linear. */
@@ -57,11 +62,15 @@ export function smallMultiples(panels: MultiplePanel[], o: SmallMultiplesOptions
   if (axis) return { id, refused: axis };
   if (o.columns !== undefined && (!Number.isInteger(o.columns) || o.columns < 1)) return { id, refused: "Columns must be a whole number of at least 1." };
   const columns = o.x.categories?.length ? new Set(o.x.categories.map((c) => c.at)) : null;
-  if (!o.y.unit?.trim()) return { id, refused: "Small multiples need a y unit." };
   if (!panels.length) return { id, refused: "No panels recorded." };
   if (new Set(panels.map((p) => p.id)).size !== panels.length) return { id, refused: "Duplicate panel ids." };
+  const ownUnits = o.shared === "x";
+  if (!o.y.unit?.trim() && !(ownUnits && panels.every((p) => p.unit?.trim()))) return { id, refused: "Small multiples need a y unit." };
   for (const panel of panels) {
-    if (panel.unit !== undefined && panel.unit !== o.y.unit) return { id, refused: `Mixed units: ${panel.label} records ${panel.unit}, the figure draws ${o.y.unit}.` };
+    if (!ownUnits && panel.unit !== undefined && panel.unit !== o.y.unit) return { id, refused: `Mixed units: ${panel.label} records ${panel.unit}, the figure draws ${o.y.unit}.` };
+    if (ownUnits && panel.unit !== undefined && !panel.unit.trim()) return { id, refused: `${panel.label}: a panel unit needs text.` };
+    if (panel.format !== undefined && !ownUnits) return { id, refused: `${panel.label}: a panel format needs shared: "x"; panels on a shared y axis use formatY.` };
+    if (panel.format !== undefined && typeof panel.format !== "function") return { id, refused: `${panel.label}: a panel format is a function.` };
     if (panel.missing) {
       if (!panel.missing.why?.trim()) return { id, refused: `${panel.label}: a missing panel needs its reason.` };
       if (panel.points?.length || panel.end) return { id, refused: `${panel.label}: a missing panel cannot also carry points or an end.` };
@@ -93,20 +102,21 @@ export function smallMultiples(panels: MultiplePanel[], o: SmallMultiplesOptions
   const xLabel = (x: number) => o.formatX ? o.formatX(x) : category.get(x) ?? String(x);
   const recorded = hasPointFields(panels.flatMap((p) => p.points ?? []));
   const targets = panels.filter((p) => p.targets?.length);
-  const yLabel = (y: number) => scalarLabel(y, o.y.unit, o.formatY);
+  // Each panel labels its values in its own unit and format when the y axis is not shared.
+  const yLabelOf = (p: MultiplePanel) => (y: number) => scalarLabel(y, (ownUnits ? p.unit : undefined) ?? o.y.unit, (ownUnits ? p.format : undefined) ?? o.formatY);
   const withData = panels.filter((p) => !p.missing), ended = withData.filter((p) => p.end);
   const marksOf = (p: MultiplePanel): ChartMark[] => [...(p.marks ?? []), ...(p.end ? [{ at: p.end.at, kind: p.end.kind, label: p.end.label ?? p.end.kind }] : [])];
   const rows = panels.flatMap((p) => p.missing
     ? [[p.label, "", `no data: ${p.missing.why}`, p.missing.detail ?? "", ...(recorded ? ["", "", "", "", "", "", ""] : [])]]
-    : p.points!.map((pt) => [p.label, xLabel(pt.x), pt.y === null ? "not measured" : yLabel(pt.y), observationLabel(pt.observations), ...(recorded ? [pt.label ?? "", ...pointCells(pt), pt.annotation ?? ""] : [])]));
+    : p.points!.map((pt) => [p.label, xLabel(pt.x), pt.y === null ? "not measured" : yLabelOf(p)(pt.y), observationLabel(pt.observations), ...(recorded ? [pt.label ?? "", ...pointCells(pt), pt.annotation ?? ""] : [])]));
   const events = panels.flatMap((p) => marksOf(p).map((m) => ({ ...m, label: `${p.label}: ${m.label}` })));
   return {
     id,
     finding: `${capitalize(o.y.label)} by ${o.x.label}, one panel per ${noun}, on ${o.shared === "both" ? "shared axes" : "a shared x axis"}.`,
     lede: `${withData.length} of ${panels.length} ${plural(panels.length, noun)} have data${ended.length ? `; ${ended.length} ended before the window closed` : ""}.`,
     read: `Each panel is one ${noun} on ${o.shared === "both" ? "the same x and y axes" : "the same x axis; y axes differ per panel"}. Hatched panels have no data and name the reason. A vertical rule with a cross marks where a line ended.${recorded ? " A filled mark is a pass, an outline a fail; * is not comparable with the goal and ? of unknown comparability; ✓ marks a solve and ✕ a failing candidate." : ""}${targets.length ? " Shaded bands are recorded targets; dashed bands are stretch targets." : ""}${panels.some((p) => p.scale === "log") ? " Log-scale panels say so in their y labels." : ""}`,
-    svg: { wide: draw(panels, o, WIDE, xLabel, yLabel, marksOf), narrow: draw(panels, o, NARROW, xLabel, yLabel, marksOf) },
-    table: table(`${capitalize(o.y.label)} by ${o.x.label} and ${noun}`, [{ label: capitalize(noun) }, { label: o.x.label, numeric: true }, { label: o.y.label, numeric: true }, { label: "Observations or detail" }, ...(recorded ? [{ label: "Label" }, ...POINT_COLUMNS, { label: "Recorded annotation" }] : [])], rows) + targets.map((p) => targetsTable(p.targets!, yLabel).replace("<caption>Recorded targets</caption>", `<caption>${esc(p.label)}: recorded targets</caption>`)).join("") + eventsTable(events, [], o.x.label, xLabel),
+    svg: { wide: draw(panels, o, WIDE, xLabel, yLabelOf, marksOf), narrow: draw(panels, o, NARROW, xLabel, yLabelOf, marksOf) },
+    table: table(`${capitalize(o.y.label)} by ${o.x.label} and ${noun}`, [{ label: capitalize(noun) }, { label: o.x.label, numeric: true }, { label: o.y.label, numeric: true }, { label: "Observations or detail" }, ...(recorded ? [{ label: "Label" }, ...POINT_COLUMNS, { label: "Recorded annotation" }] : [])], rows) + targets.map((p) => targetsTable(p.targets!, yLabelOf(p)).replace("<caption>Recorded targets</caption>", `<caption>${esc(p.label)}: recorded targets</caption>`)).join("") + eventsTable(events, [], o.x.label, xLabel),
     note: {
       method: "Recorded values per panel on explicit axis domains. Missing panels and positions are not interpolated or drawn as zero; no ranking is made.",
       n: `${withData.length} of ${panels.length} ${plural(panels.length, noun)} with data.`,
@@ -122,7 +132,7 @@ function domainOf(panel: MultiplePanel, o: SmallMultiplesOptions): [number, numb
   return o.shared === "both" ? o.y.domain : panel.domain ?? null;
 }
 
-function draw(panels: MultiplePanel[], o: SmallMultiplesOptions, width: number, xLabel: (x: number) => string, yLabel: (y: number) => string, marksOf: (p: MultiplePanel) => ChartMark[]): string {
+function draw(panels: MultiplePanel[], o: SmallMultiplesOptions, width: number, xLabel: (x: number) => string, yLabelOf: (p: MultiplePanel) => (y: number) => string, marksOf: (p: MultiplePanel) => ChartMark[]): string {
   const cols = width === NARROW ? 1 : Math.min(o.columns ?? 3, panels.length), gap = 16;
   const panelW = (width - gap * (cols - 1)) / cols, panelH = width === NARROW ? 150 : 170;
   const ends = (o.x.categories ?? []).filter((c) => xLabel(c.at) !== "");
@@ -131,6 +141,7 @@ function draw(panels: MultiplePanel[], o: SmallMultiplesOptions, width: number, 
   panels.forEach((panel, i) => {
     const ox = (i % cols) * (panelW + gap), oy = Math.floor(i / cols) * (panelH + gap);
     const domain = domainOf(panel, o) ?? o.y.domain;
+    const yLabel = yLabelOf(panel);
     const log = panel.scale === "log";
     // A log panel labels its powers of ten (or its first and last tick); a linear panel its ends, gridded at the middle.
     const logged = log ? logTicks(domain[0], domain[1]) : [];
