@@ -164,31 +164,50 @@ A run page draws recorded events, never inferred ones. Every addition below has 
 
 | Need | Static | React |
 |---|---|---|
-| Vertical events (first pass, deadline, died) and shaded spans (after pass, idle, no data) | `timeSeries(rows, { ..., marks, bands })` | `<Lines marks bands>` |
+| Vertical events (first pass, deadline, died, release, steer, ruling, wake) and shaded spans (after pass, idle, no data, blocked) | `timeSeries(rows, { ..., marks, bands })` | `<Lines marks bands>` |
 | Lanes of spans with marks; an open span runs to `now` | `timeline(lanes, { measure, now, marks })` | `<Gantt lanes now marks>` |
+| An agent tree over time: lanes under their parents, attempt ticks with ok and failed counts, walls across every lane, folding by subtree | `timeline(lanes, { measure, start, now, marks, bands, collapsed })` | `<TimelineView lanes options defaultCollapsed>` |
 | Part of a whole with untraced time hatched | `phaseWaterfall` (unaccounted leaves and the remainder are hatched) | `<Meter total segments>` |
 | One panel per arm on shared axes, with no-data panels and early ends | `smallMultiples(panels, { x, y, shared })` | `<FigureView figure>` |
 | Series that stay distinct without colour | later series add a dash and a marker shape | `series[].dash`, `series[].marker` |
 
 ```ts
-type ChartMark = { at: number; label: string; kind: "pass" | "deadline" | "died" | "event" };
-type ChartBand = { from: number; to: number; label: string; kind: "after-pass" | "idle" | "missing" };
-type TimelineLane = { id: string; label: string; spans: Array<{ start: number; end: number | null; state: string; note?: string }> };
+type ChartMark = { at: number; label: string; kind: "pass" | "deadline" | "died" | "event" | "release" | "steer" | "ruling" | "wake";
+  verdict?: "pass" | "fail" | "unknown"; source?: string; lane?: string };
+type ChartBand = { from: number; to: number; label: string; kind: "after-pass" | "idle" | "missing" | "blocked" };
+type TimelineLane = { id: string; label: string; spans: Array<{ start: number; end: number | null; state: string; note?: string }>;
+  parent?: string; depth?: number; ticks?: TimelineTick[]; detail?: string[] };
+type TimelineTick = { at: number; outcome: "ok" | "quota" | "rate-limit" | "oom" | "refused" | "aborted" | "other"; note?: string };
 type MultiplePanel = { id: string; label: string; unit?: string; domain?: [number, number]; points?: TimePoint[];
   missing?: { why: string; detail?: string }; end?: { at: number; kind: ChartMark["kind"]; label?: string }; marks?: ChartMark[] };
 type MeterSegment = { label: string; value: number | null; color?: string; kind?: "measured" | "untraced" };
 ```
 
 Mark kinds differ by stroke as well as colour: pass is solid, deadline dashed, died ends in a cross, and other events are dotted.
+A release carries a diamond head, a steer a triangle, a ruling a square and a wake a circle; releases, steers and wakes stop at the plot's edge so frequent events never wall off the data, and a ruling crosses it.
+A recorded `verdict` colours a mark (pass and fail take the status tones, unknown the muted tone), and a `source`, such as the operator or the keeper, follows its label.
+Mark labels take up to three rows above the data, placed by measured width so none overlap; marks of one kind and verdict at one place share a rule and a label (`rc17 (+18)`), and a label with no room is left to the hover and the table.
+A `blocked` band is a system-wide wall, such as a quota window: a breach wash across every lane under a solid top edge.
 Marks and bands appear in the figure's table (`Recorded events by …`) and, for React, in a text list under the plot.
-Static figures refuse marks or bands outside the x domain; React components throw `RangeError` for the same input, as `StackedBarChart` does.
+`timeSeries` and the React components refuse marks or bands outside the x domain; React components throw `RangeError` for the same input, as `StackedBarChart` does.
+Axis labels never overlap at 720 or 358 px: `timeSeries` labels recorded positions spread evenly across the plot, and `timeline` uses the smallest clock step (1 min to 7 days) whose labels fit, naming the date at midnight.
 
-`timeline` refuses an open span without `now`, a span outside a supplied `start`/`end` window and reversed times. States named in `hatch` (default `missing`, `untraced`) are hatched; states in `muted` (default `idle`) use the muted tone.
-`Gantt` keeps its single-span `rows` input; `lanes` takes the same shape as `timeline`.
+`timeline` refuses an open span without `now`, a span, tick or `now` outside a supplied `start`/`end` window and reversed times. States named in `hatch` (default `missing`, `untraced`) are hatched; states in `muted` (default `idle`) use the muted tone.
+The window defaults to the extent of the data (spans, ticks and `now`), so a run that ended early is not drawn out to its deadline: a mark past the window, such as the deadline, is named at the edge it falls past with its distance (`Deadline +21.9 h →`), listed in the note, and not drawn; bands are clipped to the window.
+Pass `start` (the run's start) to show time before the first span.
+
+Lanes form a tree through `parent`: each lane is drawn under its parent with a connector, siblings and roots keep their input order, and `depth` defaults to the parent's depth plus one. A stated depth that disagrees with the parent, a parent that is not a lane and a parent chain that loops are refused.
+`ticks` are recorded attempts, such as driver turns, at the time each ended: ok ticks rise above the bar and failed ticks drop below it in their outcome's colour (quota and rate-limit a light breach tone, oom, refused and other the breach tone, aborted ink), and the lane ends with its counts, `21✓ 250✗`. A lane without `ticks` shows no counts; an empty `ticks` shows `0✓ 0✗`. Ticks of one outcome within 2 px are drawn as one, with the count and the commonest `note` in its hover. An unknown outcome is refused.
+A mark with a `lane` is drawn on that lane only (a steer to one agent, a wake of the root) instead of across every lane; a lane that is not in the figure is refused.
+`detail` is the caller's facts about a lane (profile, model, status, attempts, cost, top error), one hover line each on the lane's label and every span, and a column of the lanes table.
+`collapsed` folds the named lanes' subtrees: descendants are hidden, the label gains `+N`, and the folded lane's ticks and counts total its subtree. Passing `collapsed`, even empty, makes each parent lane's label a fold toggle (`data-toggle`, a button with `aria-expanded`); `TimelineView` keeps the fold state and wires the toggles to a click, Enter or Space, returning focus to the toggle.
+`Gantt` keeps its single-span `rows` input; `lanes` takes the same shape as `timeline` and draws spans only.
 
 `Meter` with `segments` draws each recorded part of `total`; the remainder no segment accounts for is hatched and labelled `untraced` (rename it with `untraced`). A null segment is listed as `not recorded` and takes no width; a missing total hatches the whole track. Parts that sum past the total throw.
 
 `smallMultiples` draws one panel per arm. A `missing` panel is hatched and reads `no data: <why>`; an `end` stops the line at a mark of its kind. It refuses mixed units, values outside the shared domain, points after an end and a missing panel that also carries data. `shared: "x"` keeps one x domain and requires each panel's own y `domain`. The lede counts `n of m <noun>s have data`.
+
+`TimelineView` is `FigureView` around `timeline(lanes, { ...options, collapsed })`; `defaultCollapsed` names the lanes folded on first render.
 
 `FigureView` embeds any static `Figure | Refusal` in React: the wide render in containers of 720 px or more, the phone render (or the table, when a figure has none) below that, and the data, reading and method in a closed disclosure. A refusal renders as its sentence. Import `figure.css` for its styles.
 

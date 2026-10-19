@@ -1,5 +1,14 @@
 # @tangle-network/charts
 
+## 0.8.0
+
+### Minor Changes
+
+- `timeline` draws an agent tree over time. Lanes take `parent` and `depth` and draw under their parents with connectors; `ticks` draw each recorded attempt coloured by outcome (`ok`, `quota`, `rate-limit`, `oom`, `refused`, `aborted`, `other`) with ok and failed counts at the lane's end; `detail` carries the caller's hover facts; `collapsed` folds subtrees, and React `TimelineView` wires the fold toggles.
+- The `timeline` window defaults to the extent of the data, not a later deadline; marks past the window are named at its edge with their distance, and bands are clipped. Marks with a `lane` draw on that lane only.
+- Marks gain `release`, `steer`, `ruling` and `wake` kinds with head shapes, a `verdict` colour and a `source`; bands gain `blocked` for system-wide walls such as a quota window.
+- Axis and mark labels no longer overlap at 720 or 358 px on `timeline` and `timeSeries`: measured clock steps on `timeline`, evenly spread recorded positions on `timeSeries`, and mark labels in rows above the data, merged where marks share a place. `timeSeries` moves its plot down by the label rows it uses; x positions are unchanged.
+
 ## 0.7.0
 
 ### Minor Changes
