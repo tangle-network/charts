@@ -1,5 +1,12 @@
 # @tangle-network/charts
 
+## 0.10.0
+
+### Minor Changes
+
+- Figures can be drawn at their container's width. `timeSeries`, `smallMultiples` and `timeline` take `width` (at least 720, the default) for the wide render, and React `FigureView` takes a function `(width) => Figure` that it calls with its measured width in 32 px steps. `TimelineView` draws this way. On a 1,300 px page a release climb or an agent timeline keeps its 11-12 px labels and marks instead of being scaled up 1.8× from 720 px, and a 660 px panel no longer falls back to the phone render because its figure was fixed at 720.
+- `timeSeries` takes `legend: false` to leave out the series legend when the caller names its series itself, such as a checker legend above the plot. The verdict key stays.
+
 ## 0.9.1
 
 ### Patch Changes

@@ -17,7 +17,8 @@ export function TimelineView({ lanes, options, defaultCollapsed = [], presentati
   const box = useRef<HTMLDivElement>(null)
   // The plot is markup, so a fold replaces the toggle; focus returns to the toggle with the same lane id.
   const refocus = useRef<string | null>(null)
-  const figure = useMemo(() => timeline(lanes, { ...options, collapsed }), [lanes, options, collapsed])
+  // Drawn at the container's width, so a wide page keeps lane labels and ticks at their set size.
+  const figure = useMemo(() => (width: number) => timeline(lanes, { ...options, collapsed, width }), [lanes, options, collapsed])
   useEffect(() => {
     const id = refocus.current
     refocus.current = null

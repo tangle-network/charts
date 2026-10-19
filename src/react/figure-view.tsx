@@ -1,17 +1,29 @@
 /** Embeds a static Figure or Refusal in React: the wide or phone render chosen by the container's width, the data
  * table in a disclosure. The SVG and table strings come from this library's figure functions, which escape input. */
+import { useMemo } from 'react'
 import { NARROW, WIDE } from '../svg.js'
 import { type Figure, isRefusal, type Refusal } from '../types.js'
 import { useWidth } from './live.js'
 
+/** A figure drawn for a width: FigureView calls it with its container's measured width (at least 720 px). */
+export type FigureAtWidth = (width: number) => Figure | Refusal
+
 export interface FigureViewProps {
-  figure: Figure | Refusal
+  /**
+   * A figure, or a function that draws one for a width. With a function the wide render is drawn at the container's
+   * width, in 32 px steps, so its text and marks keep their set size on a wide page instead of being scaled up from 720.
+   * Memoize the function: a new function redraws the figure.
+   */
+  figure: Figure | Refusal | FigureAtWidth
   /** `chart` (default) keeps the lede, reading and method in the disclosure; `report` also shows the finding and lede. */
   presentation?: 'chart' | 'report'
 }
 
-export function FigureView({ figure, presentation = 'chart' }: FigureViewProps) {
+export function FigureView({ figure: given, presentation = 'chart' }: FigureViewProps) {
   const [ref, width] = useWidth<HTMLElement>()
+  // Before measurement the function draws at 720, as a static figure's wide render does.
+  const drawn = width >= WIDE ? Math.floor(width / 32) * 32 : WIDE
+  const figure = useMemo(() => (typeof given === 'function' ? given(drawn) : given), [given, drawn])
   if (isRefusal(figure)) return <p className="ov-refusal" role="note" data-refused={figure.id}>{figure.refused}</p>
   // Before measurement (server render, print) the wide render shows, as in renderFigure's print rule.
   const layout = width > 0 && width < WIDE ? (figure.svg.narrow ? 'narrow' : 'table') : 'wide'

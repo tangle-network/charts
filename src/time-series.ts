@@ -4,7 +4,7 @@ import { type ChartBand, type ChartMark, drawBands, drawGroups, drawMarks, EVENT
 import { checkerClass } from "./outcomes.js";
 import { hasPointFields, placeBadges, POINT_COLUMNS, pointCells, pointFacts, type PointFields, pointFieldsGap, pointMark, stripMark, VERDICT_WORD, verdictKey } from "./points.js";
 import { domainGap, observationLabel, type Observations, scalarGap, scalarIntervalLabel, scalarLabel } from "./scalar.js";
-import { circle, line, MARKER_SHAPES, type MarkerShape, markerPath, NARROW, polyline, rect, text, titled, WIDE } from "./svg.js";
+import { circle, line, MARKER_SHAPES, type MarkerShape, markerPath, NARROW, polyline, rect, text, titled, wideWidth } from "./svg.js";
 import { table } from "./table.js";
 import { capitalize, esc, plural, textBlock, textWidth, wrap } from "./text.js";
 import type { Figure, Interval, Refusal } from "./types.js";
@@ -58,6 +58,10 @@ export interface TimeSeriesOptions {
   bands?: ChartBand[];
   /** What each point `marker` stands for, such as `{ circle: "check", diamond: "gate" }`, named in the figure's key. */
   markers?: Partial<Record<MarkerShape, string>>;
+  /** The wide render's width in pixels, such as the measured container (at least 720, the default). */
+  width?: number;
+  /** false leaves out the series legend under the plot, for a caller that names its series itself. The verdict key stays. */
+  legend?: boolean;
   id?: string;
 }
 
@@ -112,7 +116,7 @@ export function timeSeries(rows: TimeSeriesRow[], o: TimeSeriesOptions): Figure 
     finding: `${capitalize(o.y.label)} by ${o.x.label}.`,
     lede: `${measured.length} of ${flat.length} positions have a recorded value.${stripped.length ? ` ${stripped.length} recorded ${plural(stripped.length, "verdict")} without a value ${stripped.length === 1 ? "sits" : "sit"} in the strip under the plot.` : ""}`,
     read: `Points show recorded values. Lines connect adjacent measured positions; missing positions break the line. Whiskers show recorded intervals.${recorded ? " A filled mark is a pass, an outline a fail, a dashed outline undecided; * is not comparable with the goal and ? of unknown comparability; ×n counts the recorded rows a mark stands for." : ""}${stripped.length ? ` Hatched squares under the plot are verdicts recorded without a value (${stripName}).` : ""}${o.y.targets?.length ? " Shaded bands are recorded targets; dashed bands are stretch targets." : ""}${groups ? " Brackets above the plot group positions, such as one run's releases." : ""}${hasEvents ? ` ${EVENTS_READ}` : ""}`,
-    svg: { wide: plot(rows, o, WIDE, xLabel, yLabel, grid, facts, stripName), narrow: plot(rows, o, NARROW, xLabel, yLabel, grid, facts, stripName), interactive: true },
+    svg: { wide: plot(rows, o, wideWidth(o.width), xLabel, yLabel, grid, facts, stripName), narrow: plot(rows, o, NARROW, xLabel, yLabel, grid, facts, stripName), interactive: true },
     table: table(`${capitalize(o.y.label)} by ${o.x.label}`, head, flat.map(({ row, point }) => cells(row, point))).replace('class="tgc-table"', 'class="tgc-table tgc-scalar-table"') + targetsTable(o.y.targets ?? [], yLabel) + eventsTable(marks, bands, o.x.label, xLabel),
     note: { method: "Recorded scalar observations. Missing positions are not interpolated; no uncertainty or statistical comparison is inferred.", n: "Observation counts are recorded separately at each position.", exclusions: [
       ...flat.filter(({ point }) => point.y === null).map(({ row, point }) => `${row.label}, ${o.x.label} ${xLabel(point.x)}: ${point.verdict !== undefined ? `${VERDICT_WORD[point.verdict]}${point.count && point.count > 1 ? ` ×${point.count}` : ""}, no value` : "not measured"}.`),
@@ -215,7 +219,7 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
     marks += wrapSeries(lines);
     points += wrapSeries(own);
     const legendKey = `${row.label}\u0000${row.colorIndex ?? `s${seriesIndex}`}`;
-    if (legend.has(legendKey)) continue;
+    if (o.legend === false || legend.has(legendKey)) continue;
     legend.add(legendKey);
     const label = wrap(row.label, right - left - 32, 12, "sans", 8);
     marks += wrapSeries(`<g style="stroke-dasharray:${dash}">${line(left, legendY - 4, left + 24, legendY - 4, "tgc-series-line")}</g>` + (rows.length > 1 ? `<path class="tgc-series-key" d="${markerPath(row.colorIndex !== undefined ? "circle" : MARKER_SHAPES[ord % MARKER_SHAPES.length]!, left + 12, legendY - 4, 3.5)}"/>` : "")) + textBlock(label.lines, left + 32, legendY, 16, 'class="tgc-ink" font-size="12"');

@@ -10,6 +10,14 @@ import { esc } from "./text.js";
 export const WIDE = 720;
 export const NARROW = 358;
 
+/**
+ * The wide render's width for a caller-measured `width` (a figure's container): at least `WIDE`, whole pixels. A figure
+ * drawn at its container's width keeps text and marks at their set size instead of being scaled up from 720 px.
+ */
+export function wideWidth(width: number | undefined): number {
+  return width !== undefined && Number.isFinite(width) && width > WIDE ? Math.floor(width) : WIDE;
+}
+
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
 export function svgRoot(width: number, height: number, inner: string): string {
