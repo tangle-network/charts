@@ -154,7 +154,8 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
   } else for (const x of xTicks(xs, px, left, right, width, xLabel)) marks += text(px(x), bottom + strip + 20, xLabel(x), { anchor: "middle", cls: "tgc-ink-muted tgc-num" });
   marks += text((left + right) / 2, bottom + strip + turn + 43, o.x.label, { anchor: "middle", cls: "tgc-ink-muted" });
   marks += drawBands(o.bands ?? [], px, top, bottom, xLabel, undefined, axis.extent);
-  marks += drawGroups(o.bands ?? [], axis.extent, top, bottom, left, right, xLabel);
+  // Group brackets and their labels go over the event rules, so a ruling's rule never strikes through a run's label.
+  const groups = drawGroups(o.bands ?? [], axis.extent, top, bottom, left, right, xLabel);
   if (strip) marks += text(left - 8, bottom + 16, stripName, { anchor: "end", cls: "tgc-ink-muted", size: 11 }) + line(left, bottom + strip, right, bottom + strip, "tgc-gridline");
   // Several points in one column (a check and a gate, two checkers) are spread across it in input order.
   const spread = (inStrip: boolean) => {
@@ -231,7 +232,7 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
   marks += key.svg;
   // Rules and heads stop above the group brackets, so a ruling's head never sits on a solved mark.
   const events = drawMarks(o.marks ?? [], px, top - groupRowHeight(o.bands), bottom, left, right, xLabel, 22);
-  return `<svg class="tgc-svg tgc-trajectories" xmlns="http://www.w3.org/2000/svg" width="${width}" height="${legendY + 12}" viewBox="0 0 ${width} ${legendY + 12}" role="group" aria-label="${esc(o.y.label)} by ${esc(o.x.label)}"><style>${rules}</style>${marks}${events}${points}${badges}${tips}</svg>`;
+  return `<svg class="tgc-svg tgc-trajectories" xmlns="http://www.w3.org/2000/svg" width="${width}" height="${legendY + 12}" viewBox="0 0 ${width} ${legendY + 12}" role="group" aria-label="${esc(o.y.label)} by ${esc(o.x.label)}"><style>${rules}</style>${marks}${events}${groups}${points}${badges}${tips}</svg>`;
 }
 
 function axisGutter(ticks: readonly YTick[], stripName?: string): number {

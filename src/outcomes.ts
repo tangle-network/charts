@@ -13,17 +13,33 @@ export type TickOutcome = "ok" | "quota" | "lost" | "rate-limit" | "oom" | "refu
 
 /**
  * Outcomes in stack order. Adjacent outcomes pass the colour-vision checks in both themes in this order, so a stacked
- * bar keeps it; `aborted` and `other` share the neutral tone and always carry a label. An attempt still running is
- * `open` and is drawn hatched, never as an outcome.
+ * bar keeps it; `ok` is the status green, `aborted` and `other` are two distinct greys and always carry a label. An
+ * attempt still running is `open` and is drawn hatched, never as an outcome.
  */
 export const OUTCOME_ORDER: readonly TickOutcome[] = ["ok", "quota", "lost", "rate-limit", "oom", "refused", "aborted", "other"];
 
 /** The CSS colour of each outcome, for a caller that paints its own marks (a legend, a stacked bar). */
 export const OUTCOME_COLORS: Readonly<Record<TickOutcome, string>> = Object.freeze(Object.fromEntries(
-  OUTCOME_ORDER.map((outcome) => [outcome, `var(--chart-outcome-${outcome === "aborted" || outcome === "other" ? "neutral" : outcome})`]),
+  OUTCOME_ORDER.map((outcome) => [outcome, `var(--chart-outcome-${outcome === "aborted" ? "neutral" : outcome})`]),
 ) as Record<TickOutcome, string>);
 
-/** How many checkers have their own hue. Index 0 is the current checker; later indexes are older checkers. */
+/**
+ * How a run ended, in the order a legend lists them: `solved` (its check passed), `not solved` (it ended, its check
+ * did not pass), `died` (the platform or driver failed), `stalled`, `cancelled`, `live` and `never started`. Every
+ * view that colours runs by their ending uses these words and ENDING_COLORS, so green, red and amber mean one thing.
+ */
+export type RunEnding = "solved" | "not solved" | "died" | "stalled" | "cancelled" | "live" | "never started";
+export const ENDING_ORDER: readonly RunEnding[] = ["solved", "not solved", "died", "stalled", "cancelled", "live", "never started"];
+
+/** The CSS colour of each run ending (`--chart-ending-*` in figure.css). */
+export const ENDING_COLORS: Readonly<Record<RunEnding, string>> = Object.freeze(Object.fromEntries(
+  ENDING_ORDER.map((ending) => [ending, `var(--chart-ending-${ending.replace(" ", "-")})`]),
+) as Record<RunEnding, string>);
+
+/**
+ * How many checkers have their own hue. Index 0 is the current checker; later indexes are older checkers. Checker hues
+ * (blue, magenta, cyan, violet) avoid the status green, red and amber, so a checker's colour never reads as a verdict.
+ */
 export const CHECKER_HUES = 4;
 
 /** The CSS colour of checker `index` (0 is current). Indexes past the fourth hue fold into the muted tone. */
