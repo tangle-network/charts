@@ -1,10 +1,10 @@
 /** Recorded trajectories. Explicit null observations break lines without interpolation. */
-import { categoriesGap, drawTargets, logValueGap, targetsTable, type XCategory, xAxis, type YScale, yAxisGap, yGridlines, type YTarget, type YTick, yScale } from "./axis.js";
+import { categoriesGap, drawTargets, logValueGap, targetsTable, type XCategory, xAxis, xTicks, type YScale, yAxisGap, yGridlines, type YTarget, type YTick, yScale } from "./axis.js";
 import { type ChartBand, type ChartMark, drawBands, drawGroups, drawMarks, EVENTS_READ, eventsGap, eventsTable, groupRowHeight, markLabelRows } from "./events.js";
 import { checkerClass } from "./outcomes.js";
-import { hasPointFields, POINT_COLUMNS, pointBadge, pointCells, pointFacts, type PointFields, pointFieldsGap, pointMark, stripMark, VERDICT_WORD } from "./points.js";
+import { hasPointFields, placeBadges, POINT_COLUMNS, pointCells, pointFacts, type PointFields, pointFieldsGap, pointMark, stripMark, VERDICT_WORD, verdictKey } from "./points.js";
 import { domainGap, observationLabel, type Observations, scalarGap, scalarIntervalLabel, scalarLabel } from "./scalar.js";
-import { circle, line, MARKER_SHAPES, markerPath, NARROW, polyline, rect, text, titled, WIDE } from "./svg.js";
+import { circle, line, MARKER_SHAPES, type MarkerShape, markerPath, NARROW, polyline, rect, text, titled, WIDE } from "./svg.js";
 import { table } from "./table.js";
 import { capitalize, esc, plural, textBlock, textWidth, wrap } from "./text.js";
 import type { Figure, Interval, Refusal } from "./types.js";
@@ -56,6 +56,8 @@ export interface TimeSeriesOptions {
   marks?: ChartMark[];
   /** Recorded shaded spans on the x axis, such as time after the first pass or idle time; `missing` is hatched. */
   bands?: ChartBand[];
+  /** What each point `marker` stands for, such as `{ circle: "check", diamond: "gate" }`, named in the figure's key. */
+  markers?: Partial<Record<MarkerShape, string>>;
   id?: string;
 }
 
@@ -136,7 +138,9 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
   if (o.y.ticks?.length) marks += line(left, bottom, right, bottom, "tgc-axis");
   marks += drawTargets(o.y.targets ?? [], py, left, right, yLabel);
   const recordedXs = [...new Set(rows.flatMap((row) => row.points.map((point) => point.x)))].sort((a, b) => a - b);
-  const xs = (axis.ats ?? recordedXs).filter((x) => xLabel(x) !== "");
+  // On an ordinal axis only full-width columns compete for labels; a compressed run is named by its group bracket.
+  const full = (o.x.categories ?? []).filter((c) => (c.weight ?? 1) >= 1).map((c) => c.at);
+  const xs = (axis.ats ? (full.length ? full : axis.ats) : recordedXs).filter((x) => xLabel(x) !== "");
   for (const x of xTicks(xs, px, left, right, width, xLabel)) marks += text(px(x), bottom + strip + 20, xLabel(x), { anchor: "middle", cls: "tgc-ink-muted tgc-num" });
   marks += text((left + right) / 2, bottom + strip + 43, o.x.label, { anchor: "middle", cls: "tgc-ink-muted" });
   marks += drawBands(o.bands ?? [], px, top, bottom, xLabel, undefined, axis.extent);
@@ -156,9 +160,10 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
   };
   const plotX = spread(false), stripX = spread(true);
   let legendY = bottom + strip + 72;
-  let points = "", tips = "", rules = "", badges = "";
+  let points = "", tips = "", rules = "";
+  // Badges are placed after every mark, so a badge never covers a mark drawn later.
   const placed: Array<[number, number, number, number]> = [];
-  const free = (box: [number, number, number, number]) => box[0] >= left - 4 && box[1] <= width - 2 && placed.every((b) => box[1] < b[0] || box[0] > b[1] || box[3] < b[2] || box[2] > b[3]);
+  const pending: Array<{ x: number; y: number; r: number; point: TimePoint }> = [];
   let pointId = 0;
   const legend = new Set<string>();
   for (const [seriesIndex, row] of rows.entries()) {
@@ -176,15 +181,10 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
         if (point.verdict === undefined) continue;
         // A square fits its column, so a compressed run of many tags stays a readable strip.
         const x = stripX.get(point)!, y = bottom + 12, size = Math.min(9, Math.max(3, (axis.column(point.x) ?? 11) - 2));
-        const badge = pointBadge(x, y, size / 2, point, width - 2);
         const title = facts(row, point).join(" · ");
         own += titled(title, `<g class="tgc-strip-observation" data-strip="${esc(row.id)}" tabindex="0" role="img" aria-label="${esc(title)}">${rect(x - 8, y - 8, 16, 16, "tgc-series-hit")}${stripMark(x, y, size, point)}</g>`);
         placed.push([x - size / 2, x + size / 2, y - size / 2, y + size / 2]);
-        if (badge.svg) {
-          const end = badge.svg.includes('text-anchor="end"');
-          const box: [number, number, number, number] = end ? [x - size / 2 - 3 - badge.width, x - size / 2 - 3, y - 6, y + 6] : [x + size / 2 + 3, x + size / 2 + 3 + badge.width, y - 6, y + 6];
-          if (free(box)) { placed.push(box); badges += badge.svg; }
-        }
+        pending.push({ x, y, r: size / 2, point });
         continue;
       }
       const x = plotX.get(point)!, y = py(point.y);
@@ -199,15 +199,7 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
       if (point.interval) dot += line(x, py(point.interval.lower), x, py(point.interval.upper), "tgc-whisker") + line(x - 4, py(point.interval.lower), x + 4, py(point.interval.lower), "tgc-whisker") + line(x - 4, py(point.interval.upper), x + 4, py(point.interval.upper), "tgc-whisker");
       own += `<g class="tgc-series-observation" data-point="${key}" tabindex="0" role="img" aria-label="${esc(pointFacts.join(" · "))}"><title>${esc(pointFacts.join(" · "))}</title>${dot}</g>`;
       placed.push([x - r, x + r, y - r, y + r]);
-      if (recorded) {
-        const badge = pointBadge(x, y, r, point, width - 2);
-        const after: [number, number, number, number] = [x + r + 3, x + r + 3 + badge.width, y - 6, y + 6];
-        const before: [number, number, number, number] = [x - r - 3 - badge.width, x - r - 3, y - 6, y + 6];
-        if (badge.svg) {
-          const box = badge.svg.includes('text-anchor="end"') ? before : after;
-          if (free(box)) { placed.push(box); badges += badge.svg; }
-        }
-      }
+      if (recorded) pending.push({ x, y, r, point });
       const tipWidth = Math.min(280, width - 24), tipX = Math.max(12, Math.min(width - tipWidth - 12, x - tipWidth / 2));
       const tipLines = pointFacts.flatMap((fact) => wrap(fact, tipWidth - 24, 12, "sans", 8).lines);
       tips += `<g class="tgc-series-tip" data-series-tip="${key}" aria-hidden="true">${rect(tipX, top, tipWidth, tipLines.length * 17 + 24, "tgc-tip-bg", 'rx="7"')}${textBlock(tipLines, tipX + 12, top + 20, 17, 'class="tgc-tip-ink" font-size="12"')}</g>`;
@@ -223,34 +215,13 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
     marks += wrapSeries(`<g style="stroke-dasharray:${dash}">${line(left, legendY - 4, left + 24, legendY - 4, "tgc-series-line")}</g>` + (rows.length > 1 ? `<path class="tgc-series-key" d="${markerPath(row.colorIndex !== undefined ? "circle" : MARKER_SHAPES[ord % MARKER_SHAPES.length]!, left + 12, legendY - 4, 3.5)}"/>` : "")) + textBlock(label.lines, left + 32, legendY, 16, 'class="tgc-ink" font-size="12"');
     legendY += label.lines.length * 16 + 8;
   }
-  const events = drawMarks(o.marks ?? [], px, top, bottom, left, right, xLabel, 22);
+  const badges = placeBadges(pending, placed, left - 4, width - 2);
+  const key = verdictKey(rows.flatMap((row) => row.points), o.markers, left, legendY + 4, right - left);
+  legendY += key.height;
+  marks += key.svg;
+  // Rules and heads stop above the group brackets, so a ruling's head never sits on a solved mark.
+  const events = drawMarks(o.marks ?? [], px, top - groupRowHeight(o.bands), bottom, left, right, xLabel, 22);
   return `<svg class="tgc-svg tgc-trajectories" xmlns="http://www.w3.org/2000/svg" width="${width}" height="${legendY + 12}" viewBox="0 0 ${width} ${legendY + 12}" role="group" aria-label="${esc(o.y.label)} by ${esc(o.x.label)}"><style>${rules}</style>${marks}${events}${points}${badges}${tips}</svg>`;
-}
-
-/**
- * X labels at recorded positions, spread evenly across the plot and measured so none overlap: at most as many as fit,
- * each snapped to the nearest recorded x, always keeping the first and the last that fit.
- */
-function xTicks(xs: number[], px: (x: number) => number, left: number, right: number, width: number, label: (x: number) => string): number[] {
-  if (!xs.length) return [];
-  const span = (x: number) => { const w = textWidth(label(x), 12, "mono"); return [px(x) - w / 2, px(x) + w / 2] as const; };
-  const widest = Math.max(...xs.map((x) => textWidth(label(x), 12, "mono")));
-  const slots = Math.max(1, Math.min(xs.length, Math.floor((right - left) / (widest + 12)) + 1));
-  const anchors = slots === 1 ? [xs[0]!] : Array.from({ length: slots }, (_, i) => left + (right - left) * i / (slots - 1))
-    .map((target) => xs.reduce((best, x) => Math.abs(px(x) - target) < Math.abs(px(best) - target) ? x : best, xs[0]!));
-  const kept: number[] = [];
-  for (const x of [...new Set(anchors)]) {
-    const [a, b] = span(x);
-    if (a < 2 || b > width - 2) continue;
-    const previous = kept.at(-1);
-    if (previous !== undefined && a < span(previous)[1] + 10) {
-      // The last recorded position wins over the label before it.
-      if (x !== xs.at(-1) || kept.length === 1) continue;
-      kept.pop();
-    }
-    kept.push(x);
-  }
-  return kept;
 }
 
 function axisGutter(ticks: readonly YTick[]): number {

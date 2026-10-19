@@ -199,6 +199,11 @@ const panels = [
 ]
 
 const domain = [-0.5, columns.length - 0.5]
+// The bar panels draw only the runs that measured something, on the climb's columns for those runs.
+const measured = new Set(panels.flatMap((p) => p.points.map((q) => columns[q.x].run)))
+const barColumns = columns.filter((c) => measured.has(c.run))
+const barDomain = [barColumns[0].at - 0.5, barColumns.at(-1).at + 0.5]
+const markers = { circle: 'check', diamond: 'gate' }
 const out = {
   source: {
     exportedAt: new Date().toISOString(),
@@ -213,13 +218,15 @@ const out = {
     options: {
       id: 'magnetar-climb',
       x: { label: 'release', domain, categories: columns.map(({ at, label, weight }) => ({ at, label, ...(weight !== 1 ? { weight } : {}) })) },
-      y: { label: 'check progress', unit: '', domain: [0, 1], ticks: [...STAGES.map((s, i) => ({ at: Math.round(i / 6 * 1000) / 1000, label: s })), { at: 1, label: 'SOLVED' }], strip: 'no score' },
+      markers,
+      // Headroom above SOLVED and below the first stage, so marks on either line stay clear of the axis.
+      y: { label: 'check progress', unit: '', domain: [-0.05, 1.06], ticks: [...STAGES.map((s, i) => ({ at: Math.round(i / 6 * 1000) / 1000, label: s })), { at: 1, label: 'SOLVED' }], strip: 'no score' },
       marks, bands: groups,
     },
   },
   bar: {
     panels,
-    options: { id: 'magnetar-bar', shared: 'x', columns: 2, connect: false, noun: 'metric', x: { label: 'release', domain, categories: columns.map(({ at, label, weight }) => ({ at, label, ...(weight !== 1 ? { weight } : {}) })) }, y: { label: 'value against the paper', unit: 'value', domain: [1, 2] } },
+    options: { id: 'magnetar-bar', shared: 'x', columns: 2, connect: false, noun: 'metric', markers, x: { label: 'release', domain: barDomain, categories: barColumns.map(({ at, label, weight }) => ({ at, label, ...(weight !== 1 ? { weight } : {}) })) }, y: { label: 'value against the paper', unit: 'value', domain: [1, 2] } },
     condition: 'paper: 2^22-cycle executions, 12 performance cores of an M4 Max MacBook Pro, 120-bit (ePrint 2026/2423, Tables 2, 3 and 8)',
     checkCondition: 'check: 2^12 = 4,096 cycles per workload, one jailed run on the Lab host',
   },

@@ -61,6 +61,11 @@ export function eventsGap(marks: readonly ChartMark[] = [], bands: readonly Char
   return null;
 }
 
+/** An `event` whose source is `gap`: a break in time between positions of an ordinal axis. It never crosses the data. */
+function isGap(mark: ChartMark): boolean {
+  return mark.kind === "event" && mark.source === "gap";
+}
+
 /** A mark's label with its source, as drawn and listed. */
 export function markName(mark: ChartMark): string {
   return mark.source ? `${mark.label} · ${mark.source}` : mark.label;
@@ -102,7 +107,7 @@ export function drawGroups(bands: readonly ChartBand[], extent: (from: number, t
     const from = clip ? Math.max(band.from, clip[0]) : band.from, to = clip ? Math.min(band.to, clip[1]) : band.to;
     if (to < from) return "";
     const [x0, x1] = extent(from, to), w = x1 - x0;
-    const label = w >= 24 ? wrap(band.label, w - 6, 11, "sans", 1).lines[0]! : "";
+    const label = w >= 24 ? wrap(band.label, w - 10, 11, "sans", 1).lines[0]! : "";
     const edges = [x0, x1].filter((x) => x > left + 0.5 && x < right - 0.5).map((x) => line(x, top - 16, x, bottom, "tgc-group-edge")).join("");
     const bracket = line(x0 + 2, top - 3, x1 - 2, top - 3, "tgc-group-rule") + (label ? text(x0 + 3, top - 7, label, { size: 11, cls: "tgc-group-label" }) : "");
     return titled(`${band.label}: ${format(band.from)} to ${format(band.to)}`, `<g data-band="group">${edges}${bracket}</g>`);
@@ -158,7 +163,8 @@ function layoutLabels(groups: MarkGroup[], left: number, right: number, o: MarkL
     ...(o.before ?? []).map((mark) => place(`← ${markName(mark)} −${duration(w0 - mark.at)}`, left, left, "start", false)),
   ].filter((p): p is Placed => p !== null);
   const placed = new Map<MarkGroup, Placed>();
-  for (const group of groups) {
+  // A gap between positions is context: every other mark claims a label row first.
+  for (const group of [...groups.filter((g) => !isGap(g.marks[0]!)), ...groups.filter((g) => isGap(g.marks[0]!))]) {
     const flip = group.x > left + (right - left) * 0.62;
     const name = markName(group.marks[0]!) + (group.marks.length > 1 ? ` (+${group.marks.length - 1})` : "");
     const spot = place(name, group.x + 4, group.x - 4, flip ? "end" : "start", true);
@@ -191,7 +197,7 @@ export function drawMarks(marks: readonly ChartMark[], px: (x: number) => number
   let out = groups.map((group) => {
     const { x, marks: members } = group, mark = members[0]!;
     // Kinds with a head (release, steer, ruling, wake) are frequent: only a ruling crosses the data; the rest stop at its edge.
-    const stem = MARK_HEADS[mark.kind] !== undefined && mark.kind !== "ruling";
+    const stem = (MARK_HEADS[mark.kind] !== undefined && mark.kind !== "ruling") || isGap(mark);
     let glyph = line(x, Math.min(top, labelTop), x, stem ? top + 4 : bottom, `tgc-mark tgc-mark-${mark.kind}`);
     if (mark.kind === "died") glyph += line(x - 4, bottom - 8, x + 4, bottom, "tgc-mark tgc-mark-died") + line(x - 4, bottom, x + 4, bottom - 8, "tgc-mark tgc-mark-died");
     glyph += markHead(mark.kind, x, top + 4);

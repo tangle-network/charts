@@ -456,4 +456,9 @@
 /* Group headers: a labelled bracket above the plot and a light rule at each inner edge. */
 .tgc-group-rule { stroke: var(--chart-ink-muted); stroke-width: 1.5; }
 .tgc-group-edge { stroke: var(--chart-rule); stroke-width: 1; }
-.tgc-group-label { fill: var(--chart-ink); }
+.tgc-group-label { fill: var(--chart-ink); paint-order: stroke; stroke: var(--chart-canvas); stroke-width: 3px; stroke-linejoin: round; }
+/* The verdict key: glyphs in the neutral ink, so they describe a mark's form, not a series. */
+.tgc-key-mark { stroke-width: 1.5; }
+.tgc-key-filled { fill: var(--chart-ink-muted); stroke: none; }
+.tgc-key-outline { fill: none; stroke: var(--chart-ink-muted); }
+.tgc-key-dashed { fill: none; stroke: var(--chart-ink-muted); stroke-dasharray: 2 1.5; }

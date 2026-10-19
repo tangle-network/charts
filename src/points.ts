@@ -4,7 +4,7 @@
  * the goal, a status glyph and a short direct label. The producer records every field; nothing here is inferred.
  */
 import { type MarkVerdict, MARK_VERDICTS } from "./events.js";
-import { hatch, MARKER_SHAPES, type MarkerShape, markerPath, rect } from "./svg.js";
+import { hatch, MARKER_SHAPES, type MarkerShape, markerPath, rect, text } from "./svg.js";
 import { esc, textWidth } from "./text.js";
 
 /** A status glyph beside a mark: `check` for a solve, `cross` for a failing candidate. */
@@ -112,4 +112,59 @@ export function stripMark(x: number, y: number, size: number, p: PointFields): s
   const h = size / 2;
   if (p.verdict === "unknown") return `<g class="tgc-strip-mark tgc-point-undecided">${hatch(x - h, y - h, size, size, "tgc-strip-hatch")}${rect(x - h, y - h, size, size, "tgc-strip-edge")}</g>`;
   return rect(x - h, y - h, size, size, p.verdict === "fail" ? "tgc-series-point tgc-point-outline" : "tgc-series-point");
+}
+
+type Box = [number, number, number, number];
+
+/**
+ * Places each mark's badge to its right, or to its left at the plot's edge, skipping any that would cover a mark or
+ * an earlier badge: a skipped badge stays in the mark's hover and the table. Solves and failing candidates go first.
+ */
+export function placeBadges(pending: ReadonlyArray<{ x: number; y: number; r: number; point: PointFields }>, marks: Box[], left: number, right: number): string {
+  const placed = [...marks];
+  const free = (box: Box) => box[0] >= left && box[1] <= right && placed.every((b) => box[1] < b[0] || box[0] > b[1] || box[3] < b[2] || box[2] > b[3]);
+  const rank = (p: PointFields) => p.glyph ? 0 : p.comparable !== undefined && p.comparable !== true ? 1 : p.label ? 2 : 3;
+  let out = "";
+  for (const { x, y, r, point } of [...pending].sort((a, b) => rank(a.point) - rank(b.point))) {
+    const badge = pointBadge(x, y, r, point, right);
+    if (!badge.svg) continue;
+    const box: Box = badge.svg.includes('text-anchor="end"') ? [x - r - 3 - badge.width, x - r - 3, y - 6, y + 6] : [x + r + 3, x + r + 3 + badge.width, y - 6, y + 6];
+    if (!free(box)) continue;
+    placed.push(box);
+    out += badge.svg;
+  }
+  return out;
+}
+
+/**
+ * A key row for the recorded fields the points use: shapes the caller named, filled and outlined verdicts, the
+ * strip, the status glyphs, `*`, `?` and `×n`. Only what the data contains is listed; items wrap to `width`.
+ */
+export function verdictKey(points: readonly (PointFields & { y: number | null })[], markers: Partial<Record<MarkerShape, string>> | undefined, x: number, y: number, width: number): { svg: string; height: number } {
+  if (!hasPointFields(points)) return { svg: "", height: 0 };
+  const has = (test: (p: PointFields & { y: number | null }) => boolean) => points.some(test);
+  type Item = { glyph: (gx: number, gy: number) => string; label: string };
+  const shape = (s: MarkerShape, cls: string) => (gx: number, gy: number) => `<path class="tgc-key-mark ${cls}" d="${markerPath(s, gx + 5, gy - 4, 4)}"/>`;
+  const sign = (t: string, cls: string) => (gx: number, gy: number) => text(gx + 1, gy, t, { size: 11, cls });
+  const items: Item[] = [
+    ...MARKER_SHAPES.filter((s) => markers?.[s] && has((p) => p.marker === s)).map((s) => ({ glyph: shape(s, "tgc-key-filled"), label: markers![s]! })),
+    ...(has((p) => p.y !== null && p.verdict === "pass") ? [{ glyph: shape("circle", "tgc-key-filled"), label: "filled: pass" }] : []),
+    ...(has((p) => p.y !== null && (p.verdict === "fail" || (p.comparable !== undefined && p.comparable !== true))) ? [{ glyph: shape("circle", "tgc-key-outline"), label: "outline: fail or not comparable" }] : []),
+    ...(has((p) => p.y !== null && p.verdict === "unknown") ? [{ glyph: shape("circle", "tgc-key-dashed"), label: "dashed: undecided" }] : []),
+    ...(has((p) => p.y === null && p.verdict !== undefined) ? [{ glyph: (gx: number, gy: number) => `<g class="tgc-key-strip">${hatch(gx + 1, gy - 8, 8, 8, "tgc-strip-hatch")}${rect(gx + 1, gy - 8, 8, 8, "tgc-strip-edge")}</g>`, label: "square: verdict without a value" }] : []),
+    ...(has((p) => p.glyph === "check") ? [{ glyph: sign("✓", "tgc-glyph-check"), label: "solved" }] : []),
+    ...(has((p) => p.glyph === "cross") ? [{ glyph: sign("✕", "tgc-glyph-cross"), label: "failing candidate" }] : []),
+    ...(has((p) => p.comparable === false) ? [{ glyph: sign("*", "tgc-glyph-note"), label: "not comparable" }] : []),
+    ...(has((p) => p.comparable === null) ? [{ glyph: sign("?", "tgc-glyph-note"), label: "comparability unknown" }] : []),
+    ...(has((p) => (p.count ?? 1) > 1) ? [{ glyph: sign("×n", "tgc-point-label"), label: "recorded rows" }] : []),
+  ];
+  let svg = "", at = x, line = 0;
+  for (const item of items) {
+    const w = 16 + textWidth(item.label, 11) + 14;
+    if (at > x && at + w - x > width) { at = x; line++; }
+    const gy = y + 12 + line * 16;
+    svg += item.glyph(at, gy) + text(at + 16, gy, item.label, { size: 11, cls: "tgc-ink-muted" });
+    at += w;
+  }
+  return { svg: items.length ? `<g class="tgc-verdict-key">${svg}</g>` : "", height: items.length ? (line + 1) * 16 + 8 : 0 };
 }

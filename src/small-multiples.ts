@@ -3,12 +3,12 @@
  * hatched "no data: <reason>" panel, never a zero line; a panel that stopped
  * early ends at its recorded end mark.
  */
-import { categoriesGap, drawTargets, logValueGap, targetsTable, type XCategory, xAxis, type YScale, yAxisGap, type YTarget, yScale } from "./axis.js";
+import { categoriesGap, drawTargets, logValueGap, targetKey, targetsTable, type XCategory, xAxis, xTicks, type YScale, yAxisGap, type YTarget, yScale } from "./axis.js";
 import { type ChartMark, drawMarks, eventsGap, eventsTable, type MarkKind } from "./events.js";
-import { hasPointFields, POINT_COLUMNS, pointBadge, pointCells, pointFacts, pointFieldsGap, pointMark } from "./points.js";
+import { hasPointFields, placeBadges, POINT_COLUMNS, pointCells, pointFacts, pointFieldsGap, pointMark, verdictKey } from "./points.js";
 import { domainGap, observationLabel, scalarGap, scalarLabel } from "./scalar.js";
 import { logTicks } from "./scale.js";
-import { circle, hatch, line, NARROW, polyline, svgRoot, text, titled, WIDE } from "./svg.js";
+import { circle, hatch, line, type MarkerShape, NARROW, polyline, svgRoot, text, titled, WIDE } from "./svg.js";
 import { table } from "./table.js";
 import { capitalize, esc, plural, textBlock, textWidth, wrap } from "./text.js";
 import type { TimePoint } from "./time-series.js";
@@ -50,6 +50,8 @@ export interface SmallMultiplesOptions {
   columns?: number;
   /** false draws points without joining them, for values that are not one trajectory. Default true. */
   connect?: boolean;
+  /** What each point `marker` stands for, such as `{ circle: "check", diamond: "gate" }`, named in the figure's key. */
+  markers?: Partial<Record<MarkerShape, string>>;
   formatX?: (value: number) => string;
   formatY?: (value: number) => string;
   id?: string;
@@ -135,8 +137,8 @@ function domainOf(panel: MultiplePanel, o: SmallMultiplesOptions): [number, numb
 function draw(panels: MultiplePanel[], o: SmallMultiplesOptions, width: number, xLabel: (x: number) => string, yLabelOf: (p: MultiplePanel) => (y: number) => string, marksOf: (p: MultiplePanel) => ChartMark[]): string {
   const cols = width === NARROW ? 1 : Math.min(o.columns ?? 3, panels.length), gap = 16;
   const panelW = (width - gap * (cols - 1)) / cols, panelH = width === NARROW ? 150 : 170;
-  const ends = (o.x.categories ?? []).filter((c) => xLabel(c.at) !== "");
-  const [firstX, lastX] = ends.length ? [ends[0]!.at, ends.at(-1)!.at] : [o.x.domain[0], o.x.domain[1]];
+  // An ordinal axis labels as many full-width columns as fit; a continuous one its two ends.
+  const labelled = (o.x.categories ?? []).filter((c) => xLabel(c.at) !== "" && (c.weight ?? 1) >= 1).map((c) => c.at);
   let body = "";
   panels.forEach((panel, i) => {
     const ox = (i % cols) * (panelW + gap), oy = Math.floor(i / cols) * (panelH + gap);
@@ -146,8 +148,8 @@ function draw(panels: MultiplePanel[], o: SmallMultiplesOptions, width: number, 
     // A log panel labels its powers of ten (or its first and last tick); a linear panel its ends, gridded at the middle.
     const logged = log ? logTicks(domain[0], domain[1]) : [];
     const decades = logged.filter((v) => Number.isInteger(Math.log10(v)));
-    const labelled = log ? (decades.length >= 2 ? decades : logged.length >= 2 ? [logged[0]!, logged.at(-1)!] : [domain[0], domain[1]]) : [domain[0], domain[1]];
-    const left = ox + Math.max(...labelled.map((v) => Math.ceil(textWidth(yLabel(v), 10, "mono")) + 10), 40), right = ox + panelW - 6;
+    const yTicks = log ? (decades.length >= 2 ? decades : logged.length >= 2 ? [logged[0]!, logged.at(-1)!] : [domain[0], domain[1]]) : [domain[0], domain[1]];
+    const left = ox + Math.max(...yTicks.map((v) => Math.ceil(textWidth(yLabel(v), 10, "mono")) + 10), 40), right = ox + panelW - 6;
     const top = oy + 40, bottom = oy + panelH - 24;
     const axis = xAxis(o.x.domain, o.x.categories, left, right);
     const px = axis.px;
@@ -165,15 +167,17 @@ function draw(panels: MultiplePanel[], o: SmallMultiplesOptions, width: number, 
     body += `<g data-panel="${esc(panel.id)}"${log ? ' data-scale="log"' : ""}>`;
     if (log) {
       body += line(left, bottom, right, bottom, "tgc-axis");
-      for (const y of labelled) body += (y === domain[0] ? "" : line(left, py(y), right, py(y), "tgc-gridline")) + text(left - 6, py(y) + 4, yLabel(y), { size: 10, anchor: "end", cls: "tgc-ink-muted tgc-num" });
+      for (const y of yTicks) body += (y === domain[0] ? "" : line(left, py(y), right, py(y), "tgc-gridline")) + text(left - 6, py(y) + 4, yLabel(y), { size: 10, anchor: "end", cls: "tgc-ink-muted tgc-num" });
     } else {
       for (const [j, y] of [domain[0], (domain[0] + domain[1]) / 2, domain[1]].entries()) {
         body += line(left, py(y), right, py(y), j === 0 ? "tgc-axis" : "tgc-gridline");
         if (j !== 1) body += text(left - 6, py(y) + 4, yLabel(y), { size: 10, anchor: "end", cls: "tgc-ink-muted tgc-num" });
       }
     }
-    body += drawTargets(panel.targets ?? [], py, left, right, yLabel);
-    body += text(left, bottom + 16, xLabel(firstX), { size: 10, cls: "tgc-ink-muted tgc-num" }) + text(right, bottom + 16, xLabel(lastX), { size: 10, anchor: "end", cls: "tgc-ink-muted tgc-num" });
+    // Bands are named in a key under the title: in a small panel an in-place label would cover the data.
+    body += drawTargets(panel.targets ?? [], py, left, right, yLabel, false) + targetKey(panel.targets ?? [], ox + 2, oy + 30, panelW - 4);
+    if (labelled.length) for (const x of xTicks(labelled, px, left, right, right + 4, xLabel, 10)) body += text(px(x), bottom + 16, xLabel(x), { size: 10, anchor: "middle", cls: "tgc-ink-muted tgc-num" });
+    else body += text(left, bottom + 16, xLabel(o.x.domain[0]), { size: 10, cls: "tgc-ink-muted tgc-num" }) + text(right, bottom + 16, xLabel(o.x.domain[1]), { size: 10, anchor: "end", cls: "tgc-ink-muted tgc-num" });
     // Points sharing a column are spread across it in input order.
     const shared = new Map<number, TimePoint[]>();
     for (const point of panel.points!) if (point.y !== null) shared.set(point.x, [...(shared.get(point.x) ?? []), point]);
@@ -183,7 +187,7 @@ function draw(panels: MultiplePanel[], o: SmallMultiplesOptions, width: number, 
       return px(point.x) + (list.indexOf(point) - (list.length - 1) / 2) * step;
     };
     const placed: Array<[number, number, number, number]> = [];
-    let badges = "";
+    const pending: Array<{ x: number; y: number; r: number; point: TimePoint }> = [];
     let segment: Array<[number, number]> = [];
     const flush = () => { if (segment.length > 1 && o.connect !== false) body += polyline(segment, "tgc-series-line"); segment = []; };
     for (const point of panel.points!) {
@@ -197,17 +201,14 @@ function draw(panels: MultiplePanel[], o: SmallMultiplesOptions, width: number, 
       const facts = [panel.label, `${o.x.label} ${xLabel(point.x)}`, yLabel(point.y), ...(point.label ? [point.label] : []), ...pointFacts(point), ...(point.observations ? [observationLabel(point.observations)] : []), ...(point.annotation ? [point.annotation] : [])];
       body += titled(facts.join(" · "), `<g data-point-verdict="${point.verdict ?? "none"}">${circle(x, y, 9, "tgc-series-hit")}${pointMark(x, y, point.marker ?? "circle", 4, point)}</g>`);
       placed.push([x - 4, x + 4, y - 4, y + 4]);
-      const badge = pointBadge(x, y, 4, point, right + 4);
-      if (!badge.svg) continue;
-      const end = badge.svg.includes('text-anchor="end"');
-      const box: [number, number, number, number] = end ? [x - 7 - badge.width, x - 7, y - 6, y + 6] : [x + 7, x + 7 + badge.width, y - 6, y + 6];
-      if (placed.every((b) => box[1] < b[0] || box[0] > b[1] || box[3] < b[2] || box[2] > b[3])) { placed.push(box); badges += badge.svg; }
+      pending.push({ x, y, r: 4, point });
     }
     flush();
-    body += badges;
+    body += placeBadges(pending, placed, left - 4, right + 4);
     body += drawMarks(marksOf(panel), px, top - 12, bottom, left, right, xLabel);
     body += "</g>";
   });
-  const rows = Math.ceil(panels.length / cols);
-  return svgRoot(width, rows * panelH + (rows - 1) * gap, body);
+  const rows = Math.ceil(panels.length / cols), height = rows * panelH + (rows - 1) * gap;
+  const key = verdictKey(panels.flatMap((p) => p.points ?? []), o.markers, 2, height + 4, width - 4);
+  return svgRoot(width, height + key.height, body + key.svg);
 }

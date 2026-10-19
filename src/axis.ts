@@ -6,6 +6,7 @@
 import { logTicks } from "./scale.js";
 import { line, rect, text, titled } from "./svg.js";
 import { table } from "./table.js";
+import { textWidth } from "./text.js";
 
 /** One column of an ordinal x axis. Points sit at a category's `at`; `weight` scales its width (default 1). */
 export interface XCategory { at: number; label: string; weight?: number }
@@ -114,18 +115,57 @@ export function yGridlines(y: { domain: [number, number]; scale?: YScale; ticks?
 }
 
 /** Target bands under the data, labelled above their upper edge: a target at the right end, a stretch at the left. */
-export function drawTargets(targets: readonly YTarget[], py: (y: number) => number, left: number, right: number, yLabel: (y: number) => string): string {
-  return targets.map((target) => {
+export function drawTargets(targets: readonly YTarget[], py: (y: number) => number, left: number, right: number, yLabel: (y: number) => string, labels = true): string {
+  const marks = targets.map((target) => {
     const y0 = py(target.to), y1 = py(target.from);
     const cls = `tgc-target tgc-target-${target.kind}`;
     const mark = y1 - y0 < 1.5 ? line(left, y0, right, y0, `${cls} tgc-target-line`) : rect(left, y0, right - left, y1 - y0, cls) + line(left, y0, right, y0, `${cls}-edge`) + line(left, y1, right, y1, `${cls}-edge`);
-    const label = text(target.kind === "stretch" ? left + 4 : right - 4, y0 - 4, target.label, { size: 11, anchor: target.kind === "stretch" ? "start" : "end", cls: "tgc-target-label" });
-    return titled(`${target.label}: ${target.from === target.to ? yLabel(target.from) : `${yLabel(target.from)} to ${yLabel(target.to)}`}`, `<g data-target="${target.kind}">${mark}${label}</g>`);
+    return titled(`${target.label}: ${target.from === target.to ? yLabel(target.from) : `${yLabel(target.from)} to ${yLabel(target.to)}`}`, `<g data-target="${target.kind}">${mark}</g>`);
   }).join("");
+  // Labels go over every band, so a later band never strikes through an earlier label.
+  return marks + (labels ? targets.map((target) => text(target.kind === "stretch" ? left + 4 : right - 4, py(target.to) - 4, target.label, { size: 11, anchor: target.kind === "stretch" ? "start" : "end", cls: "tgc-target-label" })).join("") : "");
+}
+
+/** A key row naming each target by its line style, for a panel too small to label bands in place. Returns its width. */
+export function targetKey(targets: readonly YTarget[], x: number, y: number, maxWidth: number): string {
+  let out = "", at = x;
+  for (const target of targets) {
+    const w = textWidth(target.label, 10) + 26;
+    if (at + w - x > maxWidth) break;
+    out += line(at, y - 3.5, at + 14, y - 3.5, `tgc-target-${target.kind}-edge`) + text(at + 18, y, target.label, { size: 10, cls: "tgc-target-label" });
+    at += w;
+  }
+  return out;
 }
 
 /** The table form of target bands. Empty when there are none. */
 export function targetsTable(targets: readonly YTarget[], yLabel: (y: number) => string): string {
   if (!targets.length) return "";
   return table("Recorded targets", [{ label: "Target" }, { label: "Kind" }, { label: "From", numeric: true }, { label: "To", numeric: true }], targets.map((t) => [t.label, t.kind, yLabel(t.from), yLabel(t.to)]));
+}
+
+/**
+ * X labels at recorded positions, spread evenly across the plot and measured so none overlap: at most as many as fit,
+ * each snapped to the nearest recorded x, always keeping the first and the last that fit.
+ */
+export function xTicks(xs: number[], px: (x: number) => number, left: number, right: number, width: number, label: (x: number) => string, size = 12): number[] {
+  if (!xs.length) return [];
+  const span = (x: number) => { const w = textWidth(label(x), size, "mono"); return [px(x) - w / 2, px(x) + w / 2] as const; };
+  const widest = Math.max(...xs.map((x) => textWidth(label(x), size, "mono")));
+  const slots = Math.max(1, Math.min(xs.length, Math.floor((right - left) / (widest + 12)) + 1));
+  const anchors = slots === 1 ? [xs[0]!] : Array.from({ length: slots }, (_, i) => left + (right - left) * i / (slots - 1))
+    .map((target) => xs.reduce((best, x) => Math.abs(px(x) - target) < Math.abs(px(best) - target) ? x : best, xs[0]!));
+  const kept: number[] = [];
+  for (const x of [...new Set(anchors)]) {
+    const [a, b] = span(x);
+    if (a < 2 || b > width - 2) continue;
+    const previous = kept.at(-1);
+    if (previous !== undefined && a < span(previous)[1] + 10) {
+      // The last recorded position wins over the label before it.
+      if (x !== xs.at(-1) || kept.length === 1) continue;
+      kept.pop();
+    }
+    kept.push(x);
+  }
+  return kept;
 }
