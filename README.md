@@ -189,7 +189,7 @@ A recorded `verdict` colours a mark (pass and fail take the status tones, unknow
 Mark labels take up to three rows above the data, placed by measured width so none overlap; marks of one kind and verdict at one place share a rule and a label (`rc17 (+18)`), and a label with no room is left to the hover and the table.
 A `blocked` band is a system-wide wall, such as a quota window: a breach wash across every lane under a solid top edge.
 Marks and bands appear in the figure's table (`Recorded events by …`) and, for React, in a text list under the plot.
-`timeSeries` and the React components refuse marks or bands outside the x domain; React components throw `RangeError` for the same input, as `StackedBarChart` does.
+`timeSeries` and `smallMultiples` refuse marks or bands outside the x domain, and `timeline` names them at its edge instead (below); React components throw `RangeError` for marks or bands they cannot place, as `StackedBarChart` does.
 Axis labels never overlap at 720 or 358 px: `timeSeries` labels recorded positions spread evenly across the plot, and `timeline` uses the smallest clock step (1 min to 7 days) whose labels fit, naming the date at midnight.
 
 `timeline` refuses an open span without `now`, a span, tick or `now` outside a supplied `start`/`end` window and reversed times. States named in `hatch` (default `missing`, `untraced`) are hatched; states in `muted` (default `idle`) use the muted tone.

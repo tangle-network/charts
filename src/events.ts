@@ -149,8 +149,9 @@ export function markHead(kind: MarkKind, x: number, y: number, r = 3.5): string 
 }
 
 /**
- * Marks sit over the data. Labels go in rows from `labelTop`, placed by measured width so none overlap; marks at one
- * x share a rule and a label. Rules run from `top` to `bottom`.
+ * Marks and their labels. Labels go in rows from `labelTop`, placed by measured width so none overlap, and are drawn
+ * over every rule; marks of one kind and verdict at one place share a rule and a label. Rules run from `labelTop` to
+ * `bottom`, except that release, steer and wake stems stop at their head, just below `top`.
  */
 export function drawMarks(marks: readonly ChartMark[], px: (x: number) => number, top: number, bottom: number, left: number, right: number, format: (x: number) => string, labelTop = top, o: MarkLabelOptions = {}): string {
   const groups = groupMarks(marks, px);
