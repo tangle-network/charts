@@ -85,8 +85,6 @@ export function timeSeries(rows: TimeSeriesRow[], o: TimeSeriesOptions): Figure 
   const xLabel = (x: number) => o.formatX ? o.formatX(x) : category.get(x) ?? String(x);
   const yLabel = (y: number) => scalarLabel(y, o.y.unit, o.formatY);
   const grid = yGridlines(o.y, yLabel);
-  // Keep 32px for the legend stroke/offset and at least 32px for its text.
-  if (axisGutter(grid) >= NARROW - 24 - 64) return { id, refused: "Formatted y-axis labels leave no room for the phone chart. Use a shorter formatter or unit." };
   const flat = rows.flatMap((row) => row.points.map((point) => ({ row, point })));
   const measured = flat.filter(({ point }) => point.y !== null);
   const stripped = flat.filter(({ point }) => point.y === null && point.verdict !== undefined);
@@ -95,6 +93,9 @@ export function timeSeries(rows: TimeSeriesRow[], o: TimeSeriesOptions): Figure 
   const hasEvents = marks.length + bands.length > 0;
   const groups = bands.some((band) => band.kind === "group");
   const stripName = o.y.strip?.trim() || "no value";
+  // Keep 32px for the legend stroke/offset and at least 32px for its text.
+  if (axisGutter(grid) >= NARROW - 24 - 64) return { id, refused: "Formatted y-axis labels leave no room for the phone chart. Use a shorter formatter or unit." };
+  if (stripped.length && axisGutter(grid, stripName) >= NARROW - 24 - 64) return { id, refused: "The strip name leaves no room for the phone chart. Use a shorter y.strip." };
   const valueText = (point: TimePoint) => point.y !== null ? yLabel(point.y) : point.verdict !== undefined ? `${stripName} (${VERDICT_WORD[point.verdict]})` : "not measured";
   const facts = (row: TimeSeriesRow, point: TimePoint) => [
     row.label, `${o.x.label}: ${xLabel(point.x)}`, `${o.y.label}: ${valueText(point)}`,
@@ -121,8 +122,9 @@ export function timeSeries(rows: TimeSeriesRow[], o: TimeSeriesOptions): Figure 
 }
 
 function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel: (x: number) => string, yLabel: (y: number) => string, grid: YTick[], facts: (row: TimeSeriesRow, point: TimePoint) => string[], stripName: string): string {
-  // Unit-bearing labels need their measured width, including monospace fallback.
-  const left = axisGutter(grid);
+  const strip = rows.some((row) => row.points.some((point) => point.y === null && point.verdict !== undefined)) ? 24 : 0;
+  // Unit-bearing labels need their measured width, including monospace fallback; the strip's name sits in the same gutter.
+  const left = axisGutter(grid, strip ? stripName : undefined);
   const right = width - 24;
   const axis = xAxis(o.x.domain, o.x.categories, left, right);
   const px = axis.px;
@@ -130,7 +132,6 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
   const labelRows = markLabelRows(o.marks ?? [], px, left, right);
   const top = 36 + (labelRows ? labelRows * 14 + 2 : 0) + groupRowHeight(o.bands), bottom = top + 224;
   const py = yScale(o.y.domain, o.y.scale, top, bottom);
-  const strip = rows.some((row) => row.points.some((point) => point.y === null && point.verdict !== undefined)) ? 24 : 0;
   let marks = text(left, 18, o.y.label, { cls: "tgc-ink-muted" });
   for (const [i, tick] of grid.entries()) {
     marks += line(left, py(tick.at), right, py(tick.at), i === 0 && !o.y.ticks?.length ? "tgc-axis" : "tgc-gridline") + text(left - 8, py(tick.at) + 4, tick.label, { anchor: "end", cls: "tgc-ink-muted tgc-num", size: 12 });
@@ -229,6 +230,6 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
   return `<svg class="tgc-svg tgc-trajectories" xmlns="http://www.w3.org/2000/svg" width="${width}" height="${legendY + 12}" viewBox="0 0 ${width} ${legendY + 12}" role="group" aria-label="${esc(o.y.label)} by ${esc(o.x.label)}"><style>${rules}</style>${marks}${events}${points}${badges}${tips}</svg>`;
 }
 
-function axisGutter(ticks: readonly YTick[]): number {
-  return Math.max(64, ...ticks.map((tick) => Math.ceil(textWidth(tick.label, 12, "mono")) + 20));
+function axisGutter(ticks: readonly YTick[], stripName?: string): number {
+  return Math.max(64, ...ticks.map((tick) => Math.ceil(textWidth(tick.label, 12, "mono")) + 20), stripName ? Math.ceil(textWidth(stripName, 11)) + 14 : 0);
 }
