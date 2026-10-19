@@ -30,6 +30,9 @@ export {
 
 export { metricBars, type MetricBarsOptions, type MetricRow } from "./metric-bars.js";
 export { timeSeries, type TimePoint, type TimeSeriesOptions, type TimeSeriesRow } from "./time-series.js";
+export { type XCategory, type YScale, type YTarget, type YTick } from "./axis.js";
+export { type PointFields, type PointGlyph } from "./points.js";
+export { CHECKER_HUES, checkerColor, OUTCOME_COLORS, OUTCOME_ORDER } from "./outcomes.js";
 export { type BandKind, type ChartBand, type ChartMark, type MarkKind, type MarkVerdict } from "./events.js";
 export { type TickOutcome, timeline, type TimelineLane, type TimelineOptions, type TimelineSpan, type TimelineTick } from "./timeline.js";
 export { type MultiplePanel, smallMultiples, type SmallMultiplesOptions } from "./small-multiples.js";

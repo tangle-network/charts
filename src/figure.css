@@ -310,8 +310,8 @@
 .tgc-tip-bg { fill: var(--chart-ink); }
 .tgc-tip-ink { fill: var(--chart-canvas); }
 
-.tgc-series-line { fill: none; stroke: var(--chart-accent); stroke-width: 2; stroke-linejoin: round; }
-.tgc-series-point, .tgc-series-key { fill: var(--chart-accent); stroke: var(--chart-canvas); stroke-width: 2; }
+.tgc-series-line { fill: none; stroke: var(--tgc-series, var(--chart-accent)); stroke-width: 2; stroke-linejoin: round; }
+.tgc-series-point, .tgc-series-key { fill: var(--tgc-series, var(--chart-accent)); stroke: var(--chart-canvas); stroke-width: 2; }
 
 /* Semantic states stay tied to Brand status tokens. No-data has its own neutral mark. */
 .tgc-heat-pass { fill: color-mix(in srgb, var(--chart-pass, var(--status-running)) 19%, var(--chart-canvas)); stroke: var(--chart-pass, var(--status-running)); stroke-width: .8; }
@@ -389,10 +389,13 @@
 .tgc-lane-toggle:hover .tgc-lane-hit { fill: var(--chart-shade); }
 .tgc-lane-toggle:focus-visible .tgc-lane-hit { stroke: var(--chart-accent); }
 .tgc-tick { stroke-width: 1.5; }
-.tgc-tick-ok { stroke: var(--chart-pass, var(--status-running)); }
-.tgc-tick-quota, .tgc-tick-rate-limit { stroke: color-mix(in srgb, var(--chart-breach, var(--status-error)) 55%, var(--chart-canvas)); }
-.tgc-tick-oom, .tgc-tick-refused, .tgc-tick-other { stroke: var(--chart-breach, var(--status-error)); }
-.tgc-tick-aborted { stroke: var(--chart-ink); }
+.tgc-tick-ok { stroke: var(--chart-outcome-ok); }
+.tgc-tick-quota { stroke: var(--chart-outcome-quota); }
+.tgc-tick-lost { stroke: var(--chart-outcome-lost); }
+.tgc-tick-rate-limit { stroke: var(--chart-outcome-rate-limit); }
+.tgc-tick-oom { stroke: var(--chart-outcome-oom); }
+.tgc-tick-refused { stroke: var(--chart-outcome-refused); }
+.tgc-tick-aborted, .tgc-tick-other { stroke: var(--chart-outcome-neutral); }
 /* Lane labels and counts keep a canvas halo, so rules and ticks under them never strike through the text. */
 .tgc-lane-label, .tgc-count { paint-order: stroke; stroke: var(--chart-canvas); stroke-width: 3px; stroke-linejoin: round; }
 .tgc-count { fill: var(--chart-ink); }
@@ -404,3 +407,53 @@
 .tgc-view-plot svg { display: block; overflow: visible; }
 .tgc-view-wide svg { width: 100%; height: auto; }
 .tgc-view-narrow svg { max-width: 100%; height: auto; }
+
+/*
+ * One fixed palette for attempt outcomes and check versions in every view (src/outcomes.ts names them). Each is a
+ * light-dark() pair picked by the page's color-scheme. Outcomes pass the dataviz colour-vision checks as adjacent
+ * pairs in stack order (ok, quota, lost, rate-limit, oom, refused) on the light surface and on #161616; checkers pass
+ * as adjacent series (current, then older). `scripts/palette-check.mjs` re-runs the validator. A page may override
+ * any of these properties; :where() keeps them at zero specificity.
+ */
+:where(:root) {
+  --chart-outcome-ok: light-dark(#2a78d6, #3987e5);
+  --chart-outcome-quota: light-dark(#eb6834, #d95926);
+  --chart-outcome-lost: light-dark(#1baf7a, #199e70);
+  --chart-outcome-rate-limit: light-dark(#eda100, #c98500);
+  --chart-outcome-oom: light-dark(#e87ba4, #d55181);
+  --chart-outcome-refused: light-dark(#6250d6, #9085e9);
+  --chart-outcome-neutral: #898781;
+  --chart-checker-0: light-dark(#2a78d6, #3987e5);
+  --chart-checker-1: light-dark(#1baf7a, #199e70);
+  --chart-checker-2: light-dark(#6250d6, #9085e9);
+  --chart-checker-3: light-dark(#eda100, #c98500);
+}
+/* A series drawn in a checker's hue; past the fourth hue it is muted and named by its label. */
+.tgc-checker-0 { --tgc-series: var(--chart-checker-0); }
+.tgc-checker-1 { --tgc-series: var(--chart-checker-1); }
+.tgc-checker-2 { --tgc-series: var(--chart-checker-2); }
+.tgc-checker-3 { --tgc-series: var(--chart-checker-3); }
+.tgc-checker-other { --tgc-series: var(--chart-muted); }
+/* Recorded verdicts: a pass is filled, a fail or an incomparable value is an outline, an undecided one dashed. */
+.tgc-series-point.tgc-point-outline { fill: var(--chart-canvas); stroke: var(--tgc-series, var(--chart-accent)); stroke-width: 1.75; }
+.tgc-series-point.tgc-point-undecided { fill: var(--chart-canvas); stroke: var(--tgc-series, var(--chart-accent)); stroke-width: 1.5; stroke-dasharray: 2 1.5; }
+.tgc-strip-hatch .tgc-hatch { stroke: var(--tgc-series, var(--chart-muted)); }
+.tgc-strip-edge { fill: none; stroke: var(--tgc-series, var(--chart-muted)); stroke-width: 1.25; }
+.tgc-strip-observation:focus-visible { outline: none; }
+.tgc-strip-observation:focus-visible .tgc-series-hit { stroke: var(--chart-ink); stroke-width: 2; }
+.tgc-point-badge { paint-order: stroke; stroke: var(--chart-canvas); stroke-width: 3px; stroke-linejoin: round; font-family: var(--font-mono, "JetBrains Mono", ui-monospace, monospace); }
+.tgc-point-label { fill: var(--chart-ink-muted); }
+.tgc-glyph-note { fill: var(--chart-ink); font-weight: 600; }
+/* Status colours appear only on these glyphs. */
+.tgc-glyph-check { fill: var(--chart-pass, var(--status-running)); font-weight: 600; }
+.tgc-glyph-cross { fill: var(--chart-breach, var(--status-error)); font-weight: 600; }
+/* Recorded targets sit under the data: a target is a soft band between solid edges, a stretch a dashed outline. */
+.tgc-target-target { fill: color-mix(in srgb, var(--chart-ink) 7%, transparent); }
+.tgc-target-stretch { fill: none; }
+.tgc-target-target-edge, .tgc-target-target.tgc-target-line { stroke: var(--chart-ink-muted); stroke-width: 1; }
+.tgc-target-stretch-edge, .tgc-target-stretch.tgc-target-line { stroke: var(--chart-ink-muted); stroke-width: 1; stroke-dasharray: 4 3; }
+.tgc-target-label { fill: var(--chart-ink-muted); paint-order: stroke; stroke: var(--chart-canvas); stroke-width: 3px; stroke-linejoin: round; }
+/* Group headers: a labelled bracket above the plot and a light rule at each inner edge. */
+.tgc-group-rule { stroke: var(--chart-ink-muted); stroke-width: 1.5; }
+.tgc-group-edge { stroke: var(--chart-rule); stroke-width: 1; }
+.tgc-group-label { fill: var(--chart-ink); }

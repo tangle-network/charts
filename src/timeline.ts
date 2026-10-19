@@ -2,8 +2,9 @@
  * Lanes of recorded spans on one time axis, with recorded marks; an open span runs to the supplied `now`. Lanes can
  * form a tree (`parent`), carry attempt ticks coloured by outcome with ok and failed counts, and fold by subtree.
  */
-import { type ChartBand, type ChartMark, drawBands, drawMarks, EVENTS_READ, eventsGap, eventsTable, markHead, markLabelRows, markName } from "./events.js";
+import { type ChartBand, type ChartMark, drawBands, drawGroups, drawMarks, EVENTS_READ, eventsGap, eventsTable, groupRowHeight, markHead, markLabelRows, markName } from "./events.js";
 import { duration } from "./format.js";
+import { OUTCOME_ORDER, type TickOutcome } from "./outcomes.js";
 import { hatch, line, NARROW, rect, svgRoot, text, titled, WIDE } from "./svg.js";
 import { table } from "./table.js";
 import { capitalize, esc, plural, textWidth, wrap } from "./text.js";
@@ -11,8 +12,7 @@ import type { Figure, Refusal } from "./types.js";
 
 /** Epoch milliseconds. `end: null` is an open span; it needs the figure's `now`. */
 export interface TimelineSpan { start: number; end: number | null; state: string; note?: string }
-/** How one recorded attempt ended. `ok` succeeded; every other outcome counts as failed. */
-export type TickOutcome = "ok" | "quota" | "rate-limit" | "oom" | "refused" | "aborted" | "other";
+export type { TickOutcome } from "./outcomes.js";
 /** One recorded attempt on a lane, such as a driver turn, at the time it ended. `note` (an error line) shows on hover. */
 export interface TimelineTick { at: number; outcome: TickOutcome; note?: string }
 export interface TimelineLane {
@@ -54,7 +54,7 @@ export interface TimelineOptions {
   id?: string;
 }
 
-export const TICK_OUTCOMES: readonly TickOutcome[] = ["ok", "quota", "rate-limit", "oom", "refused", "aborted", "other"];
+export const TICK_OUTCOMES: readonly TickOutcome[] = OUTCOME_ORDER;
 
 const utcClock = (ms: number) => new Date(ms).toISOString().slice(11, 16);
 const MIN = 60_000, DAY = 86_400_000;
@@ -162,10 +162,10 @@ export function timeline(lanes: TimelineLane[], o: TimelineOptions): Figure | Re
     const right = phone ? width - 12 : width - 16 - (countWidth ? countWidth + 10 : 0);
     const px = (t: number) => left + (t - t0) / (t1 - t0) * (right - left);
     const labelRows = markLabelRows(wide, px, left, right, { before, after, window: [t0, t1] });
-    const top = 8 + (labelRows ? labelRows * 14 + 6 : 0);
+    const top = 8 + (labelRows ? labelRows * 14 + 6 : 0) + groupRowHeight(bands);
     const rowH = phone ? 40 : 24, bottom = top + rows.length * rowH;
     const barTop = (y: number) => y + (phone ? 19 : 5), barH = 14;
-    let body = drawBands(bands, px, top, bottom, fmt, [t0, t1]);
+    let body = drawBands(bands, px, top, bottom, fmt, [t0, t1]) + drawGroups(bands, (from, to) => [px(from), px(to)], top, bottom, left, right, fmt, [t0, t1]);
     for (const t of axisTicks(t0, t1, px, left, right, axisLabel)) {
       body += line(px(t), top, px(t), bottom, "tgc-gridline") + text(px(t), bottom + 16, axisLabel(t), { size: 11, cls: "tgc-ink-muted tgc-num", anchor: "middle" });
     }

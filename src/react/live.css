@@ -48,6 +48,8 @@ line.ov-gridline { stroke: color-mix(in srgb, var(--chart-live-faint, #777) 22%,
 .ov-band-after-pass { fill: color-mix(in srgb, var(--chart-live-pass, var(--chart-pass, var(--status-running))) 12%, transparent); }
 .ov-band-idle { fill: var(--chart-live-hover, var(--chart-shade)); }
 .ov-band-blocked { fill: color-mix(in srgb, var(--chart-live-danger, var(--chart-breach, var(--status-error))) 9%, transparent); }
+/* A group band labels a run of positions; in the live renderer it is an outline, never a fill over the data. */
+.ov-band-group { fill: none; stroke: var(--chart-live-border, var(--chart-rule)); stroke-dasharray: 2 3; }
 /* Missing data is hatched, never drawn as zero. */
 .ov-hatch-bg { fill: color-mix(in srgb, var(--chart-live-faint, var(--chart-muted)) 10%, transparent); }
 .ov-hatch { fill: none; stroke: var(--chart-live-faint, var(--chart-muted)); stroke-width: 1; }
