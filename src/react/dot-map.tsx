@@ -265,6 +265,8 @@ export function DotMap({ positions, radii, colors, palette, extent, rects, label
 
   // Wheel zooms about the pointer; drag pans; a click selects; double-click or 0 resets.
   const drag = useRef<{ x: number; y: number; moved: boolean } | null>(null)
+  const touches = useRef(new Map<number, { x: number; y: number }>())
+  const pinch = useRef<{ distance: number; view: View } | null>(null)
   useEffect(() => {
     const element = canvas.current
     if (!element) return
@@ -292,10 +294,27 @@ export function DotMap({ positions, radii, colors, palette, extent, rects, label
         tabIndex={0}
         style={{ width: '100%', height, display: 'block', touchAction: 'none', cursor: hover ? 'pointer' : 'grab' }}
         onPointerDown={(event) => {
-          drag.current = { x: event.clientX, y: event.clientY, moved: false }
+          touches.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+          if (touches.current.size === 2) {
+            // Two fingers pinch: zoom about their midpoint, scaled by how far apart they move.
+            const [a, b] = [...touches.current.values()]
+            pinch.current = { distance: Math.hypot(a!.x - b!.x, a!.y - b!.y) || 1, view: { ...view.current } }
+            drag.current = null
+          } else drag.current = { x: event.clientX, y: event.clientY, moved: false }
           event.currentTarget.setPointerCapture(event.pointerId)
         }}
         onPointerMove={(event) => {
+          if (touches.current.has(event.pointerId)) touches.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+          const p = pinch.current
+          if (p && touches.current.size === 2) {
+            const [a, b] = [...touches.current.values()]
+            const bounds = event.currentTarget.getBoundingClientRect()
+            const mx = (a!.x + b!.x) / 2 - bounds.left, my = (a!.y + b!.y) / 2 - bounds.top
+            const scale = p.view.scale * ((Math.hypot(a!.x - b!.x, a!.y - b!.y) || 1) / p.distance)
+            view.current = { scale, tx: mx - ((mx - p.view.tx) / p.view.scale) * scale, ty: my - ((my - p.view.ty) / p.view.scale) * scale }
+            schedule()
+            return
+          }
           const d = drag.current
           if (d) {
             const dx = event.clientX - d.x, dy = event.clientY - d.y
@@ -314,9 +333,20 @@ export function DotMap({ positions, radii, colors, palette, extent, rects, label
           onHover?.(i)
         }}
         onPointerUp={(event) => {
+          touches.current.delete(event.pointerId)
+          if (pinch.current) {
+            if (touches.current.size < 2) pinch.current = null
+            drag.current = null
+            return
+          }
           const d = drag.current
           drag.current = null
           if (d && !d.moved) onSelect?.(pick(event.clientX, event.clientY))
+        }}
+        onPointerCancel={(event) => {
+          touches.current.delete(event.pointerId)
+          if (touches.current.size < 2) pinch.current = null
+          drag.current = null
         }}
         onPointerLeave={() => {
           setHover(null)
