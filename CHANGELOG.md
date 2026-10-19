@@ -1,5 +1,11 @@
 # @tangle-network/charts
 
+## 0.11.0
+
+### Minor Changes
+
+- `unitDotLayout` packs one dot per item in a rectangle per group, the rectangles a squarified treemap sized by count, and React `DotMap` draws thousands of such dots (or a semantic map's points) on one canvas with wheel and pinch zoom, drag to pan, keyboard steps, grid hit tests and one fill per colour. A lens is a palette index per point, so recolouring needs no new layout. `DOT_MAP_CATEGORIES` names the first three categorical hues and a neutral "other".
+
 ## 0.10.0
 
 ### Minor Changes

@@ -37,3 +37,4 @@ export { type BandKind, type ChartBand, type ChartMark, type MarkKind, type Mark
 export { type TickOutcome, timeline, type TimelineLane, type TimelineOptions, type TimelineSpan, type TimelineTick } from "./timeline.js";
 export { type MultiplePanel, smallMultiples, type SmallMultiplesOptions } from "./small-multiples.js";
 export { type Observations } from "./scalar.js";
+export { type DotGroup, type DotGroupRect, type UnitDotLayout, unitDotLayout, type UnitDotOptions } from "./unit-dots.js";

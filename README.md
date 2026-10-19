@@ -302,6 +302,12 @@ Selection is controlled by bucket ID. Hover, focus, click, Enter, Space and touc
 
 **Provenance and extraction boundary.** Sparkline comes from `tangle-network/agent-app`, `src/web-react/sparkline.tsx` and its tests at `a8947683a050394d13848bb7e4cbbe7cf08d208e`. Stacked SVG rendering and select-never-toggle regressions come from merged ADC [PR #8746](https://github.com/tangle-network/agent-dev-container/pull/8746), `products/platform/web/src/client/components/UsageChartSvg.tsx` and `UsageChart.test.tsx` at `a1c3958fd73a3894d4515f9dc476dae9ace30ce0`. Platform's aggregation, currency/product/category functions, legend composition and portal-tooltip positioning are **not** copied. The persistent readout and native pointer popover avoid a new React DOM peer. This is not a new universal usage-chart API, a zero-baseline replacement for SpendCard's sparkline, or a consumer migration; Platform and Agent App are not edited.
 
+### Thousands of dots: `DotMap` and `unitDotLayout`
+
+`unitDotLayout(groups, width, height)` places one dot per item in a rectangle per group, the rectangles a squarified treemap sized by count, so a fleet of 6,000 runs reads as its groups first and its items second with no item hidden in an aggregate. It returns the rectangles, every item's `x, y` (interleaved, groups in input order) and a radius per item from its group's cell.
+
+`DotMap` draws those positions, or a semantic map's `x, y`, on one canvas: wheel or pinch zooms about the pointer, drag pans, a click selects, double-click or `0` fits, and `+ - ←→↑↓` work from the keyboard. Colours are palette indexes (`colors: Uint8Array` into `palette`, CSS colours or custom properties), so a lens change repaints without a new layout; `dimmed` greys filtered points, `radii` may vary per point (a dot sized by its run's hours inside its cell), and `labels` name clusters without overlapping. Hit tests use a uniform grid, one path is filled per colour, and the canvas records its last frame's draw time in `data-frame-ms`. The caller owns hover text (`describe`), selection, the legend and the details.
+
 ### React and package-boundary checks
 
 ```sh

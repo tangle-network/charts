@@ -73,3 +73,18 @@ line.ov-gridline { stroke: color-mix(in srgb, var(--chart-live-faint, #777) 22%,
 .ov-event-idle { background: var(--chart-live-hover, var(--chart-shade)); }
 .ov-event-missing { background: repeating-linear-gradient(135deg, var(--chart-live-faint, var(--chart-muted)) 0 1px, transparent 1px 4px); }
 .ov-refusal { margin: 0; color: var(--chart-live-muted, var(--chart-ink-muted)); font-size: .9em; }
+
+/*
+ * DotMap: thousands of dots on one canvas. A categorical lens names at most three categories in colour, the first
+ * three slots of the dataviz reference palette, which pass its all-pairs colour-vision checks in both themes (a
+ * scatter puts every pair side by side); every other category is the neutral "other". :where() keeps them overridable.
+ */
+:where(:root) {
+  --chart-category-1: light-dark(#2a78d6, #3987e5);
+  --chart-category-2: light-dark(#eb6834, #d95926);
+  --chart-category-3: light-dark(#1baf7a, #199e70);
+  --chart-category-other: #898781;
+}
+.tgc-dot-map { color: var(--chart-live-muted, #8a8a8a); }
+.tgc-dot-map canvas:focus-visible { outline: 2px solid var(--chart-accent, #7760bd); outline-offset: 2px; }
+.tgc-dot-map-tip { z-index: 2; max-width: 300px; padding: 6px 9px; border-radius: 6px; background: var(--chart-tip-bg, #262626); color: var(--chart-tip-ink, #eee); font: 12px/1.4 ui-sans-serif, system-ui, sans-serif; white-space: pre-line; box-shadow: 0 4px 14px rgb(0 0 0 / .3); }
