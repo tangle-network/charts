@@ -1,5 +1,5 @@
 /** Recorded trajectories. Explicit null observations break lines without interpolation. */
-import { type ChartBand, type ChartMark, drawBands, drawMarks, EVENTS_READ, eventsGap, eventsTable } from "./events.js";
+import { type ChartBand, type ChartMark, drawBands, drawMarks, EVENTS_READ, eventsGap, eventsTable, markLabelRows } from "./events.js";
 import { domainGap, observationLabel, type Observations, scalarGap, scalarIntervalLabel, scalarLabel } from "./scalar.js";
 import { circle, line, MARKER_SHAPES, markerPath, NARROW, polyline, rect, text, WIDE } from "./svg.js";
 import { table } from "./table.js";
@@ -75,16 +75,18 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
   const ticks = Array.from({ length: 5 }, (_, i) => o.y.domain[0] + i / 4 * (o.y.domain[1] - o.y.domain[0]));
   // Unit-bearing labels need their measured width, including monospace fallback.
   const left = axisGutter(ticks, yLabel);
-  const right = width - 24, top = 36, bottom = 260;
+  const right = width - 24;
   const px = (x: number) => left + (x - o.x.domain[0]) / (o.x.domain[1] - o.x.domain[0]) * (right - left);
+  // Mark labels take rows above the plot, so they never sit on the data.
+  const labelRows = markLabelRows(o.marks ?? [], px, left, right);
+  const top = 36 + (labelRows ? labelRows * 14 + 2 : 0), bottom = top + 224;
   const py = (y: number) => bottom - (y - o.y.domain[0]) / (o.y.domain[1] - o.y.domain[0]) * (bottom - top);
   let marks = text(left, 18, o.y.label, { cls: "tgc-ink-muted" });
   for (const [i, y] of ticks.entries()) {
     marks += line(left, py(y), right, py(y), i === 0 ? "tgc-axis" : "tgc-gridline") + text(left - 8, py(y) + 4, yLabel(y), { anchor: "end", cls: "tgc-ink-muted tgc-num", size: 12 });
   }
   const xs = [...new Set(rows.flatMap((row) => row.points.map((point) => point.x)))].sort((a, b) => a - b);
-  const tickStep = Math.max(1, Math.ceil(xs.length / (width < 720 ? 5 : 10)));
-  for (const [i, x] of xs.entries()) if (i % tickStep === 0 || i === xs.length - 1) marks += text(px(x), bottom + 20, xLabel(x), { anchor: "middle", cls: "tgc-ink-muted tgc-num" });
+  for (const x of xTicks(xs, px, left, right, width, xLabel)) marks += text(px(x), bottom + 20, xLabel(x), { anchor: "middle", cls: "tgc-ink-muted tgc-num" });
   marks += text((left + right) / 2, bottom + 43, o.x.label, { anchor: "middle", cls: "tgc-ink-muted" });
   marks += drawBands(o.bands ?? [], px, top, bottom, xLabel);
   let legendY = bottom + 72;
@@ -114,10 +116,36 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
     marks += `<g style="stroke-dasharray:${dash}">${line(left, legendY - 4, left + 24, legendY - 4, "tgc-series-line")}</g>` + (rows.length > 1 ? `<path class="tgc-series-key" d="${markerPath(MARKER_SHAPES[seriesIndex % MARKER_SHAPES.length]!, left + 12, legendY - 4, 3.5)}"/>` : "") + textBlock(label.lines, left + 32, legendY, 16, 'class="tgc-ink" font-size="12"');
     legendY += label.lines.length * 16 + 8;
   }
-  const events = drawMarks(o.marks ?? [], px, top, bottom, left, right, xLabel);
+  const events = drawMarks(o.marks ?? [], px, top, bottom, left, right, xLabel, 22);
   return `<svg class="tgc-svg tgc-trajectories" xmlns="http://www.w3.org/2000/svg" width="${width}" height="${legendY + 12}" viewBox="0 0 ${width} ${legendY + 12}" role="group" aria-label="${esc(o.y.label)} by ${esc(o.x.label)}"><style>${rules}</style>${marks}${events}${points}${tips}</svg>`;
 }
 
+
+/**
+ * X labels at recorded positions, spread evenly across the plot and measured so none overlap: at most as many as fit,
+ * each snapped to the nearest recorded x, always keeping the first and the last that fit.
+ */
+function xTicks(xs: number[], px: (x: number) => number, left: number, right: number, width: number, label: (x: number) => string): number[] {
+  if (!xs.length) return [];
+  const span = (x: number) => { const w = textWidth(label(x), 12, "mono"); return [px(x) - w / 2, px(x) + w / 2] as const; };
+  const widest = Math.max(...xs.map((x) => textWidth(label(x), 12, "mono")));
+  const slots = Math.max(1, Math.min(xs.length, Math.floor((right - left) / (widest + 12)) + 1));
+  const anchors = slots === 1 ? [xs[0]!] : Array.from({ length: slots }, (_, i) => left + (right - left) * i / (slots - 1))
+    .map((target) => xs.reduce((best, x) => Math.abs(px(x) - target) < Math.abs(px(best) - target) ? x : best, xs[0]!));
+  const kept: number[] = [];
+  for (const x of [...new Set(anchors)]) {
+    const [a, b] = span(x);
+    if (a < 2 || b > width - 2) continue;
+    const previous = kept.at(-1);
+    if (previous !== undefined && a < span(previous)[1] + 10) {
+      // The last recorded position wins over the label before it.
+      if (x !== xs.at(-1) || kept.length === 1) continue;
+      kept.pop();
+    }
+    kept.push(x);
+  }
+  return kept;
+}
 
 function axisGutter(ticks: number[], label: (value: number) => string): number {
   return Math.max(64, ...ticks.map((value) => Math.ceil(textWidth(label(value), 12, "mono")) + 20));

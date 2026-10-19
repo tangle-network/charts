@@ -352,9 +352,27 @@
 .tgc-mark-deadline { stroke: var(--chart-ink); stroke-dasharray: 5 3; }
 .tgc-mark-died { stroke: var(--chart-breach, var(--status-error)); stroke-width: 2; }
 .tgc-mark-event { stroke: var(--chart-ink-muted); stroke-dasharray: 1 3; stroke-linecap: round; }
+.tgc-mark-release { stroke: var(--chart-ink-muted); }
+.tgc-mark-steer { stroke: var(--chart-accent); stroke-dasharray: 1 3; stroke-linecap: round; }
+.tgc-mark-ruling { stroke: var(--chart-ink); stroke-dasharray: 6 2 1 2; }
+.tgc-mark-wake { stroke: var(--chart-ink-muted); stroke-dasharray: 1 3; stroke-linecap: round; }
+.tgc-mark-head { fill: var(--chart-ink-muted); stroke: var(--chart-canvas); stroke-width: 1; }
+[data-mark="steer"] .tgc-mark-head { fill: var(--chart-accent); }
+[data-mark="ruling"] .tgc-mark-head { fill: var(--chart-ink); }
+/* A recorded verdict colours the rule and head: pass and fail take the status tones, unknown the muted tone. */
+.tgc-verdict-pass .tgc-mark { stroke: var(--chart-pass, var(--status-running)); }
+.tgc-verdict-pass .tgc-mark-head { fill: var(--chart-pass, var(--status-running)); }
+.tgc-verdict-fail .tgc-mark { stroke: var(--chart-breach, var(--status-error)); }
+.tgc-verdict-fail .tgc-mark-head { fill: var(--chart-breach, var(--status-error)); }
+.tgc-verdict-unknown .tgc-mark { stroke: var(--chart-muted); }
+.tgc-verdict-unknown .tgc-mark-head { fill: var(--chart-muted); }
 .tgc-mark-label { fill: var(--chart-ink); paint-order: stroke; stroke: var(--chart-canvas); stroke-width: 3px; stroke-linejoin: round; }
+.tgc-mark-edge { fill: var(--chart-ink-muted); }
 .tgc-band-after-pass { fill: color-mix(in srgb, var(--chart-pass, var(--status-running)) 12%, transparent); }
 .tgc-band-idle { fill: var(--chart-shade); }
+/* A system-wide wall, such as a quota window: a breach wash across every lane, topped by a solid edge. */
+.tgc-band-blocked { fill: color-mix(in srgb, var(--chart-breach, var(--status-error)) 9%, transparent); }
+.tgc-band-wall { stroke: var(--chart-breach, var(--status-error)); stroke-width: 2; }
 /* Missing data: a neutral wash under hatch lines, never a zero-height mark. */
 .tgc-hatch-bg { fill: color-mix(in srgb, var(--chart-muted) 10%, transparent); }
 .tgc-hatch { fill: none; stroke: var(--chart-muted); stroke-width: 1; }
@@ -362,6 +380,24 @@
 .tgc-span-muted { fill: var(--chart-muted); }
 .tgc-span-open { stroke: var(--chart-ink); stroke-width: 1.5; stroke-dasharray: 3 2; }
 .tgc-now { stroke: var(--chart-ink); stroke-width: 1.5; }
+/* Timeline trees and attempts. Ok ticks rise above the bar and failed ticks drop below it, so they read without colour. */
+.tgc-tree { fill: none; stroke: var(--chart-muted); stroke-width: 1; }
+.tgc-caret { fill: var(--chart-ink-muted); }
+.tgc-lane-toggle { cursor: pointer; }
+.tgc-lane-toggle:focus-visible { outline: none; }
+.tgc-lane-hit { fill: transparent; stroke: transparent; stroke-width: 2; }
+.tgc-lane-toggle:hover .tgc-lane-hit { fill: var(--chart-shade); }
+.tgc-lane-toggle:focus-visible .tgc-lane-hit { stroke: var(--chart-accent); }
+.tgc-tick { stroke-width: 1.5; }
+.tgc-tick-ok { stroke: var(--chart-pass, var(--status-running)); }
+.tgc-tick-quota, .tgc-tick-rate-limit { stroke: color-mix(in srgb, var(--chart-breach, var(--status-error)) 55%, var(--chart-canvas)); }
+.tgc-tick-oom, .tgc-tick-refused, .tgc-tick-other { stroke: var(--chart-breach, var(--status-error)); }
+.tgc-tick-aborted { stroke: var(--chart-ink); }
+/* Lane labels and counts keep a canvas halo, so rules and ticks under them never strike through the text. */
+.tgc-lane-label, .tgc-count { paint-order: stroke; stroke: var(--chart-canvas); stroke-width: 3px; stroke-linejoin: round; }
+.tgc-count { fill: var(--chart-ink); }
+.tgc-count-ok { fill: var(--chart-pass, var(--status-running)); }
+.tgc-count-failed { fill: var(--chart-breach, var(--status-error)); }
 
 /* FigureView (React) picks the render by measured width; the wide plot fills its container. */
 .tgc-figure-view { max-width: none; margin: 0; }

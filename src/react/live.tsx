@@ -1,6 +1,6 @@
 /** Reusable, em-scaled charts for live operational series. Values, labels and status colors belong to callers. */
 import { useEffect, useState } from 'react'
-import { type ChartBand, type ChartMark, eventsGap } from '../events.js'
+import { type ChartBand, type ChartMark, eventsGap, MARK_HEADS, markName } from '../events.js'
 import { hatchPath, type MarkerShape, markerPath } from '../svg.js'
 import type { TimelineLane } from '../timeline.js'
 
@@ -341,15 +341,18 @@ function Band({ band, x, y, width, height }: { band: ChartBand; x: number; y: nu
   )
 }
 
-/** A vertical event rule with its label; kinds differ by stroke pattern and the died cross as well as colour. */
+/** A vertical event rule with its label; kinds differ by stroke pattern, the died cross and the release, steer, ruling
+ * and wake head shapes as well as colour, and a recorded verdict colours the rule. */
 function Mark({ mark, x, top, bottom, row, em, flip }: { mark: ChartMark; x: number; top: number; bottom: number; row: number; em: number; flip: boolean }) {
   const s = Math.max(3, em / 4)
+  const head = MARK_HEADS[mark.kind]
   return (
-    <g data-mark={mark.kind}>
-      <title>{mark.label}</title>
+    <g data-mark={mark.kind} data-verdict={mark.verdict} className={mark.verdict ? `ov-verdict-${mark.verdict}` : undefined}>
+      <title>{markName(mark)}</title>
       <line x1={x} x2={x} y1={top} y2={bottom} className={`ov-mark ov-mark-${mark.kind}`} />
       {mark.kind === 'died' && <path d={`M${x - s} ${bottom - 2 * s}L${x + s} ${bottom}M${x - s} ${bottom}L${x + s} ${bottom - 2 * s}`} className="ov-mark ov-mark-died" />}
-      <text x={flip ? x - em * 0.3 : x + em * 0.3} y={top + em * (0.9 + row)} textAnchor={flip ? 'end' : 'start'} className="ov-mark-label">{mark.label}</text>
+      {head && <path d={markerPath(head, x, top + s, s)} className="ov-mark-head" />}
+      <text x={flip ? x - em * 0.3 : x + em * 0.3} y={top + em * (0.9 + row)} textAnchor={flip ? 'end' : 'start'} className="ov-mark-label">{markName(mark)}</text>
     </g>
   )
 }
@@ -358,7 +361,7 @@ function Mark({ mark, x, top, bottom, row, em, flip }: { mark: ChartMark; x: num
 function EventList({ marks, bands, format }: { marks: ChartMark[]; bands: ChartBand[]; format: (t: number) => string }) {
   if (!marks.length && !bands.length) return null
   const items = [
-    ...marks.map((m) => ({ at: m.at, kind: m.kind, text: `${m.label} · ${format(m.at)}` })),
+    ...marks.map((m) => ({ at: m.at, kind: m.kind, text: `${markName(m)} · ${format(m.at)}${m.verdict ? ` · ${m.verdict}` : ''}` })),
     ...bands.map((b) => ({ at: b.from, kind: b.kind, text: `${b.label} · ${format(b.from)} to ${format(b.to)}${b.kind === 'missing' ? ' · no data' : ''}` })),
   ].sort((a, b) => a.at - b.at)
   return (
