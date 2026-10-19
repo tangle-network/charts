@@ -163,12 +163,6 @@ describe("extracted stacked renderer", () => {
     expect(screen.getByRole("status").textContent).toContain("First bucket");
     // jsdom verifies the resize contract, not browser-computed layout pixels.
   });
-  it("retains dense-label geometry from the handoff", () => {
-    const data = Array.from({ length: 40 }, (_, i) => ({ ...buckets[0], id: String(i), label: `Bucket ${i}` }));
-    const { container } = render(<StackedBarChart {...defaults} buckets={data} />);
-    expect(screen.getAllByRole("button")).toHaveLength(40);
-    expect(container.querySelector("[data-bucket-id] text")?.getAttribute("transform")).toMatch(/^rotate\(-40/);
-  });
   it("exposes values without hover, without currency/category inference and without CSS", () => {
     render(<StackedBarChart {...defaults} />);
     const name = screen.getAllByRole("button")[0].getAttribute("aria-label");

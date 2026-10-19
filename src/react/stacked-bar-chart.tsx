@@ -35,7 +35,7 @@ export interface StackedBarChartProps {
   label: string;
   series: readonly StackedBarSeries[];
   buckets: readonly StackedBarBucket[];
-  /** Explicit [0, maxValue] domain. Zero is valid only for zero-valued data. */
+  /** Values must lie in [0, maxValue]; the axis extends to the next round tick. Zero is valid only for zero-valued data. */
   maxValue: number;
   formatValue: (value: number) => string;
   selectedBucketId: string | null;
@@ -91,6 +91,29 @@ function validate({ series, buckets, maxValue }: StackedBarChartProps): void {
   }
 }
 
+/**
+ * Round axis ticks covering [0, max]: three to six steps of 1, 2, 2.5 or 5
+ * times a power of ten, so labels read $0.003 rather than $0.0028. The
+ * tightest top wins, then the fewest steps, so bars keep their height.
+ */
+function niceTicks(max: number): number[] {
+  if (!(max > 0)) return [0];
+  const magnitude = 10 ** Math.floor(Math.log10(max));
+  let best = { top: Infinity, step: 0, count: 0 };
+  for (const scale of [1, 0.1, 0.01]) {
+    for (const multiple of [1, 2, 2.5, 5]) {
+      const step = multiple * magnitude * scale;
+      const count = Math.ceil(max / step - 1e-9);
+      const top = count * step;
+      if (count < 3 || count > 6) continue;
+      if (top < best.top - 1e-12 * top || (Math.abs(top - best.top) <= 1e-12 * top && count < best.count)) {
+        best = { top, step, count };
+      }
+    }
+  }
+  return Array.from({ length: best.count + 1 }, (_, i) => Number((i * best.step).toPrecision(12)));
+}
+
 export function StackedBarChart(props: StackedBarChartProps) {
   const {
     label, series, buckets, maxValue, formatValue, selectedBucketId,
@@ -130,13 +153,19 @@ export function StackedBarChart(props: StackedBarChartProps) {
 
   // Original stabilized Platform geometry: viewBox scales with the container;
   // a 400px minimum keeps the original narrow-container scroll behavior.
-  const marginTop = 12, marginRight = 16, marginBottom = 32, marginLeft = 56;
+  const marginTop = 12, marginRight = 24, marginBottom = 32, marginLeft = 56;
   const chartHeight = 220;
   const innerHeight = chartHeight - marginTop - marginBottom;
   const barGap = 6;
   const barWidth = Math.max(8, Math.min(36, (720 - marginLeft - marginRight) / Math.max(1, buckets.length) - barGap));
   const viewWidth = Math.max(buckets.length * (barWidth + barGap) + marginLeft + marginRight, 400);
-  const denseLabels = buckets.length > 14;
+  // The axis runs to the first round tick at or above maxValue.
+  const ticks = niceTicks(maxValue);
+  const scaleMax = ticks[ticks.length - 1];
+  // Label every Nth bar so horizontal labels never overlap; rotated labels
+  // fell outside the bottom margin. Width assumes ~6px per 10px glyph.
+  const labelWidth = Math.max(0, ...buckets.map((bucket) => bucket.label.length)) * 6 + 8;
+  const labelStride = Math.max(1, Math.ceil(labelWidth / (barWidth + barGap)));
 
   if (buckets.length === 0) return <p className={className}>{label}: {emptyLabel}</p>;
   return (
@@ -146,21 +175,22 @@ export function StackedBarChart(props: StackedBarChartProps) {
         <svg aria-label={label} width="100%" viewBox={`0 0 ${viewWidth} ${chartHeight}`}
           style={{ display: "block", minWidth: 400, maxWidth: "100%", maxHeight: 300 }}
           preserveAspectRatio="xMinYMin meet">
-          {[0, 0.25, 0.5, 0.75, 1].map((fraction) => {
+          {ticks.map((tick) => {
+            const fraction = scaleMax > 0 ? tick / scaleMax : 0;
             const y = marginTop + innerHeight - fraction * innerHeight;
-            return <g key={fraction} aria-hidden="true">
+            return <g key={tick} aria-hidden="true" data-tick="">
               <line x1={marginLeft} y1={y} x2={viewWidth - marginRight} y2={y}
                 stroke="currentColor" strokeDasharray={fraction === 0 ? "0" : "3 3"}
                 opacity={fraction === 0 ? 0.4 : 0.2} />
               <text x={marginLeft - 8} y={y} dy="0.32em" textAnchor="end"
-                fontSize="11" fill="currentColor" fontFamily="inherit">{formatValue(maxValue * fraction)}</text>
+                fontSize="11" fill="currentColor" fontFamily="inherit">{formatValue(tick)}</text>
             </g>;
           })}
           {buckets.map((bucket, index) => {
             const x = marginLeft + index * (barWidth + barGap) + barGap / 2;
             const isActive = index === activeIndex;
             const gap = hasGap(bucket);
-            const stackHeight = !gap && maxValue > 0 ? (bucket.total as number) / maxValue * innerHeight : 0;
+            const stackHeight = !gap && scaleMax > 0 ? (bucket.total as number) / scaleMax * innerHeight : 0;
             let yOffset = 0;
             const select = () => onSelectionChange(bucket.id);
             const clear = () => { if (isActive) onSelectionChange(null); };
@@ -218,7 +248,7 @@ export function StackedBarChart(props: StackedBarChartProps) {
                 <rect data-hit-target="" x={x} y={marginTop} width={barWidth}
                   height={innerHeight} fill="transparent" stroke="none" rx={3} />
                 {!gap && bucket.segments.map((segment, segmentIndex) => {
-                  const height = maxValue > 0 ? (segment.value as number) / maxValue * innerHeight : 0;
+                  const height = scaleMax > 0 ? (segment.value as number) / scaleMax * innerHeight : 0;
                   const y = marginTop + innerHeight - yOffset - height;
                   yOffset += height;
                   return <rect key={segment.seriesId} data-series-id={segment.seriesId}
@@ -233,12 +263,11 @@ export function StackedBarChart(props: StackedBarChartProps) {
                   y={marginTop + innerHeight - Math.max(1, stackHeight)} width={barWidth}
                   height={Math.max(1, stackHeight)} fill="none" stroke="currentColor"
                   strokeWidth={1.5} rx={3} pointerEvents="none" />}
-                <text x={x + barWidth / 2} y={chartHeight - marginBottom + 16}
-                  textAnchor={denseLabels ? "end" : "middle"} fontSize="10"
-                  fill="currentColor" fontFamily="inherit" pointerEvents="none" aria-hidden="true"
-                  transform={denseLabels ? `rotate(-40, ${x + barWidth / 2}, ${chartHeight - marginBottom + 16})` : undefined}>
+                {index % labelStride === 0 && <text x={x + barWidth / 2} y={chartHeight - marginBottom + 16}
+                  textAnchor="middle" fontSize="10"
+                  fill="currentColor" fontFamily="inherit" pointerEvents="none" aria-hidden="true">
                   {bucket.label}
-                </text>
+                </text>}
               </g>
             );
           })}

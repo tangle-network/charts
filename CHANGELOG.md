@@ -1,5 +1,11 @@
 # @tangle-network/charts
 
+## 0.12.1
+
+### Patch Changes
+
+- `StackedBarChart` axis ticks are round numbers: the axis runs to the tightest top reachable in three to six steps of 1, 2, 2.5 or 5 times a power of ten, so a `$0.0028` peak reads `$0`, `$0.001`, `$0.002`, `$0.003` instead of `$0.0021` and `$0.00070`. Dense bucket labels stay horizontal and every Nth one is drawn so none overlap; the rotated labels fell outside the 32px bottom margin.
+
 ## 0.12.0
 
 ### Minor Changes
