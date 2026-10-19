@@ -174,12 +174,17 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
       if (point.y === null) {
         flush();
         if (point.verdict === undefined) continue;
-        const x = stripX.get(point)!, y = bottom + 12;
-        const badge = pointBadge(x, y, 4.5, point, width - 2);
+        // A square fits its column, so a compressed run of many tags stays a readable strip.
+        const x = stripX.get(point)!, y = bottom + 12, size = Math.min(9, Math.max(3, (axis.column(point.x) ?? 11) - 2));
+        const badge = pointBadge(x, y, size / 2, point, width - 2);
         const title = facts(row, point).join(" · ");
-        own += titled(title, `<g class="tgc-strip-observation" data-strip="${esc(row.id)}" tabindex="0" role="img" aria-label="${esc(title)}">${rect(x - 8, y - 8, 16, 16, "tgc-series-hit")}${stripMark(x, y, 9, point)}</g>`);
-        const box: [number, number, number, number] = [x + 7, x + 7 + badge.width, y - 6, y + 6];
-        if (badge.svg && free(box)) { placed.push(box); badges += badge.svg; }
+        own += titled(title, `<g class="tgc-strip-observation" data-strip="${esc(row.id)}" tabindex="0" role="img" aria-label="${esc(title)}">${rect(x - 8, y - 8, 16, 16, "tgc-series-hit")}${stripMark(x, y, size, point)}</g>`);
+        placed.push([x - size / 2, x + size / 2, y - size / 2, y + size / 2]);
+        if (badge.svg) {
+          const end = badge.svg.includes('text-anchor="end"');
+          const box: [number, number, number, number] = end ? [x - size / 2 - 3 - badge.width, x - size / 2 - 3, y - 6, y + 6] : [x + size / 2 + 3, x + size / 2 + 3 + badge.width, y - 6, y + 6];
+          if (free(box)) { placed.push(box); badges += badge.svg; }
+        }
         continue;
       }
       const x = plotX.get(point)!, y = py(point.y);
@@ -215,7 +220,7 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
     if (legend.has(legendKey)) continue;
     legend.add(legendKey);
     const label = wrap(row.label, right - left - 32, 12, "sans", 8);
-    marks += wrapSeries(`<g style="stroke-dasharray:${dash}">${line(left, legendY - 4, left + 24, legendY - 4, "tgc-series-line")}</g>` + (rows.length > 1 ? `<path class="tgc-series-key" d="${markerPath(MARKER_SHAPES[ord % MARKER_SHAPES.length]!, left + 12, legendY - 4, 3.5)}"/>` : "")) + textBlock(label.lines, left + 32, legendY, 16, 'class="tgc-ink" font-size="12"');
+    marks += wrapSeries(`<g style="stroke-dasharray:${dash}">${line(left, legendY - 4, left + 24, legendY - 4, "tgc-series-line")}</g>` + (rows.length > 1 ? `<path class="tgc-series-key" d="${markerPath(row.colorIndex !== undefined ? "circle" : MARKER_SHAPES[ord % MARKER_SHAPES.length]!, left + 12, legendY - 4, 3.5)}"/>` : "")) + textBlock(label.lines, left + 32, legendY, 16, 'class="tgc-ink" font-size="12"');
     legendY += label.lines.length * 16 + 8;
   }
   const events = drawMarks(o.marks ?? [], px, top, bottom, left, right, xLabel, 22);

@@ -99,7 +99,8 @@ export function pointBadge(x: number, y: number, r: number, p: PointFields, limi
   if (p.label) parts.push([p.label, "tgc-point-label"]);
   if (p.count !== undefined && p.count > 1) parts.push([`×${p.count}`, "tgc-point-label"]);
   if (!parts.length) return { svg: "", width: 0 };
-  const width = textWidth(parts.map(([t]) => t).join(" "), 10);
+  // Badges render in the monospace face (figure.css), so they are measured in it.
+  const width = textWidth(parts.map(([t]) => t).join(" "), 10, "mono");
   const left = x + r + 3 + width > limit;
   const tx = left ? x - r - 3 : x + r + 3;
   const spans = parts.map(([t, cls], i) => `<tspan class="${cls}">${i ? " " : ""}${esc(t)}</tspan>`).join("");
