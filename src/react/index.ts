@@ -26,6 +26,8 @@ export type { LineSeries, MeterSegment } from "./live.js";
 export { FigureView } from "./figure-view.js";
 export type { FigureAtWidth, FigureViewProps } from "./figure-view.js";
 export { TimelineView } from "./timeline-view.js";
+export { DOT_MAP_CATEGORIES, DotMap } from "./dot-map.js";
+export type { DotMapLabel, DotMapProps, DotMapRect } from "./dot-map.js";
 export type { TimelineViewProps } from "./timeline-view.js";
 // Shapes shared with the static figures; type-only, so the static root stays React-free and vice versa.
 export type { BandKind, ChartBand, ChartMark, MarkKind, MarkVerdict } from "../events.js";
