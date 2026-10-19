@@ -56,7 +56,7 @@ it("packs an isolated static root and optional React entrypoint", () => {
   expect(Object.keys(manifest.dependencies ?? {})).toEqual([]);
   expect(Object.keys(manifest.optionalDependencies ?? {})).toEqual([]);
   expect(Object.keys(source).sort()).toEqual([
-    "breakdown", "chartTokensCss", "comparisonIntervals", "costFrontier", "figureCss", "heatmap", "isRefusal",
+    "CHECKER_HUES", "OUTCOME_COLORS", "OUTCOME_ORDER", "breakdown", "chartTokensCss", "checkerColor", "comparisonIntervals", "costFrontier", "figureCss", "heatmap", "isRefusal",
     "latencyRange", "metricBars", "phaseWaterfall", "rankedRates", "rateOrder", "renderFigure", "renderNotes", "renderRefusals", "smallMultiples", "taskMatrix", "timeline", "timeSeries",
   ].sort());
 

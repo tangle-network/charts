@@ -1,0 +1,1378 @@
+{
+ "source": {
+  "exportedAt": "2026-10-19T10:00:24.154Z",
+  "host": "drew-gtr-pro",
+  "root": "/mnt/traces/discovery-runs",
+  "runs": [
+   "magnetar-rust-20261017c",
+   "magnetar-rust-20261018b",
+   "magnetar-rust-20261019b"
+  ],
+  "files": [
+   "play-checks.jsonl",
+   "tag-gate.jsonl",
+   "operator-checkpoints.jsonl",
+   "run-input.json",
+   "scorecard.json",
+   "magnetar-metrics.json",
+   "~/.cache/disco/play-checks/<build>/src/magnetar.json"
+  ],
+  "rows": 123,
+  "published": {
+   "magnetar-rust-20261017c": 102,
+   "magnetar-rust-20261018b": 5,
+   "magnetar-rust-20261019b": 0
+  },
+  "publishedSource": "GitHub tangle-discovery/magnetar-rust tags, 2026-10-19",
+  "method": "Check and gate rows with a tag, folded by (tag, kind, checker, verdict, progress); progress = (reached - 1 + partial) / of, 1 for a solve, null without a SCORE line. Gate rows take the checker in force at their time. Checkers are labelled vN by first appearance; colour 0 is the newest run's input check.",
+  "checkers": [
+   {
+    "digest": "639c17a4",
+    "label": "v1",
+    "origin": "17c as pressed",
+    "colorIndex": 3,
+    "current": false
+   },
+   {
+    "digest": "3d2b3f1e",
+    "label": "v2",
+    "origin": "18b as pressed",
+    "colorIndex": 2,
+    "current": false
+   },
+   {
+    "digest": "a3cf95c7",
+    "label": "v3",
+    "origin": "referee upheld 10-18 19:48Z",
+    "colorIndex": 1,
+    "current": false
+   },
+   {
+    "digest": "041435d7",
+    "label": "v4",
+    "origin": "operator amendment 10-18 20:52Z",
+    "colorIndex": 0,
+    "current": true
+   }
+  ]
+ },
+ "climb": {
+  "rows": [
+   {
+    "id": "18b-v4",
+    "label": "v4 · operator amendment 10-18 20:52Z (current)",
+    "colorIndex": 0,
+    "points": [
+     {
+      "x": 40,
+      "y": 0,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 12,
+      "firstAt": 1792357302927,
+      "lastAt": 1792380500652,
+      "annotation": "check not solved: NOT SOLVED: magnetar.json must declare security_bits as an integer of at least 120 (the Deliverable's 120-bit provable security)"
+     },
+     {
+      "x": 42,
+      "y": 0.711,
+      "verdict": "fail",
+      "marker": "diamond",
+      "label": "4/15",
+      "count": 1,
+      "firstAt": 1792363387266,
+      "lastAt": 1792363387266,
+      "annotation": "gate contract failed (checker by time): NOT SOLVED: prover for binary-search at 4096 cycles exited 1 or wrote no regular proof/public files: magnetar-prove: internal: self-check failed: mosaic batch: mosaic batch: round 0 sum check failed |"
+     },
+     {
+      "x": 42,
+      "y": null,
+      "verdict": "unknown",
+      "marker": "diamond",
+      "label": "3/15",
+      "count": 1,
+      "firstAt": 1792362947223,
+      "lastAt": 1792362947223,
+      "annotation": "gate undecided (checker by time): UNKNOWN: prover for pointer-chase at 4096 cycles did not finish in 300 s"
+     },
+     {
+      "x": 43,
+      "y": null,
+      "verdict": "unknown",
+      "marker": "diamond",
+      "label": "6/15",
+      "count": 12,
+      "firstAt": 1792367759970,
+      "lastAt": 1792374627565,
+      "annotation": "gate undecided (checker by time): UNKNOWN: prover for lz4-decode at 4096 cycles did not finish in 300 s"
+     },
+     {
+      "x": 43,
+      "y": null,
+      "marker": "diamond",
+      "count": 1,
+      "firstAt": 1792375169522,
+      "lastAt": 1792375169522,
+      "annotation": "gate superseded (checker by time): "
+     },
+     {
+      "x": 44,
+      "y": null,
+      "verdict": "unknown",
+      "marker": "diamond",
+      "label": "3/15",
+      "count": 9,
+      "firstAt": 1792375169524,
+      "lastAt": 1792380248889,
+      "annotation": "gate undecided (checker by time): UNKNOWN: prover for pointer-chase at 4096 cycles did not finish in 300 s"
+     }
+    ]
+   },
+   {
+    "id": "18b-v3",
+    "label": "v3 · referee upheld 10-18 19:48Z",
+    "colorIndex": 1,
+    "points": [
+     {
+      "x": 40,
+      "y": 0.833,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 1,
+      "firstAt": 1792353527238,
+      "lastAt": 1792353527238,
+      "annotation": "check not solved: NOT SOLVED: workload keccak-f1600: the verifier accepted a proof with byte 351 flipped — it does not check the proof"
+     },
+     {
+      "x": 40,
+      "y": 1,
+      "verdict": "pass",
+      "marker": "circle",
+      "glyph": "check",
+      "count": 3,
+      "firstAt": 1792354444270,
+      "lastAt": 1792356370316,
+      "annotation": "check solved: SOLVED: 15 RV64I workloads preprocessed to <= 4096 B keys, proved, and verified (verifier given only the key, program absent) declaring 1-bit security; reference execution matched; every byte-flip, wrong-output and cross-progr"
+     }
+    ]
+   },
+   {
+    "id": "18b-v2",
+    "label": "v2 · 18b as pressed",
+    "colorIndex": 2,
+    "points": [
+     {
+      "x": 28,
+      "y": 0.767,
+      "verdict": "fail",
+      "marker": "diamond",
+      "label": "9/15",
+      "count": 1,
+      "firstAt": 1792287270280,
+      "lastAt": 1792287270280,
+      "annotation": "gate contract failed (checker by time): NOT SOLVED: prover for keccak-f1600 at 4096 cycles exited 1 or wrote no regular proof/public files: magnetar-prove: guest did not halt within --cycles (invalid execution) | Command exited with non-zer"
+     },
+     {
+      "x": 29,
+      "y": 0.722,
+      "verdict": "fail",
+      "marker": "diamond",
+      "label": "5/15",
+      "count": 1,
+      "firstAt": 1792289057870,
+      "lastAt": 1792289057870,
+      "annotation": "gate contract failed (checker by time): NOT SOLVED: prover for radix-sort-u64 at 4096 cycles exited 1 or wrote no regular proof/public files: magnetar-prove: missing step j | Command exited with non-zero status 1"
+     },
+     {
+      "x": 30,
+      "y": 0.767,
+      "verdict": "fail",
+      "marker": "diamond",
+      "label": "9/15",
+      "count": 2,
+      "firstAt": 1792291983897,
+      "lastAt": 1792295864079,
+      "annotation": "gate contract failed (checker by time): NOT SOLVED: prover for keccak-f1600 at 4096 cycles exited 1 or wrote no regular proof/public files: magnetar-prove: guest did not halt within --cycles (invalid execution) | Command exited with non-zer"
+     },
+     {
+      "x": 31,
+      "y": 0.833,
+      "verdict": "pass",
+      "marker": "diamond",
+      "label": "15/15",
+      "count": 1,
+      "firstAt": 1792298651563,
+      "lastAt": 1792298651563,
+      "annotation": "gate contract held (checker by time): SOLVED: contract stages held: manifest, offline build, 15 RV64I guests, keys <= 4096 B, every public workload proved and verified at 4096 cycles"
+     },
+     {
+      "x": 31,
+      "y": 0.833,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 2,
+      "firstAt": 1792299437785,
+      "lastAt": 1792300354285,
+      "annotation": "check not solved: (g) hidden-1: reference output matched; 3755 ret"
+     },
+     {
+      "x": 32,
+      "y": 0.833,
+      "verdict": "pass",
+      "marker": "diamond",
+      "label": "15/15",
+      "count": 1,
+      "firstAt": 1792300519278,
+      "lastAt": 1792300519278,
+      "annotation": "gate contract held (checker by time): SOLVED: contract stages held: manifest, offline build, 15 RV64I guests, keys <= 4096 B, every public workload proved and verified at 4096 cycles"
+     },
+     {
+      "x": 32,
+      "y": 0.833,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 6,
+      "firstAt": 1792301336449,
+      "lastAt": 1792308200206,
+      "annotation": "check not solved: (g) hidden-1: reference output matched; 3638 ret"
+     },
+     {
+      "x": 33,
+      "y": 0.833,
+      "verdict": "pass",
+      "marker": "diamond",
+      "label": "15/15",
+      "count": 1,
+      "firstAt": 1792308729588,
+      "lastAt": 1792308729588,
+      "annotation": "gate contract held (checker by time): SOLVED: contract stages held: manifest, offline build, 15 RV64I guests, keys <= 4096 B, every public workload proved and verified at 4096 cycles"
+     },
+     {
+      "x": 34,
+      "y": null,
+      "marker": "diamond",
+      "count": 1,
+      "firstAt": 1792346633478,
+      "lastAt": 1792346633478,
+      "annotation": "gate superseded (checker by time): "
+     },
+     {
+      "x": 35,
+      "y": null,
+      "marker": "diamond",
+      "count": 1,
+      "firstAt": 1792346633479,
+      "lastAt": 1792346633479,
+      "annotation": "gate superseded (checker by time): "
+     },
+     {
+      "x": 36,
+      "y": null,
+      "marker": "diamond",
+      "count": 1,
+      "firstAt": 1792346633479,
+      "lastAt": 1792346633479,
+      "annotation": "gate superseded (checker by time): "
+     },
+     {
+      "x": 37,
+      "y": null,
+      "marker": "diamond",
+      "count": 1,
+      "firstAt": 1792346633479,
+      "lastAt": 1792346633479,
+      "annotation": "gate superseded (checker by time): "
+     },
+     {
+      "x": 38,
+      "y": null,
+      "marker": "diamond",
+      "count": 1,
+      "firstAt": 1792346633479,
+      "lastAt": 1792346633479,
+      "annotation": "gate superseded (checker by time): "
+     },
+     {
+      "x": 39,
+      "y": 0.833,
+      "verdict": "pass",
+      "marker": "diamond",
+      "label": "15/15",
+      "count": 1,
+      "firstAt": 1792346633479,
+      "lastAt": 1792346633479,
+      "annotation": "gate contract held (checker by time): SOLVED: contract stages held: manifest, offline build, 15 RV64I guests, keys <= 4096 B, every public workload proved and verified at 4096 cycles"
+     },
+     {
+      "x": 39,
+      "y": 0.833,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 3,
+      "firstAt": 1792346708173,
+      "lastAt": 1792348605916,
+      "annotation": "check not solved: NOT SOLVED: (g) workload sha256: reference RV64I execution failed: not an RV64I instruction: 0x6b855293 at 0x10054"
+     },
+     {
+      "x": 40,
+      "y": 0.833,
+      "verdict": "pass",
+      "marker": "diamond",
+      "label": "15/15",
+      "count": 1,
+      "firstAt": 1792348792742,
+      "lastAt": 1792348792742,
+      "annotation": "gate contract held (checker by time): SOLVED: contract stages held: manifest, offline build, 15 RV64I guests, keys <= 4096 B, every public workload proved and verified at 4096 cycles"
+     },
+     {
+      "x": 40,
+      "y": 0.833,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 4,
+      "firstAt": 1792349513017,
+      "lastAt": 1792352475502,
+      "annotation": "check not solved: NOT SOLVED: (g) workload keccak-f1600: reference RV64I execution failed: no exit within 4096 cycles"
+     },
+     {
+      "x": 41,
+      "y": 0.711,
+      "verdict": "fail",
+      "marker": "diamond",
+      "label": "4/15",
+      "count": 1,
+      "firstAt": 1792351282302,
+      "lastAt": 1792351282302,
+      "annotation": "gate contract failed (checker by time): NOT SOLVED: prover for binary-search at 4096 cycles exited 1 or wrote no regular proof/public files: magnetar-prove: internal: self-check failed: mosaic batch: mosaic batch: round 0 sum check failed |"
+     }
+    ]
+   },
+   {
+    "id": "17c-v1",
+    "label": "v1 · 17c as pressed",
+    "colorIndex": 3,
+    "points": [
+     {
+      "x": 0,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 1,
+      "firstAt": 1792223665884,
+      "lastAt": 1792223665884,
+      "annotation": "check not solved: NOT SOLVED: magnetar.json is missing: no deliverable to build"
+     },
+     {
+      "x": 1,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 1,
+      "firstAt": 1792224566523,
+      "lastAt": 1792224566523,
+      "annotation": "check not solved: NOT SOLVED: magnetar.json is missing: no deliverable to build"
+     },
+     {
+      "x": 2,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 1,
+      "firstAt": 1792225696663,
+      "lastAt": 1792225696663,
+      "annotation": "check not solved: NOT SOLVED: magnetar.json must declare security_bits as a positive integer (target 120)"
+     },
+     {
+      "x": 3,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 1,
+      "firstAt": 1792226606909,
+      "lastAt": 1792226606909,
+      "annotation": "check not solved: NOT SOLVED: magnetar.json must declare security_bits as a positive integer (target 120)"
+     },
+     {
+      "x": 4,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 1,
+      "firstAt": 1792227508632,
+      "lastAt": 1792227508632,
+      "annotation": "check not solved: NOT SOLVED: magnetar.json build must be a cargo argv list (argv[0] == cargo)"
+     },
+     {
+      "x": 5,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 1,
+      "firstAt": 1792228468202,
+      "lastAt": 1792228468202,
+      "annotation": "check not solved: NOT SOLVED: magnetar.json build must be a cargo argv list (argv[0] == cargo)"
+     },
+     {
+      "x": 6,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 1,
+      "firstAt": 1792229405842,
+      "lastAt": 1792229405842,
+      "annotation": "check not solved: NOT SOLVED: magnetar.json build must be a cargo argv list (argv[0] == cargo)"
+     },
+     {
+      "x": 7,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 6,
+      "firstAt": 1792230500792,
+      "lastAt": 1792235078787,
+      "annotation": "check not solved: NOT SOLVED: magnetar.json build must be a cargo argv list (argv[0] == cargo)"
+     },
+     {
+      "x": 8,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 1,
+      "firstAt": 1792236034740,
+      "lastAt": 1792236034740,
+      "annotation": "check not solved: NOT SOLVED: magnetar.json build must be a cargo argv list (argv[0] == cargo)"
+     },
+     {
+      "x": 9,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 1,
+      "firstAt": 1792237176714,
+      "lastAt": 1792237176714,
+      "annotation": "check not solved: NOT SOLVED: magnetar.json build must be a cargo argv list (argv[0] == cargo)"
+     },
+     {
+      "x": 10,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 1,
+      "firstAt": 1792238134704,
+      "lastAt": 1792238134704,
+      "annotation": "check not solved: NOT SOLVED: magnetar.json build must be a cargo argv list (argv[0] == cargo)"
+     },
+     {
+      "x": 11,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 1,
+      "firstAt": 1792239035436,
+      "lastAt": 1792239035436,
+      "annotation": "check not solved: NOT SOLVED: magnetar.json build must be a cargo argv list (argv[0] == cargo)"
+     },
+     {
+      "x": 12,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 1,
+      "firstAt": 1792239935518,
+      "lastAt": 1792239935518,
+      "annotation": "check not solved: NOT SOLVED: prover for sha256 at 4096 cycles exited 1 or wrote no regular proof/public files: ge unshared data size (kbytes): 0"
+     },
+     {
+      "x": 13,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 1,
+      "firstAt": 1792240865666,
+      "lastAt": 1792240865666,
+      "annotation": "check not solved: NOT SOLVED: prover for sha256 at 4096 cycles exited 1 or wrote no regular proof/public files: ge unshared data size (kbytes): 0"
+     },
+     {
+      "x": 14,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 1,
+      "firstAt": 1792241845158,
+      "lastAt": 1792241845158,
+      "annotation": "check not solved: NOT SOLVED: prover for sha256 at 4096 cycles exited 1 or wrote no regular proof/public files: ge unshared data size (kbytes): 0"
+     },
+     {
+      "x": 15,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 1,
+      "firstAt": 1792242805491,
+      "lastAt": 1792242805491,
+      "annotation": "check not solved: NOT SOLVED: prover for keccak-f1600 at 4096 cycles exited 1 or wrote no regular proof/public files: ge unshared data size (kbytes): 0"
+     },
+     {
+      "x": 16,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 10,
+      "firstAt": 1792244012690,
+      "lastAt": 1792252565566,
+      "annotation": "check not solved: NOT SOLVED: prover for keccak-f1600 at 4096 cycles exited 1 or wrote no regular proof/public files: ge unshared data size (kbytes): 0"
+     },
+     {
+      "x": 17,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 1,
+      "firstAt": 1792253533615,
+      "lastAt": 1792253533615,
+      "annotation": "check not solved: NOT SOLVED: prover for keccak-f1600 at 4096 cycles exited 1 or wrote no regular proof/public files: ge unshared data size (kbytes): 0"
+     },
+     {
+      "x": 18,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 1,
+      "firstAt": 1792254485304,
+      "lastAt": 1792254485304,
+      "annotation": "check not solved: NOT SOLVED: prover for keccak-f1600 at 4096 cycles exited 1 or wrote no regular proof/public files: ge unshared data size (kbytes): 0"
+     },
+     {
+      "x": 19,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 1,
+      "firstAt": 1792255386313,
+      "lastAt": 1792255386313,
+      "annotation": "check not solved: NOT SOLVED: prover for keccak-f1600 at 4096 cycles exited 1 or wrote no regular proof/public files: ge unshared data size (kbytes): 0"
+     },
+     {
+      "x": 20,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 1,
+      "firstAt": 1792256301075,
+      "lastAt": 1792256301075,
+      "annotation": "check not solved: NOT SOLVED: prover for keccak-f1600 at 4096 cycles exited 1 or wrote no regular proof/public files: ge unshared data size (kbytes): 0"
+     },
+     {
+      "x": 21,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 3,
+      "firstAt": 1792257246082,
+      "lastAt": 1792259113416,
+      "annotation": "check not solved: NOT SOLVED: prover for keccak-f1600 at 4096 cycles exited 1 or wrote no regular proof/public files: ge unshared data size (kbytes): 0"
+     },
+     {
+      "x": 22,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 2,
+      "firstAt": 1792260065766,
+      "lastAt": 1792261025323,
+      "annotation": "check not solved: NOT SOLVED: prover for keccak-f1600 at 4096 cycles exited 1 or wrote no regular proof/public files: ge unshared data size (kbytes): 0"
+     },
+     {
+      "x": 23,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 3,
+      "firstAt": 1792261986064,
+      "lastAt": 1792263905513,
+      "annotation": "check not solved: NOT SOLVED: prover for keccak-f1600 at 4096 cycles exited 1 or wrote no regular proof/public files: ge unshared data size (kbytes): 0"
+     },
+     {
+      "x": 24,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 1,
+      "firstAt": 1792264865699,
+      "lastAt": 1792264865699,
+      "annotation": "check not solved: NOT SOLVED: prover for keccak-f1600 at 4096 cycles exited 1 or wrote no regular proof/public files: ge unshared data size (kbytes): 0"
+     },
+     {
+      "x": 25,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 1,
+      "firstAt": 1792265770425,
+      "lastAt": 1792265770425,
+      "annotation": "check not solved: NOT SOLVED: prover for keccak-f1600 at 4096 cycles exited 1 or wrote no regular proof/public files: ge unshared data size (kbytes): 0"
+     },
+     {
+      "x": 26,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 6,
+      "firstAt": 1792266684288,
+      "lastAt": 1792271562381,
+      "annotation": "check not solved: NOT SOLVED: `cargo build --release --offline --locked` failed (exit 101) in 3 s; offline build must be self-contained (vendored or std-only): error: the lock file /home/drew/.cache/disco/play-checks/magnetar-0d4a779f127bca"
+     },
+     {
+      "x": 27,
+      "y": null,
+      "verdict": "fail",
+      "marker": "circle",
+      "count": 2,
+      "firstAt": 1792272486995,
+      "lastAt": 1792273858228,
+      "annotation": "check not solved: NOT SOLVED: `cargo build --release --offline --locked` failed (exit 101) in 0 s; offline build must be self-contained (vendored or std-only): error: the lock file /home/drew/.cache/disco/play-checks/magnetar-24b6890684e5d4"
+     }
+    ]
+   }
+  ],
+  "options": {
+   "id": "magnetar-climb",
+   "x": {
+    "label": "release",
+    "domain": [
+     -0.5,
+     45.5
+    ],
+    "categories": [
+     {
+      "at": 0,
+      "label": "rc5",
+      "weight": 0.3
+     },
+     {
+      "at": 1,
+      "label": "rc8",
+      "weight": 0.3
+     },
+     {
+      "at": 2,
+      "label": "rc12",
+      "weight": 0.3
+     },
+     {
+      "at": 3,
+      "label": "rc20",
+      "weight": 0.3
+     },
+     {
+      "at": 4,
+      "label": "rc33",
+      "weight": 0.3
+     },
+     {
+      "at": 5,
+      "label": "rc42",
+      "weight": 0.3
+     },
+     {
+      "at": 6,
+      "label": "rc49",
+      "weight": 0.3
+     },
+     {
+      "at": 7,
+      "label": "rc50",
+      "weight": 0.3
+     },
+     {
+      "at": 8,
+      "label": "rc52",
+      "weight": 0.3
+     },
+     {
+      "at": 9,
+      "label": "rc64",
+      "weight": 0.3
+     },
+     {
+      "at": 10,
+      "label": "rc69",
+      "weight": 0.3
+     },
+     {
+      "at": 11,
+      "label": "rc70",
+      "weight": 0.3
+     },
+     {
+      "at": 12,
+      "label": "rc71",
+      "weight": 0.3
+     },
+     {
+      "at": 13,
+      "label": "rc72",
+      "weight": 0.3
+     },
+     {
+      "at": 14,
+      "label": "rc74",
+      "weight": 0.3
+     },
+     {
+      "at": 15,
+      "label": "rc80",
+      "weight": 0.3
+     },
+     {
+      "at": 16,
+      "label": "rc83",
+      "weight": 0.3
+     },
+     {
+      "at": 17,
+      "label": "rc84",
+      "weight": 0.3
+     },
+     {
+      "at": 18,
+      "label": "rc87",
+      "weight": 0.3
+     },
+     {
+      "at": 19,
+      "label": "rc88",
+      "weight": 0.3
+     },
+     {
+      "at": 20,
+      "label": "rc90",
+      "weight": 0.3
+     },
+     {
+      "at": 21,
+      "label": "rc92",
+      "weight": 0.3
+     },
+     {
+      "at": 22,
+      "label": "rc93",
+      "weight": 0.3
+     },
+     {
+      "at": 23,
+      "label": "rc95",
+      "weight": 0.3
+     },
+     {
+      "at": 24,
+      "label": "rc98",
+      "weight": 0.3
+     },
+     {
+      "at": 25,
+      "label": "rc99",
+      "weight": 0.3
+     },
+     {
+      "at": 26,
+      "label": "rc100",
+      "weight": 0.3
+     },
+     {
+      "at": 27,
+      "label": "rc101",
+      "weight": 0.3
+     },
+     {
+      "at": 28,
+      "label": "rc1"
+     },
+     {
+      "at": 29,
+      "label": "rc2"
+     },
+     {
+      "at": 30,
+      "label": "rc3"
+     },
+     {
+      "at": 31,
+      "label": "rc5"
+     },
+     {
+      "at": 32,
+      "label": "rc6"
+     },
+     {
+      "at": 33,
+      "label": "rc7"
+     },
+     {
+      "at": 34,
+      "label": "rc12"
+     },
+     {
+      "at": 35,
+      "label": "rc8"
+     },
+     {
+      "at": 36,
+      "label": "rc9"
+     },
+     {
+      "at": 37,
+      "label": "rc10"
+     },
+     {
+      "at": 38,
+      "label": "rc11"
+     },
+     {
+      "at": 39,
+      "label": "rc13"
+     },
+     {
+      "at": 40,
+      "label": "rc14"
+     },
+     {
+      "at": 41,
+      "label": "rc15"
+     },
+     {
+      "at": 42,
+      "label": "rc16"
+     },
+     {
+      "at": 43,
+      "label": "rc17"
+     },
+     {
+      "at": 44,
+      "label": "rc18"
+     },
+     {
+      "at": 45,
+      "label": "",
+      "weight": 3
+     }
+    ]
+   },
+   "markers": {
+    "circle": "check",
+    "diamond": "gate"
+   },
+   "y": {
+    "label": "check progress",
+    "unit": "",
+    "domain": [
+     -0.05,
+     1.06
+    ],
+    "ticks": [
+     {
+      "at": 0,
+      "label": "manifest"
+     },
+     {
+      "at": 0.167,
+      "label": "build"
+     },
+     {
+      "at": 0.333,
+      "label": "guests"
+     },
+     {
+      "at": 0.5,
+      "label": "keys"
+     },
+     {
+      "at": 0.667,
+      "label": "workloads"
+     },
+     {
+      "at": 0.833,
+      "label": "hidden"
+     },
+     {
+      "at": 1,
+      "label": "SOLVED"
+     }
+    ],
+    "strip": "no score"
+   },
+   "marks": [
+    {
+     "at": 16.5,
+     "label": "2.6 h",
+     "kind": "event",
+     "source": "gap"
+    },
+    {
+     "at": 32.5,
+     "label": "2.3 h",
+     "kind": "event",
+     "source": "gap"
+    },
+    {
+     "at": 33.5,
+     "label": "10.5 h",
+     "kind": "event",
+     "source": "gap"
+    },
+    {
+     "at": 41.5,
+     "label": "3.2 h",
+     "kind": "event",
+     "source": "gap"
+    },
+    {
+     "at": 43.5,
+     "label": "2.1 h",
+     "kind": "event",
+     "source": "gap"
+    },
+    {
+     "at": 39.515,
+     "label": "check stands · operator 18:22Z",
+     "kind": "ruling"
+    },
+    {
+     "at": 41.14,
+     "label": "v3 · referee upheld 19:48Z",
+     "kind": "ruling"
+    },
+    {
+     "at": 41.467,
+     "label": "v4 · operator amendment 20:52Z",
+     "kind": "ruling"
+    }
+   ],
+   "bands": [
+    {
+     "from": 0,
+     "to": 27,
+     "label": "17c · 28 of 102 tags checked by v1, no score line · 53 not solved · settled",
+     "kind": "group"
+    },
+    {
+     "from": 28,
+     "to": 44,
+     "label": "18b · 10-18 01:34Z–10-19 03:28Z · 5 published, 7 withheld, 5 superseded · stalled, cancelled",
+     "kind": "group"
+    },
+    {
+     "from": 45,
+     "to": 45,
+     "label": "19b · 0 tags · live",
+     "kind": "group"
+    }
+   ]
+  }
+ },
+ "bar": {
+  "panels": [
+   {
+    "id": "rate",
+    "label": "Proving rate (higher is better)",
+    "unit": "c/s",
+    "scale": "log",
+    "domain": [
+     50000,
+     30000000
+    ],
+    "points": [
+     {
+      "x": 40,
+      "y": 202021,
+      "verdict": "pass",
+      "comparable": false,
+      "marker": "circle",
+      "annotation": "rc14 solved 20:46Z under v3 · median of 15 workloads, 80492–220155 · declares 1-bit security · a rate is recorded only on a solved check"
+     }
+    ],
+    "targets": [
+     {
+      "from": 7200000,
+      "to": 8700000,
+      "label": "paper 7.2–8.7 M",
+      "kind": "target"
+     },
+     {
+      "from": 9500000,
+      "to": 12800000,
+      "label": "opt 9.5–12.8 M",
+      "kind": "stretch"
+     }
+    ]
+   },
+   {
+    "id": "proof",
+    "label": "Proof size (lower is better)",
+    "unit": "B",
+    "scale": "log",
+    "domain": [
+     5000,
+     2000000
+    ],
+    "points": [
+     {
+      "x": 28,
+      "y": 11290,
+      "verdict": "fail",
+      "comparable": true,
+      "marker": "diamond",
+      "glyph": "cross",
+      "annotation": "rc1 2cbb076e · declares 120-bit security (magnetar.json in the check's build) · gate contract failed under v2"
+     },
+     {
+      "x": 29,
+      "y": 11290,
+      "verdict": "fail",
+      "comparable": true,
+      "marker": "diamond",
+      "glyph": "cross",
+      "annotation": "rc2 c8071669 · declares 120-bit security (magnetar.json in the check's build) · gate contract failed under v2"
+     },
+     {
+      "x": 30,
+      "y": 11290,
+      "verdict": "fail",
+      "comparable": true,
+      "marker": "diamond",
+      "glyph": "cross",
+      "annotation": "rc3 36ce37c2 · declares 120-bit security (magnetar.json in the check's build) · gate contract failed under v2"
+     },
+     {
+      "x": 30,
+      "y": 11490,
+      "verdict": "fail",
+      "comparable": true,
+      "marker": "diamond",
+      "glyph": "cross",
+      "annotation": "rc3 c3b09bf6 · declares 120-bit security (magnetar.json in the check's build) · gate contract failed under v2"
+     },
+     {
+      "x": 31,
+      "y": 11290,
+      "verdict": "pass",
+      "comparable": true,
+      "marker": "diamond",
+      "annotation": "rc5 e4af3028 · declares 120-bit security (magnetar.json in the check's build) · gate contract held under v2"
+     },
+     {
+      "x": 32,
+      "y": 11490,
+      "verdict": "pass",
+      "comparable": true,
+      "marker": "diamond",
+      "annotation": "rc6 ad0b1c88 · declares 120-bit security (magnetar.json in the check's build) · gate contract held under v2"
+     },
+     {
+      "x": 33,
+      "y": 11290,
+      "verdict": "pass",
+      "comparable": true,
+      "marker": "diamond",
+      "annotation": "rc7 0818e532 · declares 120-bit security (magnetar.json in the check's build) · gate contract held under v2"
+     },
+     {
+      "x": 39,
+      "y": 11290,
+      "verdict": "pass",
+      "comparable": false,
+      "marker": "diamond",
+      "annotation": "rc13 bb9ea5b9 · declares 1-bit security (magnetar.json in the check's build) · gate contract held under v2"
+     },
+     {
+      "x": 40,
+      "y": 11290,
+      "verdict": "pass",
+      "comparable": false,
+      "marker": "diamond",
+      "annotation": "rc14 48a3930a · declares 1-bit security (magnetar.json in the check's build) · gate contract held under v2"
+     },
+     {
+      "x": 41,
+      "y": 385792,
+      "verdict": "fail",
+      "comparable": true,
+      "marker": "diamond",
+      "glyph": "cross",
+      "annotation": "rc15 28ee03f7 · declares 120-bit security (magnetar.json in the check's build) · gate contract failed under v2"
+     },
+     {
+      "x": 42,
+      "y": 385792,
+      "verdict": "fail",
+      "comparable": true,
+      "marker": "diamond",
+      "glyph": "cross",
+      "annotation": "rc16 ca0416f0 · declares 120-bit security (magnetar.json in the check's build) · gate contract failed under v4"
+     }
+    ],
+    "targets": [
+     {
+      "from": 613376,
+      "to": 613376,
+      "label": "paper ≈599 KiB",
+      "kind": "target"
+     }
+    ]
+   },
+   {
+    "id": "verify",
+    "label": "Verify time (lower is better)",
+    "unit": "ms",
+    "scale": "log",
+    "domain": [
+     5,
+     600
+    ],
+    "points": [
+     {
+      "x": 28,
+      "y": 21.39,
+      "verdict": "fail",
+      "comparable": true,
+      "marker": "diamond",
+      "glyph": "cross",
+      "annotation": "rc1 2cbb076e · declares 120-bit security (magnetar.json in the check's build) · gate contract failed under v2"
+     },
+     {
+      "x": 29,
+      "y": 24.95,
+      "verdict": "fail",
+      "comparable": true,
+      "marker": "diamond",
+      "glyph": "cross",
+      "annotation": "rc2 c8071669 · declares 120-bit security (magnetar.json in the check's build) · gate contract failed under v2"
+     },
+     {
+      "x": 30,
+      "y": 20.31,
+      "verdict": "fail",
+      "comparable": true,
+      "marker": "diamond",
+      "glyph": "cross",
+      "annotation": "rc3 36ce37c2 · declares 120-bit security (magnetar.json in the check's build) · gate contract failed under v2"
+     },
+     {
+      "x": 30,
+      "y": 23.91,
+      "verdict": "fail",
+      "comparable": true,
+      "marker": "diamond",
+      "glyph": "cross",
+      "annotation": "rc3 c3b09bf6 · declares 120-bit security (magnetar.json in the check's build) · gate contract failed under v2"
+     },
+     {
+      "x": 31,
+      "y": 18.31,
+      "verdict": "pass",
+      "comparable": true,
+      "marker": "diamond",
+      "annotation": "rc5 e4af3028 · declares 120-bit security (magnetar.json in the check's build) · gate contract held under v2"
+     },
+     {
+      "x": 32,
+      "y": 50.43,
+      "verdict": "pass",
+      "comparable": true,
+      "marker": "diamond",
+      "annotation": "rc6 ad0b1c88 · declares 120-bit security (magnetar.json in the check's build) · gate contract held under v2"
+     },
+     {
+      "x": 33,
+      "y": 22.17,
+      "verdict": "pass",
+      "comparable": true,
+      "marker": "diamond",
+      "annotation": "rc7 0818e532 · declares 120-bit security (magnetar.json in the check's build) · gate contract held under v2"
+     },
+     {
+      "x": 39,
+      "y": 17.09,
+      "verdict": "pass",
+      "comparable": false,
+      "marker": "diamond",
+      "annotation": "rc13 bb9ea5b9 · declares 1-bit security (magnetar.json in the check's build) · gate contract held under v2"
+     },
+     {
+      "x": 40,
+      "y": 14.43,
+      "verdict": "pass",
+      "comparable": false,
+      "marker": "diamond",
+      "annotation": "rc14 48a3930a · declares 1-bit security (magnetar.json in the check's build) · gate contract held under v2"
+     },
+     {
+      "x": 41,
+      "y": 323.25,
+      "verdict": "fail",
+      "comparable": true,
+      "marker": "diamond",
+      "glyph": "cross",
+      "annotation": "rc15 28ee03f7 · declares 120-bit security (magnetar.json in the check's build) · gate contract failed under v2"
+     },
+     {
+      "x": 42,
+      "y": 319.08,
+      "verdict": "fail",
+      "comparable": true,
+      "marker": "diamond",
+      "glyph": "cross",
+      "annotation": "rc16 ca0416f0 · declares 120-bit security (magnetar.json in the check's build) · gate contract failed under v4"
+     }
+    ],
+    "targets": [
+     {
+      "from": 11,
+      "to": 13,
+      "label": "paper 11–13 ms",
+      "kind": "target"
+     },
+     {
+      "from": 8,
+      "to": 11,
+      "label": "opt 8–11 ms",
+      "kind": "stretch"
+     }
+    ]
+   },
+   {
+    "id": "rss",
+    "label": "Peak memory (lower is better)",
+    "unit": "KiB",
+    "scale": "log",
+    "domain": [
+     1000,
+     20000000
+    ],
+    "points": [
+     {
+      "x": 40,
+      "y": 2656,
+      "verdict": "pass",
+      "comparable": false,
+      "marker": "circle",
+      "annotation": "rc14 solved 20:46Z under v3 · median of 15 workloads, 2096–7216 · declares 1-bit security · recorded only on a solved check"
+     }
+    ],
+    "targets": [
+     {
+      "from": 6291456,
+      "to": 6291456,
+      "label": "paper ≈6 GiB",
+      "kind": "target"
+     },
+     {
+      "from": 4194304,
+      "to": 4194304,
+      "label": "4.0 GiB",
+      "kind": "stretch"
+     }
+    ]
+   }
+  ],
+  "options": {
+   "id": "magnetar-bar",
+   "shared": "x",
+   "columns": 2,
+   "connect": false,
+   "noun": "metric",
+   "markers": {
+    "circle": "check",
+    "diamond": "gate"
+   },
+   "x": {
+    "label": "release",
+    "domain": [
+     27.5,
+     44.5
+    ],
+    "categories": [
+     {
+      "at": 28,
+      "label": "rc1"
+     },
+     {
+      "at": 29,
+      "label": "rc2"
+     },
+     {
+      "at": 30,
+      "label": "rc3"
+     },
+     {
+      "at": 31,
+      "label": "rc5"
+     },
+     {
+      "at": 32,
+      "label": "rc6"
+     },
+     {
+      "at": 33,
+      "label": "rc7"
+     },
+     {
+      "at": 34,
+      "label": "rc12"
+     },
+     {
+      "at": 35,
+      "label": "rc8"
+     },
+     {
+      "at": 36,
+      "label": "rc9"
+     },
+     {
+      "at": 37,
+      "label": "rc10"
+     },
+     {
+      "at": 38,
+      "label": "rc11"
+     },
+     {
+      "at": 39,
+      "label": "rc13"
+     },
+     {
+      "at": 40,
+      "label": "rc14"
+     },
+     {
+      "at": 41,
+      "label": "rc15"
+     },
+     {
+      "at": 42,
+      "label": "rc16"
+     },
+     {
+      "at": 43,
+      "label": "rc17"
+     },
+     {
+      "at": 44,
+      "label": "rc18"
+     }
+    ]
+   },
+   "y": {
+    "label": "value against the paper",
+    "unit": "value",
+    "domain": [
+     1,
+     2
+    ]
+   }
+  },
+  "condition": "paper: 2^22-cycle executions, 12 performance cores of an M4 Max MacBook Pro, 120-bit (ePrint 2026/2423, Tables 2, 3 and 8)",
+  "checkCondition": "check: 2^12 = 4,096 cycles per workload, one jailed run on the Lab host"
+ }
+}

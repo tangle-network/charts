@@ -27,13 +27,17 @@ export interface ChartMark {
   lane?: string;
 }
 
-/** `missing` is hatched: a span with no data is never drawn as zero. `blocked` is a system-wide wall, such as a quota window. */
-export type BandKind = "after-pass" | "idle" | "missing" | "blocked";
+/**
+ * `missing` is hatched: a span with no data is never drawn as zero. `blocked` is a system-wide wall, such as a quota
+ * window. `group` labels a run of positions in a header row above the data, such as one run's release tags, with a
+ * rule at each edge; a group may cover a single position (`from` equal to `to`).
+ */
+export type BandKind = "after-pass" | "idle" | "missing" | "blocked" | "group";
 export interface ChartBand { from: number; to: number; label: string; kind: BandKind }
 
 export const MARK_KINDS: readonly MarkKind[] = ["pass", "deadline", "died", "event", "release", "steer", "ruling", "wake"];
 export const MARK_VERDICTS: readonly MarkVerdict[] = ["pass", "fail", "unknown"];
-export const BAND_KINDS: readonly BandKind[] = ["after-pass", "idle", "missing", "blocked"];
+export const BAND_KINDS: readonly BandKind[] = ["after-pass", "idle", "missing", "blocked", "group"];
 /** The head shape of each kind that has one, shared with the React marks. */
 export const MARK_HEADS: Partial<Record<MarkKind, MarkerShape>> = { release: "diamond", steer: "triangle", ruling: "square", wake: "circle" };
 
@@ -50,11 +54,16 @@ export function eventsGap(marks: readonly ChartMark[] = [], bands: readonly Char
   for (const band of bands) {
     if (!band || typeof band.label !== "string" || !band.label.trim()) return "Every band needs a label.";
     if (!BAND_KINDS.includes(band.kind)) return `${band.label}: unknown band kind.`;
-    if (!Number.isFinite(band.from) || !Number.isFinite(band.to) || band.from >= band.to || !inside(band.from) || !inside(band.to)) {
+    if (!Number.isFinite(band.from) || !Number.isFinite(band.to) || (band.kind === "group" ? band.from > band.to : band.from >= band.to) || !inside(band.from) || !inside(band.to)) {
       return `${band.label}: a band needs finite, increasing bounds inside the axis domain.`;
     }
   }
   return null;
+}
+
+/** An `event` whose source is `gap`: a break in time between positions of an ordinal axis. It never crosses the data. */
+function isGap(mark: ChartMark): boolean {
+  return mark.kind === "event" && mark.source === "gap";
 }
 
 /** A mark's label with its source, as drawn and listed. */
@@ -67,14 +76,41 @@ function markKindLabel(mark: ChartMark): string {
   return [mark.kind, mark.verdict, mark.lane && `lane ${mark.lane}`].filter(Boolean).join(" · ");
 }
 
-/** Bands sit under the data; a missing band is hatched over a neutral wash. A band is clipped to `clip` when given. */
-export function drawBands(bands: readonly ChartBand[], px: (x: number) => number, top: number, bottom: number, format: (x: number) => string, clip?: readonly [number, number]): string {
+/**
+ * Bands sit under the data; a missing band is hatched over a neutral wash. A band is clipped to `clip` when given.
+ * `extent` maps a band's bounds to pixels when a bound covers more than a point, such as a column of an ordinal axis.
+ * Group bands are drawn by `drawGroups`, not here.
+ */
+export function drawBands(bands: readonly ChartBand[], px: (x: number) => number, top: number, bottom: number, format: (x: number) => string, clip?: readonly [number, number], extent?: (from: number, to: number) => [number, number]): string {
   return bands.map((band) => {
+    if (band.kind === "group") return "";
     const from = clip ? Math.max(band.from, clip[0]) : band.from, to = clip ? Math.min(band.to, clip[1]) : band.to;
     if (to <= from) return "";
-    const x = px(from), w = px(to) - x, cls = `tgc-band tgc-band-${band.kind}`;
+    const [x0, x1] = extent ? extent(from, to) : [px(from), px(to)];
+    const x = x0, w = x1 - x0, cls = `tgc-band tgc-band-${band.kind}`;
     const mark = band.kind === "missing" ? hatch(x, top, w, bottom - top, cls) : rect(x, top, w, bottom - top, cls) + (band.kind === "blocked" ? line(x, top, x + w, top, "tgc-band-wall") : "");
     return titled(`${band.label}: ${format(band.from)} to ${format(band.to)}`, `<g data-band="${band.kind}">${mark}</g>`);
+  }).join("");
+}
+
+/** The header row height `drawGroups` needs, or 0 without group bands. */
+export function groupRowHeight(bands: readonly ChartBand[] = []): number {
+  return bands.some((band) => band.kind === "group") ? 18 : 0;
+}
+
+/**
+ * Group bands as labelled brackets in the header row that ends at `top`, with a rule at each inner edge through the
+ * data. A label that does not fit its bracket is cut with an ellipsis; the full label is the bracket's hover.
+ */
+export function drawGroups(bands: readonly ChartBand[], extent: (from: number, to: number) => [number, number], top: number, bottom: number, left: number, right: number, format: (x: number) => string, clip?: readonly [number, number]): string {
+  return bands.filter((band) => band.kind === "group").map((band) => {
+    const from = clip ? Math.max(band.from, clip[0]) : band.from, to = clip ? Math.min(band.to, clip[1]) : band.to;
+    if (to < from) return "";
+    const [x0, x1] = extent(from, to), w = x1 - x0;
+    const label = w >= 24 ? wrap(band.label, w - 10, 11, "sans", 1).lines[0]! : "";
+    const edges = [x0, x1].filter((x) => x > left + 0.5 && x < right - 0.5).map((x) => line(x, top - 16, x, bottom, "tgc-group-edge")).join("");
+    const bracket = line(x0 + 2, top - 3, x1 - 2, top - 3, "tgc-group-rule") + (label ? text(x0 + 3, top - 7, label, { size: 11, cls: "tgc-group-label" }) : "");
+    return titled(`${band.label}: ${format(band.from)} to ${format(band.to)}`, `<g data-band="group">${edges}${bracket}</g>`);
   }).join("");
 }
 
@@ -127,7 +163,8 @@ function layoutLabels(groups: MarkGroup[], left: number, right: number, o: MarkL
     ...(o.before ?? []).map((mark) => place(`← ${markName(mark)} −${duration(w0 - mark.at)}`, left, left, "start", false)),
   ].filter((p): p is Placed => p !== null);
   const placed = new Map<MarkGroup, Placed>();
-  for (const group of groups) {
+  // A gap between positions is context: every other mark claims a label row first.
+  for (const group of [...groups.filter((g) => !isGap(g.marks[0]!)), ...groups.filter((g) => isGap(g.marks[0]!))]) {
     const flip = group.x > left + (right - left) * 0.62;
     const name = markName(group.marks[0]!) + (group.marks.length > 1 ? ` (+${group.marks.length - 1})` : "");
     const spot = place(name, group.x + 4, group.x - 4, flip ? "end" : "start", true);
@@ -160,7 +197,7 @@ export function drawMarks(marks: readonly ChartMark[], px: (x: number) => number
   let out = groups.map((group) => {
     const { x, marks: members } = group, mark = members[0]!;
     // Kinds with a head (release, steer, ruling, wake) are frequent: only a ruling crosses the data; the rest stop at its edge.
-    const stem = MARK_HEADS[mark.kind] !== undefined && mark.kind !== "ruling";
+    const stem = (MARK_HEADS[mark.kind] !== undefined && mark.kind !== "ruling") || isGap(mark);
     let glyph = line(x, Math.min(top, labelTop), x, stem ? top + 4 : bottom, `tgc-mark tgc-mark-${mark.kind}`);
     if (mark.kind === "died") glyph += line(x - 4, bottom - 8, x + 4, bottom, "tgc-mark tgc-mark-died") + line(x - 4, bottom, x + 4, bottom - 8, "tgc-mark tgc-mark-died");
     glyph += markHead(mark.kind, x, top + 4);

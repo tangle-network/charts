@@ -31,4 +31,6 @@ export type { TimelineViewProps } from "./timeline-view.js";
 export type { BandKind, ChartBand, ChartMark, MarkKind, MarkVerdict } from "../events.js";
 export type { TickOutcome, TimelineLane, TimelineOptions, TimelineSpan, TimelineTick } from "../timeline.js";
 export type { MarkerShape } from "../svg.js";
+export type { XCategory, YScale, YTarget, YTick } from "../axis.js";
+export type { PointFields, PointGlyph } from "../points.js";
 export type { Figure, Refusal } from "../types.js";

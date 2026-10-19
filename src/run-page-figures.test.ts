@@ -1,5 +1,6 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { isRefusal, phaseWaterfall, smallMultiples, timeline, timeSeries, type Figure, type MultiplePanel, type Refusal, type SmallMultiplesOptions } from "./index.js";
+import { figureCss, isRefusal, OUTCOME_ORDER, phaseWaterfall, smallMultiples, timeline, timeSeries, type Figure, type MultiplePanel, type Refusal, type SmallMultiplesOptions, type TimeSeriesOptions, type TimeSeriesRow } from "./index.js";
 
 function figure(value: Figure | Refusal): Figure {
   if (isRefusal(value)) throw new Error(value.refused);
@@ -142,5 +143,86 @@ describe("small multiples", () => {
     expect(refused([{ id: "x", label: "X", missing: { why: "" } }])).toContain("needs its reason");
     expect(refused([panels[0]!], { ...options, shared: "x" })).toContain("each panel's y domain");
     expect(isRefusal(smallMultiples([{ ...panels[0]!, domain: [0, 100] }], { ...options, shared: "x" }))).toBe(false);
+  });
+});
+
+// Real Magnetar records exported from drew-gtr-pro (docs/fixtures/export-magnetar-play.mjs): 17c, 18b and 19b check and
+// gate rows folded by tag, kind, checker, verdict and progress, and 18b's per-release metrics against the paper's bar.
+describe("play page figures from the Magnetar runs", () => {
+  const fixture = JSON.parse(readFileSync(new URL("../docs/fixtures/magnetar-play.json", import.meta.url), "utf8")) as {
+    climb: { rows: TimeSeriesRow[]; options: TimeSeriesOptions };
+    bar: { panels: MultiplePanel[]; options: SmallMultiplesOptions };
+  };
+  const stages = ["manifest", "build", "guests", "keys", "workloads", "hidden"];
+  const climb = figure(timeSeries(fixture.climb.rows, { ...fixture.climb.options, formatY: (p) => p >= 1 ? "SOLVED" : `${stages[Math.floor(p * 6 + 1e-9)]} stage` }));
+  const si = (v: number) => v >= 1e6 ? `${+(v / 1e6).toPrecision(3)}M` : v >= 1e3 ? `${+(v / 1e3).toPrecision(3)}k` : String(+v.toPrecision(3));
+  const bar = figure(smallMultiples(fixture.bar.panels.map((panel) => ({ ...panel, format: si })), fixture.bar.options));
+  const rowsOf = (html: string) => [...html.matchAll(/<tr><th scope="row">(.*?)<\/th>(.*?)<\/tr>/g)].map(([, head, rest]) => [head!, ...[...rest!.matchAll(/<td[^>]*>(.*?)<\/td>/g)].map((m) => m[1]!)]);
+  const climbRows = rowsOf(climb.table.split("</table>")[0]!);
+  const at = (checker: string, tag: string) => climbRows.filter((r) => r[0]!.startsWith(`${checker} `) && r[1] === tag);
+
+  it("draws rc14's three v3 solves at SOLVED and its twelve v4 rows at the manifest stage", () => {
+    const solved = at("v3", "rc14").find((r) => r[2] === "SOLVED")!;
+    // Columns: setup, release, progress, observations, interval, annotation, label, verdict, rows, first, last, comparable.
+    expect(solved.slice(7, 11)).toEqual(["pass ✓", "3", "10-18 20:14Z", "10-18 20:46Z"]);
+    const amended = at("v4", "rc14");
+    expect(amended).toHaveLength(1);
+    expect(amended[0]!.slice(2, 3).concat(amended[0]!.slice(7, 9))).toEqual(["manifest stage", "fail", "12"]);
+    expect(climb.svg.wide).toContain('class="tgc-glyph-check"');
+    expect(climb.svg.wide).toContain('class="tgc-checker-0"');
+  });
+
+  it("keeps rc17 and rc18 in the undecided strip, never at a height", () => {
+    const late = climbRows.filter((r) => r[1] === "rc17" || r[1] === "rc18");
+    expect(late.length).toBeGreaterThan(0);
+    // Undecided gates sit in the strip; rc17's superseded gate never ran and is listed, not drawn.
+    for (const row of late) expect(row[2]).toMatch(/^(no score \(undecided\)|not measured)$/);
+    expect(late.filter((r) => r[7] === "undecided").map((r) => [r[1], r[8]])).toEqual([["rc17", "12"], ["rc18", "9"]]);
+    // Every plotted mark is a row with a value; every strip mark a verdict without one.
+    const stripped = climbRows.filter((r) => r[2]!.startsWith("no score")).length;
+    const valued = climbRows.filter((r) => !r[2]!.startsWith("no score") && r[2] !== "not measured").length;
+    expect(climb.svg.wide.match(/class="tgc-series-observation"/g)).toHaveLength(valued);
+    expect(climb.svg.wide.match(/class="tgc-strip-observation"/g)).toHaveLength(stripped);
+    expect(climb.lede).toContain("without a value sit in the strip under the plot");
+  });
+
+  it("labels run groups, gaps and rulings on the release axis", () => {
+    expect(climb.svg.wide.match(/data-band="group"/g)).toHaveLength(3);
+    expect(climb.svg.wide).toContain("10.5 h · gap");
+    expect(climb.table).toContain("v4 · operator amendment 20:52Z");
+    expect(climb.table).toContain("check stands · operator 18:22Z");
+  });
+
+  it("draws proof and verify against the paper's bar on log panels with target bands", () => {
+    expect([...bar.svg.wide.matchAll(/data-panel="([^"]+)" data-scale="log"/g)].map((m) => m[1]).sort()).toEqual(["proof", "rate", "rss", "verify"]);
+    const proof = bar.svg.wide.split('data-panel="proof"')[1]!.split("data-panel=")[0]!;
+    const verify = bar.svg.wide.split('data-panel="verify"')[1]!.split("data-panel=")[0]!;
+    expect(proof).toContain('data-target="target"');
+    expect(verify).toContain('data-target="target"');
+    expect(verify).toContain('data-target="stretch"');
+    const barRows = rowsOf(bar.table.split("</table>")[0]!);
+    const cell = (metric: string, tag: string) => barRows.filter((r) => r[0]!.startsWith(metric) && r[1] === tag);
+    // rc16 declared 120 bits and failed its gate: a failing candidate. rc14 declared 1 bit: not comparable.
+    expect(cell("Proof", "rc16")[0]!.slice(2, 3).concat(cell("Proof", "rc16")[0]!.slice(5, 6), cell("Proof", "rc16")[0]!.slice(9, 10))).toEqual(["386k B", "fail ✕", "yes"]);
+    expect(cell("Verify", "rc14")[0]![9]).toBe("no");
+    expect(cell("Verify", "rc5")[0]!.slice(5, 6).concat(cell("Verify", "rc5")[0]!.slice(9, 10))).toEqual(["pass", "yes"]);
+    expect(barRows.some((r) => r[1] === "rc17" || r[1] === "rc18")).toBe(false);
+  });
+
+  it("stays inside 358 px on the phone", () => {
+    for (const svg of [climb.svg.narrow!, bar.svg.narrow!]) {
+      expect(svg).toMatch(/^<svg[^>]* width="358"/);
+      const xs = [...svg.matchAll(/ (?:x|x1|x2|cx)="(-?[\d.]+)"/g)].map((m) => Number(m[1]));
+      expect(Math.min(...xs)).toBeGreaterThanOrEqual(0);
+      expect(Math.max(...xs)).toBeLessThanOrEqual(358);
+    }
+  });
+
+  it("colours every attempt outcome, lost included, from one palette", () => {
+    const t = Date.UTC(2026, 9, 18, 1, 0);
+    const lane = { id: "root", label: "Root", spans: [{ start: t, end: t + 3_600_000, state: "work" }], ticks: OUTCOME_ORDER.map((outcome, i) => ({ at: t + (i + 1) * 300_000, outcome })) };
+    const f = figure(timeline([lane], { measure: "attempts" }));
+    for (const outcome of OUTCOME_ORDER) expect(f.svg.wide).toContain(`tgc-tick tgc-tick-${outcome}`);
+    for (const outcome of ["ok", "quota", "lost", "rate-limit", "oom", "refused"]) expect(figureCss).toMatch(new RegExp(`--chart-outcome-${outcome}: light-dark\\(#[0-9a-f]{6}, #[0-9a-f]{6}\\)`));
   });
 });

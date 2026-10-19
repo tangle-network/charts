@@ -10,7 +10,8 @@ import { chartTokensCss, figureCss } from '../dist/index.js'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const output = path.resolve(process.argv[2] || path.join(root, 'docs/screenshots'))
-const sections = ['marks-bands', 'lanes', 'segments', 'small-multiples', 'figure-view', 'second-channel']
+const sections = ['marks-bands', 'lanes', 'segments', 'small-multiples', 'figure-view', 'second-channel', 'play-climb', 'play-bar']
+const full = ['small-multiples', 'figure-view', 'play-climb', 'play-bar']
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'charts-run-page-'))
 fs.mkdirSync(output, { recursive: true })
 // React reads process.env.NODE_ENV; a banner defines it for the browser bundle.
@@ -23,7 +24,7 @@ const page = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta n
 section{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;padding:16px 0 24px;border-bottom:1px solid var(--chart-rule)}
 section.full{grid-template-columns:1fr}.panel{min-width:0}.panel>h3{margin:0 0 8px;font:600 12px/1.4 ui-monospace,monospace;text-transform:uppercase;letter-spacing:.04em;color:var(--chart-ink-muted)}
 .tgc-figure{margin:0}@media(max-width:900px){section{grid-template-columns:1fr}}</style></head>
-<body>${sections.map((id) => `<section id="${id}"${['small-multiples', 'figure-view'].includes(id) ? ' class="full"' : ''}></section>`).join('')}<script src="demo.js"></script></body></html>`
+<body>${sections.map((id) => `<section id="${id}"${full.includes(id) ? ' class="full"' : ''}></section>`).join('')}<script src="demo.js"></script></body></html>`
 fs.writeFileSync(path.join(temp, 'index.html'), page)
 const knownBrowsers = ['/snap/bin/chromium', '/usr/bin/chromium', '/usr/bin/chromium-browser']
 const executablePath = process.env.CHROMIUM_BIN || knownBrowsers.find((file) => fs.existsSync(file))
@@ -38,6 +39,11 @@ try {
       await tab.locator('#second-channel svg').first().waitFor()
       await tab.waitForTimeout(400)
       if (errors.length) throw new Error(errors.join('\n'))
+      // The play page figures must fit their column: no section scrolls sideways at either width.
+      for (const id of ['play-climb', 'play-bar']) {
+        const over = await tab.locator(`#${id}`).evaluate((el) => el.scrollWidth - el.clientWidth)
+        if (over > 0) throw new Error(`#${id} overflows by ${over} px at ${width} px`)
+      }
       for (const id of sections) {
         const target = path.join(output, `run-page-${id}-${width}-${theme}.png`)
         await tab.locator(`#${id}`).screenshot({ path: target })
