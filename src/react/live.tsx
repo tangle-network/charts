@@ -289,7 +289,7 @@ export function Lines({ series, format = formatCompact, rows = 13, axis, marks =
           tip={{
             x: Math.min(x(hover) + 10, width - em * 14),
             y: 8,
-            title: day(hover),
+            title: axis ? axis(hover) : day(hover),
             lines: series.filter((s) => s.points.length).map((s) => {
               const p = nearest(s.points, hover)
               return { label: s.label ? s.label(p[0]) : s.name, value: format(p[1]), color: s.color }
