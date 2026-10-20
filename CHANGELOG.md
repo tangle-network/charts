@@ -1,5 +1,11 @@
 # @tangle-network/charts
 
+## 0.14.0
+
+### Minor Changes
+
+- `Events` draws recorded instants (restarts, deploys) on one time axis: a tick per event in the window, evenly spaced axis labels, and each tick titled with its time on hover. The admin portal drew this strip by hand.
+
 ## 0.13.0
 
 ### Minor Changes

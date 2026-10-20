@@ -473,6 +473,40 @@ export function Spark({ points, max = 1, color = LIVE_SERIES[0], label, format =
   )
 }
 
+/** Recorded instants on one time axis, such as process restarts or deploys: a tick per event in `[from, to]`, with
+ * `ticks` evenly spaced axis labels under it. Hovering a tick names its time through `time`. The strip keeps its type
+ * size at any width, and `label` names it for assistive tech. */
+export function Events({ at, from, to, label, color = LIVE_SERIES[0], ticks = 7, axis = (t) => new Date(t).toLocaleDateString(undefined, { weekday: 'short' }), time = (t) => new Date(t).toLocaleString() }: { at: number[]; from: number; to: number; label: string; color?: string; ticks?: number; axis?: (t: number) => string; time?: (t: number) => string }) {
+  const [ref, width, em] = useWidth<HTMLDivElement>()
+  if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from) throw new RangeError('Events needs a window with to after from.')
+  const shown = at.filter((t) => Number.isFinite(t) && t >= from && t <= to).sort((a, b) => a - b)
+  const strip = Math.round(2.2 * em)
+  const height = strip + Math.round(1.5 * em)
+  const pad = 6
+  const x = (t: number) => pad + ((t - from) / (to - from)) * Math.max(0, width - 2 * pad)
+  const steps = Math.max(1, Math.round(ticks))
+  return (
+    <div ref={ref} className="ov-plot">
+      {width > 0 && (
+        <svg width={width} height={height} role="img" aria-label={`${label}: ${shown.length} in the window`}>
+          <line x1={pad} x2={width - pad} y1={strip / 2} y2={strip / 2} className="ov-gridline" />
+          {shown.map((t, i) => (
+            <g key={`${t}-${i}`} data-event={t}>
+              <title>{time(t)}</title>
+              <rect x={x(t) - 6} y={0} width={12} height={strip} fill="transparent" />
+              <line x1={x(t)} x2={x(t)} y1={4} y2={strip - 4} stroke={color} strokeWidth={2} strokeLinecap="round" />
+            </g>
+          ))}
+          {Array.from({ length: steps + 1 }, (_, i) => {
+            const t = from + (i / steps) * (to - from)
+            return <text key={i} x={x(t)} y={height - em * 0.35} className="ov-axis" textAnchor={i === 0 ? 'start' : i === steps ? 'end' : 'middle'}>{axis(t)}</text>
+          })}
+        </svg>
+      )}
+    </div>
+  )
+}
+
 /** One bar per row on a shared time axis (who worked when): each row's bar spans its start to its end, coloured by its
  * state; hovering a span names it, its state and its span. Times are epoch ms; `axis` labels the time axis.
  * `lanes` give a row several spans (the same shape as the static `timeline`); a span with `end: null` is open and runs
