@@ -1,0 +1,40 @@
+{
+  "spans": [
+    {
+      "kind": "pipeline",
+      "name": "mission.launch-poster",
+      "startMs": 0,
+      "endMs": 48000
+    },
+    {
+      "kind": "model",
+      "name": "claude-opus-4 \u00b7 plan",
+      "startMs": 400,
+      "endMs": 8200
+    },
+    {
+      "kind": "tool",
+      "name": "sandbox_run_command",
+      "startMs": 8400,
+      "endMs": 30200
+    },
+    {
+      "kind": "tool",
+      "name": "canvas_export",
+      "startMs": 30600,
+      "endMs": 44100,
+      "approx": true
+    },
+    {
+      "kind": "model",
+      "name": "claude-opus-4 \u00b7 summarize",
+      "startMs": 44300,
+      "endMs": 47800
+    }
+  ],
+  "totalMs": 48000,
+  "promptTokens": 7120,
+  "completionTokens": 942,
+  "costUsd": 0.1774,
+  "toolCalls": 2
+}
