@@ -25,7 +25,7 @@ if (process.argv.includes('--package-only')) {
 const base = process.env.CHARTS_FIXTURE_URL ?? 'http://127.0.0.1:46489'
 const checks = {}
 let server, browser, context
-const log = createWriteStream(`${output}/storybook.log`)
+const log = createWriteStream(`${output}/consumer.log`)
 try {
   if (!process.env.CHARTS_FIXTURE_URL) {
     server = spawn(process.execPath, ['scripts/charts-browser-smoke.mjs'], { stdio: ['ignore', 'pipe', 'pipe'], detached: true })
@@ -34,7 +34,7 @@ try {
   const deadline = Date.now() + 120_000
   while (true) {
     try { if ((await fetch(`${base}/iframe.html`)).ok) break } catch {}
-    if (Date.now() > deadline || server?.exitCode != null) throw new Error('Storybook did not become ready; see storybook.log')
+    if (Date.now() > deadline || server?.exitCode != null) throw new Error('Packed consumer did not become ready; see consumer.log')
     await new Promise(resolve => setTimeout(resolve, 500))
   }
   browser = await chromium.launch({ headless: true, slowMo: process.argv.includes('--record') ? 180 : 0, ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) })
@@ -44,7 +44,7 @@ try {
     await warmup.locator('[data-flow-waterfall]').waitFor({ timeout: 60_000 })
     await warmup.close()
   }
-  context = await browser.newContext({ viewport: { width: 1100, height: 900 }, recordVideo: { dir: output, size: { width: 1100, height: 900 } } })
+  context = await browser.newContext({ viewport: { width: 1100, height: 900 }, hasTouch: true, recordVideo: { dir: output, size: { width: 1100, height: 900 } } })
   const page = await context.newPage()
   const failures = []
   const networkFailures = []
@@ -60,6 +60,43 @@ try {
       throw error
     }
   }
+  // Retained brand packed-fixture interactions: pointer, keyboard, touch and top-layer clipping.
+  for (const [name, width, theme] of [['desktop-light',1100,'light'],['desktop-dark',1100,'dark'],['phone-light',390,'light']]) {
+    await page.setViewportSize({ width, height:760 })
+    await page.emulateMedia({ reducedMotion:'reduce' })
+    await page.goto(base)
+    await page.evaluate(theme => { document.documentElement.dataset.theme = theme }, theme)
+    const second = page.getByRole('button').nth(1)
+    const bounds = await second.boundingBox()
+    const point = { x:bounds.x+bounds.width/2, y:bounds.y+bounds.height/2 }
+    await page.mouse.move(point.x,point.y)
+    const tooltip = page.locator('[data-chart-tooltip]')
+    await tooltip.waitFor({ state:'visible' })
+    assert.equal(await tooltip.evaluate(el => el.matches(':popover-open')), true)
+    assert.match(await tooltip.innerText(), /Inference: \$16.80/)
+    const tip = await tooltip.boundingBox()
+    assert.ok(Math.abs(tip.x-point.x-14)<2 && Math.abs(tip.y-point.y-14)<2)
+    assert.ok(tip.x>=0 && tip.x+tip.width<=width && tip.y+tip.height<=760)
+    assert.equal(await page.locator('[data-selection]').count(),1)
+    assert.ok((await page.locator('[data-selection]').boundingBox()).height<100)
+    await page.screenshot({ path:`${output}/stacked-${name}.png`,fullPage:true })
+    await second.focus()
+    await page.keyboard.press('Enter')
+    assert.match(await page.getByRole('status').innerText(), /^Sep 7/)
+    assert.equal(await tooltip.count(),0)
+    await page.keyboard.press('Escape')
+    assert.match(await page.getByRole('status').innerText(), /Hover, tap/)
+    if (width===390) {
+      await second.tap()
+      assert.match(await page.getByRole('status').innerText(), /^Sep 7/)
+      assert.equal(await tooltip.count(),0)
+    }
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))
+    await page.getByText('View data',{exact:true}).click()
+    assert.equal(await page.getByRole('table').count(),1)
+  }
+  checks.retainedStackedInteractions = 'PASS'
+  await page.setViewportSize({ width:1100,height:900 })
   await story('healthy')
   assert.match(await page.locator('[data-slowest]').innerText(), /sandbox_run_command/)
   await page.screenshot({ path: `${output}/healthy-desktop-dark.png`, fullPage: true })
@@ -113,6 +150,20 @@ try {
     const paused = await page.getByLabel('Playback position').inputValue()
     await page.waitForTimeout(180)
     assert.equal(await page.getByLabel('Playback position').inputValue(), paused)
+    // A real range keyboard interaction must pause and clip the rendered bar.
+    const slider = page.getByLabel('Playback position')
+    await slider.focus()
+    await page.keyboard.press('Home')
+    assert.equal(Number(await slider.inputValue()),0)
+    assert.equal(await root.locator('.fw-bar').first().evaluate(el=>el.getBoundingClientRect().width),0)
+    await page.keyboard.press('ArrowRight')
+    const scrubbed = Number(await slider.inputValue())
+    assert.ok(scrubbed>0)
+    assert.equal(await page.getByRole('button',{name:'Play',exact:true}).count(),1)
+    const barAndTrack = await root.locator('[data-waterfall-track]').first().evaluate(el=>({bar:el.querySelector('.fw-bar').getBoundingClientRect().width,track:el.getBoundingClientRect().width}))
+    assert.ok(barAndTrack.bar>0 && barAndTrack.bar<barAndTrack.track)
+    await page.waitForTimeout(180)
+    assert.equal(Number(await slider.inputValue()),scrubbed)
     await page.getByRole('button', { name: 'Show full trace', exact: true }).click()
     checks.playback = 'PASS'
     await story('recorded-discovery', 'agent-light')
@@ -157,6 +208,12 @@ try {
       assert.ok(Math.abs(sample.observed - sample.selected) <= sample.selected * 0.15,
         `${sample.selected}x live playback measured ${sample.observed.toFixed(3)}x; allowed ±15%`)
     }
+    await page.getByRole('button',{name:'Follow live',exact:true}).click()
+    assert.equal(await page.getByRole('button',{name:'Follow live',exact:true}).count(),0)
+    const following = await page.getByLabel('Playback position').evaluate(el=>({value:Number(el.value),max:Number(el.max)}))
+    assert.equal(following.value,following.max)
+    await page.waitForFunction(previous=>Number(document.querySelector('input[type=range]').max)>previous,following.max)
+    assert.equal(await page.getByLabel('Playback position').evaluate(el=>Number(el.value)===Number(el.max)),true)
     await story('discovery-streaming-replay')
     await page.waitForFunction(() => document.querySelectorAll('[data-span-id]').length > 5)
     const count = await page.locator('[data-span-id]').count()
@@ -170,10 +227,15 @@ try {
     assert.equal(await page.locator('[data-span-id="metadata"]').getAttribute('data-span-kind'), 'tool')
     assert.equal(await page.locator('.fw-title').innerText(), 'Trace waterfall')
     checks.unorderedAndExplicitStatus = 'PASS'
+    await story('duplicate-identities')
+    const ids = await page.locator('[data-span-id]').evaluateAll(elements=>elements.map(el=>el.dataset.spanId))
+    assert.equal(ids.length,3)
+    assert.equal(new Set(ids).size,3)
+    checks.uniqueCapturedIdentities = 'PASS'
     assert.deepEqual(failures, [])
   }
-  writeFileSync(`${output}/checks.json`, JSON.stringify({ checks, passed: Object.keys(checks).length, target: 10 }, null, 2))
-  console.log(JSON.stringify({ checks, passed: Object.keys(checks).length, target: 10, output }))
+  writeFileSync(`${output}/checks.json`, JSON.stringify({ checks, passed: Object.keys(checks).length, target: 12 }, null, 2))
+  console.log(JSON.stringify({ checks, passed: Object.keys(checks).length, target: 12, output }))
 } finally {
   await context?.close()
   await browser?.close()

@@ -18,6 +18,7 @@ function FlowApp({ name }) {
   { id:'invalid',kind:'tool',name:'Unordered capture',startMs:10,endMs:5,status:'done' },
   { id:'metadata',kind:'tool',name:'Metadata is not status',startMs:0,endMs:1000,meta:{status:'failed',ok:false} }],
   totalMs:1000,promptTokens:0,completionTokens:0,toolCalls:2 }
+ if (name === 'duplicate-identities') trace = { spans:['x:2','x','x'].map((id,i)=>({id,kind:'tool',name:'Captured '+i,startMs:i,endMs:i+1,status:'done'})),totalMs:3,promptTokens:0,completionTokens:0,toolCalls:3 }
  if (name === 'discovery-streaming-replay') {
   trace = { ...recorded, totalMs:now, spans:recorded.spans.filter(s => s.startMs <= now).map(s => ({ ...s, endMs:Math.min(now,s.endMs),status:s.endMs > now ? 'running' : s.status })),
    promptTokens:now===recorded.totalMs?recorded.promptTokens:0,completionTokens:now===recorded.totalMs?recorded.completionTokens:0,

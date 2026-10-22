@@ -24,7 +24,9 @@ export function flowWaterfallRows(trace: FlowTrace): FlowWaterfallRow[] {
     .map((span, i) => ({ span, key: span.id ?? `span-${i}` }))
     .sort((a, b) => a.span.startMs - b.span.startMs)
     .map(({ span, key }, index) => {
-      const id = ids.has(key) ? `${key}:${index}` : key
+      let id = key
+      let suffix = index
+      while (ids.has(id)) id = `${key}:${suffix++}`
       ids.add(id)
       return {
         id, parentId: span.parentId, name: span.name, kind: span.kind,
