@@ -1,6 +1,7 @@
 /**
  * Timing primitives extracted from Intelligence's TraceTree at ADC 4282a39f9f.
- * Hierarchy, span selection, attribution and inspectors remain caller-owned.
+ * The primitives retain caller-owned hierarchy, selection and attribution.
+ * FlowWaterfall composes them into the shared hierarchy/search/playback inspector.
  * These components share one window: offsets are never replaced by durations.
  */
 import type { CSSProperties, ReactNode } from "react";
@@ -98,15 +99,17 @@ export interface WaterfallTimeAxisProps {
   widthPx?: number;
   formatDuration?: (ms: number) => string;
   className?: string;
+  /** Fill the embedding grid track; the default retains Intelligence's fixed cell. */
+  fluid?: boolean;
 }
 
 export function WaterfallTimeAxis({ windowMs, originMs = 0, widthPx = 208,
-  formatDuration = formatWaterfallDuration, className }: WaterfallTimeAxisProps) {
+  formatDuration = formatWaterfallDuration, className, fluid = false }: WaterfallTimeAxisProps) {
   if (!ordered(0, windowMs) || !Number.isFinite(originMs)) return null;
   const ticks = waterfallTicks(windowMs, widthPx);
   if (windowMs === 0) return null;
   return <div className={className} data-waterfall-axis="" aria-hidden="true"
-    style={{ ...timingCell, position: "relative", height: "var(--waterfall-axis-height, 1.5rem)" }}>
+    style={{ ...(fluid ? { minWidth: 0, flex: "1 1 0%" } : timingCell), position: "relative", height: "var(--waterfall-axis-height, 1.5rem)" }}>
     {ticks.map((t) => {
       const pct = t / windowMs * 100;
       return <span key={t} style={{ position: "absolute", top: 0, bottom: 0,
@@ -129,27 +132,39 @@ export interface WaterfallBarProps {
   tone?: "default" | "error" | "critical";
   formatDuration?: (ms: number) => string;
   className?: string;
+  /** Presentation only; the producer continues to own status and tone. */
+  color?: string;
+  barClassName?: string;
+  overlay?: ReactNode;
+  fluid?: boolean;
+  /** Clip playback without changing the recorded duration or its tooltip. */
+  clipAtMs?: number;
 }
 
 export function WaterfallBar({ startMs, endMs, window, tone = "default",
-  formatDuration = formatWaterfallDuration, className }: WaterfallBarProps) {
+  formatDuration = formatWaterfallDuration, className, color: suppliedColor,
+  barClassName, overlay, fluid = false, clipAtMs }: WaterfallBarProps) {
+  const cell = fluid ? { minWidth: 0, flex: "1 1 0%" } : timingCell;
   if (!ordered(startMs, endMs) || !ordered(window.startMs, window.endMs)) {
     return <span className={className} data-waterfall-track="" data-unavailable="true"
-      title="Timing unavailable" style={{ ...timingCell, textAlign: "center" }}>—</span>;
+      title="Timing unavailable" style={{ ...cell, textAlign: "center" }}>—</span>;
   }
   const geometry = waterfallSpanGeometry(startMs, endMs, window);
-  const color = tone === "error" ? "var(--intel-waterfall-error, #dc2626)"
+  const color = suppliedColor ?? (tone === "error" ? "var(--intel-waterfall-error, #dc2626)"
     : tone === "critical" ? "var(--intel-waterfall-critical, #0891b2)"
-    : "var(--intel-waterfall-bar, #2563eb)";
+    : "var(--intel-waterfall-bar, #2563eb)");
+  const visible = clipAtMs === undefined ? geometry
+    : waterfallSpanGeometry(startMs, Math.max(startMs, Math.min(endMs, clipAtMs)), window);
   return <span className={className} data-waterfall-track="" data-tone={tone}
     title={`+${formatDuration(geometry.startOffsetMs)} · ${formatDuration(geometry.durationMs)}${tone === "critical" ? " · critical path" : ""}`}
-    style={{ ...timingCell, position: "relative", height: "var(--waterfall-bar-height, 0.875rem)",
+    style={{ ...cell, position: "relative", height: "var(--waterfall-bar-height, 0.875rem)",
       overflow: "hidden", borderRadius: "var(--waterfall-bar-radius, 999px)",
       background: "var(--intel-waterfall-track, rgb(148 163 184 / 22%))" }}>
-    <span data-waterfall-bar="" data-clipped={geometry.clipped || undefined}
+    <span className={barClassName} data-waterfall-bar="" data-clipped={geometry.clipped || undefined}
       style={{ position: "absolute", top: 0, height: "100%", borderRadius: "inherit", background: color,
-        left: `${geometry.offsetPct}%`, width: `${geometry.widthPct}%`,
+        left: `${geometry.offsetPct}%`, width: `${clipAtMs !== undefined && clipAtMs <= startMs ? 0 : visible.widthPct}%`,
         boxShadow: tone === "default" ? undefined : `0 0 0 1px ${color}` }} />
+    {overlay}
   </span>;
 }
 
@@ -159,17 +174,20 @@ export interface WaterfallRowProps extends Omit<WaterfallBarProps, "className"> 
   timingClassName?: string;
   durationClassName?: string;
   className?: string;
+  style?: CSSProperties;
+  durationLabel?: ReactNode;
 }
 
 /** Non-interactive row body; its caller owns treeitems, buttons and selection. */
 export function WaterfallRow({ label, attribution, startMs, endMs, window, tone,
-  formatDuration = formatWaterfallDuration, className, timingClassName, durationClassName }: WaterfallRowProps) {
-  return <span data-waterfall-row="" className={className} style={rowStyle}>
+  formatDuration = formatWaterfallDuration, className, timingClassName, durationClassName,
+  style, durationLabel, ...bar }: WaterfallRowProps) {
+  return <span data-waterfall-row="" className={className} style={style ? { ...rowStyle, ...style } : rowStyle}>
     <span data-waterfall-label="" style={labelStyle}>{label}</span>
     {attribution}
     <WaterfallBar startMs={startMs} endMs={endMs} window={window} tone={tone}
-      formatDuration={formatDuration} className={timingClassName} />
-    <span data-waterfall-duration="" className={durationClassName} style={durationStyle}>{ordered(startMs, endMs) ? formatDuration(endMs - startMs) : "—"}</span>
+      formatDuration={formatDuration} className={timingClassName} {...bar} />
+    <span data-waterfall-duration="" className={durationClassName} style={durationStyle}>{durationLabel ?? (ordered(startMs, endMs) ? formatDuration(endMs - startMs) : "—")}</span>
   </span>;
 }
 

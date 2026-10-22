@@ -36,3 +36,6 @@ export type { MarkerShape } from "../svg.js";
 export type { XCategory, YScale, YTarget, YTick } from "../axis.js";
 export type { PointFields, PointGlyph } from "../points.js";
 export type { Figure, Refusal } from "../types.js";
+
+export { FlowWaterfall } from "./flow-waterfall.js";
+export type { FlowWaterfallProps } from "./flow-waterfall.js";

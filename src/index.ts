@@ -39,3 +39,5 @@ export { type TickOutcome, timeline, type TimelineLane, type TimelineOptions, ty
 export { type MultiplePanel, smallMultiples, type SmallMultiplesOptions } from "./small-multiples.js";
 export { type Observations } from "./scalar.js";
 export { type DotGroup, type DotGroupRect, type UnitDotLayout, unitDotLayout, type UnitDotOptions } from "./unit-dots.js";
+
+export type { FlowSpan, FlowTrace } from "./flow-trace.js";

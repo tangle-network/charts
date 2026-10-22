@@ -4,15 +4,9 @@ Benchmark figures as static SVG and HTML tables, plus optional React timing prim
 
 The React entry also exports `DayBars`, `HBars`, `Histogram`, `Lines`, `Meter`, `Spark`, and `Gantt` for live operational pages. Import `@tangle-network/charts/react/live.css` for their layout and set `--chart-live-*` theme tokens on an ancestor. Data, state colors, destination links, labels, and interpretation remain with the caller. `DayBars` accepts an `onOpen(index)` action with keyboard activation.
 
-`WaterfallHeader`, `WaterfallTimeAxis`, `WaterfallBar` and `WaterfallRow` from
-`@tangle-network/charts/react` own the timing presentation extracted from
-Intelligence's trace viewer. Supply actual span start/end milliseconds and the
-same `{ startMs, endMs }` window to every row. Hierarchy, selection, attribution,
-formatting and failure interpretation stay with the consumer. The original
-minimum/clipped marker remains visible; its tooltip reports the actual duration.
-Set `--waterfall-timing-width`, `--waterfall-duration-width` and the existing
-`--intel-waterfall-*` colors for the consumer's layout and theme. No stylesheet,
-router or React DOM dependency is required.
+`FlowWaterfall` from `@tangle-network/charts/react` is the shared live trace inspector. It owns hierarchy layout, folding, search, playback and running-span growth. Producers own identity, `parentId`, explicit `status` and observed totals. Import `@tangle-network/charts/react/flow-waterfall.css`; its `fw-*` classes and six-field summary support hosts without a Tailwind build. The React-free root exports the `FlowSpan` and `FlowTrace` types.
+
+`WaterfallHeader`, `WaterfallTimeAxis`, `WaterfallBar` and `WaterfallRow` remain available for existing consumers that own their own hierarchy and selection. All use the same `waterfallSpanGeometry` and `waterfallTicks`. Existing fixed-width cells, tones, formatting, attribution slots and unordered-time `—` marks are preserved. Optional fluid tracks, inner-bar colour/class, overlay and clipping fields support the shared inspector without changing existing calls. The primitives were extracted from Intelligence under [brand #211](https://github.com/tangle-network/brand/pull/211); the shared inspector extends that presentation ownership while leaving failure interpretation with producers.
 
 Five figures cover the decisions a benchmark reader makes:
 
@@ -44,7 +38,7 @@ phaseWaterfall([{ id: "route", label: "Route", ms: 5 }, { id: "restore", label: 
 
 The producer maps its own blocked or absent states to `no-data`; Charts never assigns a status from a value. `latencyRange` refuses any row below `minN`; when the producer omits those rows, pass their reasons in `excluded` so the note names them. `phaseWaterfall` refuses phases whose sum exceeds the reported total because overlapping spans cannot be drawn as a cumulative waterfall. Its input order is retained, including zero-duration phases. The producer marks known unaccounted leaves with `kind: "unaccounted"`; Charts also marks any difference between their sum and `totalMs`.
 
-The library draws and never decides.
+Charts owns presentation and interaction; producers own interpretation and status. The library never derives failure or running state from metadata values.
 Ranks, intervals, frontier membership, estimate labels and pass counts come from the producer: a board record, a VerticalBench report or an agent-eval lens.
 A figure function returns a `Refusal` in place of a figure it cannot draw honestly, for example a bar over too few units, an interval that names no method, or a frontier the producer did not compute.
 
@@ -319,8 +313,31 @@ npm run build
 
 The package-boundary test builds and packs Charts, installs the tarball in an OS-temporary consumer with a normal offline npm install (no peer-omission flags), asserts React/React DOM/React types cannot resolve, and executes the static root without DOM globals. It compares root exports, static SVG/tables, Refusals, report/chart/plot HTML and CSS with the untouched source implementation, then compiles a static-only consumer with `lib: ["ES2022"]`, `types: []` and `skipLibCheck: false`. Only afterward does it supply the installed React peer/types to verify the packed React runtime and declarations. It runs under `npm test`.
 
-The component tests cover gap/zero/one/equal/negative cases, controlled identity, keyboard/touch selection, nonvisual values and resize contracts. The jsdom resize check verifies fluid/minimum-width attributes and preserved selection, **not browser-computed layout**; The retained packed-browser fixture checks Chromium at 1100px and 390px, keyboard selection, emulated touch, light/dark Brand tokens, reduced motion, and top-layer positioning inside a transformed, paint-contained panel. It passes with React 18 and React 19; the React 18 consumer also compiles the packed declarations with React 18 types. Physical touch hardware and screen-reader audio remain unchecked.
+The component tests cover gap/zero/one/equal/negative cases, controlled identity, keyboard/touch selection, nonvisual values and resize contracts. The jsdom resize check verifies fluid/minimum-width attributes and preserved selection, **not browser-computed layout**; The retained [packed-browser fixture](scripts/charts-browser-smoke.mjs), ported from brand, and its [browser proof](scripts/charts-browser-proof.mjs) check Chromium at 1100px and 390px, keyboard selection, emulated touch, light/dark Brand tokens, reduced motion, and top-layer positioning inside a transformed, paint-contained panel. It passes with React 18 and React 19; the React 18 consumer also compiles the packed declarations with React 18 types. Physical touch hardware and screen-reader audio remain unchecked.
 
 ### Figure browser proof
 
 `node scripts/render-figures.mjs` writes a comparison page from the retained fixtures and approved speed reference. `node scripts/capture-figures.mjs` uses Playwright Chromium to capture all three figures at phone and desktop widths in light and dark themes. The reviewed images are in [`docs/screenshots`](docs/screenshots).
+
+## Live trace waterfall
+
+```tsx
+import { FlowWaterfall } from '@tangle-network/charts/react';
+import type { FlowTrace } from '@tangle-network/charts';
+import '@tangle-network/charts/react/flow-waterfall.css';
+
+// The producer supplies stable identities, explicit status and measured totals.
+<FlowWaterfall trace={trace satisfies FlowTrace} live={running} />;
+```
+
+Search supports Cmd/Ctrl+F and keeps ancestor context. Folding, five playback speeds, scrubbing and Follow live affect presentation only. Running spans grow between snapshots. Missing cost and authoritative LLM counts stay Unknown. Invalid intervals retain a per-row `—` timing mark, preserving the rest of the trace. The static phase waterfall remains a separate chart for disjoint phases.
+
+**Provenance.** FlowWaterfall and its recorded Discovery fixture move from agent-app #1267/#1273 at `78a3e8f7fd9bf93b23afa8290db6d721db544237`; the independent implementation copied no paid reference assets. [Fixture provenance](docs/fixtures/discovery-waterfall-provenance.md) records measured timing, observed token totals and unknowns. The historical [baseline](docs/fixtures/live-playback-rates-baseline.json) and [fixed](docs/fixtures/live-playback-rates-fixed.json) rate measurements are retained. The packed public consumer proof measures all five rates against actual browser wall time during live growth, with ±15% acceptance, using React 18 and 19 at 1100px and 390px.
+
+```sh
+npm run build
+CHARTS_REACT_VERSION=18 CHARTS_PROOF_DIR=/tmp/charts-react18 node scripts/charts-browser-proof.mjs --record
+CHARTS_REACT_VERSION=19 CHARTS_PROOF_DIR=/tmp/charts-react19 node scripts/charts-browser-proof.mjs --record
+```
+
+Consumers: agent-record adapts record provenance; agent-app supplies application trace producers; Creative consumes both. Intelligence already uses the row/axis primitives with its controlled virtualized tree. Tangle Website’s `RecordedRunWaterfall` uses the Header/Row primitives; Blueprint Agent’s execution timeline is a separately owned follow-up. Keep these existing primitives exported. Agent-record’s earlier agent-app dependency increased its installed graph from 134 to 256 package versions (tangle-tools #1674); adopting the lower chart owner removes that framework dependency, with the actual new graph measured by the deployment owner.

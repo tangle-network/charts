@@ -1,0 +1,37 @@
+[
+  {
+    "selected": 0.5,
+    "observed": 0.4986004898374888,
+    "wallMs": 2000.699999988079,
+    "advanceMs": 997.55000001192,
+    "limitGrowthMs": 2000
+  },
+  {
+    "selected": 1,
+    "observed": 1.0215601138134143,
+    "wallMs": 2003.699999988079,
+    "advanceMs": 2046.90000003576,
+    "limitGrowthMs": 2003
+  },
+  {
+    "selected": 1.5,
+    "observed": 1.4998500150074394,
+    "wallMs": 2000.199999988079,
+    "advanceMs": 3000.000000000001,
+    "limitGrowthMs": 2004
+  },
+  {
+    "selected": 2,
+    "observed": 1.9993002449261943,
+    "wallMs": 2000.699999988079,
+    "advanceMs": 4000.000000000003,
+    "limitGrowthMs": 2000
+  },
+  {
+    "selected": 4,
+    "observed": 3.9674097771616363,
+    "wallMs": 2000.5999999642372,
+    "advanceMs": 7937.200000047684,
+    "limitGrowthMs": 2000
+  }
+]
