@@ -1,0 +1,18 @@
+{
+  "checks": {
+    "retainedStackedInteractions": "PASS",
+    "search": "PASS",
+    "searchEmpty": "PASS",
+    "nesting": "PASS",
+    "collapseExpand": "PASS",
+    "summary": "PASS",
+    "colors": "PASS",
+    "slowest": "PASS",
+    "playback": "PASS",
+    "streaming": "PASS",
+    "unorderedAndExplicitStatus": "PASS",
+    "uniqueCapturedIdentities": "PASS"
+  },
+  "passed": 12,
+  "target": 12
+}
