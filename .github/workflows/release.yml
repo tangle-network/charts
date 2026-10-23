@@ -9,7 +9,40 @@ concurrency:
   group: charts-publish
   cancel-in-progress: false
 jobs:
+  publish-check:
+    runs-on: [self-hosted, Linux, X64, ci-public]
+    permissions:
+      contents: read
+    outputs:
+      needed: ${{ steps.registry.outputs.needed }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Start a hosted runner only for an unpublished npm version
+        id: registry
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync, appendFileSync } from 'node:fs'
+          const { name, version } = JSON.parse(readFileSync('package.json', 'utf8'))
+          if (process.env.GITHUB_REF_NAME !== `v${version}`) throw new Error('Tag does not match package version')
+          const url = `https://registry.npmjs.org/${encodeURIComponent(name).replace('%40', '@')}/${encodeURIComponent(version)}`
+          const response = await fetch(url, { signal: AbortSignal.timeout(15000) })
+          if (response.status !== 404 && !response.ok) throw new Error(`npm returned HTTP ${response.status}`)
+          if (response.ok) {
+            const published = await response.json()
+            if (published.name !== name || published.version !== version) throw new Error('Unexpected registry version')
+          }
+          appendFileSync(process.env.GITHUB_OUTPUT, `needed=${response.status === 404}\n`)
+          NODE
+
   publish:
+    needs: publish-check
+    if: needs.publish-check.outputs.needed == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
