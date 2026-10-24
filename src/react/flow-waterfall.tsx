@@ -260,7 +260,7 @@ export function FlowWaterfall({
         onCollapseAll={() => setCollapsed(new Set(rows.filter(row => row.hasChildren).map(row => row.id)))} />
       {card && cardRow && <div className={`fw-card-anchor${card.above ? ' fw-card-above' : ''}`}
         onPointerEnter={() => clearTimeout(hideTimer.current)} onPointerLeave={card.pinned ? undefined : leave}>
-        <SpanCard id={cardId} row={cardRow} agent={cardAgent} clockMs={clockMs} left={card.left} top={card.top} pinned={card.pinned} onClose={closeCard} renderIcon={renderIcon} />
+        <SpanCard id={cardId} row={cardRow} agent={cardAgent} clockMs={clockMs} left={card.left} top={card.top} pinned={card.pinned} onClose={closeCard} renderIcon={renderIcon} compact={view === 'agents'} />
       </div>}
       <footer className="fw-playback">
         <button type="button" className="fw-round-button" aria-label={playing ? 'Pause' : 'Play'} disabled={limit === 0} onClick={togglePlay}>

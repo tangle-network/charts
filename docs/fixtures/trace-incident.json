@@ -20,7 +20,7 @@
    "parentId": "o",
    "detail": "Claude Opus 5.5",
    "icon": "anthropic",
-   "costUsd": 0.01,
+   "costUsd": 0.0246,
    "promptTokens": 1100,
    "completionTokens": 292,
    "output": "Split into code, data, outside and copy checks"
@@ -35,7 +35,7 @@
    "parentId": "o",
    "detail": "Claude Opus 5.5",
    "icon": "anthropic",
-   "costUsd": 0.01,
+   "costUsd": 0.0246,
    "promptTokens": 9200,
    "completionTokens": 410,
    "output": "Code change is the cause; brief the Writer"
@@ -50,7 +50,7 @@
    "parentId": "o",
    "detail": "Claude Opus 5.5",
    "icon": "anthropic",
-   "costUsd": 0.01,
+   "costUsd": 0.0246,
    "promptTokens": 6100,
    "completionTokens": 220,
    "output": "Approved"
@@ -88,7 +88,7 @@
    "parentId": "c",
    "detail": "GPT-6 Luna",
    "icon": "openai",
-   "costUsd": 0.004,
+   "costUsd": 0.0098,
    "promptTokens": 2100,
    "completionTokens": 300,
    "output": "Outside causes unlikely"
@@ -115,7 +115,7 @@
    "parentId": "c",
    "detail": "GPT-6 Luna",
    "icon": "openai",
-   "costUsd": 0.004,
+   "costUsd": 0.0098,
    "promptTokens": 1180,
    "completionTokens": 140,
    "input": "To orchestrator: no outside incident on Oct 9",
@@ -154,7 +154,7 @@
    "parentId": "r",
    "detail": "Claude Sonnet 5.5",
    "icon": "anthropic",
-   "costUsd": 0.01,
+   "costUsd": 0.0246,
    "promptTokens": 6200,
    "completionTokens": 500,
    "output": "Deploy 14:02 changed 3-D Secure retries"
@@ -181,7 +181,7 @@
    "parentId": "r",
    "detail": "Claude Sonnet 5.5",
    "icon": "anthropic",
-   "costUsd": 0.01,
+   "costUsd": 0.0246,
    "promptTokens": 7300,
    "completionTokens": 640,
    "output": "Short window drops slow bank challenges"
@@ -257,7 +257,7 @@
    "parentId": "a",
    "detail": "Claude Haiku 5.5",
    "icon": "anthropic",
-   "costUsd": 0.002,
+   "costUsd": 0.0049,
    "promptTokens": 3400,
    "completionTokens": 260,
    "output": "Failures concentrate on challenge flows"
@@ -284,7 +284,7 @@
    "parentId": "a",
    "detail": "Claude Haiku 5.5",
    "icon": "anthropic",
-   "costUsd": 0.002,
+   "costUsd": 0.0049,
    "promptTokens": 4100,
    "completionTokens": 330,
    "output": "About 1,900 lost checkouts"
@@ -334,7 +334,7 @@
    "parentId": "w",
    "detail": "Gemini 3.8 Flash",
    "icon": "google",
-   "costUsd": 0.003,
+   "costUsd": 0.0074,
    "promptTokens": 5200,
    "completionTokens": 700,
    "output": "Draft ready"
@@ -356,7 +356,7 @@
  "totalMs": 26400,
  "promptTokens": 45880,
  "completionTokens": 3792,
- "costUsd": 0.065,
+ "costUsd": 0.16,
  "toolCalls": 12,
  "modelCalls": 10,
  "errors": 1

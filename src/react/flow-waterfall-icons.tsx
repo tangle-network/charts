@@ -32,3 +32,4 @@ export const AlertGlyph = ({ label }: { label?: string }) => svg(<><path d="M8 2
 export const ZoomInGlyph = () => svg(<><circle cx="7" cy="7" r="4.25" /><path d="m10.25 10.25 3.25 3.25M5 7h4M7 5v4" /></>)
 export const ZoomOutGlyph = () => svg(<><circle cx="7" cy="7" r="4.25" /><path d="m10.25 10.25 3.25 3.25M5 7h4" /></>)
 export const FitGlyph = () => svg(<path d="M2.5 6V3.5a1 1 0 0 1 1-1H6M10 2.5h2.5a1 1 0 0 1 1 1V6M13.5 10v2.5a1 1 0 0 1-1 1H10M6 13.5H3.5a1 1 0 0 1-1-1V10" />)
+export const ReturnGlyph = () => svg(<path d="M6 3.5 3 6.5l3 3M3 6.5h6.5a3.5 3.5 0 0 1 3.5 3.5v2" />)

@@ -11,6 +11,7 @@ const result = await build({
 })
 const files = Object.fromEntries(result.outputFiles.map(file => [file.path.replace(/.*\/demo\//, '/'), file.text]))
 const html = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+  '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=block">' +
   '<link rel="stylesheet" href="/flow-waterfall-demo.css"><style>body{margin:0;font-family:Inter,ui-sans-serif,system-ui,sans-serif}</style></head>' +
   '<body><div id="root"></div><script type="module" src="/flow-waterfall-demo.js"></script></body></html>'
 createServer((req, res) => {

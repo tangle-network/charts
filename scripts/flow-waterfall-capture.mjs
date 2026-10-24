@@ -20,7 +20,8 @@ const open = async (query, viewport = { width: 1185, height: 1016 }, video) => {
   page.on('pageerror', error => errors.push(`${query}: ${error.message}`))
   page.on('console', message => { if (message.type() === 'error') errors.push(`${query}: ${message.text()}`) })
   await page.goto(`${base}?${query}`)
-  await page.locator('body[data-ready="1"]').waitFor({ timeout: 30_000 })
+  await page.locator('body[data-ready="1"]').waitFor({ state: 'attached', timeout: 30_000 })
+  await page.evaluate(() => document.fonts.ready)
   await page.waitForTimeout(300)
   return { page, context }
 }

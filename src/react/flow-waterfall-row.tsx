@@ -48,7 +48,8 @@ function endLabel(row: FlowWaterfallRow, clockMs: number): string {
   const span = row.span
   if (row.durationLabel === '—') return '—'
   const duration = spanRunning(span) ? `${formatSpanDuration(Math.max(span.endMs, clockMs) - span.startMs)}${row.approx ? '~' : ''}` : row.durationLabel
-  return span.costUsd === undefined ? duration : `${duration} · ${formatCost(span.costUsd)}`
+  const cost = span.costUsd ?? (row.rollupCostUsd ? row.rollupCostUsd : undefined)
+  return cost === undefined ? duration : `${duration} · ${formatCost(cost)}`
 }
 
 /** One trace row. Geometry comes from CSS variables, so a row re-renders only when its own state changes. */
@@ -89,7 +90,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
           </span>
           {span.detail && <span className="fw-detail">
             {agentView && renderIcon && <span className="fw-detail-icon" aria-hidden>{renderIcon(span)}</span>}
-            {span.detail}
+            <span className="fw-detail-text">{span.detail}</span>
           </span>}
         </span>
         {folded && <span className="fw-count" aria-label={`${row.descendants} hidden steps`}>+{row.descendants}</span>}
@@ -97,7 +98,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
       </div>
       <div role="gridcell" className="fw-lane" data-waterfall-track aria-label={`${KIND_LABEL[span.kind]}, ${label}${slowest ? ', slowest step' : ''}`}>
         {invalid ? <span className="fw-invalid">—</span> : <>
-          <span className={`fw-bar fw-k-${isAgent ? 'pipeline' : kind}${row.approx ? ' fw-approx' : ''}${marks.length ? ' fw-has-marks' : ''}`}
+          <span className={`fw-bar fw-k-${isAgent ? 'pipeline' : kind}${row.approx ? ' fw-approx' : ''}${marks.length ? ' fw-has-marks' : ''}${row.hasAgents ? ' fw-has-agents' : ''}`}
             data-tone={toneKey(row.tone)} style={at(span.startMs, running ? OPEN_END : span.endMs)}
             onPointerEnter={inspect} onPointerLeave={props.onLeave}
             onClick={event => { event.stopPropagation(); props.onPin(row.id, event.currentTarget) }}>

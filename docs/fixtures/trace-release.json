@@ -8,8 +8,7 @@
    "endMs": 82000,
    "status": "done",
    "detail": "Opus 5.5",
-   "icon": "anthropic",
-   "costUsd": 0.0
+   "icon": "anthropic"
   },
   {
    "id": "plan",

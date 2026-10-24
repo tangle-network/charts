@@ -34,6 +34,10 @@ export interface FlowWaterfallRow {
   own: FlowSegment[]
   /** The span retries a failed one; its bar carries a retry glyph. */
   retry: boolean
+  /** The row delegates to child agents, so the gaps in its own work are waiting. */
+  hasAgents: boolean
+  /** Recorded cost of the row and its descendants, only when every model call below it has a recorded cost. */
+  rollupCostUsd?: number
 }
 
 /** The CSS hue slot: 0 is the root agent's neutral, then five agent hues cycle. */
@@ -71,18 +75,31 @@ export function formatCount(n: number): string {
   return `${(n / 1_000_000).toFixed(1)}M`
 }
 
-/** Merge same-kind marks closer than `gapMs` so a dense parent stays a readable strip of at most `cap` marks. */
+/** Merge marks closer than `gapMs` so a dense row stays a readable strip of at most `cap` marks. Marks narrower
+ * than the gap merge across kinds and take the kind that covers more time; failures and retries stay distinct. */
 function mergeSegments(marks: FlowSegment[], gapMs: number, cap = 240): FlowSegment[] {
   marks.sort((a, b) => a.startMs - b.startMs)
-  const out: FlowSegment[] = []
-  for (const mark of marks) {
-    const last = out[out.length - 1]
-    if (last && !last.retry && !mark.retry && last.kind === mark.kind && last.tone === mark.tone && mark.startMs - last.endMs <= gapMs) {
-      last.endMs = Math.max(last.endMs, mark.endMs)
-      last.count += mark.count
-    } else out.push({ ...mark })
+  let gap = gapMs
+  for (let pass = 0; pass < 40; pass++, gap *= 2) {
+    const out: FlowSegment[] = []
+    const covered = new Map<FlowSegment, { model: number; tool: number }>()
+    for (const mark of marks) {
+      const last = out[out.length - 1]
+      const width = Math.min(mark.endMs, mark.startMs + gap * 4) - mark.startMs
+      const distinct = (m: FlowSegment) => m.retry || m.kind === 'failed'
+      const small = width < gap || last !== undefined && last.endMs - last.startMs < gap
+      if (last && !distinct(last) && !distinct(mark) && last.tone === mark.tone && mark.startMs - last.endMs <= gap && (last.kind === mark.kind || small)) {
+        const share = covered.get(last) ?? { model: last.kind === 'model' ? last.endMs - last.startMs : 0, tool: last.kind === 'tool' ? last.endMs - last.startMs : 0 }
+        share[mark.kind === 'model' ? 'model' : 'tool'] += width
+        covered.set(last, share)
+        last.endMs = Math.max(last.endMs, mark.endMs)
+        last.count += mark.count
+        last.kind = share.model >= share.tool ? 'model' : 'tool'
+      } else out.push({ ...mark })
+    }
+    if (out.length <= cap) return out
   }
-  return out.length > cap ? mergeSegments(out, gapMs * 2, cap) : out
+  return marks
 }
 
 /** Hierarchy only; presentation owns geometry.
@@ -101,7 +118,7 @@ export function flowWaterfallRows(trace: FlowTrace, resolutionMs?: number): Flow
         id, parentId: span.parentId, name: span.name, kind: span.kind,
         durationLabel: ordered(span) ? `${formatSpanDuration(span.endMs - span.startMs)}${span.approx ? '~' : ''}` : '—',
         approx: span.approx === true, ok: !spanFailed(span), depth: 0, hasChildren: false, span,
-        tone: -1, descendants: 0, segments: [], own: [], retry: span.retryOf !== undefined,
+        tone: -1, descendants: 0, segments: [], own: [], retry: span.retryOf !== undefined, hasAgents: false,
       }
     })
   const byId = new Map(rows.map(row => [row.id, row]))
@@ -132,11 +149,18 @@ export function flowWaterfallRows(trace: FlowTrace, resolutionMs?: number): Flow
     row.hasChildren = kids.length > 0
     ordered_.push(row)
     const marks: FlowSegment[] = []
+    let cost = row.span.costUsd ?? 0
+    let costKnown = row.span.kind !== 'model' || row.span.costUsd !== undefined
     for (const child of kids) {
       for (const mark of visit(child, depth + 1, row.tone)) marks.push(mark)
       row.descendants += 1 + child.descendants
+      if (child.kind === 'pipeline') row.hasAgents = true
+      const childCost = child.hasChildren ? child.rollupCostUsd : child.span.costUsd
+      if (childCost === undefined) { if (child.kind === 'model' || child.hasChildren) costKnown = false }
+      else cost += childCost
       if (child.kind !== 'pipeline' && child.kind !== 'waiting' && ordered(child.span)) row.own.push(segmentOf(child))
     }
+    if (row.hasChildren && costKnown) row.rollupCostUsd = cost
     if (row.hasChildren) {
       row.segments = mergeSegments(marks.map(mark => ({ ...mark })), gap)
       row.own = mergeSegments(row.own, gap)
