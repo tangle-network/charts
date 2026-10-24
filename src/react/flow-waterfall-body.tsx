@@ -4,7 +4,7 @@ import { type FlowWaterfallRow, spanRunning } from './flow-waterfall-model.js'
 import { type FlowLink, type FlowView, FlowRow, LinkMark, type RowEvents } from './flow-waterfall-row.js'
 import { clockTicks, formatClock, type ViewWindow } from './flow-waterfall-time.js'
 
-export const ROW_HEIGHT: Record<FlowView, number> = { spans: 30, agents: 44 }
+export const ROW_HEIGHT: Record<FlowView, number> = { spans: 36, agents: 52 }
 const OVERSCAN = 8
 /** Rows re-render once per CHUNK rows scrolled; overscan covers the rows in between. */
 const CHUNK = 4

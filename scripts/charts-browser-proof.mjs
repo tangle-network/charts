@@ -18,7 +18,8 @@ if (process.argv.includes('--package-only')) {
   // Rows are virtualized: the tree reports all 53 rows and renders the first screenful.
   assert.ok(html.includes('aria-rowcount="53"'))
   assert.ok((html.match(/data-span-id=/g) ?? []).length > 10)
-  assert.ok(html.includes('754,448') && html.includes('data-slowest'))
+  // The exact token total rides in the summary's title; the slowest badge is checked in the browser, where its row scrolls in.
+  assert.ok(html.includes('754,448 tokens'))
   const stylesheet = readFileSync(fileURLToPath(import.meta.resolve('@tangle-network/charts/react/flow-waterfall.css')), 'utf8')
   assert.equal(stylesheet, readFileSync('src/react/flow-waterfall.css', 'utf8'))
   console.log(JSON.stringify({ publicExport: 'PASS', standaloneStylesheet: 'PASS', standardStylesheet: 'PASS', rowCount: 53 }))

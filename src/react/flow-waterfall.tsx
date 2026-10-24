@@ -16,7 +16,7 @@ export type { FlowView } from './flow-waterfall-row.js'
 
 const LANE_PAD = 12
 const END_LABEL_GUTTER: Record<FlowView, number> = { spans: 120, agents: 16 }
-const NAME_WIDTH: Record<FlowView, number> = { spans: 300, agents: 220 }
+const NAME_WIDTH: Record<FlowView, number> = { spans: 320, agents: 240 }
 
 export interface FlowWaterfallProps {
   trace: FlowTrace
@@ -188,7 +188,8 @@ export function FlowWaterfall({
     const host = root.current?.getBoundingClientRect()
     if (!host) return
     const rect = element.getBoundingClientRect()
-    const above = globalThis.innerHeight - rect.bottom < 260 && rect.top - host.top > 260
+    // The agent timeline's compact card opens above its mark, clear of the rows below; the span card below unless cramped.
+    const above = view === 'agents' ? rect.top - host.top > 150 : globalThis.innerHeight - rect.bottom < 260 && rect.top - host.top > 260
     const left = Math.max(8, Math.min(rect.left - host.left, host.width - 328))
     clearTimeout(hideTimer.current)
     setCard({ target, pinned, left, top: above ? rect.top - host.top - 8 : rect.bottom - host.top + 8, above })
