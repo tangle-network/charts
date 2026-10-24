@@ -87,6 +87,8 @@ Identity is carried by direct labels, never by hue.
 
 ## Develop
 
+Local Beelink gate (set `TOUCHED_INTEGRATION_TEST` to the touched integration test file; the gate installs with npm ci from package-lock.json): `beelink-gate auto https://github.com/tangle-network/charts.git "$(git rev-parse HEAD)" -- sh -c 'npm run typecheck && npm exec -- vitest run "$1"' _ "${TOUCHED_INTEGRATION_TEST:?set touched integration test path}"`.
+
 ```sh
 npm ci
 npm run gen:css       # after editing src/figure.css or Brand tokens

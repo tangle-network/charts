@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   publish-check:
-    runs-on: [self-hosted, Linux, X64, ci-public]
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     outputs:
