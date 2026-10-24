@@ -131,7 +131,8 @@ try {
     checks.collapseExpand = 'PASS'
     const terms = await root.locator('dt').allTextContents()
     assert.deepEqual(terms, ['Duration', 'Cost', 'Tokens', 'LLM calls', 'Tool calls', 'Errors'])
-    assert.deepEqual(await root.locator('dd').allTextContents(), ['430.8s', 'Unknown', '754,448', 'Unknown', '35', '3'])
+    assert.deepEqual(await root.locator('dd').allTextContents(), ['7m 11s', 'Unknown', '754.4k', 'Unknown', '35', '3'])
+    assert.equal(await root.locator('dd').nth(2).getAttribute('title'), '754,448 tokens')
     checks.summary = 'PASS'
     const kinds = await root.locator('.fw-bar').evaluateAll(elements => Object.fromEntries(elements.map(element => [element.closest('[data-span-kind]').dataset.spanKind, getComputedStyle(element).backgroundColor])))
     assert.equal(Object.keys(kinds).length, 6)
@@ -171,7 +172,7 @@ try {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.screenshot({ path: `${output}/recorded-phone-light.png`, fullPage: true })
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'Only the timeline may scroll horizontally')
-    await page.getByRole('region', { name: 'Trace timeline', exact: true }).focus()
+    await page.getByRole('treegrid', { name: 'Trace timeline', exact: true }).locator('[role=row][tabindex="0"]').focus()
     await page.keyboard.press('ArrowRight')
     await story('recorded-discovery')
     await page.screenshot({ path: `${output}/recorded-phone-dark.png`, fullPage: true })

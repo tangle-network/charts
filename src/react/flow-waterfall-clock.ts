@@ -51,7 +51,7 @@ export function useTraceClock(input: TraceClockInput): TraceClock {
     return Math.max(total, origin === undefined ? total + Date.now() - receivedAt.current : Date.now() - origin)
   }
 
-  const paint = (t: number) => {
+  const paint = (t: number, limit = liveNow()) => {
     const element = root.current
     if (!element) return
     const { startMs, endMs } = latest.current.view(t)
@@ -59,7 +59,7 @@ export function useTraceClock(input: TraceClockInput): TraceClock {
     element.style.setProperty('--fw-t', String(t))
     element.style.setProperty('--fw-v0', String(startMs))
     element.style.setProperty('--fw-k', String(k))
-    if (slider.current) { slider.current.max = String(Math.max(1, liveNow())); slider.current.value = String(t) }
+    if (slider.current) { slider.current.max = String(Math.max(1, limit, t)); slider.current.value = String(t) }
     if (timeOutput.current) timeOutput.current.textContent = formatSpanDuration(t)
   }
 
@@ -79,18 +79,18 @@ export function useTraceClock(input: TraceClockInput): TraceClock {
       const delta = now - last
       last = now
       let t: number
+      const limit = liveNow()
       if (playing) {
-        const limit = liveNow()
         playhead.current = Math.min(limit, playhead.current + delta * latest.current.speed)
         t = playhead.current
         if (t >= limit && !latest.current.live) {
-          paint(t)
+          paint(t, limit)
           setClockMs(t)
           latest.current.onPlaybackEnd(t)
           return
         }
-      } else t = latest.current.position ?? liveNow()
-      paint(t)
+      } else t = latest.current.position ?? limit
+      paint(t, limit)
       if (now - lastText >= TEXT_INTERVAL_MS) { lastText = now; setClockMs(t) }
       frame = requestAnimationFrame(step)
     }

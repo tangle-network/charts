@@ -172,7 +172,9 @@
 }
 .fw-root :is(.fw-bar, .fw-seg) { height: var(--fw-bar-h); margin-top: calc(var(--fw-bar-h) / -2); width: max(var(--w), calc(var(--on) * 3px)); border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .fw-root .fw-bar { background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); }
-.fw-root .fw-bar.fw-k-tool, .fw-root .fw-bar.fw-k-handoff { background: var(--dim); box-shadow: inset 0 0 0 1px var(--dim-line); }
+.fw-root .fw-bar.fw-k-tool { background: var(--dim); box-shadow: inset 0 0 0 1px var(--dim-line); }
+/* A handoff is a moment: a slim pill in the receiving tone, not a block of work. */
+.fw-root .fw-bar.fw-k-handoff { background: var(--line); height: 6px; margin-top: -3px; box-shadow: none; }
 .fw-root .fw-bar.fw-k-waiting { background: repeating-linear-gradient(-45deg, var(--fw-hatch) 0 1px, transparent 1px 5px); box-shadow: inset 0 0 0 1px var(--fw-hatch); }
 .fw-root .fw-bar.fw-k-failed { background: color-mix(in oklab, var(--fw-failed) 22%, var(--fw-surface)); box-shadow: inset 0 0 0 1px var(--fw-failed); color: var(--fw-failed); }
 .fw-root .fw-bar.fw-k-pipeline { background: linear-gradient(90deg, var(--fw-neutral-bar), color-mix(in oklab, var(--fw-neutral-bar) 55%, var(--fw-surface))); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-text) 12%, transparent); }

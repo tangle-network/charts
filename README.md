@@ -4,7 +4,7 @@ Benchmark figures as static SVG and HTML tables, plus optional React timing prim
 
 The React entry also exports `DayBars`, `HBars`, `Histogram`, `Lines`, `Meter`, `Spark`, and `Gantt` for live operational pages. Import `@tangle-network/charts/react/live.css` for their layout and set `--chart-live-*` theme tokens on an ancestor. Data, state colors, destination links, labels, and interpretation remain with the caller. `DayBars` accepts an `onOpen(index)` action with keyboard activation.
 
-`FlowWaterfall` from `@tangle-network/charts/react` is the shared live trace inspector. It owns hierarchy layout, folding, search, playback and running-span growth. Producers own identity, `parentId`, explicit `status` and observed totals. Import `@tangle-network/charts/react/flow-waterfall.css`; its `fw-*` classes and six-field summary support hosts without a Tailwind build. The React-free root exports the `FlowSpan` and `FlowTrace` types.
+`FlowWaterfall` from `@tangle-network/charts/react` is the shared live trace inspector: an agent timeline (one row per agent, elbow handoffs, hatched waiting) and a virtualized span waterfall over one clock. It owns hierarchy layout, folding, search, playback, zoom, span cards and running-span growth. Producers own identity, `parentId`, explicit `status` and observed totals. Import `@tangle-network/charts/react/flow-waterfall.css`; its `fw-*` classes and six-field summary support hosts without a Tailwind build. The React-free root exports the `FlowSpan` and `FlowTrace` types.
 
 `WaterfallHeader`, `WaterfallTimeAxis`, `WaterfallBar` and `WaterfallRow` remain available for existing consumers that own their own hierarchy and selection. All use the same `waterfallSpanGeometry` and `waterfallTicks`. Existing fixed-width cells, tones, formatting, attribution slots and unordered-time `—` marks are preserved. Optional fluid tracks, inner-bar colour/class, overlay and clipping fields support the shared inspector without changing existing calls. The primitives were extracted from Intelligence under [brand #211](https://github.com/tangle-network/brand/pull/211); the shared inspector extends that presentation ownership while leaving failure interpretation with producers.
 
@@ -323,16 +323,23 @@ The component tests cover gap/zero/one/equal/negative cases, controlled identity
 
 ```tsx
 import { FlowWaterfall } from '@tangle-network/charts/react';
-import type { FlowTrace } from '@tangle-network/charts';
+import { catalogPrice, otlpFlowTrace, parseOtlpJsonl } from '@tangle-network/charts';
 import '@tangle-network/charts/react/flow-waterfall.css';
 
-// The producer supplies stable identities, explicit status and measured totals.
-<FlowWaterfall trace={trace satisfies FlowTrace} live={running} />;
+// The one input contract: OTLP-JSONL from `traces convert <ref> --out spans.otlp.jsonl`.
+const { spans } = parseOtlpJsonl(text);
+// List prices come from the price owner at runtime (the Router's /v1/models), never a copied table.
+const trace = otlpFlowTrace(spans, { price: catalogPrice(await (await fetch(catalogUrl)).json()) });
+<FlowWaterfall trace={trace} live={running} defaultView="agents" renderIcon={brandMark} />;
 ```
 
-Search supports Cmd/Ctrl+F and keeps ancestor context. Folding, five playback speeds, scrubbing and Follow live affect presentation only. Running spans grow between snapshots. Missing cost and authoritative LLM counts stay Unknown. Invalid intervals retain a per-row `—` timing mark, preserving the rest of the trace. The static phase waterfall remains a separate chart for disjoint phases.
+`defaultView="agents"` opens the agent timeline: one row per agent with its model, thinking and tool marks, hatched waiting while it delegates, elbow connectors to each agent it spawned and back, retry and failure glyphs, and a headline with the measured speedup over sequential (agent busy time over wall time). Expanding an agent opens the span view with that agent unfolded. The span view virtualizes rows (5,000 spans scroll at 58+ fps in headless Chromium), pins ancestors while their children scroll, and labels each bar with its duration and recorded cost. Hover shows a span card; click pins it and zooms the axis to a span too narrow to read. Ctrl/Cmd+wheel or `+`/`-`/`0` zoom, Shift+wheel pans, the scrub track under the controls shows the whole trace, and arrow keys walk the tree.
 
-**Provenance.** FlowWaterfall and its recorded Discovery fixture move from agent-app #1267/#1273 at `78a3e8f7fd9bf93b23afa8290db6d721db544237`; the independent implementation copied no paid reference assets. [Fixture provenance](docs/fixtures/discovery-waterfall-provenance.md) records measured timing, observed token totals and unknowns. The historical [baseline](docs/fixtures/live-playback-rates-baseline.json) and [fixed](docs/fixtures/live-playback-rates-fixed.json) rate measurements are retained. The packed public consumer proof measures all five rates against actual browser wall time during live growth, with ±15% acceptance, using React 18 and 19 at 1100px and 390px.
+Live views append spans as they arrive: `traces watch <id|run-dir> --format jsonl --spans` emits a `traces.stream.span` event per new or changed span, and `otlpFlowTrace` keeps the last span per `span_id`. Running agent spans grow to the clock between deltas without React renders (CSS variables carry the clock). Search supports Cmd/Ctrl+F and keeps ancestor context. Missing cost and authoritative LLM counts stay Unknown; a cost priced from a catalog is labelled list price. Invalid intervals retain a per-row `—` timing mark. The static phase waterfall remains a separate chart for disjoint phases.
+
+`scripts/flow-waterfall-demo.mjs` serves the demo routes (reference-shaped fixtures, recorded runs, a synthetic load trace and OTLP files from `FW_DATA_DIR`); `scripts/flow-waterfall-capture.mjs` captures frames, hover cards, fps, first paint and recordings, and with `FW_LIVE_RELAY` records a live session through `scripts/flow-waterfall-live-relay.mjs` with every span's event-to-pixel time.
+
+**Provenance.** FlowWaterfall and its recorded Discovery fixture move from agent-app #1267/#1273 at `78a3e8f7fd9bf93b23afa8290db6d721db544237`; the independent implementation copied no paid reference assets. [Fixture provenance](docs/fixtures/discovery-waterfall-provenance.md) records measured timing, observed token totals and unknowns. `trace-release.json` and `trace-incident.json` are invented fixtures shaped like the design references (agent counts, durations and states), with original text. The historical [baseline](docs/fixtures/live-playback-rates-baseline.json) and [fixed](docs/fixtures/live-playback-rates-fixed.json) rate measurements are retained. The packed public consumer proof measures all five rates against actual browser wall time during live growth, with ±15% acceptance, using React 18 and 19 at 1100px and 390px.
 
 ```sh
 npm run build

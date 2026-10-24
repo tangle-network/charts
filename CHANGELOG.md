@@ -1,5 +1,14 @@
 # @tangle-network/charts
 
+## 0.16.0
+
+### Minor Changes
+
+- `FlowWaterfall` gains the agent timeline (`defaultView="agents"`): one row per agent, elbow handoffs out and back, hatched waiting, retry and failure glyphs, and the measured speedup over sequential. Expanding an agent opens the span view.
+- The span view virtualizes (5,000 spans scroll at 58+ fps), pins ancestors, labels bars with duration and recorded cost, shows a span card on hover (pinned on click), zooms by wheel, keys and buttons, zooms to a narrow span on select, and carries a scrub track over the whole trace. Growth and playback move bars through CSS variables, without React renders per frame.
+- `otlpFlowTrace` and `parseOtlpJsonl` read the `traces convert` OTLP-JSONL contract for every harness, joining agents in separate traces on their spawn calls; `catalogPrice` prices model calls from a model catalog at runtime, labelled list price.
+- `FlowSpan` adds optional `detail`, `icon`, `costUsd`, `promptTokens`, `completionTokens`, `input`, `output`, `retryOf` and `handoffTo`; `FlowTrace` adds `costBasis`. Existing traces render unchanged in meaning; the summary now formats durations as `7m 11s` and token totals as `754.4k` with the exact count in the title.
+
 ## 0.15.1
 
 ### Patch Changes
