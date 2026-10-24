@@ -77,17 +77,18 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
     }
     return undefined
   }
-  const grouped = new Map<string, { start: number; end: number; models: Map<string, number>; status: boolean }>()
+  // A grouped agent's outcome is its last turn's status: errors inside earlier turns stay marks within the lane.
+  const grouped = new Map<string, { start: number; end: number; models: Map<string, number>; lastEnd: number; failed: boolean }>()
   const groupOf = new Map<string, string>()
   for (const span of spans) {
     if (isAgent(span) || (span.parent_span_id && byId.has(span.parent_span_id))) continue
     const name = pick(attrs(span), agentKeys)
     if (!name) continue
     groupOf.set(span.span_id, name)
-    const group = grouped.get(name) ?? { start: Infinity, end: -Infinity, models: new Map(), status: false }
+    const group = grouped.get(name) ?? { start: Infinity, end: -Infinity, models: new Map(), lastEnd: -Infinity, failed: false }
     group.start = Math.min(group.start, time(span.start_time))
     group.end = Math.max(group.end, time(span.end_time))
-    if (span.status?.code === 'STATUS_CODE_ERROR') group.status = true
+    if (time(span.end_time) >= group.lastEnd) { group.lastEnd = time(span.end_time); group.failed = span.status?.code === 'STATUS_CODE_ERROR' }
     grouped.set(name, group)
   }
 
@@ -123,9 +124,27 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
   let modelCalls = 0
   let errors = 0
   const offset = (iso: string) => time(iso) - origin
+  // Grouped agents in separate traces join on the spawn that started them: each agent with no spawn of its own
+  // takes the latest unclaimed spawn call in another agent that began before it.
+  const isSpawn = (span: OtlpSpan) => span.kind === 'TOOL' && (attrs(span)['traces.agent.spawn'] === true || /spawn/i.test(str(attrs(span)['gen_ai.tool.name']) ?? span.name))
+  const groupOfSpan = (span: OtlpSpan) => groupOf.get(rootOf(span).span_id)
+  const spawns = spans.filter(span => isSpawn(span) && groupOfSpan(span)).sort((a, b) => time(a.start_time) - time(b.start_time))
+  const claimed = new Set<string>()
+  const spawnedBy = new Map<string, OtlpSpan>()
+  for (const [name, group] of [...grouped].sort((a, b) => a[1].start - b[1].start)) {
+    let pick: OtlpSpan | undefined
+    for (const spawn of spawns) {
+      if (time(spawn.start_time) > group.start) break
+      if (!claimed.has(spawn.span_id) && groupOfSpan(spawn) !== name) pick = spawn
+    }
+    if (pick) { claimed.add(pick.span_id); spawnedBy.set(name, pick) }
+  }
+  const handoffTo = new Map([...spawnedBy].map(([name, spawn]) => [spawn.span_id, `group:${name}`]))
   for (const [name, group] of grouped) {
+    const spawn = spawnedBy.get(name)
     out.push({ id: `group:${name}`, kind: 'pipeline', name, detail: topModel(`group:${name}`), startMs: group.start - origin, endMs: group.end - origin,
-      status: options.live ? 'running' : group.status ? 'failed' : 'done' })
+      ...(spawn ? { parentId: `group:${groupOfSpan(spawn)}` } : {}),
+      status: options.live ? 'running' : group.failed ? 'failed' : 'done' })
   }
   // Subagents are numbered in the order they started.
   const subagentNumber = new Map(spans.filter(span => isAgent(span) && span.parent_span_id && byId.has(span.parent_span_id) && !pick(attrs(span), agentKeys))
@@ -146,7 +165,7 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
     const prompt = num(a['gen_ai.usage.input_tokens'])
     const completion = num(a['gen_ai.usage.output_tokens'])
     let kind: FlowSpan['kind'] = span.kind === 'LLM' ? 'model' : span.kind === 'TOOL' ? 'tool' : 'pipeline'
-    if (kind === 'tool' && (a['traces.agent.spawn'] === true || spawnTarget.has(span.span_id))) kind = 'handoff'
+    if (kind === 'tool' && (a['traces.agent.spawn'] === true || spawnTarget.has(span.span_id) || handoffTo.has(span.span_id))) kind = 'handoff'
     let name = str(a['gen_ai.tool.name']) ?? span.name
     if (isAgent(span)) {
       name = pick(a, agentKeys) ?? (subagentNumber.has(span.span_id) ? `Subagent ${subagentNumber.get(span.span_id)}` : str(a['service.name']) ?? str(span.resource?.attributes?.['service.name']) ?? span.name)
@@ -164,7 +183,7 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
       ...(prompt !== undefined ? { promptTokens: prompt } : {}),
       ...(completion !== undefined ? { completionTokens: completion } : {}),
       ...(span.status?.message ? { output: span.status.message } : {}),
-      ...(spawnTarget.has(span.span_id) ? { handoffTo: spawnTarget.get(span.span_id) } : {}),
+      ...(spawnTarget.has(span.span_id) ? { handoffTo: spawnTarget.get(span.span_id) } : handoffTo.has(span.span_id) ? { handoffTo: handoffTo.get(span.span_id) } : {}),
     })
   }
   return {

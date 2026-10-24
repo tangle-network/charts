@@ -3,7 +3,8 @@ import type { FlowSpan, FlowTrace } from '../flow-trace.js'
 import { FlowBody, ROW_HEIGHT } from './flow-waterfall-body.js'
 import { SpanCard } from './flow-waterfall-card.js'
 import { useTraceClock } from './flow-waterfall-clock.js'
-import { FailGlyph, FitGlyph, PauseGlyph, PlayGlyph, RestartGlyph, SearchGlyph, TraceGlyph, ZoomInGlyph, ZoomOutGlyph } from './flow-waterfall-icons.js'
+import { SearchGlyph, TraceGlyph } from './flow-waterfall-icons.js'
+import { PlaybackBar } from './flow-waterfall-playback.js'
 import {
   busyMs, type FlowWaterfallRow, flowWaterfallRows, formatCost, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
   toneKey, totalsAt, visibleFlowWaterfallRows,
@@ -13,7 +14,6 @@ import { clampWindow, type ViewWindow, zoomWindow } from './flow-waterfall-time.
 
 export type { FlowView } from './flow-waterfall-row.js'
 
-const SPEEDS = [0.5, 1, 1.5, 2, 4]
 const LANE_PAD = 12
 const END_LABEL_GUTTER: Record<FlowView, number> = { spans: 120, agents: 16 }
 const NAME_WIDTH: Record<FlowView, number> = { spans: 300, agents: 220 }
@@ -138,9 +138,32 @@ export function FlowWaterfall({
     const next = zoomWindow(current, factor, anchor ?? (current.startMs + current.endMs) / 2, limit)
     return next.endMs - next.startMs >= limit - 1 ? null : next
   })
+  // Selecting or expanding a span too narrow to read zooms the axis to it; Fit returns. Reduced motion jumps.
+  const zoomFrame = useRef(0)
+  const zoomTo = (row: FlowWaterfallRow) => {
+    const span = row.span
+    const current = viewAt(clockMs)
+    const width = current.endMs - current.startMs
+    const end = spanRunning(span) ? Math.max(span.endMs, clockMs) : span.endMs
+    if (view !== 'spans' || !Number.isFinite(end) || (end - span.startMs) / Math.max(1, width) > 0.25) return
+    const pad = Math.max((end - span.startMs) * 0.15, 500)
+    const target = clampWindow({ startMs: span.startMs - pad, endMs: end + pad }, limit)
+    cancelAnimationFrame(zoomFrame.current)
+    if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { setZoom(target); return }
+    const began = performance.now()
+    const step = (now: number) => {
+      const t = Math.min(1, (now - began) / 320)
+      const e = 1 - (1 - t) ** 3
+      setZoom({ startMs: current.startMs + (target.startMs - current.startMs) * e, endMs: current.endMs + (target.endMs - current.endMs) * e })
+      if (t < 1) zoomFrame.current = requestAnimationFrame(step)
+    }
+    zoomFrame.current = requestAnimationFrame(step)
+  }
   const pan = (deltaMs: number) => setZoom(previous => previous && clampWindow({ startMs: previous.startMs + deltaMs, endMs: previous.endMs + deltaMs }, limit))
 
-  const toggle = useCallback((row: FlowWaterfallRow) => {
+  // Rows are memoized without their handlers, so handlers stay stable and read the latest state through a ref.
+  const latest = useRef({ toggle: (_row: FlowWaterfallRow) => {}, pin: (_target: string, _element: HTMLElement) => {}, inspect: (_target: string, _element: HTMLElement) => {} })
+  const toggleNow = (row: FlowWaterfallRow) => {
     if (view === 'agents') {
       // Expanding an agent opens the span tree with that agent unfolded and its peers folded.
       const keep = new Set<string>()
@@ -150,13 +173,16 @@ export function FlowWaterfall({
       setActiveId(row.id)
       return
     }
+    if (collapsed.has(row.id)) zoomTo(row)
     setCollapsed(previous => {
       const next = new Set(previous)
       if (next.has(row.id)) next.delete(row.id)
       else next.add(row.id)
       return next
     })
-  }, [view, rows, byId])
+  }
+  latest.current.toggle = toggleNow
+  const toggle = useCallback((row: FlowWaterfallRow) => latest.current.toggle(row), [])
 
   const place = (target: string, element: HTMLElement, pinned: boolean) => {
     const host = root.current?.getBoundingClientRect()
@@ -167,10 +193,8 @@ export function FlowWaterfall({
     clearTimeout(hideTimer.current)
     setCard({ target, pinned, left, top: above ? rect.top - host.top - 8 : rect.bottom - host.top + 8, above })
   }
-  const inspect = useCallback((target: string, element: HTMLElement) => {
-    if (card?.pinned) return
-    place(target, element, false)
-  }, [card?.pinned])
+  latest.current.inspect = (target, element) => { if (!card?.pinned) place(target, element, false) }
+  const inspect = useCallback((target: string, element: HTMLElement) => latest.current.inspect(target, element), [])
   const leave = useCallback(() => {
     clearTimeout(hideTimer.current)
     hideTimer.current = setTimeout(() => setCard(previous => previous?.pinned ? previous : null), 140)
@@ -185,7 +209,12 @@ export function FlowWaterfall({
     return () => document.removeEventListener('pointermove', move)
   }, [card, leave])
 
-  const pin = useCallback((target: string, element: HTMLElement) => place(target, element, true), [])
+  latest.current.pin = (target, element) => {
+    place(target, element, true)
+    const row = byId.get(target)
+    if (row) zoomTo(row)
+  }
+  const pin = useCallback((target: string, element: HTMLElement) => latest.current.pin(target, element), [])
   const closeCard = () => {
     const target = card?.target
     setCard(null)
@@ -223,7 +252,7 @@ export function FlowWaterfall({
     return undefined
   })()
   const showCursor = isLive || position !== null || playing
-  const overviewMarks = useMemo(() => rows.filter(row => !row.parentId).flatMap(row => row.hasChildren ? row.segments : row.kind === 'pipeline' ? [] : [{ startMs: row.span.startMs, endMs: row.span.endMs, kind: row.ok ? 'tool' : 'failed', tone: row.tone, id: row.id, count: 1, retry: false }]), [rows])
+  const overviewMarks = useMemo(() => rows.filter(row => !row.parentId).flatMap(row => row.hasChildren ? row.segments : row.kind === 'pipeline' ? [] : [{ startMs: row.span.startMs, endMs: row.span.endMs, kind: row.ok ? 'tool' as const : 'failed' as const, tone: row.tone, id: row.id, count: 1, retry: false }]), [rows])
 
   return (
     <section ref={root} data-flow-waterfall aria-label={label} className={`fw-root fw-root-${view}`}
@@ -238,7 +267,7 @@ export function FlowWaterfall({
           </div>
           {view === 'agents' && <p className="fw-headline" aria-live="polite">
             {done
-              ? <><span className="fw-done-mark" aria-hidden>✓</span>{agents.length} agents · {headlineSeconds(limit)}{speedup >= 1.05 ? ` · ${speedup.toFixed(1)}x faster than sequential` : ''}{trace.costUsd !== undefined ? ` · ${formatCost(trace.costUsd)}` : ''}</>
+              ? <><span className="fw-done-mark" aria-hidden>✓</span>{agents.length} {agents.length === 1 ? 'agent' : 'agents'} · {headlineSeconds(limit)}{speedup >= 1.05 ? ` · ${speedup.toFixed(1)}x faster than sequential` : ''}{trace.costUsd !== undefined ? ` · ${formatCost(trace.costUsd)}` : ''}</>
               : <>Running · {headlineSeconds(clockMs)} · {tokens.toLocaleString()} tokens{trace.costUsd !== undefined ? ` · ${formatCost(trace.costUsd)}` : ''}</>}
           </p>}
         </div>
@@ -277,42 +306,10 @@ export function FlowWaterfall({
         onPointerEnter={() => clearTimeout(hideTimer.current)} onPointerLeave={card.pinned ? undefined : leave}>
         <SpanCard id={cardId} row={cardRow} agent={cardAgent} clockMs={clockMs} left={card.left} top={card.top} pinned={card.pinned} onClose={closeCard} renderIcon={renderIcon} compact={view === 'agents'} />
       </div>}
-      <footer className="fw-playback">
-        <button type="button" className="fw-round-button" aria-label={playing ? 'Pause' : 'Play'} disabled={limit === 0} onClick={togglePlay}>
-          {playing ? <PauseGlyph /> : <PlayGlyph />}
-        </button>
-        <button type="button" className="fw-icon-button" aria-label="Restart" title="Replay from the start" disabled={limit === 0}
-          onClick={() => { setPosition(0); setPlaying(false) }}><RestartGlyph /></button>
-        <label className="fw-speed"><span className="fw-sr-only">Playback speed</span>
-          <select aria-label="Playback speed" value={speed} onChange={event => setSpeed(Number(event.target.value))}>
-            {SPEEDS.map(value => <option key={value} value={value}>{value}x</option>)}
-          </select>
-        </label>
-        <div className="fw-overview">
-          <div className="fw-overview-marks" aria-hidden>
-            {overviewMarks.map((mark, i) => <span key={i} className={`fw-ov fw-seg-${mark.kind}`} data-tone={toneKey(mark.tone)}
-              style={{ left: `${mark.startMs / Math.max(1, limit) * 100}%`, width: `${Math.max(0.15, (Math.min(mark.endMs, limit) - mark.startMs) / Math.max(1, limit) * 100)}%` }} />)}
-            {zoom && <span className="fw-brush" style={{ left: `${zoom.startMs / limit * 100}%`, width: `${(zoom.endMs - zoom.startMs) / limit * 100}%` }} />}
-          </div>
-          <input ref={slider} aria-label="Playback position" type="range" min={0} max={Math.max(1, limit)} step="any" defaultValue={clockMs}
-            disabled={limit === 0} className="fw-slider" style={{ '--fw-progress': `${clockMs / Math.max(1, limit) * 100}%` } as CSSProperties}
-            onChange={event => scrubTo(Number(event.target.value))} />
-        </div>
-        <output ref={timeOutput} className="fw-time" aria-label="Playback time">{formatSpanDuration(clockMs)}</output>
-        {position !== null && <button type="button" className="fw-text-button" onClick={() => { setPosition(null); setPlaying(false) }}>{isLive ? 'Follow live' : 'Show full trace'}</button>}
-        <div className="fw-zoom" role="group" aria-label="Zoom">
-          <button type="button" className="fw-icon-button" aria-label="Zoom out" disabled={!zoom} onClick={() => zoomBy(2)}><ZoomOutGlyph /></button>
-          <button type="button" className="fw-icon-button" aria-label="Zoom in" disabled={limit === 0} onClick={() => zoomBy(0.5)}><ZoomInGlyph /></button>
-          <button type="button" className="fw-icon-button" aria-label="Fit the whole trace" disabled={!zoom} onClick={() => setZoom(null)}><FitGlyph /></button>
-        </div>
-        <ul className="fw-legend" aria-label="Span types">
-          <li><span className="fw-swatch fw-swatch-model" aria-hidden />{view === 'agents' ? 'Thinking' : 'Model call'}</li>
-          <li><span className="fw-swatch fw-swatch-tool" aria-hidden />Tool call</li>
-          <li><span className="fw-swatch fw-swatch-waiting" aria-hidden />Waiting</li>
-          <li><span className="fw-swatch fw-swatch-handoff" aria-hidden />Handoff</li>
-          <li><span className="fw-swatch fw-swatch-failed" aria-hidden><FailGlyph /></span>Failed</li>
-        </ul>
-      </footer>
+      <PlaybackBar view={view} playing={playing} limit={limit} clockMs={clockMs} speed={speed} zoom={zoom} marks={overviewMarks}
+        slider={slider} timeOutput={timeOutput} followLabel={position === null ? undefined : isLive ? 'Follow live' : 'Show full trace'}
+        onTogglePlay={togglePlay} onRestart={() => { setPosition(0); setPlaying(false) }} onSpeed={setSpeed} onScrub={scrubTo}
+        onFollow={() => { setPosition(null); setPlaying(false) }} onZoom={zoomBy} onFit={() => setZoom(null)} />
     </section>
   )
 }
