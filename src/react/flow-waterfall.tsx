@@ -70,7 +70,8 @@ export function FlowWaterfall({
   const observedTotal = Number.isFinite(trace.totalMs) && trace.totalMs >= 0 ? trace.totalMs : 0
   const isLive = live ?? trace.spans.some(spanRunning)
   const dataEnd = useMemo(() => Math.max(observedTotal, ...trace.spans.map(span => Number.isFinite(span.endMs) ? span.endMs : 0)), [trace, observedTotal])
-  const trackPx = Math.max(40, laneWidth - LANE_PAD - END_LABEL_GUTTER[view])
+  // The end-label gutter shrinks on narrow lanes so bars keep most of the width.
+  const trackPx = Math.max(40, laneWidth - LANE_PAD - Math.min(END_LABEL_GUTTER[view], laneWidth * 0.3))
 
   useEffect(() => {
     if (!laneElement) return
@@ -196,8 +197,8 @@ export function FlowWaterfall({
     ['Cost', trace.costUsd === undefined ? 'Unknown' : formatCost(trace.costUsd), trace.costUsd === undefined ? 'The harness recorded no cost for this trace' : undefined],
     ['Tokens', formatCount(tokens), `${tokens.toLocaleString()} tokens`],
     ['LLM calls', trace.modelCalls === undefined ? 'Unknown' : String(trace.modelCalls), trace.modelCalls === undefined ? 'Model output windows do not establish the number of LLM requests' : undefined],
-    ['Tool calls', String(trace.toolCalls)],
-    ['Errors', String(errors)],
+    ['Tool calls', trace.toolCalls.toLocaleString()],
+    ['Errors', errors.toLocaleString()],
   ]
   const busy = agents.reduce((sum, row) => sum + busyMs(row, limit), 0)
   const speedup = limit > 0 ? busy / limit : 0

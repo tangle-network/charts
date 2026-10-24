@@ -6,6 +6,8 @@ import { clockTicks, formatClock, type ViewWindow } from './flow-waterfall-time.
 
 export const ROW_HEIGHT: Record<FlowView, number> = { spans: 30, agents: 44 }
 const OVERSCAN = 8
+/** Rows re-render once per CHUNK rows scrolled; overscan covers the rows in between. */
+const CHUNK = 4
 const STICKY_LEVELS = 3
 
 export interface BodyProps extends RowEvents {
@@ -77,14 +79,17 @@ export function FlowBody(props: BodyProps) {
   const rowHeight = ROW_HEIGHT[view]
   const scroller = useRef<HTMLDivElement>(null)
   const surface = useRef<HTMLDivElement>(null)
-  const [scrollTop, setScrollTop] = useState(0)
+  const [chunk, setChunk] = useState(0)
   const [viewport, setViewport] = useState(maxHeight)
   const latest = useRef(props)
   latest.current = props
   const height = Math.min(maxHeight, Math.max(rows.length, 1) * rowHeight)
   const links = useMemo(() => linksFor(rows, props.byId, view), [rows, props.byId, view])
   const index = useMemo(() => new Map(rows.map((row, i) => [row.id, i])), [rows])
-  const ticks = clockTicks(win.startMs, win.startMs + (win.endMs - win.startMs) * (trackPx + 120) / Math.max(1, trackPx), Math.max(1, trackPx + 120))
+  // Ticks run into the end-label gutter but stop where a label would be cut at the right edge.
+  const msPerPx = (win.endMs - win.startMs) / Math.max(1, trackPx)
+  const tickEnd = win.startMs + (trackPx + (view === 'spans' ? 72 : 0)) * msPerPx
+  const ticks = clockTicks(win.startMs, tickEnd, Math.max(1, trackPx + (view === 'spans' ? 72 : 0)))
 
   useEffect(() => {
     const element = scroller.current
@@ -117,23 +122,8 @@ export function FlowBody(props: BodyProps) {
     return () => element.removeEventListener('wheel', wheel)
   }, [])
 
-  const first = Math.max(0, Math.floor(scrollTop / rowHeight) - OVERSCAN)
-  const last = Math.min(rows.length, Math.ceil((scrollTop + viewport) / rowHeight) + OVERSCAN)
-  const top = Math.floor(scrollTop / rowHeight)
-
-  // Ancestors of the first fully visible row stay pinned while their children scroll beneath them.
-  const sticky: FlowWaterfallRow[] = []
-  if (view === 'spans' && scrollTop > 0) {
-    const chain: FlowWaterfallRow[] = []
-    let cursor = rows[Math.min(rows.length - 1, top + 1)]
-    while (cursor?.parentId !== undefined) {
-      const parentIndex = index.get(cursor.parentId)
-      if (parentIndex === undefined) break
-      cursor = rows[parentIndex]
-      if (cursor) chain.unshift(cursor)
-    }
-    for (const [level, row] of chain.slice(-STICKY_LEVELS).entries()) if ((index.get(row.id) ?? 0) < top + level + 1) sticky.push(row)
-  }
+  const first = Math.max(0, chunk * CHUNK - OVERSCAN)
+  const last = Math.min(rows.length, chunk * CHUNK + Math.ceil(viewport / rowHeight) + CHUNK + OVERSCAN)
 
   const focusRow = (id: string) => {
     const i = index.get(id)
@@ -240,7 +230,7 @@ export function FlowBody(props: BodyProps) {
         </div>
         <div ref={scroller} role="treegrid" aria-label="Trace timeline" aria-rowcount={rows.length} aria-multiselectable={false}
           tabIndex={-1} className="fw-scroller" style={{ height, maxHeight }} onKeyDown={keydown}
-          onScroll={event => setScrollTop(event.currentTarget.scrollTop)}>
+          onScroll={event => { const next = Math.floor(event.currentTarget.scrollTop / rowHeight / CHUNK); if (next !== chunk) setChunk(next) }}>
           <div className="fw-canvas" style={{ height: rows.length * rowHeight }}>
             <div className="fw-links" aria-hidden>
               {links.filter(link => Math.max(link.from, link.to) >= first && Math.min(link.from, link.to) <= last)
@@ -250,12 +240,44 @@ export function FlowBody(props: BodyProps) {
           </div>
           {rows.length === 0 && <p role="status" className="fw-empty">{props.emptyText}</p>}
         </div>
-        {sticky.length > 0 && <div className="fw-sticky" style={{ height: sticky.length * rowHeight }}>
-          {sticky.map((item, level) => row(item, level, true))}
-        </div>}
+        {view === 'spans' && <StickyRows scroller={scroller} rows={rows} index={index} rowHeight={rowHeight} render={row} />}
         {showCursor && <div className="fw-cursor-layer" aria-hidden><span className="fw-cursor" /></div>}
       </div>
       {view === 'agents' && axis}
     </div>
   )
+}
+
+/** Ancestors of the first visible row stay pinned while their children scroll beneath them. This layer follows
+ * scroll per row on its own, so the virtualized rows below re-render only per chunk. */
+function StickyRows({ scroller, rows, index, rowHeight, render }: {
+  scroller: { current: HTMLDivElement | null }
+  rows: FlowWaterfallRow[]
+  index: Map<string, number>
+  rowHeight: number
+  render: (row: FlowWaterfallRow, level: number, sticky: boolean) => ReactNode
+}) {
+  const [top, setTop] = useState(0)
+  useEffect(() => {
+    const element = scroller.current
+    if (!element) return
+    const scroll = () => setTop(element.scrollTop > 0 ? Math.floor(element.scrollTop / rowHeight) : -1)
+    scroll()
+    element.addEventListener('scroll', scroll, { passive: true })
+    return () => element.removeEventListener('scroll', scroll)
+  }, [scroller, rowHeight])
+  const sticky: FlowWaterfallRow[] = []
+  if (top >= 0) {
+    const chain: FlowWaterfallRow[] = []
+    let cursor = rows[Math.min(rows.length - 1, top + 1)]
+    while (cursor?.parentId !== undefined) {
+      const parentIndex = index.get(cursor.parentId)
+      if (parentIndex === undefined) break
+      cursor = rows[parentIndex]
+      if (cursor) chain.unshift(cursor)
+    }
+    for (const [level, row] of chain.slice(-STICKY_LEVELS).entries()) if ((index.get(row.id) ?? 0) < top + level + 1) sticky.push(row)
+  }
+  if (!sticky.length) return null
+  return <div className="fw-sticky" style={{ height: sticky.length * rowHeight }}>{sticky.map((item, level) => render(item, level, true))}</div>
 }
