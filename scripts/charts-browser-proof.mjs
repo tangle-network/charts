@@ -15,11 +15,13 @@ if (process.argv.includes('--package-only')) {
   const { renderToStaticMarkup } = await import('react-dom/server')
   const trace = JSON.parse(readFileSync('docs/fixtures/discovery-waterfall.json', 'utf8'))
   const html = renderToStaticMarkup(createElement(FlowWaterfall, { trace }))
-  assert.equal((html.match(/data-span-id=/g) ?? []).length, 53)
-  assert.ok(html.includes('754,448') && html.includes('Slowest step:'))
+  // Rows are virtualized: the tree reports all 53 rows and renders the first screenful.
+  assert.ok(html.includes('aria-rowcount="53"'))
+  assert.ok((html.match(/data-span-id=/g) ?? []).length > 10)
+  assert.ok(html.includes('754,448') && html.includes('data-slowest'))
   const stylesheet = readFileSync(fileURLToPath(import.meta.resolve('@tangle-network/charts/react/flow-waterfall.css')), 'utf8')
   assert.equal(stylesheet, readFileSync('src/react/flow-waterfall.css', 'utf8'))
-  console.log(JSON.stringify({ publicExport: 'PASS', standaloneStylesheet: 'PASS', standardStylesheet: 'PASS', renderedSpans: 53 }))
+  console.log(JSON.stringify({ publicExport: 'PASS', standaloneStylesheet: 'PASS', standardStylesheet: 'PASS', rowCount: 53 }))
   process.exit(0)
 }
 const base = process.env.CHARTS_FIXTURE_URL ?? 'http://127.0.0.1:46489'
