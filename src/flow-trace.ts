@@ -10,6 +10,21 @@ export interface FlowSpan {
   startMs: number
   endMs: number
   approx?: boolean
+  /** Muted text after the name: the agent's model or the tool's provider. */
+  detail?: string
+  /** Host icon key, passed to `renderIcon`; the inspector draws a kind glyph without one. */
+  icon?: string
+  /** Recorded values only. Absent means unknown and is shown as Unknown, never as zero. */
+  costUsd?: number
+  promptTokens?: number
+  completionTokens?: number
+  /** Short producer summaries shown in the span card. */
+  input?: string
+  output?: string
+  /** The failed span this one retries; the bar carries a retry glyph. */
+  retryOf?: string
+  /** For a handoff, the span that received the work; a connector joins the two rows. */
+  handoffTo?: string
   meta?: Record<string, unknown>
 }
 
