@@ -8,6 +8,7 @@ const out = process.argv[2] ?? '/tmp/flow-waterfall-capture'
 const run21c = process.argv[3]
 const port = 8000 + Math.floor(Math.random() * 900)
 mkdirSync(out, { recursive: true })
+const only = process.env.FW_ONLY
 const server = spawn(process.execPath, ['scripts/flow-waterfall-demo.mjs', String(port), ...(run21c ? [run21c] : [])], { stdio: ['ignore', 'pipe', 'inherit'] })
 await new Promise((resolve, reject) => { server.stdout.on('data', resolve); server.on('exit', reject) })
 const base = `http://127.0.0.1:${port}/`
@@ -38,6 +39,22 @@ const seek = async (page, fraction) => {
 }
 
 try {
+  // Historical proof: every OTLP-JSONL span file in FW_DATA_DIR, through the one adapter, in both views.
+  if (process.env.FW_DATA_DIR) {
+    report.otlp = []
+    for (const file of readdirSync(process.env.FW_DATA_DIR).filter(name => name.endsWith('.otlp.jsonl')).sort()) {
+      const name = file.replace('.otlp.jsonl', '')
+      for (const view of ['agents', 'spans']) {
+        const { page, context } = await open(`fixture=otlp:${file}&view=${view}&theme=dark&width=1440&label=${encodeURIComponent(name)}&height=720`, { width: 1512, height: 945 })
+        const facts = await page.evaluate(() => ({ convertMs: window.__fwConvertMs, firstPaintMs: window.__fwFirstPaintMs,
+          rows: document.querySelector('[role="treegrid"]')?.getAttribute('aria-rowcount') }))
+        await shot(page, `otlp-${name}-${view}`)
+        report.otlp.push({ file, view, ...facts })
+        await context.close()
+      }
+    }
+  }
+  if (only === 'otlp') throw Object.assign(new Error('only otlp'), { skip: true })
   // Reference 1 and 2: the span waterfall, both themes, at the reference viewport, through the run.
   for (const theme of ['light', 'dark']) {
     const { page, context } = await open(`fixture=release&theme=${theme}&width=1140&description=Ship annual billing by Friday`)
@@ -154,6 +171,8 @@ try {
     const video = readdirSync(out).find(name => name.endsWith('.webm') && !name.startsWith('interaction'))
     if (video) renameSync(`${out}/${video}`, `${out}/interaction-spans.webm`)
   }
+} catch (error) {
+  if (!error.skip) throw error
 } finally {
   report.errors = errors
   writeFileSync(`${out}/report.json`, JSON.stringify(report, null, 2))

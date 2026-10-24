@@ -44,9 +44,13 @@ function Segment({ mark, events, agentView }: { mark: FlowSegment; events: RowEv
   </span>
 }
 
+/** A span the clock is inside: it grows live, or playback has not reached its end. */
+const open = (row: FlowWaterfallRow, clockMs: number) => spanRunning(row.span) || row.span.startMs <= clockMs && clockMs < row.span.endMs
+
 function endLabel(row: FlowWaterfallRow, clockMs: number): string {
   const span = row.span
   if (row.durationLabel === '—') return '—'
+  if (!spanRunning(span) && clockMs < span.endMs) return `${formatSpanDuration(Math.max(0, clockMs - span.startMs))}${row.approx ? '~' : ''}`
   const duration = spanRunning(span) ? `${formatSpanDuration(Math.max(span.endMs, clockMs) - span.startMs)}${row.approx ? '~' : ''}` : row.durationLabel
   const cost = span.costUsd ?? (row.rollupCostUsd ? row.rollupCostUsd : undefined)
   return cost === undefined ? duration : `${duration} · ${formatCost(cost)}`
@@ -63,7 +67,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   const isAgent = row.kind === 'pipeline'
   const kind = !row.ok ? 'failed' : row.kind
   const marks = isAgent || row.hasChildren ? (folded && !agentView ? row.segments : row.own) : []
-  const label = endLabel(row, running ? clockMs : 0)
+  const label = endLabel(row, clockMs)
   const inspect = (event: { currentTarget: HTMLElement }) => props.onInspect(row.id, event.currentTarget)
 
   return (
@@ -116,7 +120,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   )
 }, (a, b) => a.row === b.row && a.view === b.view && a.top === b.top && a.collapsed === b.collapsed && a.searching === b.searching &&
   a.slowest === b.slowest && a.active === b.active && a.focusable === b.focusable && a.selected === b.selected &&
-  a.sticky === b.sticky && a.renderIcon === b.renderIcon && (!spanRunning(a.row.span) || a.clockMs === b.clockMs))
+  a.sticky === b.sticky && a.renderIcon === b.renderIcon && (a.clockMs === b.clockMs || !open(a.row, a.clockMs) && !open(b.row, b.clockMs)))
 
 export interface FlowLink { id: string; from: number; to: number; atMs: number; tone: number; dir: 'down' | 'up' }
 

@@ -6,7 +6,7 @@ import { useTraceClock } from './flow-waterfall-clock.js'
 import { FailGlyph, FitGlyph, PauseGlyph, PlayGlyph, RestartGlyph, SearchGlyph, TraceGlyph, ZoomInGlyph, ZoomOutGlyph } from './flow-waterfall-icons.js'
 import {
   busyMs, type FlowWaterfallRow, flowWaterfallRows, formatCost, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
-  toneKey, visibleFlowWaterfallRows,
+  toneKey, totalsAt, visibleFlowWaterfallRows,
 } from './flow-waterfall-model.js'
 import type { FlowView } from './flow-waterfall-row.js'
 import { clampWindow, type ViewWindow, zoomWindow } from './flow-waterfall-time.js'
@@ -175,6 +175,16 @@ export function FlowWaterfall({
     clearTimeout(hideTimer.current)
     hideTimer.current = setTimeout(() => setCard(previous => previous?.pinned ? previous : null), 140)
   }, [])
+  // A hover card follows the pointer: it closes as soon as the pointer is over neither a mark nor the card.
+  useEffect(() => {
+    if (!card || card.pinned) return
+    const move = (event: PointerEvent) => {
+      if (!(event.target as Element | null)?.closest('.fw-bar, .fw-seg, .fw-card')) leave()
+    }
+    document.addEventListener('pointermove', move)
+    return () => document.removeEventListener('pointermove', move)
+  }, [card, leave])
+
   const pin = useCallback((target: string, element: HTMLElement) => place(target, element, true), [])
   const closeCard = () => {
     const target = card?.target
@@ -189,15 +199,19 @@ export function FlowWaterfall({
     setPlaying(true)
   }
 
-  const tokens = trace.promptTokens + trace.completionTokens
-  const errors = trace.errors ?? trace.spans.filter(spanFailed).length
-  const shownDuration = position !== null || playing ? clockMs : limit
+  // Scrubbing shows the run as of the playhead; the full trace shows the producer's totals.
+  const scrubbing = position !== null || playing
+  const at = scrubbing ? totalsAt(trace, clockMs) : undefined
+  const costUsd = at ? at.costUsd : trace.costUsd
+  const tokens = at ? at.tokens : trace.promptTokens + trace.completionTokens
+  const modelCalls = at ? at.modelCalls : trace.modelCalls
+  const errors = at ? at.errors : trace.errors ?? trace.spans.filter(spanFailed).length
   const summary: [string, ReactNode, string?][] = [
-    ['Duration', formatSpanDuration(shownDuration)],
-    ['Cost', trace.costUsd === undefined ? 'Unknown' : formatCost(trace.costUsd), trace.costUsd === undefined ? 'The harness recorded no cost for this trace' : undefined],
+    ['Duration', formatSpanDuration(scrubbing ? clockMs : limit)],
+    ['Cost', costUsd === undefined ? 'Unknown' : formatCost(costUsd), costUsd === undefined ? 'The harness recorded no cost for this trace' : undefined],
     ['Tokens', formatCount(tokens), `${tokens.toLocaleString()} tokens`],
-    ['LLM calls', trace.modelCalls === undefined ? 'Unknown' : String(trace.modelCalls), trace.modelCalls === undefined ? 'Model output windows do not establish the number of LLM requests' : undefined],
-    ['Tool calls', trace.toolCalls.toLocaleString()],
+    ['LLM calls', modelCalls === undefined ? 'Unknown' : String(modelCalls), modelCalls === undefined ? 'Model output windows do not establish the number of LLM requests' : undefined],
+    ['Tool calls', (at ? at.toolCalls : trace.toolCalls).toLocaleString()],
     ['Errors', errors.toLocaleString()],
   ]
   const busy = agents.reduce((sum, row) => sum + busyMs(row, limit), 0)

@@ -1,8 +1,9 @@
 // Demo routes for the trace inspector: reference-shaped fixtures, recorded Discovery runs and a synthetic load trace.
-// Query: fixture=release|incident|discovery|run21c|load, view=spans|agents, theme=dark|light, live=1, rate=N, n=N, width=px.
+// Query: fixture=release|incident|discovery|run21c|load|otlp:<file under the data dir>, view=spans|agents, theme=dark|light, live=1, rate=N, n=N, width=px.
 import { createRoot } from 'react-dom/client'
 import { useEffect, useState } from 'react'
 import { FlowWaterfall } from '../../src/react/index.ts'
+import { otlpFlowTrace, parseOtlpJsonl } from '../../src/index.ts'
 import '@tangle-network/brand/styles/tokens.css'
 import '../../src/react/flow-waterfall.css'
 import release from '../../docs/fixtures/trace-release.json'
@@ -39,6 +40,13 @@ async function source(name) {
   if (name === 'discovery') return discovery
   if (name === 'load') return load(Number(params.get('n') ?? 5000))
   if (name === 'run21c') return (await fetch('/run-21c.json')).json()
+  if (name.startsWith('otlp:')) {
+    const started = performance.now()
+    const { spans } = parseOtlpJsonl(await (await fetch(`/data/${name.slice(5)}`)).text())
+    const trace = otlpFlowTrace(spans)
+    window.__fwConvertMs = performance.now() - started
+    return trace
+  }
   return release
 }
 

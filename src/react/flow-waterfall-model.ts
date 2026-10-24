@@ -215,7 +215,8 @@ export function slowestRow(rows: FlowWaterfallRow[], clockMs: number): FlowWater
   let bestMs = -1
   for (const row of rows) {
     if (row.hasChildren || row.kind === 'pipeline' || row.kind === 'waiting' || row.durationLabel === '—') continue
-    const ms = (spanRunning(row.span) ? Math.max(row.span.endMs, clockMs) : row.span.endMs) - row.span.startMs
+    if (row.span.startMs > clockMs) continue
+    const ms = (spanRunning(row.span) ? Math.max(row.span.endMs, clockMs) : Math.min(row.span.endMs, clockMs)) - row.span.startMs
     if (ms > bestMs) { best = row; bestMs = ms }
   }
   return best
@@ -230,4 +231,26 @@ export function busyMs(row: FlowWaterfallRow, clockMs: number): number {
     end = Math.max(end, Math.min(mark.endMs, clockMs))
   }
   return total
+}
+
+/** Totals as of a playback position, from per-span records. A total the spans do not carry stays the trace's own. */
+export function totalsAt(trace: FlowTrace, clockMs: number) {
+  let cost = 0, tokens = 0, models = 0, tools = 0, errors = 0
+  let costs = false, counted = false
+  for (const span of trace.spans) {
+    if (span.startMs > clockMs) continue
+    if (span.kind === 'model') models++
+    if (span.kind === 'tool') tools++
+    if (span.endMs > clockMs) continue
+    if (spanFailed(span)) errors++
+    if (span.costUsd !== undefined) { cost += span.costUsd; costs = true }
+    if (span.promptTokens !== undefined || span.completionTokens !== undefined) { tokens += (span.promptTokens ?? 0) + (span.completionTokens ?? 0); counted = true }
+  }
+  return {
+    costUsd: trace.costUsd === undefined ? undefined : costs ? cost : trace.costUsd,
+    tokens: counted ? tokens : trace.promptTokens + trace.completionTokens,
+    modelCalls: trace.modelCalls === undefined ? undefined : models,
+    toolCalls: tools,
+    errors,
+  }
 }
