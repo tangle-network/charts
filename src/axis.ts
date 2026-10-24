@@ -160,6 +160,8 @@ export function xTicks(xs: number[], px: (x: number) => number, left: number, ri
     const [a, b] = span(x);
     if (a < 2 || b > width - 2) continue;
     const previous = kept.at(-1);
+    // A label equal to its neighbour's (two times on one day under a day format) says nothing new: the first stands.
+    if (previous !== undefined && label(x) === label(previous)) continue;
     if (previous !== undefined && a < span(previous)[1] + 10) {
       // The last recorded position wins over the label before it.
       if (x !== xs.at(-1) || kept.length === 1) continue;

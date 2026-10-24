@@ -1,5 +1,12 @@
 # @tangle-network/charts
 
+## 0.15.1
+
+### Patch Changes
+
+- A time axis never repeats a label: of two ticks that format the same (two times on one day under a day format), the first stands. The Discovery play climb printed "Oct 20 Oct 20 Oct 20".
+- A point label whose neighbours take both sides, as on a dense run of releases, is placed above its point before it is dropped, so the first and last releases of a flat line keep their names.
+
 ## 0.14.0
 
 ### Minor Changes

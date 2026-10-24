@@ -90,7 +90,7 @@ export function pointMark(x: number, y: number, shape: MarkerShape, r: number, p
  * Text beside a mark: the status glyph, `*` or `?`, the label and `×n`. Drawn to the right, or to the left when it
  * would cross `limit`; returns the markup and its width so a caller can skip it when the column has no room.
  */
-export function pointBadge(x: number, y: number, r: number, p: PointFields, limit: number): { svg: string; width: number } {
+export function pointBadge(x: number, y: number, r: number, p: PointFields, limit: number, above = false): { svg: string; width: number } {
   const parts: Array<[string, string]> = [];
   if (p.glyph === "check") parts.push(["✓", "tgc-glyph-check"]);
   if (p.glyph === "cross") parts.push(["✕", "tgc-glyph-cross"]);
@@ -101,9 +101,10 @@ export function pointBadge(x: number, y: number, r: number, p: PointFields, limi
   if (!parts.length) return { svg: "", width: 0 };
   // Badges render in the monospace face (figure.css), so they are measured in it.
   const width = textWidth(parts.map(([t]) => t).join(" "), 10, "mono");
+  const spans = parts.map(([t, cls], i) => `<tspan class="${cls}">${i ? " " : ""}${esc(t)}</tspan>`).join("");
+  if (above) return { svg: `<text class="tgc-point-badge" x="${Math.round(x * 100) / 100}" y="${Math.round((y - r - 5) * 100) / 100}" font-size="10" text-anchor="middle">${spans}</text>`, width };
   const left = x + r + 3 + width > limit;
   const tx = left ? x - r - 3 : x + r + 3;
-  const spans = parts.map(([t, cls], i) => `<tspan class="${cls}">${i ? " " : ""}${esc(t)}</tspan>`).join("");
   return { svg: `<text class="tgc-point-badge" x="${Math.round(tx * 100) / 100}" y="${Math.round((y + 3.5) * 100) / 100}" font-size="10"${left ? ' text-anchor="end"' : ""}>${spans}</text>`, width };
 }
 
@@ -129,9 +130,12 @@ export function placeBadges(pending: ReadonlyArray<{ x: number; y: number; r: nu
     const badge = pointBadge(x, y, r, point, right);
     if (!badge.svg) continue;
     const box: Box = badge.svg.includes('text-anchor="end"') ? [x - r - 3 - badge.width, x - r - 3, y - 6, y + 6] : [x + r + 3, x + r + 3 + badge.width, y - 6, y + 6];
-    if (!free(box)) continue;
-    placed.push(box);
-    out += badge.svg;
+    // A point whose neighbours take both sides (a dense run of releases) is labelled above it before it goes unlabelled.
+    const over: Box = [x - badge.width / 2, x + badge.width / 2, y - r - 15, y - r - 3];
+    const at = free(box) ? { box, svg: badge.svg } : free(over) ? { box: over, svg: pointBadge(x, y, r, point, right, true).svg } : null;
+    if (!at) continue;
+    placed.push(at.box);
+    out += at.svg;
   }
   return out;
 }
