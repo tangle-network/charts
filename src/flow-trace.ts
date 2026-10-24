@@ -36,6 +36,8 @@ export interface FlowTrace {
   completionTokens: number
   /** Computed when per-token pricing is supplied. */
   costUsd?: number
+  /** `list`: priced from a model catalog's list prices, not a bill; the summary says so. */
+  costBasis?: 'billed' | 'list'
   toolCalls: number
   /** Authoritative LLM request count when supplied; absent means unknown. */
   modelCalls?: number

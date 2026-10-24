@@ -3,7 +3,7 @@
 import { createRoot } from 'react-dom/client'
 import { useEffect, useState } from 'react'
 import { FlowWaterfall } from '../../src/react/index.ts'
-import { otlpFlowTrace, parseOtlpJsonl } from '../../src/index.ts'
+import { catalogPrice, otlpFlowTrace, parseOtlpJsonl } from '../../src/index.ts'
 import '@tangle-network/brand/styles/tokens.css'
 import '../../src/react/flow-waterfall.css'
 import release from '../../docs/fixtures/trace-release.json'
@@ -43,7 +43,9 @@ async function source(name) {
   if (name.startsWith('otlp:')) {
     const started = performance.now()
     const { spans } = parseOtlpJsonl(await (await fetch(`/data/${name.slice(5)}`)).text())
-    const trace = otlpFlowTrace(spans)
+    // List prices come from the Router's catalog, the price owner, when the page can reach it.
+    const catalog = await fetch('https://router.tangle.tools/v1/models').then(r => r.json()).catch(() => null)
+    const trace = otlpFlowTrace(spans, catalog ? { price: catalogPrice(catalog) } : {})
     window.__fwConvertMs = performance.now() - started
     return trace
   }

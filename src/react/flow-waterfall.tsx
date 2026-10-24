@@ -237,7 +237,8 @@ export function FlowWaterfall({
   const errors = at ? at.errors : trace.errors ?? trace.spans.filter(spanFailed).length
   const summary: [string, ReactNode, string?][] = [
     ['Duration', formatSpanDuration(scrubbing ? clockMs : limit)],
-    ['Cost', costUsd === undefined ? 'Unknown' : formatCost(costUsd), costUsd === undefined ? 'The harness recorded no cost for this trace' : undefined],
+    [trace.costBasis === 'list' ? 'Cost · list price' : 'Cost', costUsd === undefined ? 'Unknown' : formatCost(costUsd),
+      costUsd === undefined ? 'The harness recorded no cost for this trace' : trace.costBasis === 'list' ? 'Input and output tokens at the model catalog list price; not a bill' : undefined],
     ['Tokens', formatCount(tokens), `${tokens.toLocaleString()} tokens`],
     ['LLM calls', modelCalls === undefined ? 'Unknown' : modelCalls.toLocaleString(), modelCalls === undefined ? 'Model output windows do not establish the number of LLM requests' : undefined],
     ['Tool calls', (at ? at.toolCalls : trace.toolCalls).toLocaleString()],

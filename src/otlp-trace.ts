@@ -19,6 +19,22 @@ export interface OtlpTraceOptions {
   live?: boolean
   /** Attributes that name an agent, in order. Spans that carry one and have no agent ancestor are grouped under it. */
   agentKeys?: string[]
+  /** List price of one model call; undefined leaves it unknown. Build it from the price owner with `catalogPrice`. */
+  price?: (model: string, inputTokens: number, outputTokens: number) => number | undefined
+}
+
+/** Price model calls from an OpenAI-compatible model catalog (`data[].pricing.prompt|completion`, USD per token), such as
+ * the Router's `/v1/models`. Read the catalog at runtime; never copy its numbers. */
+export function catalogPrice(catalog: { data?: Array<{ id?: string; pricing?: { prompt?: string | number; completion?: string | number } }> }) {
+  const rates = new Map<string, { input: number; output: number }>()
+  for (const model of catalog.data ?? []) {
+    const input = Number(model.pricing?.prompt), output = Number(model.pricing?.completion)
+    if (model.id && Number.isFinite(input) && Number.isFinite(output)) rates.set(model.id, { input, output })
+  }
+  return (model: string, inputTokens: number, outputTokens: number) => {
+    const rate = rates.get(model) ?? rates.get(shortModel(model))
+    return rate ? rate.input * inputTokens + rate.output * outputTokens : undefined
+  }
 }
 
 /** The OpenTelemetry GenAI name first, then the agent identities current producers write. */
@@ -123,6 +139,8 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
   let toolCalls = 0
   let modelCalls = 0
   let errors = 0
+  let cost = 0
+  let unpriced = 0
   const offset = (iso: string) => time(iso) - origin
   // Grouped agents in separate traces join on the spawn that started them: each agent with no spawn of its own
   // takes the latest unclaimed spawn call in another agent that began before it.
@@ -175,11 +193,16 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
     if (failed) errors++
     promptTokens += prompt ?? 0
     completionTokens += completion ?? 0
+    const listPrice = kind === 'model' && model && options.price && (prompt !== undefined || completion !== undefined)
+      ? options.price(model, prompt ?? 0, completion ?? 0) : undefined
+    if (listPrice !== undefined) cost += listPrice
+    else if (kind === 'model' && (prompt || completion)) unpriced++
     out.push({
       id: span.span_id, ...(parentId ? { parentId } : {}), kind, name, startMs, endMs,
       status: open ? 'running' : failed ? 'failed' : 'done',
       ...(endMs === startMs && kind !== 'pipeline' ? { approx: true } : {}),
       ...(isAgent(span) ? { detail: topModel(span.span_id) } : kind === 'model' && model ? { detail: shortModel(model) } : {}),
+      ...(listPrice !== undefined ? { costUsd: listPrice } : {}),
       ...(prompt !== undefined ? { promptTokens: prompt } : {}),
       ...(completion !== undefined ? { completionTokens: completion } : {}),
       ...(span.status?.message ? { output: span.status.message } : {}),
@@ -189,5 +212,6 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
   return {
     spans: out, totalMs: Number.isFinite(last - origin) ? last - origin : 0, promptTokens, completionTokens,
     toolCalls, modelCalls, errors, omitted,
+    ...(options.price && unpriced === 0 && cost > 0 ? { costUsd: cost, costBasis: 'list' as const } : {}),
   }
 }
