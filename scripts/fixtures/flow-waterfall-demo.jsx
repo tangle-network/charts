@@ -58,6 +58,43 @@ function reveal(trace, now) {
     errors: trace.spans.filter(s => s.status === 'failed' && s.endMs <= now).length }
 }
 
+/** Live: OTLP span deltas from the relay, appended as they arrive; every span's event-to-pixel time is recorded. */
+function LiveApp({ relay }) {
+  const [trace, setTrace] = useState(null)
+  useEffect(() => {
+    const spans = new Map()
+    const pending = []
+    let offset = 0
+    let frame = 0
+    window.__fwLatency = []
+    const t0 = Date.now()
+    fetch(`${relay}/time`).then(r => r.json()).then(({ now }) => { offset = now - (t0 + Date.now()) / 2 })
+    const source = new EventSource(`${relay}/events`)
+    source.onmessage = message => {
+      const { span, emittedAt, backlog } = JSON.parse(message.data)
+      spans.set(span.span_id, span)
+      if (!backlog) pending.push({ end: Date.parse(span.end_time), emittedAt, name: span.name })
+      if (frame) return
+      frame = requestAnimationFrame(() => {
+        frame = 0
+        setTrace(otlpFlowTrace([...spans.values()], { live: true }))
+        const batch = pending.splice(0)
+        // Measured after the commit paints: the frame after the state change.
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          const pixel = Date.now() + offset
+          for (const item of batch) window.__fwLatency.push({ name: item.name, eventToPixelMs: pixel - item.end, eventToRelayMs: item.emittedAt - item.end, relayToPixelMs: pixel - item.emittedAt })
+        }))
+      })
+    }
+    return () => source.close()
+  }, [])
+  if (!trace) return <p style={{ color: '#888', padding: 24 }}>Waiting for spans…</p>
+  return <main style={{ width: params.get('width') ? `${params.get('width')}px` : 'auto', maxWidth: '100%', margin: '0 auto', padding: 24 }}>
+    <FlowWaterfall trace={trace} live label={params.get('label') ?? 'Live session'} description={params.get('description') ?? undefined}
+      defaultView={params.get('view') ?? 'spans'} maxHeight={Number(params.get('height') ?? 640)} />
+  </main>
+}
+
 function App({ trace }) {
   const live = params.get('live') === '1'
   const rate = Number(params.get('rate') ?? 1)
@@ -80,7 +117,7 @@ function App({ trace }) {
   </main>
 }
 
-const trace = await source(params.get('fixture') ?? 'release')
 const t0 = performance.now()
-createRoot(document.getElementById('root')).render(<App trace={trace} />)
+if (params.get('relay')) createRoot(document.getElementById('root')).render(<LiveApp relay={params.get('relay')} />)
+else createRoot(document.getElementById('root')).render(<App trace={await source(params.get('fixture') ?? 'release')} />)
 requestAnimationFrame(() => requestAnimationFrame(() => { window.__fwFirstPaintMs = performance.now() - t0; document.body.dataset.ready = '1' }))

@@ -116,7 +116,6 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
   const topModel = (key: string) => [...(models.get(key)?.entries() ?? [])].sort((a, b) => b[1] - a[1])[0]?.[0]
 
   const out: FlowSpan[] = []
-  let subagents = 0
   let omitted = 0
   let promptTokens = 0
   let completionTokens = 0
@@ -128,6 +127,9 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
     out.push({ id: `group:${name}`, kind: 'pipeline', name, detail: topModel(`group:${name}`), startMs: group.start - origin, endMs: group.end - origin,
       status: options.live ? 'running' : group.status ? 'failed' : 'done' })
   }
+  // Subagents are numbered in the order they started.
+  const subagentNumber = new Map(spans.filter(span => isAgent(span) && span.parent_span_id && byId.has(span.parent_span_id) && !pick(attrs(span), agentKeys))
+    .sort((a, b) => time(a.start_time) - time(b.start_time)).map((span, i) => [span.span_id, i + 1]))
   const spawnTarget = new Map<string, string>()
   for (const span of spans) if (isAgent(span) && span.parent_span_id) spawnTarget.set(span.parent_span_id, span.span_id)
 
@@ -147,8 +149,8 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
     if (kind === 'tool' && (a['traces.agent.spawn'] === true || spawnTarget.has(span.span_id))) kind = 'handoff'
     let name = str(a['gen_ai.tool.name']) ?? span.name
     if (isAgent(span)) {
-      name = pick(a, agentKeys) ?? (parentId ? `Subagent ${++subagents}` : str(a['service.name']) ?? str(span.resource?.attributes?.['service.name']) ?? span.name)
-    } else if (kind === 'model' && (span.name === 'llm.call' || span.name.startsWith('chat '))) name = model ? shortModel(model) : 'Model call'
+      name = pick(a, agentKeys) ?? (subagentNumber.has(span.span_id) ? `Subagent ${subagentNumber.get(span.span_id)}` : str(a['service.name']) ?? str(span.resource?.attributes?.['service.name']) ?? span.name)
+    } else if (kind === 'model' && (span.name === 'llm.call' || span.name.startsWith('chat '))) name = 'Model call'
     if (kind === 'model') modelCalls++
     if (kind === 'tool' || kind === 'handoff') toolCalls++
     if (failed) errors++

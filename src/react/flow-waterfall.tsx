@@ -16,7 +16,7 @@ export type { FlowView } from './flow-waterfall-row.js'
 const SPEEDS = [0.5, 1, 1.5, 2, 4]
 const LANE_PAD = 12
 const END_LABEL_GUTTER: Record<FlowView, number> = { spans: 120, agents: 16 }
-const NAME_WIDTH: Record<FlowView, number> = { spans: 300, agents: 200 }
+const NAME_WIDTH: Record<FlowView, number> = { spans: 300, agents: 220 }
 
 export interface FlowWaterfallProps {
   trace: FlowTrace
@@ -210,7 +210,7 @@ export function FlowWaterfall({
     ['Duration', formatSpanDuration(scrubbing ? clockMs : limit)],
     ['Cost', costUsd === undefined ? 'Unknown' : formatCost(costUsd), costUsd === undefined ? 'The harness recorded no cost for this trace' : undefined],
     ['Tokens', formatCount(tokens), `${tokens.toLocaleString()} tokens`],
-    ['LLM calls', modelCalls === undefined ? 'Unknown' : String(modelCalls), modelCalls === undefined ? 'Model output windows do not establish the number of LLM requests' : undefined],
+    ['LLM calls', modelCalls === undefined ? 'Unknown' : modelCalls.toLocaleString(), modelCalls === undefined ? 'Model output windows do not establish the number of LLM requests' : undefined],
     ['Tool calls', (at ? at.toolCalls : trace.toolCalls).toLocaleString()],
     ['Errors', errors.toLocaleString()],
   ]

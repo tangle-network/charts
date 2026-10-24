@@ -50,6 +50,8 @@ const open = (row: FlowWaterfallRow, clockMs: number) => spanRunning(row.span) |
 function endLabel(row: FlowWaterfallRow, clockMs: number): string {
   const span = row.span
   if (row.durationLabel === '—') return '—'
+  // A point event (an approximate zero-length span) has no duration to state.
+  if (row.approx && span.endMs === span.startMs && !spanRunning(span)) return span.costUsd === undefined ? '' : formatCost(span.costUsd)
   if (!spanRunning(span) && clockMs < span.endMs) return `${formatSpanDuration(Math.max(0, clockMs - span.startMs))}${row.approx ? '~' : ''}`
   const duration = spanRunning(span) ? `${formatSpanDuration(Math.max(span.endMs, clockMs) - span.startMs)}${row.approx ? '~' : ''}` : row.durationLabel
   const cost = span.costUsd ?? (row.rollupCostUsd ? row.rollupCostUsd : undefined)
@@ -90,7 +92,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
         <span className="fw-names" title={`${row.name}${span.detail ? ` · ${span.detail}` : ''} · ${KIND_LABEL[span.kind]}${running ? ' · running' : ''}${row.ok ? '' : ' · failed'}`}>
           <span className={`fw-span-name${isAgent || row.hasChildren ? ' fw-strong' : ''}`}>
             {running && <span className="fw-spinner" role="status" aria-label="running" />}
-            {row.name}
+            <span className="fw-name-text">{row.name}</span>
           </span>
           {span.detail && <span className="fw-detail">
             {agentView && renderIcon && <span className="fw-detail-icon" aria-hidden>{renderIcon(span)}</span>}

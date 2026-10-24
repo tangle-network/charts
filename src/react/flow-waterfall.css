@@ -139,7 +139,8 @@
 .fw-root .fw-icon-tile { flex: 0 0 20px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 6px; border: 1px solid var(--fw-border); background: var(--fw-surface); color: var(--line, var(--fw-muted)); }
 .fw-root .fw-icon-tile :is(svg, img) { width: 13px; height: 13px; }
 .fw-root .fw-names { display: flex; align-items: baseline; gap: 6px; min-width: 0; overflow: hidden; white-space: nowrap; }
-.fw-root .fw-span-name { display: inline-flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; max-width: 100%; }
+.fw-root .fw-span-name { display: inline-flex; align-items: center; gap: 6px; overflow: hidden; flex-shrink: 0; max-width: 100%; min-width: 0; }
+.fw-root .fw-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .fw-root .fw-strong { font-weight: 600; }
 .fw-root .fw-detail { color: var(--fw-muted); overflow: hidden; min-width: 0; display: inline-flex; align-items: center; gap: 4px; max-width: 100%; }
 .fw-root .fw-detail-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
