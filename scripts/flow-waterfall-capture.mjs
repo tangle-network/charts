@@ -54,7 +54,33 @@ try {
       }
     }
   }
-  if (only === 'otlp') throw Object.assign(new Error('only otlp'), { skip: true })
+  // Live proof: 60 s of a running session through the relay, recorded, with every span's event-to-pixel time.
+  if (process.env.FW_LIVE_RELAY) {
+    const seconds = Number(process.env.FW_LIVE_SECONDS ?? 60)
+    const context = await browser.newContext({ viewport: { width: 1512, height: 945 }, deviceScaleFactor: 1, recordVideo: { dir: out, size: { width: 1512, height: 945 } } })
+    const page = await context.newPage()
+    page.on('pageerror', error => errors.push(`live: ${error.message}`))
+    await page.goto(`${base}?relay=${encodeURIComponent(process.env.FW_LIVE_RELAY)}&theme=dark&width=1440&height=720&label=${encodeURIComponent(process.env.FW_LIVE_LABEL ?? 'Live session')}`)
+    await page.locator('[data-flow-waterfall]').waitFor({ timeout: 60_000 })
+    await page.screenshot({ path: `${out}/live-start.png` })
+    await page.waitForTimeout(seconds * 500)
+    await page.getByRole('radio', { name: 'Agents' }).click()
+    await page.waitForTimeout(seconds * 500)
+    await page.screenshot({ path: `${out}/live-end.png` })
+    const samples = await page.evaluate(() => window.__fwLatency)
+    await context.close()
+    const video = readdirSync(out).find(name => name.endsWith('.webm') && !name.startsWith('interaction') && !name.startsWith('live'))
+    if (video) renameSync(`${out}/${video}`, `${out}/live-60s.webm`)
+    const q = (values, p) => { const sorted = [...values].sort((a, b) => a - b); return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))] }
+    const pixel = samples.map(sample => sample.eventToPixelMs)
+    report.live = { seconds, spans: samples.length,
+      eventToPixelMs: { p50: q(pixel, 0.5), p95: q(pixel, 0.95), max: Math.max(...pixel) },
+      eventToRelayMs: { p50: q(samples.map(x => x.eventToRelayMs), 0.5), p95: q(samples.map(x => x.eventToRelayMs), 0.95) },
+      relayToPixelMs: { p50: q(samples.map(x => x.relayToPixelMs), 0.5), p95: q(samples.map(x => x.relayToPixelMs), 0.95) },
+      samples }
+    console.log(JSON.stringify({ live: { ...report.live, samples: undefined } }))
+  }
+  if (only === 'otlp' || only === 'live') throw Object.assign(new Error('only otlp'), { skip: true })
   // Reference 1 and 2: the span waterfall, both themes, at the reference viewport, through the run.
   for (const theme of ['light', 'dark']) {
     const { page, context } = await open(`fixture=release&theme=${theme}&width=1140&description=Ship annual billing by Friday`)
