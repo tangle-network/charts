@@ -135,6 +135,7 @@ try {
   })
   assert.ok(order.playback < order.axis && order.axis < order.row && order.rowHeight === 40, JSON.stringify(order))
   // Every bar, segment and end label sits on the 4 px grid inside its row (disco-ui-review REVIEW-7 #7).
+  await page.waitForFunction(() => !document.querySelector('.fw-row.fw-enter'), null, { timeout: 3000 })
   const offGrid = await page.evaluate(() => [...document.querySelectorAll('.fw-row :is(.fw-bar, .fw-seg, .fw-end)')]
     .map(mark => mark.getBoundingClientRect().top - mark.closest('.fw-row').getBoundingClientRect().top)
     .filter(offset => Math.abs(offset - Math.round(offset / 4) * 4) > 0.5))
