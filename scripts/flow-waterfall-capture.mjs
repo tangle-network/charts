@@ -116,7 +116,7 @@ try {
         let opened = 0
         for (let i = 0; i < n; i++) {
           const bar = rows.nth(i).locator('.fw-bar')
-          await bar.hover({ position: { x: 4, y: 6 } }); await page.waitForTimeout(250)
+          await bar.hover(); await page.waitForTimeout(250)
           const name = await rows.nth(i).locator('.fw-name-text').innerText()
           if ((await page.locator('.fw-card').count()) && (await page.locator('.fw-card').innerText()).includes(name.slice(0, 12))) opened += 1
         }
