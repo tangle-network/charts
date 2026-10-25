@@ -82,6 +82,35 @@ try {
       samples }
     console.log(JSON.stringify({ live: { ...report.live, samples: undefined } }))
   }
+  // Fit: the agent view sized only by its container, 320 to 2560 px, and across a live resize; no page scroll sideways.
+  if (only === 'fit') {
+    const measure = page => page.evaluate(() => {
+      const root = document.querySelector('[data-flow-waterfall]').getBoundingClientRect()
+      const track = document.querySelector('[data-fw-track]').getBoundingClientRect()
+      const names = [...document.querySelectorAll('.fw-name-text')]
+      const cut = names.filter(el => el.scrollWidth > el.clientWidth)
+      return { pageOverflowPx: document.documentElement.scrollWidth - innerWidth, rootPx: Math.round(root.width), trackPx: Math.round(track.width),
+        rootInside: root.left >= 0 && root.right <= innerWidth + 0.5, ticks: document.querySelectorAll('.fw-axis .fw-tick').length,
+        names: names.length, truncated: cut.length, truncatedWithTitle: cut.filter(el => el.closest('[title]')?.title.includes(el.textContent)).length }
+    })
+    report.fit = []
+    for (const fixture of ['release', 'discovery']) {
+      for (const width of [320, 390, 768, 1140, 2560]) {
+        const { page, context } = await open(`fixture=${fixture}&view=agents&theme=dark&pad=0`, { width, height: 900 })
+        report.fit.push({ fixture, width, ...(await measure(page)) })
+        await shot(page, `fit-${fixture}-${width}`)
+        await context.close()
+      }
+      const { page, context } = await open(`fixture=${fixture}&view=agents&theme=dark&pad=0`, { width: 1140, height: 900 })
+      const before = await measure(page)
+      await page.setViewportSize({ width: 390, height: 900 }); await page.waitForTimeout(400)
+      const after = await measure(page)
+      report.fit.push({ fixture, resize: '1140->390', trackBefore: before.trackPx, trackAfter: after.trackPx, pageOverflowPx: after.pageOverflowPx })
+      await context.close()
+    }
+    console.log(JSON.stringify(report.fit))
+    throw Object.assign(new Error('only fit'), { skip: true })
+  }
   if (only === 'otlp' || only === 'live') throw Object.assign(new Error('only otlp'), { skip: true })
   if (only !== 'perf') {
   // Reference 1 and 2: the span waterfall, both themes, at the reference viewport, through the run.
