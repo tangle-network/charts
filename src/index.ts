@@ -41,3 +41,4 @@ export { type Observations } from "./scalar.js";
 export { type DotGroup, type DotGroupRect, type UnitDotLayout, unitDotLayout, type UnitDotOptions } from "./unit-dots.js";
 
 export type { FlowSpan, FlowTrace } from "./flow-trace.js";
+export { catalogPrice, otlpFlowTrace, type OtlpSpan, type OtlpTraceOptions, parseOtlpJsonl } from "./otlp-trace.js";

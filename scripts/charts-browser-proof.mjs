@@ -15,11 +15,14 @@ if (process.argv.includes('--package-only')) {
   const { renderToStaticMarkup } = await import('react-dom/server')
   const trace = JSON.parse(readFileSync('docs/fixtures/discovery-waterfall.json', 'utf8'))
   const html = renderToStaticMarkup(createElement(FlowWaterfall, { trace }))
-  assert.equal((html.match(/data-span-id=/g) ?? []).length, 53)
-  assert.ok(html.includes('754,448') && html.includes('Slowest step:'))
+  // Rows are virtualized: the tree reports all 53 rows and renders the first screenful.
+  assert.ok(html.includes('aria-rowcount="53"'))
+  assert.ok((html.match(/data-span-id=/g) ?? []).length > 10)
+  // The exact token total rides in the summary's title; the slowest badge is checked in the browser, where its row scrolls in.
+  assert.ok(html.includes('754,448 tokens'))
   const stylesheet = readFileSync(fileURLToPath(import.meta.resolve('@tangle-network/charts/react/flow-waterfall.css')), 'utf8')
   assert.equal(stylesheet, readFileSync('src/react/flow-waterfall.css', 'utf8'))
-  console.log(JSON.stringify({ publicExport: 'PASS', standaloneStylesheet: 'PASS', standardStylesheet: 'PASS', renderedSpans: 53 }))
+  console.log(JSON.stringify({ publicExport: 'PASS', standaloneStylesheet: 'PASS', standardStylesheet: 'PASS', rowCount: 53 }))
   process.exit(0)
 }
 const base = process.env.CHARTS_FIXTURE_URL ?? 'http://127.0.0.1:46489'
@@ -131,9 +134,15 @@ try {
     checks.collapseExpand = 'PASS'
     const terms = await root.locator('dt').allTextContents()
     assert.deepEqual(terms, ['Duration', 'Cost', 'Tokens', 'LLM calls', 'Tool calls', 'Errors'])
-    assert.deepEqual(await root.locator('dd').allTextContents(), ['430.8s', 'Unknown', '754,448', 'Unknown', '35', '3'])
+    assert.deepEqual(await root.locator('dd').allTextContents(), ['7m 11s', 'Unknown', '754.4k', 'Unknown', '35', '3'])
+    assert.equal(await root.locator('dd').nth(2).getAttribute('title'), '754,448 tokens')
     checks.summary = 'PASS'
-    const kinds = await root.locator('.fw-bar').evaluateAll(elements => Object.fromEntries(elements.map(element => [element.closest('[data-span-kind]').dataset.spanKind, getComputedStyle(element).backgroundColor])))
+    // Each kind is painted distinctly: a fill colour, or a pattern (hatched waiting) in background-image.
+    const kinds = await root.locator('.fw-bar').evaluateAll(elements => Object.fromEntries(elements.map(element => {
+      const style = getComputedStyle(element)
+      const paint = style.backgroundImage !== 'none' ? style.backgroundImage : style.backgroundColor
+      return [element.closest('[data-span-kind]').dataset.spanKind, paint]
+    })))
     assert.equal(Object.keys(kinds).length, 6)
     assert.equal(new Set(Object.values(kinds)).size, 6)
     assert.ok(!Object.values(kinds).includes('rgba(0, 0, 0, 0)'))
@@ -171,7 +180,7 @@ try {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.screenshot({ path: `${output}/recorded-phone-light.png`, fullPage: true })
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'Only the timeline may scroll horizontally')
-    await page.getByRole('region', { name: 'Trace timeline', exact: true }).focus()
+    await page.getByRole('treegrid', { name: 'Trace timeline', exact: true }).locator('[role=row][tabindex="0"]').focus()
     await page.keyboard.press('ArrowRight')
     await story('recorded-discovery')
     await page.screenshot({ path: `${output}/recorded-phone-dark.png`, fullPage: true })

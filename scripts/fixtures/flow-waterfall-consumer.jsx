@@ -25,5 +25,5 @@ function FlowApp({ name }) {
    toolCalls:recorded.spans.filter(s=>['tool','handoff'].includes(s.kind)&&s.startMs<=now).length,
    errors:recorded.spans.filter(s=>s.status==='failed'&&s.endMs<=now).length }; live=false
  }
- return <main>{name==='discovery-streaming-replay'&&<p>Recorded Discovery replay ·20x; final totals arrive at settlement</p>}<FlowWaterfall trace={trace} live={live} /></main>
+ return <main>{name==='discovery-streaming-replay'&&<p>Recorded Discovery replay ·20x; final totals arrive at settlement</p>}<FlowWaterfall trace={trace} live={live} maxHeight={1800} /></main>
 }
