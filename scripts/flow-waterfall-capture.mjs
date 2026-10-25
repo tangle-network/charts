@@ -59,6 +59,24 @@ try {
     }
   }
   // Live proof: 60 s of a running session through the relay, recorded, with every span's event-to-pixel time.
+  // FW_JUDGE=<file>: blind-judge frames from one real run in the steps view, as the reference frames show it: rest, hover and
+  // pinned card, dark and light, at 1512x945. The stat strip and the card header stay in frame.
+  if (process.env.FW_JUDGE) {
+    report.judge = []
+    const file = process.env.FW_JUDGE
+    for (const theme of ['dark', 'light']) {
+      const { page, context } = await open(`fixture=otlp:${file}&view=spans&theme=${theme}&width=1440&height=720&label=Trace`, { width: 1512, height: 945 })
+      await page.screenshot({ path: `${out}/judge-${theme}-rest.png` })
+      const bars = page.locator('.fw-row:not(.fw-sticky-row) .fw-bar')
+      const bar = bars.nth(Math.min(6, Math.max(0, (await bars.count()) - 1)))
+      await bar.hover(); await page.waitForTimeout(350)
+      await page.screenshot({ path: `${out}/judge-${theme}-hover.png` })
+      await bar.click(); await page.waitForTimeout(350)
+      await page.screenshot({ path: `${out}/judge-${theme}-card.png` })
+      report.judge.push({ theme, bars: await bars.count() })
+      await context.close()
+    }
+  }
   if (process.env.FW_LIVE_RELAY) {
     const seconds = Number(process.env.FW_LIVE_SECONDS ?? 60)
     const context = await browser.newContext({ viewport: { width: 1512, height: 945 }, deviceScaleFactor: 1, recordVideo: { dir: out, size: { width: 1512, height: 945 } } })
