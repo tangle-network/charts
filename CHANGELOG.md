@@ -1,5 +1,11 @@
 # @tangle-network/charts
 
+## 0.20.2
+
+- Agent view: connectors appear only for the agent under the pointer, pinned or focused (17 resting elbows read as a tangle).
+- Agent view: the kind key sits directly above the lanes.
+- Light theme: bars carry 74% of the agent hue (tool steps 38%).
+
 ## 0.20.1
 
 - `HBars`: every bar answers a hover with its label and value, or the row's own `title` (from disco-evolve-play's #28).
