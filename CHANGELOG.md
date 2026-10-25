@@ -1,5 +1,12 @@
 # @tangle-network/charts
 
+## 0.18.1
+
+### Patch Changes
+
+- Stacked agent names (below 900 px) sit above the handoff connectors: rows place by `top` there, so a row is no longer its own stacking context, and the name, dot and alert share one surface-colored backing.
+- The outcome legend adds a "Failed step" key with its count when an agent's marks include failed steps, so a failed step inside a finished agent no longer reads as a failed agent.
+
 ## 0.18.0
 
 ### Minor Changes

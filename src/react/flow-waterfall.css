@@ -128,7 +128,7 @@
 .fw-root .fw-sticky { position: absolute; top: 0; left: 0; right: 0; z-index: 2; background: var(--fw-surface); box-shadow: 0 1px 0 var(--fw-border), 0 6px 12px -8px rgb(0 0 0 / .35); }
 
 /* Rows */
-.fw-root .fw-row { position: absolute; top: 0; left: 0; right: 0; height: var(--fw-row-h); display: grid; grid-template-columns: var(--fw-label-col) minmax(0, 1fr); outline: 0; contain: layout style; }
+.fw-root .fw-row { position: absolute; top: 0; left: 0; right: 0; transform: translateY(var(--row-y)); height: var(--fw-row-h); display: grid; grid-template-columns: var(--fw-label-col) minmax(0, 1fr); outline: 0; contain: layout style; }
 .fw-root .fw-row:hover { background: var(--fw-hover); }
 .fw-root .fw-row.fw-active { background: color-mix(in oklab, var(--fw-accent) 7%, transparent); }
 .fw-root .fw-row[aria-selected="true"] { background: color-mix(in oklab, var(--fw-accent) 11%, transparent); }
@@ -198,6 +198,8 @@
 .fw-root .fw-legend li { display: inline-flex; align-items: center; gap: 8px; }
 .fw-root .fw-legend .fw-swatch { width: 12px; height: 8px; border-radius: 2px; background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); }
 .fw-root .fw-legend b { color: var(--fw-text); font-weight: 600; font-variant-numeric: tabular-nums; }
+.fw-root .fw-legend .fw-swatch-step { display: inline-grid; place-items: center; width: 12px; height: 12px; border-radius: 3px; background: var(--fw-well); color: var(--fw-failed); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-failed) 50%, transparent); }
+.fw-root .fw-legend .fw-swatch-step svg { width: 8px; height: 8px; }
 .fw-root .fw-bar.fw-approx { opacity: calc(var(--on) * .7); }
 .fw-root .fw-seg { width: max(calc(var(--w) - 2px), calc(var(--on) * 3px)); pointer-events: none; }
 .fw-root .fw-view-agents .fw-seg { pointer-events: auto; }
@@ -327,12 +329,12 @@
 @container (max-width: 899px) {
   /* The root is the queried container, so the variables go on its children. */
   .fw-root-agents > * { --fw-label-col: 0px; --fw-bar-shift: 8px; }
-  .fw-root-agents .fw-view-agents .fw-label { position: absolute; z-index: 2; top: 4px; left: 0; right: 0; height: 18px; padding: 0 var(--fw-pad); gap: 8px; align-items: center; pointer-events: none; overflow: hidden; }
   .fw-root-agents .fw-view-agents .fw-names { flex-direction: row; align-items: baseline; gap: 8px; min-width: 0; }
   .fw-root-agents .fw-view-agents .fw-agent-dot { align-self: center; margin-top: 0; }
   /* The label leaves the grid flow, so the lane must claim the track column itself. */
   .fw-root-agents .fw-view-agents .fw-lane { grid-column: 2; }
-  /* Elbows pass behind the name, not through its letters. */
-  .fw-root-agents .fw-view-agents .fw-names { padding-right: 4px; border-radius: 4px; background: var(--fw-surface); }
-  .fw-root-agents .fw-view-agents .fw-row:hover .fw-names { background: transparent; }
+  /* Elbows pass behind the name, not through its letters. A transform or layout containment would make each row
+     its own stacking context and trap the name under the connector layer, so stacked rows place by top instead. */
+  .fw-root-agents .fw-view-agents .fw-row { transform: none; top: var(--row-y); contain: style; }
+  .fw-root-agents .fw-view-agents .fw-label { position: absolute; z-index: 3; top: 4px; left: 0; height: 18px; max-width: calc(100% - var(--fw-pad)); padding: 0 8px 0 var(--fw-pad); gap: 8px; align-items: center; pointer-events: none; overflow: hidden; border-radius: 0 4px 4px 0; background: var(--fw-surface); }
 }
