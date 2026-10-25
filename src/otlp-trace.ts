@@ -189,15 +189,17 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
     if (isAgent(span)) {
       name = pick(a, agentKeys) ?? (subagentNumber.has(span.span_id) ? `Subagent ${subagentNumber.get(span.span_id)}` : str(a['service.name']) ?? str(span.resource?.attributes?.['service.name']) ?? span.name)
     } else if (kind === 'model' && (span.name === 'llm.call' || span.name.startsWith('chat '))) name = 'Model call'
-    if (kind === 'model') modelCalls++
+    // A turn span whose usage is the sum of its own call spans (cli-bridge `cli_bridge.usage.scope`) keeps its numbers
+    // for display; totals, prices and the call count come from the calls, so nothing is counted twice.
+    const aggregate = a['cli_bridge.usage.scope'] === 'sum_of_children'
+    if (kind === 'model' && !aggregate) modelCalls++
     if (kind === 'tool' || kind === 'handoff') toolCalls++
     if (failed) errors++
-    promptTokens += prompt ?? 0
-    completionTokens += completion ?? 0
-    const listPrice = kind === 'model' && model && options.price && (prompt !== undefined || completion !== undefined)
+    if (!aggregate) { promptTokens += prompt ?? 0; completionTokens += completion ?? 0 }
+    const listPrice = kind === 'model' && !aggregate && model && options.price && (prompt !== undefined || completion !== undefined)
       ? options.price(model, prompt ?? 0, completion ?? 0) : undefined
     if (listPrice !== undefined) { cost += listPrice; priced++ }
-    else if (kind === 'model' && (prompt || completion)) unpriced++
+    else if (kind === 'model' && !aggregate && (prompt || completion)) unpriced++
     out.push({
       id: span.span_id, ...(parentId ? { parentId } : {}), kind, name, startMs, endMs,
       status: open ? 'running' : failed ? 'failed' : 'done',
