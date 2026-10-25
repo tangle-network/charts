@@ -79,7 +79,12 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
       className={`fw-row${active ? ' fw-active' : ''}${sticky ? ' fw-sticky-row' : ''}${isAgent ? ' fw-agent-row' : ''}`}
       style={{ '--row-y': `${top}px` } as CSSProperties}
       onFocus={event => { if (event.target === event.currentTarget) props.onActivate(row) }}
-      onClick={() => props.onActivate(row)}>
+      onClick={event => {
+        props.onActivate(row)
+        // In the agent view a click anywhere on the row opens the agent, as its bar does; readers click the name first.
+        const bar = agentView ? event.currentTarget.querySelector<HTMLElement>('.fw-bar') : null
+        if (bar) props.onPin(row.id, bar)
+      }}>
       <div role="gridcell" className="fw-label" style={{ '--depth': agentView ? 0 : row.depth } as CSSProperties}>
         {!agentView && <span className="fw-guides" aria-hidden />}
         {!agentView && (row.hasChildren

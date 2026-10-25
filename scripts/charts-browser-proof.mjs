@@ -122,6 +122,12 @@ try {
   await page.locator('.fw-bar').first().click()
   assert.equal((await page.evaluate(() => window.__fwSelected ?? [])).length, 1)
   await page.keyboard.press('Escape')
+  // In the agent view a click on an agent's name selects it too, not only its bar.
+  await page.getByRole('radio', { name: 'Agents' }).click()
+  await page.locator('.fw-view-agents .fw-row:not(.fw-sticky-row) .fw-name-text').first().click()
+  assert.equal((await page.evaluate(() => window.__fwSelected ?? [])).length, 2)
+  await page.keyboard.press('Escape')
+  await page.getByRole('radio', { name: 'Steps' }).click()
   checks.onSelect = 'PASS'
   // The event track: one dot per marker; a click moves the cursor there and reports the time; N steps to the next.
   assert.equal(await page.locator('.fw-event').count(), 3)

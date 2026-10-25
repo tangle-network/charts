@@ -8,6 +8,7 @@
 - Cost is never "Unknown" when partly known. `otlpFlowTrace` reports the priced floor with `costCoverage` (`{ priced, total }`) instead of dropping the total when one call lacks a price; the waterfall shows `≥$4.12` with "38 of 41 model calls priced". `FlowTrace.billedUsd` shows the real charge beside a list price ("≈$4.12 · $0.00 billed"). A value with no source at all shows "—", and its tooltip names the missing source.
 - `otlpFlowTrace` counts a turn span marked `cli_bridge.usage.scope = sum_of_children` (cli-bridge per-call usage) for display only: totals, prices and the model-call count come from its call spans, so tokens are not counted twice.
 - The span card leaves out Cost and token cells nobody recorded (no "Unknown" or dash), and shows the span's `facts` cells, so a host can show billed amounts or partial counts there.
+- In the agent view a click on an agent's row (its name or empty track) selects it and calls `onSelect`, as a bar click does; before, only the bar or Enter did.
 - The agent card's title wraps to two lines, and the card's sentence line shows only what the span did (`output`).
 
 ## 0.19.0
