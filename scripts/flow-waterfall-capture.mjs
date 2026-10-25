@@ -88,7 +88,10 @@ try {
     }
     if (process.env.FW_JUDGE_VIDEO) {
       // First paint (grow, unfold) and then the run replayed live, so bars grow and settle as their spans arrive.
-      const context = await browser.newContext({ viewport: { width: 1512, height: 945 }, deviceScaleFactor: 1, recordVideo: { dir: out, size: { width: 1512, height: 945 } } })
+      // Its own folder: the fit capture renames whatever unnamed webm it finds in `out`, which once took this recording.
+      const raw = `${out}/motion-raw`
+      mkdirSync(raw, { recursive: true })
+      const context = await browser.newContext({ viewport: { width: 1512, height: 945 }, deviceScaleFactor: 1, recordVideo: { dir: raw, size: { width: 1512, height: 945 } } })
       const page = await context.newPage()
       await page.goto(`${base}?fixture=otlp:${file}&view=agents&theme=dark&width=1440&height=720&label=Trace${desc}`)
       await page.waitForTimeout(2500)
@@ -101,11 +104,13 @@ try {
       }
       report.judge.push({ replayWidths: widths, steady: Math.max(...widths) - Math.min(...widths) <= 2 })
       console.log('replay widths', JSON.stringify(widths))
-      const video = page.video()
       await context.close()
-      await video?.saveAs(`${out}/judge-motion.webm`)
+      const recorded = readdirSync(raw).filter(name => name.endsWith('.webm'))
+      if (recorded.length !== 1) throw new Error(`motion recording: expected one webm, found ${recorded.length}`)
+      renameSync(`${raw}/${recorded[0]}`, `${out}/judge-motion.webm`)
     }
   }
+  if (only === 'judge') throw Object.assign(new Error('only judge'), { skip: true })
   if (process.env.FW_LIVE_RELAY) {
     const seconds = Number(process.env.FW_LIVE_SECONDS ?? 60)
     const context = await browser.newContext({ viewport: { width: 1512, height: 945 }, deviceScaleFactor: 1, recordVideo: { dir: out, size: { width: 1512, height: 945 } } })
