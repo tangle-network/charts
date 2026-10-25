@@ -42,6 +42,22 @@ export interface FlowWaterfallProps {
 
 interface CardState { target: string; pinned: boolean; left: number; top: number; above: boolean }
 
+/** One legend item per outcome label the agents carry, with its count; nothing when no agent has an outcome. */
+function OutcomeLegend({ agents }: { agents: FlowWaterfallRow[] }) {
+  const items = new Map<string, { tone: string; count: number }>()
+  for (const row of agents) {
+    const outcome = row.span.outcome
+    if (!outcome) continue
+    const item = items.get(outcome.label) ?? { tone: outcome.tone, count: 0 }
+    item.count += 1
+    items.set(outcome.label, item)
+  }
+  if (items.size === 0) return null
+  return <ul className="fw-legend" aria-label="Outcomes">
+    {[...items].map(([label, item]) => <li key={label}><span className="fw-swatch" data-tone="0" data-outcome={item.tone} aria-hidden />{label} <b>{item.count}</b></li>)}
+  </ul>
+}
+
 const headlineSeconds = (ms: number) => ms < 60_000 ? `${(ms / 1000).toFixed(1)}s` : formatSpanDuration(ms)
 
 /** Shared trace inspector: the agent timeline and the span waterfall over one clock.
@@ -102,18 +118,6 @@ export function FlowWaterfall({
   const visible = useMemo(() => view === 'agents' ? agents : visibleFlowWaterfallRows(rows, query, collapsed), [view, agents, rows, query, collapsed])
   const slowest = view === 'spans' ? slowestRow(rows, clockMs) : undefined
   const rowsHeight = maxHeight ?? (view === 'agents' ? ROW_HEIGHT.agents * 20 : 640)
-  // One legend item per outcome label the agents carry, with its count.
-  const legend = useMemo(() => {
-    const items = new Map<string, { tone: string; count: number }>()
-    for (const row of agents) {
-      const outcome = row.span.outcome
-      if (!outcome) continue
-      const item = items.get(outcome.label) ?? { tone: outcome.tone, count: 0 }
-      item.count += 1
-      items.set(outcome.label, item)
-    }
-    return [...items]
-  }, [agents])
 
   // The agent label column fits the longest agent name (CSS caps it at 28%) until the reader drags it.
   const resized = useRef(false)
@@ -299,9 +303,7 @@ export function FlowWaterfall({
               ? <><span className="fw-done-mark" aria-label="done">✓</span>{agents.length} {agents.length === 1 ? 'agent' : 'agents'} · {headlineSeconds(limit)}{speedup >= 1.05 ? ` · ${speedup.toFixed(1)}x parallel` : ''}{trace.costUsd !== undefined ? ` · ${formatCost(trace.costUsd)}` : ''}</>
               : <>{headlineSeconds(clockMs)} · {tokens.toLocaleString()} tokens{trace.costUsd !== undefined ? ` · ${formatCost(trace.costUsd)}` : ''}</>}
           </p>}
-          {legend.length > 0 && <ul className="fw-legend" aria-label="Outcomes">
-            {legend.map(([label, item]) => <li key={label}><span className="fw-swatch" data-tone="0" data-outcome={item.tone} aria-hidden />{label} <b>{item.count}</b></li>)}
-          </ul>}
+          <OutcomeLegend agents={agents} />
         </div>
         <div className="fw-tools">
           <div className="fw-views" role="radiogroup" aria-label="Trace view">
