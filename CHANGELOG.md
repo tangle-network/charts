@@ -2,6 +2,7 @@
 
 ## 0.20.1
 
+- `otlpFlowTrace` sets `costUpperBound` when no priced call splits cached from fresh input (cli-bridge), and the strip shows the list cost as "≤$x" with the reason, instead of "≈".
 - Agent view: a key names each mark (Model call, Tool call, Waiting, Handoff, Failed turn), listing only kinds the run has.
 - Agent view: a failed turn keeps its failed outline without a × glyph; one warning mark by the agent's name says it failed (blind judges: "red x's everywhere").
 - `description` puts one line beside the title, such as the run's goal, so the view opens on what the run was for.
