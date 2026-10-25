@@ -1,5 +1,11 @@
 # @tangle-network/charts
 
+## 0.20.1
+
+### Patch Changes
+
+- `HBars`: every bar answers a hover. A row takes an optional `title`; without one the tooltip is its label and value. Spacing is on the 4 px grid (gaps 4/12 px, row padding 4/8 px; was .25em/.7em and .3em/.4em).
+
 ## 0.20.0
 
 ### Minor Changes
