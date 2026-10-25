@@ -156,7 +156,7 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
   marks += drawBands(o.bands ?? [], px, top, bottom, xLabel, undefined, axis.extent);
   // Group brackets and their labels go over the event rules, so a ruling's rule never strikes through a run's label.
   const groups = drawGroups(o.bands ?? [], axis.extent, top, bottom, left, right, xLabel);
-  if (strip) marks += text(left - 8, bottom + 16, stripName, { anchor: "end", cls: "tgc-ink-muted", size: 11 }) + line(left, bottom + strip, right, bottom + strip, "tgc-gridline");
+  if (strip) marks += text(left - 8, bottom + 16, stripName, { anchor: "end", cls: "tgc-ink-muted", size: 12 }) + line(left, bottom + strip, right, bottom + strip, "tgc-gridline");
   // Several points in one column (a check and a gate, two checkers) are spread across it in input order.
   const spread = (inStrip: boolean) => {
     const byX = new Map<number, Array<TimePoint>>();
@@ -236,5 +236,5 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
 }
 
 function axisGutter(ticks: readonly YTick[], stripName?: string): number {
-  return Math.max(64, ...ticks.map((tick) => Math.ceil(textWidth(tick.label, 12, "mono")) + 20), stripName ? Math.ceil(textWidth(stripName, 11)) + 14 : 0);
+  return Math.max(64, ...ticks.map((tick) => Math.ceil(textWidth(tick.label, 12, "mono")) + 20), stripName ? Math.ceil(textWidth(stripName, 12)) + 14 : 0);
 }

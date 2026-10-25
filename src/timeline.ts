@@ -153,7 +153,7 @@ export function timeline(lanes: TimelineLane[], o: TimelineOptions): Figure | Re
   const detail = (lane: TimelineLane) => (lane.detail ?? []).filter((fact) => typeof fact === "string" && fact.trim());
   const spanLabel = (lane: TimelineLane, span: TimelineSpan) => [`${lane.label}: ${span.state} ${fmt(span.start)} to ${span.end === null ? `now (${fmt(o.now!)}, open)` : fmt(span.end)}, ${duration(ends(span) - span.start)}${span.note ? ` · ${span.note}` : ""}`, ...detail(lane)].join("\n");
   const hasTicks = rows.some((row) => row.ticks !== undefined);
-  const countWidth = hasTicks ? Math.max(...rows.filter((row) => row.ticks).map((row) => textWidth(counts(row.ticks!).text, 11, "mono"))) : 0;
+  const countWidth = hasTicks ? Math.max(...rows.filter((row) => row.ticks).map((row) => textWidth(counts(row.ticks!).text, 12, "mono"))) : 0;
 
   const draw = (width: number) => {
     const phone = width === NARROW, indent = phone ? 10 : 12;
@@ -169,7 +169,7 @@ export function timeline(lanes: TimelineLane[], o: TimelineOptions): Figure | Re
     const barTop = (y: number) => y + (phone ? 19 : 5), barH = 14;
     let body = drawBands(bands, px, top, bottom, fmt, [t0, t1]) + drawGroups(bands, (from, to) => [px(from), px(to)], top, bottom, left, right, fmt, [t0, t1]);
     for (const t of axisTicks(t0, t1, px, left, right, axisLabel)) {
-      body += line(px(t), top, px(t), bottom, "tgc-gridline") + text(px(t), bottom + 16, axisLabel(t), { size: 11, cls: "tgc-ink-muted tgc-num", anchor: "middle" });
+      body += line(px(t), top, px(t), bottom, "tgc-gridline") + text(px(t), bottom + 16, axisLabel(t), { size: 12, cls: "tgc-ink-muted tgc-num", anchor: "middle" });
     }
     // Run-wide rules go under the lanes: bars, labels and counts stay readable where many events cross them.
     body += drawMarks(wide, px, top - 8, bottom, left, right, fmt, 4, { before, after, window: [t0, t1] });
@@ -181,9 +181,9 @@ export function timeline(lanes: TimelineLane[], o: TimelineOptions): Figure | Re
         body += `<path class="tgc-tree" d="M${x} ${from}V${mid}H${labelX(row.depth) - (row.children ? 13 : 3)}"/>`;
       }
       const countText = row.ticks ? counts(row.ticks) : undefined;
-      const room = (phone ? width - 12 - (countText ? textWidth(countText.text, 11, "mono") + 8 : 0) : left - 8) - labelX(row.depth) - textWidth(tail(row), 12);
-      const label = wrap(lane.label, Math.max(24, room), phone ? 11 : 12, "sans", 1).lines[0]!;
-      const name = `<text class="tgc-ink tgc-lane-label" x="${labelX(row.depth)}" y="${baseline}" font-size="${phone ? 11 : 12}">${esc(label)}${row.hidden ? `<tspan class="tgc-ink-muted">${esc(tail(row))}</tspan>` : ""}</text>`;
+      const room = (phone ? width - 12 - (countText ? textWidth(countText.text, 12, "mono") + 8 : 0) : left - 8) - labelX(row.depth) - textWidth(tail(row), 12);
+      const label = wrap(lane.label, Math.max(24, room), 12, "sans", 1).lines[0]!;
+      const name = `<text class="tgc-ink tgc-lane-label" x="${labelX(row.depth)}" y="${baseline}" font-size="12">${esc(label)}${row.hidden ? `<tspan class="tgc-ink-muted">${esc(tail(row))}</tspan>` : ""}</text>`;
       const caret = row.children ? `<path class="tgc-caret" d="${row.folded ? `M${caretX(row.depth)} ${mid - 4}l6 4l-6 4z` : `M${caretX(row.depth) - 1} ${mid - 3}h8l-4 6z`}"/>` : "";
       const facts = [lane.label, ...detail(lane), ...(countText ? [`Attempts: ${countText.sentence}${row.hidden ? `, including ${row.hidden} folded ${plural(row.hidden, "lane")}` : ""}`] : [])].join("\n");
       const toggle = foldable && row.children ? ` data-toggle="${esc(lane.id)}" class="tgc-lane-toggle" role="button" tabindex="0" aria-expanded="${!row.folded}" aria-label="${esc(`${row.folded ? "Unfold" : "Fold"} ${lane.label}`)}"` : "";
@@ -197,7 +197,7 @@ export function timeline(lanes: TimelineLane[], o: TimelineOptions): Figure | Re
       if (row.ticks?.length) body += drawTicks(row.ticks, lane.label, px, barTop(y), barH, fmt);
       if (countText) {
         const x = phone ? width - 12 : width - 16;
-        body += titled(`${lane.label}: ${countText.sentence}${row.hidden ? ` across ${row.hidden + 1} lanes` : ""}`, `<text class="tgc-num tgc-count" x="${x}" y="${baseline}" font-size="11" text-anchor="end">${countText.ok}<tspan class="tgc-count-ok">✓</tspan> ${countText.failed}<tspan class="tgc-count-failed">✗</tspan></text>`);
+        body += titled(`${lane.label}: ${countText.sentence}${row.hidden ? ` across ${row.hidden + 1} lanes` : ""}`, `<text class="tgc-num tgc-count" x="${x}" y="${baseline}" font-size="12" text-anchor="end">${countText.ok}<tspan class="tgc-count-ok">✓</tspan> ${countText.failed}<tspan class="tgc-count-failed">✗</tspan></text>`);
       }
       body += "</g>";
     });
@@ -207,7 +207,7 @@ export function timeline(lanes: TimelineLane[], o: TimelineOptions): Figure | Re
       const verdict = mark.verdict ? ` data-verdict="${mark.verdict}" class="tgc-verdict-${mark.verdict}"` : "";
       body += titled(`${markName(mark)}: ${fmt(mark.at)}${mark.verdict ? ` · ${mark.verdict}` : ""}`, `<g data-mark="${mark.kind}" data-lane-mark="${esc(mark.lane!)}"${verdict}>${glyph}</g>`);
     }
-    if (o.now !== undefined) body += line(px(o.now), top, px(o.now), bottom, "tgc-now") + text(px(o.now), bottom + 30, `now ${fmt(o.now)}`, { size: 11, cls: "tgc-ink tgc-num", anchor: px(o.now) > (left + right) / 2 ? "end" : "start" });
+    if (o.now !== undefined) body += line(px(o.now), top, px(o.now), bottom, "tgc-now") + text(px(o.now), bottom + 30, `now ${fmt(o.now)}`, { size: 12, cls: "tgc-ink tgc-num", anchor: px(o.now) > (left + right) / 2 ? "end" : "start" });
     return svgRoot(width, bottom + (o.now === undefined ? 22 : 36), body);
   };
 
@@ -270,7 +270,7 @@ function axisTicks(t0: number, t1: number, px: (t: number) => number, left: numb
   const fit = (list: number[]) => {
     let end = -Infinity;
     for (const t of list) {
-      const w = textWidth(label(t), 11, "mono"), a = px(t) - w / 2, b = px(t) + w / 2;
+      const w = textWidth(label(t), 12, "mono"), a = px(t) - w / 2, b = px(t) + w / 2;
       if (a < left - 14 || b > right + 14 || a < end + 10) return false;
       end = b;
     }

@@ -47,12 +47,12 @@ function draw(rows: Array<WaterfallPhase & { start: number }>, total: number, wi
   for (let i = 0; i <= 4; i++) {
     const x = left + plotW * i / 4;
     body += line(x, top - 4, x, top + rows.length * rowH, "tgc-gridline");
-    body += text(x, 15, `${(total * i / 4000).toFixed(0)} s`, { size: 10, cls: "tgc-ink-muted tgc-num", anchor: i === 0 ? "start" : i === 4 ? "end" : "middle" });
+    body += text(x, 15, `${(total * i / 4000).toFixed(0)} s`, { size: 12, cls: "tgc-ink-muted tgc-num", anchor: i === 0 ? "start" : i === 4 ? "end" : "middle" });
   }
   rows.forEach((p, i) => {
     const y = top + i * rowH, start = left + p.start / total * plotW, w = p.ms / total * plotW;
-    const label = wrap(p.label, phone ? width - 65 : left - 6, phone ? 11 : 12, "sans", 1);
-    body += titled(p.label, text(phone ? 12 : 2, y + (phone ? 13 : 18), label.lines[0]!, { size: phone ? 11 : 12, cls: p.id === "__unaccounted" ? "tgc-ink-muted" : "tgc-ink" }));
+    const label = wrap(p.label, phone ? width - 65 : left - 6, 12, "sans", 1);
+    body += titled(p.label, text(phone ? 12 : 2, y + (phone ? 13 : 18), label.lines[0]!, { size: 12, cls: p.id === "__unaccounted" ? "tgc-ink-muted" : "tgc-ink" }));
     const barY = y + (phone ? 21 : 5), barW = Math.max(p.ms > 0 ? 1 : 0, w);
     const bar = p.kind === "unaccounted" ? hatch(start, barY, barW, 13, "tgc-waterfall-unaccounted") : rect(start, barY, barW, 13, "tgc-waterfall-bar", 'rx="2"');
     body += titled(`${p.label}: ${short(p.ms)}; cumulative ${((p.start + p.ms) / 1000).toFixed(2)} s`, bar);

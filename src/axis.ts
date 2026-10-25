@@ -123,16 +123,16 @@ export function drawTargets(targets: readonly YTarget[], py: (y: number) => numb
     return titled(`${target.label}: ${target.from === target.to ? yLabel(target.from) : `${yLabel(target.from)} to ${yLabel(target.to)}`}`, `<g data-target="${target.kind}">${mark}</g>`);
   }).join("");
   // Labels go over every band, so a later band never strikes through an earlier label.
-  return marks + (labels ? targets.map((target) => text(target.kind === "stretch" ? left + 4 : right - 4, py(target.to) - 4, target.label, { size: 11, anchor: target.kind === "stretch" ? "start" : "end", cls: "tgc-target-label" })).join("") : "");
+  return marks + (labels ? targets.map((target) => text(target.kind === "stretch" ? left + 4 : right - 4, py(target.to) - 4, target.label, { size: 12, anchor: target.kind === "stretch" ? "start" : "end", cls: "tgc-target-label" })).join("") : "");
 }
 
 /** A key row naming each target by its line style, for a panel too small to label bands in place. Returns its width. */
 export function targetKey(targets: readonly YTarget[], x: number, y: number, maxWidth: number): string {
   let out = "", at = x;
   for (const target of targets) {
-    const w = textWidth(target.label, 10) * 1.1 + 34;
+    const w = textWidth(target.label, 12) * 1.1 + 34;
     if (at + w - x > maxWidth) break;
-    out += line(at, y - 3.5, at + 14, y - 3.5, `tgc-target-${target.kind}-edge`) + text(at + 18, y, target.label, { size: 10, cls: "tgc-target-label" });
+    out += line(at, y - 3.5, at + 14, y - 3.5, `tgc-target-${target.kind}-edge`) + text(at + 18, y, target.label, { size: 12, cls: "tgc-target-label" });
     at += w;
   }
   return out;
