@@ -6,7 +6,7 @@ import { useTraceClock } from './flow-waterfall-clock.js'
 import { FailGlyph, SearchGlyph, TraceGlyph } from './flow-waterfall-icons.js'
 import { PlaybackBar } from './flow-waterfall-playback.js'
 import {
-  busyMs, costSummary, type FlowWaterfallRow, flowWaterfallRows, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
+  agentCallouts, busyMs, costSummary, type FlowWaterfallRow, flowWaterfallRows, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
   toneKey, totalsAt, visibleFlowWaterfallRows,
 } from './flow-waterfall-model.js'
 import type { FlowView } from './flow-waterfall-row.js'
@@ -15,7 +15,7 @@ import { clampWindow, type ViewWindow, zoomWindow } from './flow-waterfall-time.
 export type { FlowView } from './flow-waterfall-row.js'
 
 const LANE_PAD = 12
-const END_LABEL_GUTTER: Record<FlowView, number> = { spans: 120, agents: 16 }
+const END_LABEL_GUTTER: Record<FlowView, number> = { spans: 120, agents: 120 }
 const NAME_WIDTH: Record<FlowView, number> = { spans: 320, agents: 240 }
 
 export interface FlowWaterfallProps {
@@ -62,6 +62,9 @@ function summaryCells(trace: FlowTrace, at: ReturnType<typeof totalsAt> | undefi
 }
 
 /** One legend item per outcome label the agents carry, with its count; nothing when no agent has an outcome. */
+// Outcome keys keep one order on every page: good news first, then what needs a look, then what produced nothing.
+const TONE_ORDER = ['ok', 'warn', 'failed', 'neutral']
+
 function OutcomeLegend({ agents }: { agents: FlowWaterfallRow[] }) {
   const items = new Map<string, { tone: string; count: number }>()
   for (const row of agents) {
@@ -75,7 +78,7 @@ function OutcomeLegend({ agents }: { agents: FlowWaterfallRow[] }) {
   // A failed step inside a finished agent is a different fact from a failed agent, so it gets its own key.
   const failedSteps = agents.reduce((sum, row) => sum + row.own.reduce((n, mark) => n + (mark.kind === 'failed' ? mark.count : 0), 0), 0)
   return <ul className="fw-legend" aria-label="Outcomes">
-    {[...items].map(([label, item]) => <li key={label}><span className="fw-swatch" data-tone="0" data-outcome={item.tone} aria-hidden />{label} <b>{item.count}</b></li>)}
+    {[...items].sort(([a, x], [b, y]) => TONE_ORDER.indexOf(x.tone) - TONE_ORDER.indexOf(y.tone) || a.localeCompare(b)).map(([label, item]) => <li key={label}><span className="fw-swatch" data-tone="0" data-outcome={item.tone} aria-hidden />{label} <b>{item.count}</b></li>)}
     {failedSteps > 0 && <li><span className="fw-swatch-step" aria-hidden><FailGlyph /></span>Failed step <b>{failedSteps}</b></li>}
   </ul>
 }
@@ -139,6 +142,7 @@ export function FlowWaterfall({
   }, [rows])
   const visible = useMemo(() => view === 'agents' ? agents : visibleFlowWaterfallRows(rows, query, collapsed), [view, agents, rows, query, collapsed])
   const slowest = view === 'spans' ? slowestRow(rows, clockMs) : undefined
+  const callouts = useMemo<ReturnType<typeof agentCallouts>>(() => view === 'agents' ? agentCallouts(agents, clockMs) : {}, [view, agents, clockMs])
   const rowsHeight = maxHeight ?? (view === 'agents' ? ROW_HEIGHT.agents * 20 : 640)
 
   // The agent label column fits the longest agent name (CSS caps it at 28%) until the reader drags it.
@@ -346,7 +350,7 @@ export function FlowWaterfall({
         </div>)}
       </dl>}
       <FlowBody rows={visible} byId={byId} totalRows={rows.length} view={view} maxHeight={rowsHeight} collapsed={collapsed} searching={Boolean(query.trim())}
-        slowestId={slowest?.id} activeId={activeId} selectedId={card?.pinned ? card.target : undefined} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
+        slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} activeId={activeId} selectedId={card?.pinned ? card.target : undefined} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
         trackPx={trackPx} showCursor={showCursor} markers={markers} zoomed={zoom !== null} renderIcon={renderIcon}
         emptyText={rows.length === 0 ? 'No spans yet. Waiting for trace events.' : `No matching steps for “${query}”.`}
         onToggle={toggle} onInspect={inspect} onLeave={leave} onPin={pin} onActivate={row => setActiveId(row.id)}

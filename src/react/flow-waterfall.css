@@ -166,9 +166,10 @@
 .fw-root .fw-view-agents .fw-label { padding-left: 16px; gap: 12px; border-right: 0; }
 .fw-root .fw-view-agents .fw-names { flex-direction: column; align-items: flex-start; gap: 0; }
 .fw-root .fw-view-agents .fw-span-name { font-weight: 600; line-height: 18px; }
-.fw-root .fw-view-agents .fw-subtitle { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fw-muted); font-size: 12px; line-height: 16px; }
+/* A subtitle gets two lines before it ellipsizes: 18 + 2 x 16 px fits the 52 px agent row. */
+.fw-root .fw-view-agents .fw-subtitle { max-width: 100%; overflow: hidden; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; color: var(--fw-muted); font-size: 12px; line-height: 16px; }
 .fw-root .fw-view-agents .fw-detail { font-size: 12px; line-height: 16px; }
-.fw-root .fw-agent-dot { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--line, var(--fw-muted)); align-self: flex-start; margin-top: calc((var(--fw-row-h) - 34px) / 2 + 8px); }
+.fw-root .fw-agent-dot { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--line, var(--fw-muted)); }
 
 /* Lanes and marks */
 .fw-root .fw-lane { position: relative; overflow: hidden; min-width: 0; }
@@ -247,7 +248,7 @@
 .fw-root .fw-card[role="tooltip"] { pointer-events: none; }
 .fw-root .fw-card-above .fw-card { transform: translateY(-100%); animation-name: fw-arrive-above; }
 .fw-root .fw-card-agent { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; font-weight: 600; }
-.fw-root .fw-card-agent .fw-agent-dot { margin-top: 0; align-self: center; }
+.fw-root .fw-card-agent .fw-agent-dot { align-self: center; }
 .fw-root .fw-card-head { display: flex; align-items: flex-start; gap: 8px; }
 .fw-root .fw-card-head .fw-icon-tile { flex-basis: 28px; width: 28px; height: 28px; border-radius: 8px; }
 .fw-root .fw-card-head .fw-icon-tile :is(svg, img) { width: 16px; height: 16px; }
@@ -344,7 +345,8 @@
   /* The root is the queried container, so the variables go on its children. */
   .fw-root-agents > * { --fw-label-col: 0px; --fw-bar-shift: 8px; }
   .fw-root-agents .fw-view-agents .fw-names { flex-direction: row; align-items: baseline; gap: 8px; min-width: 0; }
-  .fw-root-agents .fw-view-agents .fw-agent-dot { align-self: center; margin-top: 0; }
+  /* Stacked, the subtitle shares the name's single line. */
+  .fw-root-agents .fw-view-agents .fw-subtitle { display: block; white-space: nowrap; text-overflow: ellipsis; }
   /* The label leaves the grid flow, so the lane must claim the track column itself. */
   .fw-root-agents .fw-view-agents .fw-lane { grid-column: 2; }
   /* Elbows pass behind the name, not through its letters. A transform or layout containment would make each row

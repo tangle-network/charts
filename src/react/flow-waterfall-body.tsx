@@ -20,6 +20,7 @@ export interface BodyProps extends RowEvents {
   collapsed: Set<string>
   searching: boolean
   slowestId?: string
+  costliestId?: string
   activeId?: string
   selectedId?: string
   /** The agent whose handoff connectors draw at full strength; the rest stay dim in the agent view. */
@@ -236,7 +237,7 @@ export function FlowBody(props: BodyProps) {
 
   const row = (item: FlowWaterfallRow, i: number, isSticky = false) => (
     <FlowRow key={isSticky ? `sticky-${item.id}` : item.id} row={item} view={view} top={i * rowHeight}
-      collapsed={collapsed.has(item.id)} searching={searching} slowest={item.id === slowestId}
+      collapsed={collapsed.has(item.id)} searching={searching} slowest={item.id === slowestId} costliest={item.id === props.costliestId}
       active={item.id === activeId} focusable={!isSticky && (item.id === activeId || (activeId === undefined || !index.has(activeId)) && i === 0)}
       selected={item.id === selectedId} sticky={isSticky} clockMs={clockMs} renderIcon={props.renderIcon}
       onToggle={props.onToggle} onInspect={props.onInspect} onLeave={props.onLeave} onPin={props.onPin} onActivate={item => props.onActiveChange(item.id)} />

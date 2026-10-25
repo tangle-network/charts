@@ -26,6 +26,7 @@ export interface RowProps extends RowEvents {
   collapsed: boolean
   searching: boolean
   slowest: boolean
+  costliest?: boolean
   active: boolean
   focusable: boolean
   selected: boolean
@@ -60,7 +61,7 @@ function endLabel(row: FlowWaterfallRow, clockMs: number): string {
 
 /** One trace row. Geometry comes from CSS variables, so a row re-renders only when its own state changes. */
 export const FlowRow = memo(function FlowRow(props: RowProps) {
-  const { row, view, top, collapsed, searching, slowest, active, focusable, selected, sticky, clockMs, renderIcon } = props
+  const { row, view, top, collapsed, searching, slowest, costliest, active, focusable, selected, sticky, clockMs, renderIcon } = props
   const span = row.span
   const running = spanRunning(span)
   const agentView = view === 'agents'
@@ -92,10 +93,10 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
             aria-label={`${folded ? 'Expand' : 'Collapse'} ${row.name}`} aria-expanded={!folded}
             onClick={event => { event.stopPropagation(); props.onToggle(row) }}><ChevronGlyph /></button>
           : <span className="fw-toggle-space" aria-hidden />)}
-        {agentView && <span className="fw-agent-dot" aria-hidden />}
         {!agentView && <span className="fw-icon-tile" aria-hidden>{renderIcon?.(span) ?? <KindGlyph kind={span.kind} />}</span>}
         <span className="fw-names" title={`${row.name}${span.detail ? ` · ${span.detail}` : ''} · ${KIND_LABEL[span.kind]}${running ? ' · running' : ''}${row.ok ? '' : ' · failed'}`}>
           <span className={`fw-span-name${isAgent || row.hasChildren ? ' fw-strong' : ''}`}>
+            {agentView && <span className="fw-agent-dot" aria-hidden />}
             {running && <span className="fw-spinner" role="status" aria-label="running" />}
             <span className="fw-name-text">{row.name}</span>
           </span>
@@ -105,7 +106,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
         {folded && <span className="fw-count" aria-label={`${row.descendants} hidden steps`}>+{row.descendants}</span>}
         {!row.ok && <span className="fw-alert"><AlertGlyph label="failed" /></span>}
       </div>
-      <div role="gridcell" className="fw-lane" data-waterfall-track aria-label={`${KIND_LABEL[span.kind]}, ${label}${slowest ? ', slowest step' : ''}`}>
+      <div role="gridcell" className="fw-lane" data-waterfall-track aria-label={`${KIND_LABEL[span.kind]}, ${label}${slowest ? `, slowest ${agentView ? 'agent' : 'step'}` : ''}${costliest ? ', costliest agent' : ''}`}>
         {invalid ? <span className="fw-invalid">—</span> : <>
           <span className={`fw-bar fw-k-${isAgent ? 'pipeline' : kind}${row.approx ? ' fw-approx' : ''}${marks.length ? ' fw-has-marks' : ''}${row.hasAgents ? ' fw-has-agents' : ''}`}
             data-tone={toneKey(row.tone)} style={at(span.startMs, running ? OPEN_END : span.endMs)}
@@ -115,16 +116,17 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
             {!isAgent && row.ok && row.retry && <span className="fw-glyph"><RetryGlyph /></span>}
           </span>
           {marks.map((mark, i) => <Segment key={`${mark.id}-${i}`} mark={mark} events={props} agentView={agentView} />)}
-          {!agentView && <span className="fw-end" style={at(span.startMs, running ? OPEN_END : span.endMs)}>
+          <span className="fw-end" style={at(span.startMs, running ? OPEN_END : span.endMs)}>
             <span className="fw-duration">{label}</span>
             {slowest && <span className="fw-badge">Slowest</span>}
-          </span>}
+            {costliest && <span className="fw-badge">Costliest</span>}
+          </span>
         </>}
       </div>
     </div>
   )
 }, (a, b) => a.row === b.row && a.view === b.view && a.top === b.top && a.collapsed === b.collapsed && a.searching === b.searching &&
-  a.slowest === b.slowest && a.active === b.active && a.focusable === b.focusable && a.selected === b.selected &&
+  a.slowest === b.slowest && a.costliest === b.costliest && a.active === b.active && a.focusable === b.focusable && a.selected === b.selected &&
   a.sticky === b.sticky && a.renderIcon === b.renderIcon && (a.clockMs === b.clockMs || !open(a.row, a.clockMs) && !open(b.row, b.clockMs)))
 
 export interface FlowLink { id: string; from: number; to: number; atMs: number; tone: number; dir: 'down' | 'up' }
