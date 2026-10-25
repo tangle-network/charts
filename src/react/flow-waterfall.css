@@ -122,6 +122,7 @@
 .fw-root .fw-marker[data-tone="ok"] { --fw-marker: var(--fw-ok); }
 .fw-root .fw-marker[data-tone="failed"] { --fw-marker: var(--fw-failed); }
 .fw-root .fw-marker-label { position: absolute; top: 2px; left: 3px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 4px; border-radius: 4px; font-size: 12px; line-height: 16px; color: var(--fw-marker); background: var(--fw-surface); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-marker) 40%, transparent); }
+.fw-root .fw-marker-label-left { left: auto; right: 3px; }
 .fw-root .fw-cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: color-mix(in oklab, var(--fw-text) 70%, transparent); left: calc(var(--fw-pad) + (var(--fw-t) - var(--fw-v0)) * var(--fw-k) * 1px); }
 .fw-root .fw-empty { padding: 40px 16px; text-align: center; color: var(--fw-muted); }
 .fw-root .fw-sticky { position: absolute; top: 0; left: 0; right: 0; z-index: 2; background: var(--fw-surface); box-shadow: 0 1px 0 var(--fw-border), 0 6px 12px -8px rgb(0 0 0 / .35); }
@@ -186,6 +187,17 @@
 .fw-root .fw-bar.fw-k-pipeline { background: linear-gradient(90deg, var(--fw-neutral-bar), color-mix(in oklab, var(--fw-neutral-bar) 55%, var(--fw-surface))); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-text) 12%, transparent); }
 .fw-root .fw-bar.fw-k-pipeline.fw-has-marks { background: color-mix(in oklab, var(--tone) 9%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--tone) 18%, transparent); }
 .fw-root .fw-bar.fw-k-pipeline.fw-has-agents { background: repeating-linear-gradient(-45deg, var(--fw-hatch) 0 1px, transparent 1px 5px), color-mix(in oklab, var(--fw-text) 4%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-text) 12%, transparent); }
+/* An agent bar with no child marks says who it is by its lane color, never a neutral grey. */
+.fw-root .fw-view-agents .fw-bar.fw-k-pipeline:not(.fw-has-marks, .fw-has-agents) { background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); }
+/* A host outcome re-tones the whole lane: dot, bar and marks. */
+.fw-root [data-outcome="ok"], .fw-root [data-outcome="ok"] [data-tone] { --tone: var(--fw-ok); }
+.fw-root [data-outcome="failed"], .fw-root [data-outcome="failed"] [data-tone] { --tone: var(--fw-failed); }
+.fw-root [data-outcome="warn"], .fw-root [data-outcome="warn"] [data-tone] { --tone: var(--fw-amber); }
+.fw-root [data-outcome="neutral"], .fw-root [data-outcome="neutral"] [data-tone] { --tone: var(--fw-muted); }
+.fw-root .fw-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; padding: 0; list-style: none; color: var(--fw-muted); font-size: 12px; line-height: 16px; }
+.fw-root .fw-legend li { display: inline-flex; align-items: center; gap: 8px; }
+.fw-root .fw-legend .fw-swatch { width: 12px; height: 8px; border-radius: 2px; background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); }
+.fw-root .fw-legend b { color: var(--fw-text); font-weight: 600; font-variant-numeric: tabular-nums; }
 .fw-root .fw-bar.fw-approx { opacity: calc(var(--on) * .7); }
 .fw-root .fw-seg { width: max(calc(var(--w) - 2px), calc(var(--on) * 3px)); pointer-events: none; }
 .fw-root .fw-view-agents .fw-seg { pointer-events: auto; }

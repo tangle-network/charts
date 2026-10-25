@@ -1,5 +1,14 @@
 # @tangle-network/charts
 
+## 0.18.0
+
+### Minor Changes
+
+- `FlowSpan.outcome` (`FlowOutcome`: `{ tone: 'ok' | 'neutral' | 'failed' | 'warn', label }`) is the host's verdict on an agent, such as shipped or crashed. It colors that agent's lane (dot, bar and marks), and the header draws one legend item per label with its count.
+- An agent bar with no child marks takes its lane color instead of a neutral grey, so a trace of bare agent spans still says which bar is whose.
+- The agent view shows 20 rows before it scrolls (`maxHeight` still overrides; steps keep 640 px).
+- Marker labels thin out where they would collide (every line stays) and flip to the left of their line at the right edge.
+
 ## 0.17.1
 
 ### Patch Changes
