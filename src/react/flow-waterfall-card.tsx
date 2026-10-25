@@ -30,24 +30,32 @@ const count = (n: number | undefined) => n === undefined ? unknown : <span title
 export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, renderIcon, compact }: SpanCardProps) {
   const span = row.span
   const running = spanRunning(span)
-  const end = running ? Math.max(span.endMs, clockMs) : span.endMs
   const status = running ? 'Running' : row.ok ? 'Done' : 'Failed'
   const tokens = span.kind === 'model' || span.kind === 'pipeline' || span.promptTokens !== undefined
   const owner = agent && agent.id !== row.id ? agent : undefined
-  const duration = Number.isFinite(end - span.startMs) && end >= span.startMs ? formatSpanDuration(end - span.startMs) : '—'
+  const lasted = (s: FlowSpan) => {
+    const stop = spanRunning(s) ? Math.max(s.endMs, clockMs) : s.endMs
+    return Number.isFinite(stop - s.startMs) && stop >= s.startMs ? formatSpanDuration(stop - s.startMs) : '—'
+  }
+  const duration = lasted(span)
   if (compact) {
     // The reference tooltip: who and the outcome, harness and model, two to four recorded values, one sentence.
+    // A segment inside an agent bar keeps the agent's facts; the segment itself is one line under them.
     const who = owner ?? row
-    const outcome = who.span.outcome
-    const tokenCount = span.promptTokens !== undefined || span.completionTokens !== undefined ? (span.promptTokens ?? 0) + (span.completionTokens ?? 0) : undefined
-    const cells: [string, ReactNode][] = [[span.kind === 'model' ? 'Thinking' : KIND_LABEL[span.kind], duration]]
-    for (const fact of (span.facts ?? who.span.facts ?? []).slice(0, 3)) cells.push([fact.label, fact.value])
-    cells.push(['Started', `+${formatSpanDuration(Math.max(0, span.startMs))}`])
+    const subject = who.span
+    const outcome = subject.outcome
+    const tokenCount = subject.promptTokens !== undefined || subject.completionTokens !== undefined ? (subject.promptTokens ?? 0) + (subject.completionTokens ?? 0) : undefined
+    const cost = subject.costUsd ?? who.rollupCostUsd
+    const cells: [string, ReactNode][] = [[subject.kind === 'model' ? 'Thinking' : KIND_LABEL[subject.kind], lasted(subject)]]
+    for (const fact of (subject.facts ?? []).slice(0, 3)) cells.push([fact.label, fact.value])
+    cells.push(['Started', `+${formatSpanDuration(Math.max(0, subject.startMs))}`])
     if (tokenCount !== undefined) cells.push(['Tokens', count(tokenCount)])
-    if (span.costUsd !== undefined) cells.push(['Cost', formatCost(span.costUsd)])
+    if (cost !== undefined) cells.push(['Cost', formatCost(cost)])
     cells.splice(6)
-    // The sentence is what the span did; a name repeated from the title says nothing.
-    const sentence = span.output && span.output !== who.name ? span.output : undefined
+    const kind = span.kind === 'model' ? 'Thinking' : KIND_LABEL[span.kind]
+    const step = owner ? `${kind}${span.name && span.name !== kind && span.name.toLowerCase() !== span.kind ? ` ${span.name}` : ''} · ${duration}${row.ok ? '' : ' · failed'}` : undefined
+    // The sentence is what the agent did; a name repeated from the title says nothing.
+    const sentence = !owner && span.output && span.output !== who.name ? span.output : undefined
     return (
       <div id={id} role={pinned ? 'dialog' : 'tooltip'} aria-label={pinned ? `${span.name} details` : undefined}
         className="fw-card fw-card-compact" data-tone={toneKey(who.tone)} data-outcome={outcome?.tone} style={{ left, top }}
@@ -60,6 +68,7 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
         </div>
         {who.span.detail && <p className="fw-card-detail">{who.span.detail}</p>}
         <dl className="fw-card-cells">{cells.map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl>
+        {step && <p className="fw-card-step">{step}</p>}
         {sentence && <p className="fw-card-result">{sentence}</p>}
       </div>
     )

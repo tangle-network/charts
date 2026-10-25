@@ -128,6 +128,12 @@ try {
   assert.equal((await page.evaluate(() => window.__fwSelected ?? [])).length, 2)
   // Agent bars state their duration at the bar end, as step bars do.
   assert.match(await page.locator('.fw-view-agents .fw-row:not(.fw-sticky-row) .fw-duration').first().innerText(), /\d/)
+  // The agent timeline keeps play, speed and the axis above its 40 px lanes.
+  const order = await page.evaluate(() => {
+    const top = selector => document.querySelector(selector).getBoundingClientRect().top
+    return { playback: top('.fw-playback'), axis: top('.fw-axis'), row: top('.fw-view-agents .fw-row'), rowHeight: document.querySelector('.fw-view-agents .fw-row').getBoundingClientRect().height }
+  })
+  assert.ok(order.playback < order.axis && order.axis < order.row && order.rowHeight === 40, JSON.stringify(order))
   await page.keyboard.press('Escape')
   await page.getByRole('radio', { name: 'Steps' }).click()
   checks.onSelect = 'PASS'

@@ -4,7 +4,8 @@ import { type FlowWaterfallRow, spanRunning } from './flow-waterfall-model.js'
 import { type FlowLink, type FlowView, FlowRow, LinkMark, type RowEvents } from './flow-waterfall-row.js'
 import { clockTicks, formatClock, type ViewWindow } from './flow-waterfall-time.js'
 
-export const ROW_HEIGHT: Record<FlowView, number> = { spans: 36, agents: 52 }
+// 40 px agent rows keep a 17-agent run, its axis and its controls inside a 945 px viewport.
+export const ROW_HEIGHT: Record<FlowView, number> = { spans: 36, agents: 40 }
 const OVERSCAN = 8
 /** Rows re-render once per CHUNK rows scrolled; overscan covers the rows in between. */
 const CHUNK = 4
@@ -32,6 +33,7 @@ export interface BodyProps extends RowEvents {
   markers?: FlowMarker[]
   zoomed: boolean
   renderIcon?: (span: FlowSpan) => ReactNode
+  fillByAgent?: boolean
   emptyText: string
   onActiveChange: (id: string) => void
   onScrub: (ms: number) => void
@@ -210,7 +212,7 @@ export function FlowBody(props: BodyProps) {
   }
 
   const axis = (
-    <div className={`fw-axis fw-axis-${view === 'agents' ? 'bottom' : 'top'}`}>
+    <div className="fw-axis fw-axis-top">
       <div className="fw-axis-label">
         {view === 'spans' && <>
           {props.onExpandAll && <span className="fw-branch-controls">
@@ -239,13 +241,13 @@ export function FlowBody(props: BodyProps) {
     <FlowRow key={isSticky ? `sticky-${item.id}` : item.id} row={item} view={view} top={i * rowHeight}
       collapsed={collapsed.has(item.id)} searching={searching} slowest={item.id === slowestId} costliest={item.id === props.costliestId}
       active={item.id === activeId} focusable={!isSticky && (item.id === activeId || (activeId === undefined || !index.has(activeId)) && i === 0)}
-      selected={item.id === selectedId} sticky={isSticky} clockMs={clockMs} renderIcon={props.renderIcon}
+      selected={item.id === selectedId} sticky={isSticky} clockMs={clockMs} renderIcon={props.renderIcon} fillByAgent={props.fillByAgent}
       onToggle={props.onToggle} onInspect={props.onInspect} onLeave={props.onLeave} onPin={props.onPin} onActivate={item => props.onActiveChange(item.id)} />
   )
 
   return (
     <div className={`fw-body fw-view-${view}${zoomed ? ' fw-zoomed' : ''}`} ref={surface}>
-      {view === 'spans' && axis}
+      {axis}
       <div className="fw-viewport">
         <div className="fw-gridlayer" aria-hidden>
           {ticks.map(tick => <span key={tick} className="fw-gridline" style={{ '--s': tick } as CSSProperties} />)}
@@ -271,7 +273,6 @@ export function FlowBody(props: BodyProps) {
         </div> : null}
         {showCursor && <div className="fw-cursor-layer" aria-hidden><span className="fw-cursor" /></div>}
       </div>
-      {view === 'agents' && axis}
     </div>
   )
 }

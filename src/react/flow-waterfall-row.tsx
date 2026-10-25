@@ -34,6 +34,7 @@ export interface RowProps extends RowEvents {
   /** Clock at 10 Hz; only running rows read it, so idle rows skip re-render. */
   clockMs: number
   renderIcon?: (span: FlowSpan) => ReactNode
+  fillByAgent?: boolean
 }
 
 function Segment({ mark, events, agentView }: { mark: FlowSegment; events: RowEvents; agentView: boolean }) {
@@ -61,7 +62,7 @@ function endLabel(row: FlowWaterfallRow, clockMs: number): string {
 
 /** One trace row. Geometry comes from CSS variables, so a row re-renders only when its own state changes. */
 export const FlowRow = memo(function FlowRow(props: RowProps) {
-  const { row, view, top, collapsed, searching, slowest, costliest, active, focusable, selected, sticky, clockMs, renderIcon } = props
+  const { row, view, top, collapsed, searching, slowest, costliest, active, focusable, selected, sticky, clockMs, renderIcon, fillByAgent } = props
   const span = row.span
   const running = spanRunning(span)
   const agentView = view === 'agents'
@@ -76,7 +77,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   return (
     <div role="row" data-span-id={row.id} data-span-kind={kind} data-slowest={slowest || undefined}
       aria-level={agentView ? undefined : row.depth + 1} aria-expanded={row.hasChildren && !agentView ? !folded : undefined}
-      aria-selected={selected} tabIndex={focusable ? 0 : -1} data-tone={toneKey(row.tone)} data-outcome={span.outcome?.tone}
+      aria-selected={selected} tabIndex={focusable ? 0 : -1} data-tone={toneKey(row.tone)} data-outcome={fillByAgent ? undefined : span.outcome?.tone}
       className={`fw-row${active ? ' fw-active' : ''}${sticky ? ' fw-sticky-row' : ''}${isAgent ? ' fw-agent-row' : ''}`}
       style={{ '--row-y': `${top}px` } as CSSProperties}
       onFocus={event => { if (event.target === event.currentTarget) props.onActivate(row) }}
@@ -96,7 +97,9 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
         {!agentView && <span className="fw-icon-tile" aria-hidden>{renderIcon?.(span) ?? <KindGlyph kind={span.kind} />}</span>}
         <span className="fw-names" title={`${row.name}${span.detail ? ` · ${span.detail}` : ''} · ${KIND_LABEL[span.kind]}${running ? ' · running' : ''}${row.ok ? '' : ' · failed'}`}>
           <span className={`fw-span-name${isAgent || row.hasChildren ? ' fw-strong' : ''}`}>
-            {agentView && <span className="fw-agent-dot" aria-hidden />}
+            {agentView && (fillByAgent && span.outcome
+              ? <span className="fw-agent-dot" data-tone="0" data-outcome={span.outcome.tone} title={span.outcome.label} aria-hidden />
+              : <span className="fw-agent-dot" aria-hidden />)}
             {running && <span className="fw-spinner" role="status" aria-label="running" />}
             <span className="fw-name-text">{row.name}</span>
           </span>
@@ -127,7 +130,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   )
 }, (a, b) => a.row === b.row && a.view === b.view && a.top === b.top && a.collapsed === b.collapsed && a.searching === b.searching &&
   a.slowest === b.slowest && a.costliest === b.costliest && a.active === b.active && a.focusable === b.focusable && a.selected === b.selected &&
-  a.sticky === b.sticky && a.renderIcon === b.renderIcon && (a.clockMs === b.clockMs || !open(a.row, a.clockMs) && !open(b.row, b.clockMs)))
+  a.sticky === b.sticky && a.renderIcon === b.renderIcon && a.fillByAgent === b.fillByAgent && (a.clockMs === b.clockMs || !open(a.row, a.clockMs) && !open(b.row, b.clockMs)))
 
 export interface FlowLink { id: string; from: number; to: number; atMs: number; tone: number; dir: 'down' | 'up' }
 

@@ -40,6 +40,8 @@ export interface FlowWaterfallProps {
   markers?: FlowMarker[]
   /** The time the reader moved to, in trace ms; `null` when following live or showing the whole trace. */
   onTimeChange?: (t: number | null) => void
+  /** What an agent bar's color means: its `outcome` (default), or the agent itself, with the outcome on the row dot and legend. */
+  agentFill?: 'outcome' | 'agent'
 }
 
 interface CardState { target: string; pinned: boolean; left: number; top: number; above: boolean }
@@ -88,7 +90,7 @@ const headlineSeconds = (ms: number) => ms < 60_000 ? `${(ms / 1000).toFixed(1)}
 /** Shared trace inspector: the agent timeline and the span waterfall over one clock.
  * Data remains producer-owned; playback, zoom and folding change presentation only. */
 export function FlowWaterfall({
-  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers, onTimeChange,
+  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers, onTimeChange, agentFill = 'outcome',
 }: FlowWaterfallProps) {
   const root = useRef<HTMLElement>(null)
   const search = useRef<HTMLInputElement>(null)
@@ -311,6 +313,14 @@ export function FlowWaterfall({
   const showCursor = isLive || position !== null || playing
   const overviewMarks = useMemo(() => rows.filter(row => !row.parentId).flatMap(row => row.hasChildren ? row.segments : row.kind === 'pipeline' ? [] : [{ startMs: row.span.startMs, endMs: row.span.endMs, kind: row.ok ? 'tool' as const : 'failed' as const, tone: row.tone, id: row.id, count: 1, retry: false }]), [rows])
 
+  // The agent timeline puts play and speed above its lanes, so they stay in view on a long run.
+  const playback = (
+    <PlaybackBar view={view} playing={playing} limit={limit} clockMs={clockMs} speed={speed} zoom={zoom} marks={overviewMarks}
+      slider={slider} timeOutput={timeOutput} followLabel={position === null ? undefined : isLive ? 'Follow live' : 'Show full trace'}
+      onTogglePlay={togglePlay} onRestart={() => { setPosition(0); setPlaying(false) }} onSpeed={setSpeed} onScrub={scrubTo}
+      onFollow={() => { setPosition(null); setPlaying(false) }} onZoom={zoomBy} onFit={() => setZoom(null)} />
+  )
+
   return (
     <section ref={root} data-flow-waterfall aria-label={label} className={`fw-root fw-root-${view}`}
       style={{ '--fw-name-w': `${nameWidth}px`, '--fw-pad': `${LANE_PAD}px`, '--fw-row-h': `${ROW_HEIGHT[view]}px` } as CSSProperties}>
@@ -349,9 +359,10 @@ export function FlowWaterfall({
           <dd className="fw-value" title={title}>{value}</dd>
         </div>)}
       </dl>}
+      {view === 'agents' && playback}
       <FlowBody rows={visible} byId={byId} totalRows={rows.length} view={view} maxHeight={rowsHeight} collapsed={collapsed} searching={Boolean(query.trim())}
         slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} activeId={activeId} selectedId={card?.pinned ? card.target : undefined} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
-        trackPx={trackPx} showCursor={showCursor} markers={markers} zoomed={zoom !== null} renderIcon={renderIcon}
+        trackPx={trackPx} showCursor={showCursor} markers={markers} fillByAgent={agentFill === 'agent'} zoomed={zoom !== null} renderIcon={renderIcon}
         emptyText={rows.length === 0 ? 'No spans yet. Waiting for trace events.' : `No matching steps for “${query}”.`}
         onToggle={toggle} onInspect={inspect} onLeave={leave} onPin={pin} onActivate={row => setActiveId(row.id)}
         onActiveChange={setActiveId} onScrub={scrubTo} onZoom={zoomBy} onPan={pan}
@@ -362,10 +373,7 @@ export function FlowWaterfall({
         onPointerEnter={() => clearTimeout(hideTimer.current)} onPointerLeave={card.pinned ? undefined : leave}>
         <SpanCard id={cardId} row={cardRow} agent={cardAgent} clockMs={clockMs} left={card.left} top={card.top} pinned={card.pinned} onClose={closeCard} renderIcon={renderIcon} compact={view === 'agents'} />
       </div>}
-      <PlaybackBar view={view} playing={playing} limit={limit} clockMs={clockMs} speed={speed} zoom={zoom} marks={overviewMarks}
-        slider={slider} timeOutput={timeOutput} followLabel={position === null ? undefined : isLive ? 'Follow live' : 'Show full trace'}
-        onTogglePlay={togglePlay} onRestart={() => { setPosition(0); setPlaying(false) }} onSpeed={setSpeed} onScrub={scrubTo}
-        onFollow={() => { setPosition(null); setPlaying(false) }} onZoom={zoomBy} onFit={() => setZoom(null)} />
+      {view === 'spans' && playback}
     </section>
   )
 }
