@@ -77,7 +77,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
       aria-level={agentView ? undefined : row.depth + 1} aria-expanded={row.hasChildren && !agentView ? !folded : undefined}
       aria-selected={selected} tabIndex={focusable ? 0 : -1} data-tone={toneKey(row.tone)} data-outcome={span.outcome?.tone}
       className={`fw-row${active ? ' fw-active' : ''}${sticky ? ' fw-sticky-row' : ''}${isAgent ? ' fw-agent-row' : ''}`}
-      style={{ transform: `translateY(${top}px)` }}
+      style={{ '--row-y': `${top}px` } as CSSProperties}
       onFocus={event => { if (event.target === event.currentTarget) props.onActivate(row) }}
       onClick={() => props.onActivate(row)}>
       <div role="gridcell" className="fw-label" style={{ '--depth': agentView ? 0 : row.depth } as CSSProperties}>
