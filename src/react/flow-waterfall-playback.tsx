@@ -38,11 +38,15 @@ export function PlaybackBar({ view, playing, limit, clockMs, speed, zoom, marks,
       </button>
       <button type="button" className="fw-icon-button" aria-label="Restart" title="Replay from the start" disabled={limit === 0}
         onClick={onRestart}><RestartGlyph /></button>
-      <label className="fw-speed"><span className="fw-sr-only">Playback speed</span>
-        <select aria-label="Playback speed" value={speed} onChange={event => onSpeed(Number(event.target.value))}>
-          {SPEEDS.map(value => <option key={value} value={value}>{value}x</option>)}
-        </select>
-      </label>
+      {view === 'agents'
+        ? <div className="fw-segmented" role="radiogroup" aria-label="Playback speed">
+          {[1, 2, 4].map(value => <button key={value} type="button" role="radio" aria-checked={speed === value} onClick={() => onSpeed(value)}>{value}x</button>)}
+        </div>
+        : <label className="fw-speed"><span className="fw-sr-only">Playback speed</span>
+          <select aria-label="Playback speed" value={speed} onChange={event => onSpeed(Number(event.target.value))}>
+            {SPEEDS.map(value => <option key={value} value={value}>{value}x</option>)}
+          </select>
+        </label>}
       <div className="fw-overview">
         <div className="fw-overview-marks" aria-hidden>
           {marks.map((mark, i) => <span key={i} className={`fw-ov fw-seg-${mark.kind}`} data-tone={toneKey(mark.tone)}
