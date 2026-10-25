@@ -8,6 +8,7 @@
 - Agent view: a failed turn draws like any turn and the warning by the name is muted; the agent's failure shows once, by its name and its end label.
 - Live: the body keeps its full height as agents arrive, so the page below does not shift.
 - Light theme: bars carry 88% of the agent hue (tool steps 46%).
+- `live.css`: meter key values use weight 600, so live charts keep to the 400/600 pair.
 - Demo harness: live replay sums run totals from the calls finished so far; the motion recording is captured in its own folder.
 
 ## 0.20.1
