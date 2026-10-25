@@ -23,6 +23,10 @@ export interface OtlpTraceOptions {
   price?: (model: string, inputTokens: number, outputTokens: number) => number | undefined
 }
 
+
+/** Attributes that carry cached input apart from fresh input (OpenTelemetry GenAI and Anthropic-style names). */
+const CACHE_KEYS = ['gen_ai.usage.cache_read_input_tokens', 'gen_ai.usage.cache_creation_input_tokens', 'gen_ai.usage.input_tokens.cached', 'tangle.llm.cache_read_tokens']
+
 /** Price model calls from an OpenAI-compatible model catalog (`data[].pricing.prompt|completion`, USD per token), such as
  * the Router's `/v1/models`. Read the catalog at runtime; never copy its numbers. */
 export function catalogPrice(catalog: { data?: Array<{ id?: string; pricing?: { prompt?: string | number; completion?: string | number } }> }) {
@@ -142,6 +146,8 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
   let cost = 0
   let unpriced = 0
   let priced = 0
+  // Whether any priced call splits cached input from fresh input; without that, cached tokens are priced as fresh.
+  let cacheSplit = false
   const offset = (iso: string) => time(iso) - origin
   // Grouped agents in separate traces join on the spawn that started them: each agent with no spawn of its own
   // takes the latest unclaimed spawn call in another agent that began before it.
@@ -198,7 +204,10 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
     if (!aggregate) { promptTokens += prompt ?? 0; completionTokens += completion ?? 0 }
     const listPrice = kind === 'model' && !aggregate && model && options.price && (prompt !== undefined || completion !== undefined)
       ? options.price(model, prompt ?? 0, completion ?? 0) : undefined
-    if (listPrice !== undefined) { cost += listPrice; priced++ }
+    if (listPrice !== undefined) {
+      cost += listPrice; priced++
+      if (CACHE_KEYS.some(key => a[key] !== undefined)) cacheSplit = true
+    }
     else if (kind === 'model' && !aggregate && (prompt || completion)) unpriced++
     out.push({
       id: span.span_id, ...(parentId ? { parentId } : {}), kind, name, startMs, endMs,
@@ -217,6 +226,6 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
     toolCalls, modelCalls, errors, omitted,
     // A partly priced run still has a known floor: report it with its coverage rather than nothing.
     ...(options.price && priced > 0
-      ? { costUsd: cost, costBasis: 'list' as const, costCoverage: { priced, total: priced + unpriced } } : {}),
+      ? { costUsd: cost, costBasis: 'list' as const, costCoverage: { priced, total: priced + unpriced }, ...(cacheSplit ? {} : { costUpperBound: true }) } : {}),
   }
 }

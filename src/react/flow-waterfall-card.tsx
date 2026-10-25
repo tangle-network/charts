@@ -3,6 +3,10 @@ import type { FlowSpan } from '../flow-trace.js'
 import { CloseGlyph, KindGlyph } from './flow-waterfall-icons.js'
 import { type FlowWaterfallRow, formatCost, formatCount, formatSpanDuration, spanRunning, toneKey } from './flow-waterfall-model.js'
 
+
+/** Names wrap between words, never at their hyphens ("memscale-engineer-" / "2" read as two names). */
+const keepWords = (name: string) => name.replace(/-/g, '\u2011')
+
 export const KIND_LABEL: Record<FlowSpan['kind'], string> = {
   pipeline: 'Agent', model: 'LLM call', tool: 'Tool call', waiting: 'Waiting', handoff: 'Handoff',
 }
@@ -60,7 +64,7 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
       <div id={id} role={pinned ? 'dialog' : 'tooltip'} aria-label={pinned ? `${span.name} details` : undefined}
         className="fw-card fw-card-compact" data-tone={toneKey(who.tone)} data-outcome={outcome?.tone} style={{ left, top }}
         onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); onClose() } }}>
-        <div className="fw-card-agent"><span className="fw-agent-dot" aria-hidden /><span className="fw-card-who">{who.name}</span>
+        <div className="fw-card-agent"><span className="fw-agent-dot" aria-hidden /><span className="fw-card-who">{keepWords(who.name)}</span>
           {outcome
             ? <span className="fw-pill fw-pill-outcome" data-tone="0" data-outcome={outcome.tone}>{outcome.label}</span>
             : <span className={`fw-pill fw-pill-${status.toLowerCase()}`}>{status}</span>}
@@ -81,7 +85,7 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
       <div className="fw-card-head">
         <span className="fw-icon-tile" aria-hidden>{renderIcon?.(span) ?? <KindGlyph kind={span.kind} />}</span>
         <div className="fw-card-title">
-          <div className="fw-card-name">{span.name}</div>
+          <div className="fw-card-name">{keepWords(span.name)}</div>
           {span.detail && <div className="fw-muted">{span.detail}</div>}
         </div>
         <span className={`fw-pill fw-pill-${status.toLowerCase()}`}>{status}</span>

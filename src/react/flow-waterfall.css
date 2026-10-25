@@ -62,12 +62,12 @@
 .fw-root [data-tone="3"] { --tone: var(--fw-h3); }
 .fw-root [data-tone="4"] { --tone: var(--fw-h4); }
 .fw-root [data-tone="5"] { --tone: var(--fw-h5); }
-/* Light fills carry enough of the hue to tell agents apart on white (round 8: 24% read as "pale mint on gray"); the outline is
+/* Light fills carry enough of the hue to tell agents apart on white (24% and 42% both read as "pastel, washed out"); the outline is
    the full hue, which passes 3:1 against the surface, so every mark keeps its edge. */
 .fw-root [data-tone] {
-  --fill: light-dark(color-mix(in oklab, var(--tone) 42%, #fff), color-mix(in oklab, var(--tone) 86%, #000));
+  --fill: light-dark(color-mix(in oklab, var(--tone) 58%, #fff), color-mix(in oklab, var(--tone) 86%, #000));
   --line: light-dark(var(--tone), var(--tone));
-  --dim: light-dark(color-mix(in oklab, var(--tone) 22%, #fff), color-mix(in oklab, var(--tone) 40%, #17171d));
+  --dim: light-dark(color-mix(in oklab, var(--tone) 30%, #fff), color-mix(in oklab, var(--tone) 40%, #17171d));
   --dim-line: light-dark(color-mix(in oklab, var(--tone) 70%, #fff), color-mix(in oklab, var(--tone) 55%, #17171d));
 }
 
@@ -231,6 +231,13 @@
 .fw-root [data-outcome="neutral"], .fw-root [data-outcome="neutral"] [data-tone] { --tone: var(--fw-muted); }
 .fw-root .fw-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; padding: 0; list-style: none; color: var(--fw-muted); font-size: 12px; line-height: 16px; }
 .fw-root .fw-legend li { display: inline-flex; align-items: center; gap: 8px; }
+.fw-root .fw-kinds { margin: 0; padding: 8px 24px 12px; justify-content: flex-end; }
+.fw-root .fw-kinds .fw-swatch-model { width: 12px; height: 8px; border-radius: 2px; background: color-mix(in oklab, var(--fw-text) 40%, var(--fw-surface)); }
+.fw-root .fw-kinds .fw-swatch-tool { width: 12px; height: 8px; border-radius: 2px; background: color-mix(in oklab, var(--fw-text) 16%, var(--fw-surface)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-text) 30%, transparent); }
+.fw-root .fw-kinds .fw-swatch-wait { width: 12px; height: 8px; border-radius: 2px; background: repeating-linear-gradient(-45deg, var(--fw-hatch) 0 1px, transparent 1px 4px); box-shadow: inset 0 0 0 1px var(--fw-hatch); }
+.fw-root .fw-kinds .fw-swatch-handoff { width: 10px; height: 8px; border-left: 1.5px solid var(--fw-muted); border-bottom: 1.5px solid var(--fw-muted); border-bottom-left-radius: 3px; }
+.fw-root .fw-kinds .fw-swatch-failed { width: 12px; height: 8px; border-radius: 2px; box-shadow: inset 0 0 0 1px var(--fw-failed); }
+.fw-root .fw-description { margin: 0; color: var(--fw-muted); font-size: 14px; line-height: 20px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fw-root .fw-legend .fw-swatch { width: 12px; height: 8px; border-radius: 2px; background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); }
 .fw-root .fw-legend b { color: var(--fw-text); font-weight: 600; font-variant-numeric: tabular-nums; }
 .fw-root .fw-legend .fw-swatch-step { display: inline-grid; place-items: center; width: 12px; height: 12px; border-radius: 3px; background: var(--fw-well); color: var(--fw-failed); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-failed) 50%, transparent); }

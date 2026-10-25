@@ -62,22 +62,41 @@ try {
   // FW_JUDGE=<file>: blind-judge frames from one real run: rest, hover and pinned card, dark and light, at 1512x945. The agents
   // view, as the reference frames show a run: one row per agent with its work segmented (the steps view of a day-long run puts
   // thousands of sub-second steps at its first pixel). The stat strip and the card header stay in frame.
+  // FW_JUDGE=<file>[,<control file>]: blind-judge frames. FW_JUDGE_DESC is the run's goal line. The control file (a run with
+  // about as many agents as the reference) is judged beside the real run to separate design from data density; it gets the
+  // steps view too, where its steps nest under agents. FW_JUDGE_VIDEO=1 records first paint and live growth for motion.
   if (process.env.FW_JUDGE) {
     report.judge = []
-    const file = process.env.FW_JUDGE
-    for (const theme of ['dark', 'light']) {
-      const { page, context } = await open(`fixture=otlp:${file}&view=agents&theme=${theme}&width=1440&height=720&label=Trace`, { width: 1512, height: 945 })
-      await page.screenshot({ path: `${out}/judge-${theme}-rest.png` })
-      const bars = page.locator('.fw-row:not(.fw-sticky-row) .fw-bar')
-      const bar = bars.nth(Math.min(6, Math.max(0, (await bars.count()) - 1)))
-      // Point where a reader would: the bar's centre, which may be one of its segments (each opens its own card).
-      const box = await bar.boundingBox()
-      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.waitForTimeout(350)
-      await page.screenshot({ path: `${out}/judge-${theme}-hover.png` })
-      await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2); await page.waitForTimeout(350)
-      await page.screenshot({ path: `${out}/judge-${theme}-card.png` })
-      report.judge.push({ theme, bars: await bars.count() })
+    const [file, control] = process.env.FW_JUDGE.split(',')
+    const desc = process.env.FW_JUDGE_DESC ? `&desc=${encodeURIComponent(process.env.FW_JUDGE_DESC)}` : ''
+    const sets = [[file, 'agents', '', desc], ...(control ? [[control, 'agents', 'control-', ''], [control, 'spans', 'control-steps-', '']] : [])]
+    for (const [source, view, prefix, extra] of sets) {
+      for (const theme of ['dark', 'light']) {
+        const { page, context } = await open(`fixture=otlp:${source}&view=${view}&theme=${theme}&width=1440&height=720&label=Trace${extra}`, { width: 1512, height: 945 })
+        await page.screenshot({ path: `${out}/judge-${prefix}${theme}-rest.png` })
+        const bars = page.locator('.fw-row:not(.fw-sticky-row) .fw-bar')
+        const bar = bars.nth(Math.min(view === 'agents' ? 6 : 3, Math.max(0, (await bars.count()) - 1)))
+        // Point where a reader would: the bar's centre, which may be one of its segments (each opens its own card).
+        const box = await bar.boundingBox()
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.waitForTimeout(350)
+        await page.screenshot({ path: `${out}/judge-${prefix}${theme}-hover.png` })
+        await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2); await page.waitForTimeout(350)
+        await page.screenshot({ path: `${out}/judge-${prefix}${theme}-card.png` })
+        report.judge.push({ source, view, theme, bars: await bars.count() })
+        await context.close()
+      }
+    }
+    if (process.env.FW_JUDGE_VIDEO) {
+      // First paint (grow, unfold) and then the run replayed live, so bars grow and settle as their spans arrive.
+      const context = await browser.newContext({ viewport: { width: 1512, height: 945 }, deviceScaleFactor: 1, recordVideo: { dir: out, size: { width: 1512, height: 945 } } })
+      const page = await context.newPage()
+      await page.goto(`${base}?fixture=otlp:${file}&view=agents&theme=dark&width=1440&height=720&label=Trace${desc}`)
+      await page.waitForTimeout(2500)
+      await page.goto(`${base}?fixture=otlp:${file}&view=agents&theme=dark&width=1440&height=720&label=Trace${desc}&live=1&rate=6000`)
+      await page.waitForTimeout(16000)
       await context.close()
+      const video = readdirSync(out).find(name => name.endsWith('.webm') && !name.startsWith('fit-') && !name.startsWith('live') && !name.startsWith('judge'))
+      if (video) renameSync(`${out}/${video}`, `${out}/judge-motion.webm`)
     }
   }
   if (process.env.FW_LIVE_RELAY) {

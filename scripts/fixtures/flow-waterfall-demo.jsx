@@ -1,5 +1,5 @@
 // Demo routes for the trace inspector: reference-shaped fixtures, recorded Discovery runs and a synthetic load trace.
-// Query: fixture=release|incident|discovery|run21c|load|otlp:<file under the data dir>, view=spans|agents, theme=dark|light, live=1, rate=N, n=N, width=px, markers=<JSON FlowMarker[]>, names=long (otlp worst-case labels), outcomes=1 (status as outcome), fill=agent (agent hue fill, outcome on the dot).
+// Query: fixture=release|incident|discovery|run21c|load|otlp:<file under the data dir>, view=spans|agents, theme=dark|light, live=1, rate=N, n=N, width=px, markers=<JSON FlowMarker[]>, names=long (otlp worst-case labels), outcomes=1 (status as outcome), fill=outcome (outcome fill; agent hue is the default), desc=<goal line>.
 import { createRoot } from 'react-dom/client'
 import { useEffect, useState } from 'react'
 import { FlowWaterfall } from '../../src/react/index.ts'
@@ -121,7 +121,8 @@ function App({ trace }) {
   }, [])
   const shown = live && now < trace.totalMs ? reveal(trace, now) : trace
   return <main style={{ width: params.get('width') ? `${params.get('width')}px` : 'auto', maxWidth: '100%', margin: '0 auto', padding: Number(params.get('pad') ?? 24) }}>
-    <FlowWaterfall agentFill={params.get('fill') === 'agent' ? 'agent' : 'outcome'} trace={shown} live={live && now < trace.totalMs} label={params.get('label') ?? 'Trace'}
+    <FlowWaterfall agentFill={params.get('fill') === 'outcome' ? 'outcome' : 'agent'} trace={shown} live={live && now < trace.totalMs} label={params.get('label') ?? 'Trace'}
+      description={params.get('desc') ?? undefined}
       defaultView={params.get('view') ?? 'spans'}
       defaultCollapsed={params.get('collapsed') === '1'} maxHeight={Number(params.get('height') ?? 640)}
       markers={params.get('markers') ? JSON.parse(params.get('markers')) : undefined}
