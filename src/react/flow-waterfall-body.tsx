@@ -1,5 +1,5 @@
 import { type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
-import type { FlowMarker, FlowSpan } from '../flow-trace.js'
+import type { FlowMarker, FlowPause, FlowSpan } from '../flow-trace.js'
 import { type FlowWaterfallRow, spanRunning } from './flow-waterfall-model.js'
 import { type FlowLink, type FlowView, FlowRow, LinkMark, type RowEvents } from './flow-waterfall-row.js'
 import { useRowMotion } from './flow-waterfall-motion.js'
@@ -24,6 +24,7 @@ export interface BodyProps extends RowEvents {
   slowestId?: string
   costliestId?: string
   activeId?: string
+  pauses?: readonly FlowPause[]
   selectedId?: string
   /** The agent whose handoff connectors draw at full strength; the rest stay dim in the agent view. */
   focusId?: string
@@ -267,8 +268,11 @@ export function FlowBody(props: BodyProps) {
           {rows.length === 0 && <p role="status" className="fw-empty">{props.emptyText}</p>}
         </div>
         {view === 'spans' && <StickyRows scroller={scroller} rows={rows} index={index} rowHeight={rowHeight} render={row} />}
-        {props.markers?.length ? <div className="fw-marker-layer">
-          {props.markers.map(marker => <span key={`${marker.at}-${marker.label}`} className="fw-marker" data-tone={marker.tone ?? 'neutral'}
+        {props.markers?.length || props.pauses?.length ? <div className="fw-marker-layer">
+          {props.pauses?.map(pause => <span key={`p-${pause.startMs}`} className="fw-pause" style={{ '--s': pause.startMs, '--e': pause.endMs } as CSSProperties} title={pause.label}>
+            <span className="fw-pause-label">{pause.label}</span>
+          </span>)}
+          {props.markers?.map(marker => <span key={`${marker.at}-${marker.label}`} className="fw-marker" data-tone={marker.tone ?? 'neutral'}
             style={{ '--s': marker.at } as CSSProperties} title={marker.label}>
             {markerLabels.has(marker) && <span className={`fw-marker-label${markerLabels.get(marker) === 'left' ? ' fw-marker-label-left' : ''}`}>{marker.label}</span>}
           </span>)}

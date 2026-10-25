@@ -104,7 +104,8 @@ try {
   assert.match(await page.locator('[data-slowest]').innerText(), /sandbox_run_command/)
   // An agent's outcome colors its lane and joins the legend with a count.
   assert.equal((await page.locator('.fw-legend').innerText()).replace(/\s+/g, ' ').trim(), 'Shipped 1')
-  assert.equal(await page.locator('[data-span-kind="pipeline"][data-outcome="ok"]').count(), 1)
+  // Agent fill (the default) puts the outcome on the agent's dot.
+  assert.equal(await page.locator('[data-span-kind="pipeline"] .fw-agent-dot[data-outcome="ok"]').count(), 1)
   checks.outcomes = 'PASS'
   // Three markers: two collide mid-trace, so one label shows and both lines stay; the last flips left at the edge.
   assert.equal(await page.locator('.fw-marker').count(), 3)
@@ -118,6 +119,12 @@ try {
   assert.ok(marker.height > 100 && marker.label > 40)
   assert.equal(await page.locator('.fw-marker-label').first().innerText(), 'Release v2')
   checks.markers = 'PASS'
+  // A pause is a labelled band across the rows; a restart is a notch on its bar, not the bar's state.
+  assert.equal(await page.locator('.fw-pause').count(), 1)
+  assert.equal((await page.locator('.fw-pause-label').innerText()).trim(), 'Paused: host guard')
+  assert.ok((await page.locator('.fw-pause').evaluate(el => el.getBoundingClientRect().width)) > 8)
+  assert.equal(await page.locator('.fw-mark[data-mark="restart"]').count(), 1)
+  checks.pauseAndRestart = 'PASS'
   // Pinning a bar hands its span to onSelect.
   await page.locator('.fw-bar').first().click()
   assert.equal((await page.evaluate(() => window.__fwSelected ?? [])).length, 1)

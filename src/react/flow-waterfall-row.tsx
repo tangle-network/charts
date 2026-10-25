@@ -100,9 +100,10 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
         {!agentView && <span className="fw-icon-tile" aria-hidden>{renderIcon?.(span) ?? <KindGlyph kind={span.kind} />}</span>}
         <span className="fw-names" title={`${row.name}${span.detail ? ` · ${span.detail}` : ''} · ${KIND_LABEL[span.kind]}${running ? ' · running' : ''}${row.ok ? '' : ' · failed'}`}>
           <span className={`fw-span-name${isAgent || row.hasChildren ? ' fw-strong' : ''}`}>
-            {agentView && (fillByAgent && span.outcome
+            {/* With agent fill, the outcome rides on the agent's dot in both views. */}
+            {fillByAgent && isAgent && span.outcome
               ? <span className="fw-agent-dot" data-tone="0" data-outcome={span.outcome.tone} title={span.outcome.label} aria-hidden />
-              : <span className="fw-agent-dot" aria-hidden />)}
+              : agentView && <span className="fw-agent-dot" aria-hidden />}
             {running && <span className="fw-spinner" role="status" aria-label="running" />}
             <span className="fw-name-text">{row.name}</span>
           </span>
@@ -114,6 +115,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
       </div>
       <div role="gridcell" className="fw-lane" data-waterfall-track aria-label={`${KIND_LABEL[span.kind]}, ${label}${slowest ? `, slowest ${agentView ? 'agent' : 'step'}` : ''}${costliest ? ', costliest agent' : ''}`}>
         {invalid ? <span className="fw-invalid">—</span> : <>
+          {span.marks?.map(mark => <span key={`m-${mark.at}-${mark.label}`} className="fw-mark" data-mark={mark.kind} style={at(mark.at, mark.at)} title={mark.label} aria-label={mark.label} role="img" />)}
           <span className={`fw-bar fw-k-${isAgent ? 'pipeline' : kind}${row.approx ? ' fw-approx' : ''}${marks.length ? ' fw-has-marks' : ''}${row.hasAgents ? ' fw-has-agents' : ''}`}
             data-tone={toneKey(row.tone)} style={at(span.startMs, running ? OPEN_END : span.endMs)}
             onPointerEnter={inspect} onPointerLeave={props.onLeave}

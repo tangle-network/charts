@@ -29,7 +29,24 @@ export interface FlowSpan {
   outcome?: FlowOutcome
   /** Up to three host facts shown as extra key/value cells in the span card, such as releases or commits. */
   facts?: readonly { label: string; value: string }[]
+  /** Moments on this span's own bar, such as a restart: a notch at `at`, the state stays the span's. */
+  marks?: readonly FlowSpanMark[]
   meta?: Record<string, unknown>
+}
+
+/** A moment on one bar. A restart is a mark, never the final state: the span's status and outcome stay authoritative. */
+export interface FlowSpanMark {
+  /** Trace-relative milliseconds, on the same clock as span startMs. */
+  at: number
+  label: string
+  kind?: 'restart' | (string & {})
+}
+
+/** An interval when the whole run stood still, such as a host guard pause: a labelled band across every row, never blank space. */
+export interface FlowPause {
+  startMs: number
+  endMs: number
+  label: string
 }
 
 /** A host verdict: `label` is the legend text, `tone` the status color. */
@@ -68,4 +85,6 @@ export interface FlowTrace {
   /** Authoritative LLM request count when supplied; absent means unknown. */
   modelCalls?: number
   errors?: number
+  /** Intervals when nothing ran, drawn as labelled bands. */
+  pauses?: readonly FlowPause[]
 }

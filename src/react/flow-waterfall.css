@@ -125,6 +125,12 @@
 .fw-root .fw-marker { --fw-marker: var(--fw-muted); position: absolute; top: 0; bottom: 0; width: 0; border-left: 1px dashed var(--fw-marker); left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); }
 .fw-root .fw-marker[data-tone="ok"] { --fw-marker: var(--fw-ok); }
 .fw-root .fw-marker[data-tone="failed"] { --fw-marker: var(--fw-failed); }
+/* A pause: the run stood still. A hatched band across every row with its reason on top, never blank space. */
+.fw-root .fw-pause { position: absolute; top: 0; bottom: 0; left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); width: calc(max(0, var(--e) - var(--s)) * var(--fw-k) * 1px);
+  background: repeating-linear-gradient(-45deg, color-mix(in oklab, var(--fw-text) 9%, transparent) 0 1px, transparent 1px 6px), color-mix(in oklab, var(--fw-text) 4%, transparent);
+  border-inline: 1px dashed color-mix(in oklab, var(--fw-text) 24%, transparent); }
+.fw-root .fw-pause-label { position: sticky; top: 4px; display: block; width: max-content; max-width: calc(100% - 8px); margin: 4px auto 0; padding: 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  border-radius: 4px; font-size: 12px; line-height: 20px; color: var(--fw-muted); background: var(--fw-surface); box-shadow: inset 0 0 0 1px var(--fw-border); }
 .fw-root .fw-marker-label { position: absolute; top: 2px; left: 3px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 4px; border-radius: 4px; font-size: 12px; line-height: 16px; color: var(--fw-marker); background: var(--fw-surface); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-marker) 40%, transparent); }
 .fw-root .fw-marker-label-left { left: auto; right: 3px; }
 .fw-root .fw-marker[data-tone="warn"], .fw-root .fw-event[data-tone="warn"] { --fw-marker: var(--fw-amber); }
@@ -181,7 +187,7 @@
 /* Lanes and marks */
 .fw-root .fw-lane { position: relative; overflow: hidden; min-width: 0; }
 .fw-root .fw-invalid { position: absolute; left: var(--fw-pad); top: 50%; transform: translateY(-50%); color: var(--fw-muted); }
-.fw-root :is(.fw-bar, .fw-seg, .fw-end) {
+.fw-root :is(.fw-bar, .fw-seg, .fw-end, .fw-mark) {
   --x0: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px);
   --w: calc(max(0, min(var(--e), var(--fw-t)) - var(--s)) * var(--fw-k) * 1px);
   --on: clamp(0, (var(--fw-t) - var(--s)) * 1000, 1);
@@ -197,6 +203,9 @@
 .fw-root .fw-settle .fw-end { animation: fw-land 260ms var(--fw-ease); }
 /* A live bar grows with the clock instead of stepping each tick. */
 .fw-root .fw-row[data-running] .fw-bar { transition: width 120ms linear; }
+/* A restart: an amber notch through the bar at that moment; the bar keeps its own state. */
+.fw-root .fw-mark { position: absolute; z-index: 2; left: calc(var(--x0) - 1px); width: 2px; top: calc(50% + var(--fw-bar-shift) - var(--fw-bar-h) / 2 - 4px); height: calc(var(--fw-bar-h) + 8px);
+  border-radius: 2px; background: var(--fw-amber); box-shadow: 0 0 0 1px var(--fw-surface); opacity: var(--on); pointer-events: auto; }
 /* Centered by top, not a negative margin, so measured spacing stays on the grid. */
 .fw-root :is(.fw-bar, .fw-seg) { top: calc(50% + var(--fw-bar-shift) - var(--fw-bar-h) / 2); height: var(--fw-bar-h); width: max(var(--w), calc(var(--on) * 3px)); border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .fw-root .fw-bar { background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); }

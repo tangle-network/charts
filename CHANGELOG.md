@@ -4,6 +4,7 @@
 
 ### Minor Changes
 
+- `FlowTrace.pauses` draws a labelled hatched band across every row for an interval when nothing ran ("Paused 4h40m: host guard cancelled workers"), never blank space. `FlowSpan.marks` puts moments on a bar, such as a restart (an amber notch), without changing the span's state or outcome.
 - Light theme: bar fills carry 42% of the agent hue (was 24%), tool steps 22% (was 12%), outlines the full hue, so agents stay distinct on white.
 - Bars take their agent's hue by default (`agentFill="agent"`); steps and handoff elbows share it, and the outcome moves to the row dot, the legend and the crash glyph. Pass `agentFill="outcome"` for the previous fill.
 - Motion: arriving bars grow from their start and their rows unfold in a 20 ms stagger (first paint, live spans, an unfolded branch); a bar that finishes settles and lands its end label; live bars grow with the clock. Keyed to the row set, so scrolling never replays it; `prefers-reduced-motion` turns it off.
