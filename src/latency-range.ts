@@ -36,19 +36,19 @@ function draw(rows: LatencyRangeRow[], o: LatencyRangeOptions, min: number, max:
   const plotW = width - left - right, top = 48, rowH = phone ? 49 : 39;
   const scale = (ms: number) => left + (Math.log(ms) - Math.log(min)) / (Math.log(max) - Math.log(min)) * plotW;
   let body = line(scale(o.sloMs), top - 11, scale(o.sloMs), top + rows.length * rowH, "tgc-threshold");
-  body += text(scale(o.sloMs) + 3, 15, `SLO ${(o.sloMs / 1000).toFixed(0)} s`, { size: 11, cls: "tgc-ink-muted tgc-num" });
+  body += text(scale(o.sloMs) + 3, 15, `SLO ${(o.sloMs / 1000).toFixed(0)} s`, { size: 12, cls: "tgc-ink-muted tgc-num" });
   for (let exponent = Math.floor(Math.log10(min)); exponent <= Math.ceil(Math.log10(max)); exponent++) {
     for (const step of [1, 5]) {
       const tick = step * 10 ** exponent;
       if (tick <= min || tick >= max || Math.abs(scale(tick) - scale(o.sloMs)) < 19) continue;
       body += line(scale(tick), top - 8, scale(tick), top + rows.length * rowH, "tgc-gridline");
-      body += text(scale(tick), top - 13, `${Number((tick / 1000).toPrecision(2))} s`, { size: 10, cls: "tgc-ink-muted tgc-num", anchor: "middle" });
+      body += text(scale(tick), top - 13, `${Number((tick / 1000).toPrecision(2))} s`, { size: 12, cls: "tgc-ink-muted tgc-num", anchor: "middle" });
     }
   }
   rows.forEach((r, i) => {
     const y = top + i * rowH;
-    const label = wrap(r.label, left - 10, phone ? 11 : 13, "sans", phone ? 2 : 1);
-    body += titled(r.label, label.lines.map((part, j) => text(2, y + 5 + j * 14, part, { size: phone ? 11 : 13, weight: 600 })).join(""));
+    const label = wrap(r.label, left - 10, phone ? 12 : 14, "sans", phone ? 2 : 1);
+    body += titled(r.label, label.lines.map((part, j) => text(2, y + 5 + j * 14, part, { size: phone ? 12 : 14, weight: 600 })).join(""));
     const cy = y + (phone ? 7 : 0), status = r.p95Ms > o.sloMs ? "breach" : "pass";
     body += titled(`${r.label}: p50 ${(r.p50Ms / 1000).toFixed(1)} s; p95 ${(r.p95Ms / 1000).toFixed(1)} s; n=${r.n}; ${status}`,
       rect(scale(r.p50Ms), cy - 5, Math.max(2, scale(r.p95Ms) - scale(r.p50Ms)), 10, `tgc-range-${status}`, 'rx="5"') +

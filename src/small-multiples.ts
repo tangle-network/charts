@@ -146,7 +146,7 @@ function draw(panels: MultiplePanel[], o: SmallMultiplesOptions, width: number, 
     const logged = panel.scale === "log" ? logTicks(domain[0], domain[1]) : [];
     const decades = logged.filter((v) => Number.isInteger(Math.log10(v)));
     const ticks = panel.scale === "log" ? (decades.length >= 2 ? decades : logged.length >= 2 ? [logged[0]!, logged.at(-1)!] : [domain[0], domain[1]]) : [domain[0], domain[1]];
-    return { ticks, gutter: Math.max(...ticks.map((v) => Math.ceil(textWidth(yLabel(v), 10, "mono")) + 10), 40) };
+    return { ticks, gutter: Math.max(...ticks.map((v) => Math.ceil(textWidth(yLabel(v), 12, "mono")) + 10), 40) };
   };
   const narrowestPlot = panelW - 6 - Math.max(...panels.map((p) => gutterOf(p).gutter));
   const totalWeight = (o.x.categories ?? []).reduce((sum, c) => sum + (c.weight ?? 1), 0);
@@ -167,7 +167,7 @@ function draw(panels: MultiplePanel[], o: SmallMultiplesOptions, width: number, 
     const py = yScale(domain, panel.scale, top, bottom);
     const name = wrap(panel.label, panelW - 4 - (log ? 52 : 0), 12, "sans-semibold", 1);
     body += titled(panel.label, text(ox + 2, oy + 14, name.lines[0]!, { size: 12, weight: 600 }));
-    if (log) body += text(right, oy + 14, "log scale", { size: 10, anchor: "end", cls: "tgc-ink-muted" });
+    if (log) body += text(right, oy + 14, "log scale", { size: 12, anchor: "end", cls: "tgc-ink-muted" });
     if (panel.missing) {
       body += `<g data-panel="${esc(panel.id)}" data-missing="true">${hatch(ox, top - 12, panelW, bottom - top + 12, "tgc-panel-missing")}`;
       const why = wrap(`no data: ${panel.missing.why}`, panelW - 24, 12, "sans", 3);
@@ -178,17 +178,17 @@ function draw(panels: MultiplePanel[], o: SmallMultiplesOptions, width: number, 
     body += `<g data-panel="${esc(panel.id)}"${log ? ' data-scale="log"' : ""}>`;
     if (log) {
       body += line(left, bottom, right, bottom, "tgc-axis");
-      for (const y of yTicks) body += (y === domain[0] ? "" : line(left, py(y), right, py(y), "tgc-gridline")) + text(left - 6, py(y) + 4, yLabel(y), { size: 10, anchor: "end", cls: "tgc-ink-muted tgc-num" });
+      for (const y of yTicks) body += (y === domain[0] ? "" : line(left, py(y), right, py(y), "tgc-gridline")) + text(left - 6, py(y) + 4, yLabel(y), { size: 12, anchor: "end", cls: "tgc-ink-muted tgc-num" });
     } else {
       for (const [j, y] of [domain[0], (domain[0] + domain[1]) / 2, domain[1]].entries()) {
         body += line(left, py(y), right, py(y), j === 0 ? "tgc-axis" : "tgc-gridline");
-        if (j !== 1) body += text(left - 6, py(y) + 4, yLabel(y), { size: 10, anchor: "end", cls: "tgc-ink-muted tgc-num" });
+        if (j !== 1) body += text(left - 6, py(y) + 4, yLabel(y), { size: 12, anchor: "end", cls: "tgc-ink-muted tgc-num" });
       }
     }
     // Bands are named in a key under the title: in a small panel an in-place label would cover the data.
     body += drawTargets(panel.targets ?? [], py, left, right, yLabel, false) + targetKey(panel.targets ?? [], ox + 2, oy + 30, panelW - 4);
     if (labelled.length) body += columnLabels(labelled, px, labelFit.fit, left, right, right + 4, xLabel, 10, bottom + 16);
-    else body += text(left, bottom + 16, xLabel(o.x.domain[0]), { size: 10, cls: "tgc-ink-muted tgc-num" }) + text(right, bottom + 16, xLabel(o.x.domain[1]), { size: 10, anchor: "end", cls: "tgc-ink-muted tgc-num" });
+    else body += text(left, bottom + 16, xLabel(o.x.domain[0]), { size: 12, cls: "tgc-ink-muted tgc-num" }) + text(right, bottom + 16, xLabel(o.x.domain[1]), { size: 12, anchor: "end", cls: "tgc-ink-muted tgc-num" });
     // Points sharing a column are spread across it in input order.
     const shared = new Map<number, TimePoint[]>();
     for (const point of panel.points!) if (point.y !== null) shared.set(point.x, [...(shared.get(point.x) ?? []), point]);

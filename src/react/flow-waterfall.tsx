@@ -6,7 +6,7 @@ import { useTraceClock } from './flow-waterfall-clock.js'
 import { FailGlyph, SearchGlyph, TraceGlyph } from './flow-waterfall-icons.js'
 import { PlaybackBar } from './flow-waterfall-playback.js'
 import {
-  busyMs, type FlowWaterfallRow, flowWaterfallRows, formatCost, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
+  agentCallouts, busyMs, costSummary, type FlowWaterfallRow, flowWaterfallRows, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
   toneKey, totalsAt, visibleFlowWaterfallRows,
 } from './flow-waterfall-model.js'
 import type { FlowView } from './flow-waterfall-row.js'
@@ -15,7 +15,8 @@ import { clampWindow, type ViewWindow, zoomWindow } from './flow-waterfall-time.
 export type { FlowView } from './flow-waterfall-row.js'
 
 const LANE_PAD = 12
-const END_LABEL_GUTTER: Record<FlowView, number> = { spans: 120, agents: 16 }
+// The agents view's end labels carry a Slowest or Costliest badge after the duration, so its gutter is wider.
+const END_LABEL_GUTTER: Record<FlowView, number> = { spans: 120, agents: 176 }
 const NAME_WIDTH: Record<FlowView, number> = { spans: 320, agents: 240 }
 
 export interface FlowWaterfallProps {
@@ -36,13 +37,43 @@ export interface FlowWaterfallProps {
   maxHeight?: number
   /** Called when a row is opened or a bar is pinned, with that row's span; the built-in behavior still runs. */
   onSelect?: (span: FlowSpan) => void
-  /** Labelled instants, such as releases, drawn across the rows on the trace clock. */
+  /** Labelled instants, such as releases, drawn across the rows and as event dots on the axis; click or N/P jumps to one. */
   markers?: FlowMarker[]
+  /** The time the reader moved to, in trace ms; `null` when following live or showing the whole trace. */
+  onTimeChange?: (t: number | null) => void
+  /** What a bar's color means: the agent (default), whose hue its steps and handoffs share, with the outcome on the row dot, legend and
+   * crash glyph; or its `outcome`. */
+  agentFill?: 'outcome' | 'agent'
+  /** The row the host has selected, such as the agent whose transcript is open: it lifts and, in the agent view, its peers dim.
+   * A pinned card alone only highlights its row, so the rest of the run stays readable around it. */
+  selectedId?: string
+  /** Escape clears the host's selection, after closing any open card. */
+  onDeselect?: () => void
 }
 
 interface CardState { target: string; pinned: boolean; left: number; top: number; above: boolean }
 
+/** The summary strip: as of the playhead while scrubbing, the producer's totals otherwise. */
+function summaryCells(trace: FlowTrace, at: ReturnType<typeof totalsAt> | undefined, durationMs: number) {
+  const cost = costSummary(at ? at.costUsd : trace.costUsd, trace)
+  const tokens = at ? at.tokens : trace.promptTokens + trace.completionTokens
+  const modelCalls = at ? at.modelCalls : trace.modelCalls
+  const errors = at ? at.errors : trace.errors ?? trace.spans.filter(spanFailed).length
+  const summary: [string, ReactNode, string?][] = [
+    ['Duration', formatSpanDuration(durationMs)],
+    [cost.label, cost.value, cost.title],
+    ['Tokens', formatCount(tokens), `${tokens.toLocaleString()} tokens`],
+    ['LLM calls', modelCalls === undefined ? '—' : modelCalls.toLocaleString(), modelCalls === undefined ? 'Model output windows do not establish the number of LLM requests' : undefined],
+    ['Tool calls', (at ? at.toolCalls : trace.toolCalls).toLocaleString()],
+    ['Errors', errors.toLocaleString()],
+  ]
+  return { cost, tokens, errors, summary }
+}
+
 /** One legend item per outcome label the agents carry, with its count; nothing when no agent has an outcome. */
+// Outcome keys keep one order on every page: good news first, then what needs a look, then what produced nothing.
+const TONE_ORDER = ['ok', 'warn', 'failed', 'neutral']
+
 function OutcomeLegend({ agents }: { agents: FlowWaterfallRow[] }) {
   const items = new Map<string, { tone: string; count: number }>()
   for (const row of agents) {
@@ -56,17 +87,16 @@ function OutcomeLegend({ agents }: { agents: FlowWaterfallRow[] }) {
   // A failed step inside a finished agent is a different fact from a failed agent, so it gets its own key.
   const failedSteps = agents.reduce((sum, row) => sum + row.own.reduce((n, mark) => n + (mark.kind === 'failed' ? mark.count : 0), 0), 0)
   return <ul className="fw-legend" aria-label="Outcomes">
-    {[...items].map(([label, item]) => <li key={label}><span className="fw-swatch" data-tone="0" data-outcome={item.tone} aria-hidden />{label} <b>{item.count}</b></li>)}
+    {[...items].sort(([a, x], [b, y]) => TONE_ORDER.indexOf(x.tone) - TONE_ORDER.indexOf(y.tone) || a.localeCompare(b)).map(([label, item]) => <li key={label}><span className="fw-swatch" data-tone="0" data-outcome={item.tone} aria-hidden />{label} <b>{item.count}</b></li>)}
     {failedSteps > 0 && <li><span className="fw-swatch-step" aria-hidden><FailGlyph /></span>Failed step <b>{failedSteps}</b></li>}
   </ul>
 }
 
-const headlineSeconds = (ms: number) => ms < 60_000 ? `${(ms / 1000).toFixed(1)}s` : formatSpanDuration(ms)
 
 /** Shared trace inspector: the agent timeline and the span waterfall over one clock.
  * Data remains producer-owned; playback, zoom and folding change presentation only. */
 export function FlowWaterfall({
-  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers,
+  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers, onTimeChange, agentFill = 'agent', selectedId, onDeselect,
 }: FlowWaterfallProps) {
   const root = useRef<HTMLElement>(null)
   const search = useRef<HTMLInputElement>(null)
@@ -120,6 +150,7 @@ export function FlowWaterfall({
   }, [rows])
   const visible = useMemo(() => view === 'agents' ? agents : visibleFlowWaterfallRows(rows, query, collapsed), [view, agents, rows, query, collapsed])
   const slowest = view === 'spans' ? slowestRow(rows, clockMs) : undefined
+  const callouts = useMemo<ReturnType<typeof agentCallouts>>(() => view === 'agents' ? agentCallouts(agents, clockMs) : {}, [view, agents, clockMs])
   const rowsHeight = maxHeight ?? (view === 'agents' ? ROW_HEIGHT.agents * 20 : 640)
 
   // The agent label column fits the longest agent name (CSS caps it at 28%) until the reader drags it.
@@ -150,7 +181,13 @@ export function FlowWaterfall({
       if (event.key === '+' || event.key === '=') zoomBy(0.5)
       else if (event.key === '-' || event.key === '_') zoomBy(2)
       else if (event.key === '0') setZoom(null)
-      else if (event.key === 'Escape' && card) closeCard()
+      else if (event.key === 'Escape' && (card || selectedId)) { if (card) closeCard(); onDeselect?.() }
+      else if ((event.key === 'n' || event.key === 'p') && markers?.length) {
+        // N and P step through the event track from wherever the cursor stands.
+        const ats = markers.map(marker => marker.at).sort((a, b) => a - b)
+        const next = event.key === 'n' ? ats.find(at => at > clockMs + 1) : [...ats].reverse().find(at => at < clockMs - 1)
+        if (next !== undefined) { event.preventDefault(); scrubTo(next) }
+      }
     }
     document.addEventListener('keydown', keydown)
     return () => document.removeEventListener('keydown', keydown)
@@ -180,7 +217,8 @@ export function FlowWaterfall({
     const width = current.endMs - current.startMs
     const end = spanRunning(span) ? Math.max(span.endMs, clockMs) : span.endMs
     if (view !== 'spans' || !Number.isFinite(end) || (end - span.startMs) / Math.max(1, width) > 0.25) return
-    const pad = Math.max((end - span.startMs) * 0.15, 500)
+    // One click zooms at most 8x, so a 0 ms step on a day-long run keeps its neighbours in view instead of a 1 s window.
+    const pad = Math.max((end - span.startMs) * 0.15, 500, (width / 8 - (end - span.startMs)) / 2)
     const target = clampWindow({ startMs: span.startMs - pad, endMs: end + pad }, limit)
     cancelAnimationFrame(zoomFrame.current)
     if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { setZoom(target); return }
@@ -251,6 +289,7 @@ export function FlowWaterfall({
     if (row) { onSelect?.(row.span); zoomTo(row) }
   }
   const pin = useCallback((target: string, element: HTMLElement) => latest.current.pin(target, element), [])
+  const selection = selectedId ?? (card?.pinned ? card.target : undefined)
   const closeCard = () => {
     const target = card?.target
     setCard(null)
@@ -258,6 +297,9 @@ export function FlowWaterfall({
   }
 
   const scrubTo = useCallback((ms: number) => { setPlaying(false); setPosition(Math.min(ms, clock.limitMs())) }, [clock])
+  const timeListener = useRef(onTimeChange)
+  timeListener.current = onTimeChange
+  useEffect(() => { timeListener.current?.(position) }, [position])
   const togglePlay = () => {
     if (playing) { setPosition(clock.positionMs()); setPlaying(false); return }
     if (position === null || position >= limit - 1) setPosition(0)
@@ -267,19 +309,7 @@ export function FlowWaterfall({
   // Scrubbing shows the run as of the playhead; the full trace shows the producer's totals.
   const scrubbing = position !== null || playing
   const at = scrubbing ? totalsAt(trace, clockMs) : undefined
-  const costUsd = at ? at.costUsd : trace.costUsd
-  const tokens = at ? at.tokens : trace.promptTokens + trace.completionTokens
-  const modelCalls = at ? at.modelCalls : trace.modelCalls
-  const errors = at ? at.errors : trace.errors ?? trace.spans.filter(spanFailed).length
-  const summary: [string, ReactNode, string?][] = [
-    ['Duration', formatSpanDuration(scrubbing ? clockMs : limit)],
-    [trace.costBasis === 'list' ? 'Cost · list price' : 'Cost', costUsd === undefined ? 'Unknown' : formatCost(costUsd),
-      costUsd === undefined ? 'The harness recorded no cost for this trace' : trace.costBasis === 'list' ? 'Input and output tokens at the model catalog list price; not a bill' : undefined],
-    ['Tokens', formatCount(tokens), `${tokens.toLocaleString()} tokens`],
-    ['LLM calls', modelCalls === undefined ? 'Unknown' : modelCalls.toLocaleString(), modelCalls === undefined ? 'Model output windows do not establish the number of LLM requests' : undefined],
-    ['Tool calls', (at ? at.toolCalls : trace.toolCalls).toLocaleString()],
-    ['Errors', errors.toLocaleString()],
-  ]
+  const { errors, summary } = summaryCells(trace, at, scrubbing ? clockMs : limit)
   const busy = agents.reduce((sum, row) => sum + busyMs(row, limit), 0)
   const speedup = limit > 0 ? busy / limit : 0
   const done = !isLive && !trace.spans.some(spanRunning)
@@ -291,8 +321,16 @@ export function FlowWaterfall({
   const showCursor = isLive || position !== null || playing
   const overviewMarks = useMemo(() => rows.filter(row => !row.parentId).flatMap(row => row.hasChildren ? row.segments : row.kind === 'pipeline' ? [] : [{ startMs: row.span.startMs, endMs: row.span.endMs, kind: row.ok ? 'tool' as const : 'failed' as const, tone: row.tone, id: row.id, count: 1, retry: false }]), [rows])
 
+  // The agent timeline puts play and speed above its lanes, so they stay in view on a long run.
+  const playback = (
+    <PlaybackBar view={view} playing={playing} limit={limit} clockMs={clockMs} speed={speed} zoom={zoom} marks={overviewMarks}
+      slider={slider} timeOutput={timeOutput} followLabel={position === null ? undefined : isLive ? 'Follow live' : 'Show full trace'}
+      onTogglePlay={togglePlay} onRestart={() => { setPosition(0); setPlaying(false) }} onSpeed={setSpeed} onScrub={scrubTo}
+      onFollow={() => { setPosition(null); setPlaying(false) }} onZoom={zoomBy} onFit={() => setZoom(null)} />
+  )
+
   return (
-    <section ref={root} data-flow-waterfall aria-label={label} className={`fw-root fw-root-${view}`}
+    <section ref={root} data-flow-waterfall aria-label={label} className={`fw-root fw-root-${view}`} data-selection={selectedId ? '' : undefined}
       style={{ '--fw-name-w': `${nameWidth}px`, '--fw-pad': `${LANE_PAD}px`, '--fw-row-h': `${ROW_HEIGHT[view]}px` } as CSSProperties}>
       <header className="fw-heading">
         <div className="fw-title-block">
@@ -302,15 +340,15 @@ export function FlowWaterfall({
             {isLive && <span className="fw-state fw-state-live">Live</span>}
           </div>
           {view === 'agents' && <p className="fw-headline" aria-live="polite">
-            {done
-              ? <><span className="fw-done-mark" aria-label="done">✓</span>{agents.length} {agents.length === 1 ? 'agent' : 'agents'} · {headlineSeconds(limit)}{speedup >= 1.05 ? ` · ${speedup.toFixed(1)}x parallel` : ''}{trace.costUsd !== undefined ? ` · ${formatCost(trace.costUsd)}` : ''}</>
-              : <>{headlineSeconds(clockMs)} · {tokens.toLocaleString()} tokens{trace.costUsd !== undefined ? ` · ${formatCost(trace.costUsd)}` : ''}</>}
+            {/* Duration, cost and tokens live in the stat strip below; the headline says only what the strip cannot. */}
+            {done && <span className="fw-done-mark" aria-label="done">✓</span>}
+            {agents.length} {agents.length === 1 ? 'agent' : 'agents'}{done && speedup >= 1.05 ? ` · ${speedup.toFixed(1)}x parallel` : ''}
           </p>}
           <OutcomeLegend agents={agents} />
         </div>
         <div className="fw-tools">
           <div className="fw-views" role="radiogroup" aria-label="Trace view">
-            {(['agents', 'spans'] as const).map(option => <button key={option} type="button" role="radio" aria-checked={view === option}
+            {(['agents', 'spans'] as const).map(option => <button key={option} type="button" role="radio" aria-checked={view === option} disabled={view === option}
               className="fw-view-button" onClick={() => { setView(option); setNameWidth(NAME_WIDTH[option]); setCard(null) }}>{option === 'agents' ? 'Agents' : 'Steps'}</button>)}
           </div>
           {view === 'spans' && <div className="fw-search">
@@ -323,15 +361,16 @@ export function FlowWaterfall({
           </div>}
         </div>
       </header>
-      {view === 'spans' && <dl className="fw-summary">
+      <dl className="fw-summary">
         {summary.map(([name, value, title]) => <div key={name} className={name === 'Errors' && errors > 0 ? 'fw-has-errors' : undefined}>
           <dt>{name}</dt>
           <dd className="fw-value" title={title}>{value}</dd>
         </div>)}
-      </dl>}
+      </dl>
+      {view === 'agents' && playback}
       <FlowBody rows={visible} byId={byId} totalRows={rows.length} view={view} maxHeight={rowsHeight} collapsed={collapsed} searching={Boolean(query.trim())}
-        slowestId={slowest?.id} activeId={activeId} selectedId={card?.pinned ? card.target : undefined} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
-        trackPx={trackPx} showCursor={showCursor} markers={markers} zoomed={zoom !== null} renderIcon={renderIcon}
+        pauses={trace.pauses} slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
+        trackPx={trackPx} showCursor={showCursor} markers={markers} fillByAgent={agentFill === 'agent'} zoomed={zoom !== null} renderIcon={renderIcon}
         emptyText={rows.length === 0 ? 'No spans yet. Waiting for trace events.' : `No matching steps for “${query}”.`}
         onToggle={toggle} onInspect={inspect} onLeave={leave} onPin={pin} onActivate={row => setActiveId(row.id)}
         onActiveChange={setActiveId} onScrub={scrubTo} onZoom={zoomBy} onPan={pan}
@@ -342,10 +381,7 @@ export function FlowWaterfall({
         onPointerEnter={() => clearTimeout(hideTimer.current)} onPointerLeave={card.pinned ? undefined : leave}>
         <SpanCard id={cardId} row={cardRow} agent={cardAgent} clockMs={clockMs} left={card.left} top={card.top} pinned={card.pinned} onClose={closeCard} renderIcon={renderIcon} compact={view === 'agents'} />
       </div>}
-      <PlaybackBar view={view} playing={playing} limit={limit} clockMs={clockMs} speed={speed} zoom={zoom} marks={overviewMarks}
-        slider={slider} timeOutput={timeOutput} followLabel={position === null ? undefined : isLive ? 'Follow live' : 'Show full trace'}
-        onTogglePlay={togglePlay} onRestart={() => { setPosition(0); setPlaying(false) }} onSpeed={setSpeed} onScrub={scrubTo}
-        onFollow={() => { setPosition(null); setPlaying(false) }} onZoom={zoomBy} onFit={() => setZoom(null)} />
+      {view === 'spans' && playback}
     </section>
   )
 }

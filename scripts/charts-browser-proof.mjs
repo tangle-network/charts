@@ -104,7 +104,8 @@ try {
   assert.match(await page.locator('[data-slowest]').innerText(), /sandbox_run_command/)
   // An agent's outcome colors its lane and joins the legend with a count.
   assert.equal((await page.locator('.fw-legend').innerText()).replace(/\s+/g, ' ').trim(), 'Shipped 1')
-  assert.equal(await page.locator('[data-span-kind="pipeline"][data-outcome="ok"]').count(), 1)
+  // Agent fill (the default) puts the outcome on the agent's dot.
+  assert.equal(await page.locator('[data-span-kind="pipeline"] .fw-agent-dot[data-outcome="ok"]').count(), 1)
   checks.outcomes = 'PASS'
   // Three markers: two collide mid-trace, so one label shows and both lines stay; the last flips left at the edge.
   assert.equal(await page.locator('.fw-marker').count(), 3)
@@ -118,11 +119,55 @@ try {
   assert.ok(marker.height > 100 && marker.label > 40)
   assert.equal(await page.locator('.fw-marker-label').first().innerText(), 'Release v2')
   checks.markers = 'PASS'
+  // A pause is a labelled band across the rows; a restart is a notch on its bar, not the bar's state.
+  assert.equal(await page.locator('.fw-pause').count(), 1)
+  assert.equal((await page.locator('.fw-pause-label').innerText()).trim(), 'Paused: host guard')
+  assert.ok((await page.locator('.fw-pause').evaluate(el => el.getBoundingClientRect().width)) > 8)
+  assert.equal(await page.locator('.fw-mark[data-mark="restart"]').count(), 1)
+  checks.pauseAndRestart = 'PASS'
   // Pinning a bar hands its span to onSelect.
   await page.locator('.fw-bar').first().click()
   assert.equal((await page.evaluate(() => window.__fwSelected ?? [])).length, 1)
   await page.keyboard.press('Escape')
+  // In the agent view a click on an agent's name selects it too, not only its bar.
+  await page.getByRole('radio', { name: 'Agents' }).click()
+  // The shown view is a state, not a dead control.
+  assert.equal(await page.getByRole('radio', { name: 'Agents' }).isDisabled(), true)
+  // ...and still reads as the selected option, not as a greyed-out control.
+  assert.equal(await page.getByRole('radio', { name: 'Agents' }).evaluate(el => getComputedStyle(el).opacity), '1')
+  await page.locator('.fw-view-agents .fw-row:not(.fw-sticky-row) .fw-name-text').first().click()
+  assert.equal((await page.evaluate(() => window.__fwSelected ?? [])).length, 2)
+  // Agent bars state their duration at the bar end, as step bars do.
+  assert.match(await page.locator('.fw-view-agents .fw-row:not(.fw-sticky-row) .fw-duration').first().innerText(), /\d/)
+  // The agent timeline keeps play, speed and the axis above its 40 px lanes.
+  const order = await page.evaluate(() => {
+    const top = selector => document.querySelector(selector).getBoundingClientRect().top
+    return { playback: top('.fw-playback'), axis: top('.fw-axis'), row: top('.fw-view-agents .fw-row'), rowHeight: document.querySelector('.fw-view-agents .fw-row').getBoundingClientRect().height }
+  })
+  assert.ok(order.playback < order.axis && order.axis < order.row && order.rowHeight === 40, JSON.stringify(order))
+  // Every bar, segment and end label sits on the 4 px grid inside its row (disco-ui-review REVIEW-7 #7).
+  await page.waitForFunction(() => !document.querySelector('.fw-row.fw-enter'), null, { timeout: 3000 })
+  const offGrid = await page.evaluate(() => [...document.querySelectorAll('.fw-row :is(.fw-bar, .fw-seg, .fw-end)')]
+    .map(mark => mark.getBoundingClientRect().top - mark.closest('.fw-row').getBoundingClientRect().top)
+    .filter(offset => Math.abs(offset - Math.round(offset / 4) * 4) > 0.5))
+  assert.deepEqual(offGrid, [])
+  // A pinned card highlights its row without dimming the run (peers dim only for a host selectedId); Escape clears it.
+  assert.equal(await page.locator('.fw-view-agents .fw-row[aria-selected="true"]').count(), 1)
+  assert.equal(await page.locator('[data-flow-waterfall][data-selection]').count(), 0)
+  await page.keyboard.press('Escape')
+  assert.equal(await page.locator('.fw-view-agents .fw-row[aria-selected="true"]').count(), 0)
+  await page.getByRole('radio', { name: 'Steps' }).click()
   checks.onSelect = 'PASS'
+  // The event track: one dot per marker; a click moves the cursor there and reports the time; N steps to the next.
+  assert.equal(await page.locator('.fw-event').count(), 3)
+  // v2 and v3 are 50 ms apart, so at full-trace zoom v3's dot lies on v2's; click the visible one, and N reaches v4.
+  await page.getByRole('button', { name: 'Jump to Release v3' }).click()
+  const jumped = await page.evaluate(() => window.__fwTime)
+  assert.ok(typeof jumped === 'number' && jumped > 0, `onTimeChange got ${jumped}`)
+  await page.locator('[data-flow-waterfall] [role="treegrid"]').focus()
+  await page.keyboard.press('n')
+  await page.waitForFunction(previous => window.__fwTime > previous, jumped, { timeout: 5000 })
+  checks.eventTrack = 'PASS'
   await page.screenshot({ path: `${output}/healthy-desktop-dark.png`, fullPage: true })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.screenshot({ path: `${output}/healthy-phone-dark.png`, fullPage: true })
@@ -152,11 +197,19 @@ try {
     assert.equal(await root.locator('[data-span-id]').count(), 1)
     await page.getByRole('button', { name: 'Expand all', exact: true }).click()
     assert.equal(await root.locator('[data-span-id]').count(), 53)
+    // Unfold: the rows that just appeared move, then rest; scrolling the virtualized tree never replays it.
+    assert.ok(await root.locator('.fw-row.fw-enter').count() > 0)
+    await page.waitForFunction(() => !document.querySelector('.fw-row.fw-enter'), null, { timeout: 3000 })
+    await root.locator('.fw-scroller').evaluate(element => { element.scrollTop = element.scrollHeight })
+    await page.waitForTimeout(100)
+    assert.equal(await root.locator('.fw-row.fw-enter').count(), 0)
+    await root.locator('.fw-scroller').evaluate(element => { element.scrollTop = 0 })
+    checks.motion = 'PASS'
     checks.nesting = 'PASS'
     checks.collapseExpand = 'PASS'
     const terms = await root.locator('dt').allTextContents()
     assert.deepEqual(terms, ['Duration', 'Cost', 'Tokens', 'LLM calls', 'Tool calls', 'Errors'])
-    assert.deepEqual(await root.locator('dd').allTextContents(), ['7m 11s', 'Unknown', '754.4k', 'Unknown', '35', '3'])
+    assert.deepEqual(await root.locator('dd').allTextContents(), ['7m 11s', '—', '754.4k', '—', '35', '3'])
     assert.equal(await root.locator('dd').nth(2).getAttribute('title'), '754,448 tokens')
     checks.summary = 'PASS'
     // Each kind is painted distinctly: a fill colour, or a pattern (hatched waiting) in background-image.

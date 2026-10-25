@@ -19,8 +19,8 @@
 .tgc-finding {
   margin: 0 0 8px;
   font-size: 18px;
-  line-height: 25px;
-  font-weight: 650;
+  line-height: 24px;
+  font-weight: 600;
   color: var(--chart-ink);
 }
 
@@ -40,8 +40,8 @@
 
 .tgc-lede {
   margin: 0 0 16px;
-  font-size: 15px;
-  line-height: 23px;
+  font-size: 14px;
+  line-height: 20px;
   color: var(--text-secondary, var(--chart-ink));
 }
 
@@ -71,8 +71,8 @@
 
 .tgc-read {
   margin: 8px 0 0;
-  font-size: 13px;
-  line-height: 18px;
+  font-size: 12px;
+  line-height: 16px;
   color: var(--chart-ink-muted);
 }
 
@@ -119,7 +119,7 @@
 }
 .tgc-table th,
 .tgc-table td {
-  padding: 6px 12px 6px 0;
+  padding: 8px 12px 8px 0;
   border-bottom: 1px solid var(--chart-rule);
   text-align: left;
   vertical-align: top;
@@ -336,8 +336,8 @@
 /* Plot presentation keeps the same complete data available to assistive technology. */
 .tgc-accessible-data { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 .tgc-figure-plot .tgc-wide svg { box-sizing: content-box; width: calc(100% - 48px); padding: 0 24px; }
+/* One plot text size on the 12/14/18/32 scale; numbers differ by tabular figures, not size. */
 .tgc-figure-plot svg text { font-size: 14px; }
-.tgc-figure-plot svg text.tgc-num { font-size: 15px; }
 /* Larger tooltip text needs padding outside the original report backdrop. */
 .tgc-figure-plot .tgc-tip-bg { stroke: var(--chart-ink); stroke-width: 24px; }
 .tgc-figure-plot .tgc-phone-plot svg { min-width: var(--tgc-phone-width); }

@@ -2,7 +2,11 @@
  * Geometry reads three variables the clock writes every frame: --fw-t (clock ms), --fw-v0 (window start ms)
  * and --fw-k (px per ms). A mark carries --s and --e (its start and end ms), so growth, playback and zoom
  * move marks without a React render.
- * Type uses four sizes (11, 13, 14, 20 px); spacing sits on a 4 px grid. */
+ * Type uses the 12/14/18 px scale; spacing sits on a 4 px grid. */
+/* light-dark() follows the host's Brand theme (data-theme or the light/dark class), not the OS: a light page
+   on a dark OS otherwise resolves the dark fallbacks and muted text drops to 2.4:1. */
+:is(:root[data-theme="light"], .light) .fw-root { color-scheme: light; }
+:is(:root[data-theme="dark"], .dark) .fw-root { color-scheme: dark; }
 .fw-root {
   --fw-text: var(--text-primary, light-dark(#23232b, #ececf1));
   --fw-muted: var(--text-muted, light-dark(#5d5d68, #a4a4b0));
@@ -28,7 +32,8 @@
   --fw-h4: light-dark(#b0418a, #dc72bb);
   --fw-h5: light-dark(#6d44c7, #ab8cf7);
   --fw-ease: cubic-bezier(.2, .8, .2, 1);
-  --fw-bar-h: 16px;
+  /* Bar height = row height - 16, so a centered bar sits 8 px from the row edge: 20 px in a 36 px step row. */
+  --fw-bar-h: 20px;
   /* One label column for rows, axis and every lane layer; the agent view caps it lower and drops it on phones. */
   --fw-label-col: min(var(--fw-name-w), 42%);
   --fw-bar-shift: 0px;
@@ -45,7 +50,7 @@
   font-feature-settings: "tnum" 1, "cv11" 1;
   -webkit-font-smoothing: antialiased;
 }
-.fw-root-agents { --fw-bar-h: 20px; --fw-label-col: min(var(--fw-name-w), 28%); border-radius: 16px; }
+.fw-root-agents { --fw-bar-h: 24px; --fw-label-col: min(var(--fw-name-w), 28%); border-radius: 16px; }
 .fw-root *, .fw-root *::before, .fw-root *::after { box-sizing: border-box; }
 .fw-root :is(p, dl, dd, h3, ul) { margin: 0; padding: 0; }
 .fw-root :is(button, input, select) { font: inherit; color: inherit; }
@@ -57,11 +62,13 @@
 .fw-root [data-tone="3"] { --tone: var(--fw-h3); }
 .fw-root [data-tone="4"] { --tone: var(--fw-h4); }
 .fw-root [data-tone="5"] { --tone: var(--fw-h5); }
+/* Light fills carry enough of the hue to tell agents apart on white (round 8: 24% read as "pale mint on gray"); the outline is
+   the full hue, which passes 3:1 against the surface, so every mark keeps its edge. */
 .fw-root [data-tone] {
-  --fill: light-dark(color-mix(in oklab, var(--tone) 24%, #fff), color-mix(in oklab, var(--tone) 86%, #000));
-  --line: light-dark(color-mix(in oklab, var(--tone) 62%, #fff), var(--tone));
-  --dim: light-dark(color-mix(in oklab, var(--tone) 12%, #fff), color-mix(in oklab, var(--tone) 40%, #17171d));
-  --dim-line: light-dark(color-mix(in oklab, var(--tone) 36%, #fff), color-mix(in oklab, var(--tone) 55%, #17171d));
+  --fill: light-dark(color-mix(in oklab, var(--tone) 42%, #fff), color-mix(in oklab, var(--tone) 86%, #000));
+  --line: light-dark(var(--tone), var(--tone));
+  --dim: light-dark(color-mix(in oklab, var(--tone) 22%, #fff), color-mix(in oklab, var(--tone) 40%, #17171d));
+  --dim-line: light-dark(color-mix(in oklab, var(--tone) 70%, #fff), color-mix(in oklab, var(--tone) 55%, #17171d));
 }
 
 /* Header */
@@ -79,7 +86,8 @@
 .fw-root .fw-tools { display: flex; align-items: center; gap: 8px; }
 .fw-root .fw-views { display: inline-flex; padding: 4px; border-radius: 8px; background: var(--fw-well); border: 1px solid var(--fw-border); }
 .fw-root .fw-view-button { appearance: none; border: 0; background: transparent; height: 24px; padding: 0 12px; border-radius: 6px; font-size: 14px; color: var(--fw-muted); cursor: pointer; transition: background-color 120ms var(--fw-ease), color 120ms var(--fw-ease); }
-.fw-root .fw-view-button[aria-checked="true"] { background: var(--fw-surface); color: var(--fw-text); box-shadow: 0 1px 2px rgb(0 0 0 / .12), 0 0 0 1px var(--fw-border); }
+/* The shown view is a state, not a control: no click target, no pointer. */
+.fw-root .fw-view-button[aria-checked="true"] { opacity: 1; cursor: default; background: var(--fw-surface); color: var(--fw-text); box-shadow: 0 1px 2px rgb(0 0 0 / .12), 0 0 0 1px var(--fw-border); }
 .fw-root .fw-search { position: relative; display: flex; align-items: center; }
 .fw-root .fw-search-glyph { position: absolute; left: 8px; display: inline-flex; color: var(--fw-muted); pointer-events: none; }
 .fw-root .fw-search-input { appearance: none; width: 200px; height: 32px; padding: 0 12px 0 28px; border: 1px solid var(--fw-border); border-radius: 8px; background: var(--fw-well); font-size: 14px; }
@@ -97,9 +105,7 @@
 /* Axis */
 .fw-root .fw-axis { display: grid; grid-template-columns: var(--fw-label-col) minmax(0, 1fr); height: 32px; color: var(--fw-muted); font-size: 12px; }
 .fw-root .fw-axis-top { border-bottom: 1px solid var(--fw-border); }
-.fw-root .fw-axis-bottom { height: 28px; border-top: 1px solid var(--fw-border); }
 .fw-root .fw-axis-label { position: relative; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 16px; border-right: 1px solid var(--fw-border); min-width: 0; }
-.fw-root .fw-axis-bottom .fw-axis-label { border-right-color: transparent; }
 .fw-root .fw-branch-controls { margin-left: auto; display: flex; gap: 4px; }
 .fw-root .fw-text-button { appearance: none; border: 0; background: transparent; height: 24px; padding: 0 8px; border-radius: 6px; font-size: 12px; color: var(--fw-muted); cursor: pointer; white-space: nowrap; }
 .fw-root .fw-text-button:hover { background: var(--fw-hover); color: var(--fw-text); }
@@ -108,7 +114,6 @@
 .fw-root .fw-axis-track { position: relative; overflow: hidden; cursor: ew-resize; touch-action: none; }
 .fw-root .fw-tick { position: absolute; top: 50%; transform: translate(4px, -50%); left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); font-variant-numeric: tabular-nums; white-space: nowrap; line-height: 16px; }
 .fw-root .fw-cursor-handle { position: absolute; width: 9px; height: 9px; border-radius: 50%; background: var(--fw-text); box-shadow: 0 0 0 2px var(--fw-surface); left: calc(var(--fw-pad) + (var(--fw-t) - var(--fw-v0)) * var(--fw-k) * 1px - 4.5px); bottom: -5px; z-index: 3; }
-.fw-root .fw-axis-bottom .fw-cursor-handle { top: -5px; bottom: auto; }
 
 /* Body */
 .fw-root .fw-viewport { position: relative; }
@@ -121,8 +126,20 @@
 .fw-root .fw-marker { --fw-marker: var(--fw-muted); position: absolute; top: 0; bottom: 0; width: 0; border-left: 1px dashed var(--fw-marker); left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); }
 .fw-root .fw-marker[data-tone="ok"] { --fw-marker: var(--fw-ok); }
 .fw-root .fw-marker[data-tone="failed"] { --fw-marker: var(--fw-failed); }
+/* A pause: the run stood still. A hatched band across every row with its reason on top, never blank space. */
+.fw-root .fw-pause { position: absolute; top: 0; bottom: 0; left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); width: calc(max(0, var(--e) - var(--s)) * var(--fw-k) * 1px);
+  background: repeating-linear-gradient(-45deg, color-mix(in oklab, var(--fw-text) 9%, transparent) 0 1px, transparent 1px 6px), color-mix(in oklab, var(--fw-text) 4%, transparent);
+  border-inline: 1px dashed color-mix(in oklab, var(--fw-text) 24%, transparent); }
+.fw-root .fw-pause-label { position: sticky; top: 4px; display: block; width: max-content; max-width: calc(100% - 8px); margin: 4px auto 0; padding: 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  border-radius: 4px; font-size: 12px; line-height: 20px; color: var(--fw-muted); background: var(--fw-surface); box-shadow: inset 0 0 0 1px var(--fw-border); }
 .fw-root .fw-marker-label { position: absolute; top: 2px; left: 3px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 4px; border-radius: 4px; font-size: 12px; line-height: 16px; color: var(--fw-marker); background: var(--fw-surface); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-marker) 40%, transparent); }
 .fw-root .fw-marker-label-left { left: auto; right: 3px; }
+.fw-root .fw-marker[data-tone="warn"], .fw-root .fw-event[data-tone="warn"] { --fw-marker: var(--fw-amber); }
+/* The event track: one dot per marker on the axis; click or N/P moves the cursor there. */
+.fw-root .fw-event { --fw-marker: var(--fw-muted); position: absolute; bottom: 2px; width: 8px; height: 8px; margin-left: -4px; padding: 0; border: 0; border-radius: 50%; background: var(--fw-marker); box-shadow: 0 0 0 2px var(--fw-surface); cursor: pointer; z-index: 4; left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); }
+.fw-root .fw-event[data-tone="ok"] { --fw-marker: var(--fw-ok); }
+.fw-root .fw-event[data-tone="failed"] { --fw-marker: var(--fw-failed); }
+.fw-root .fw-event:hover, .fw-root .fw-event:focus-visible { transform: scale(1.4); outline: 0; }
 .fw-root .fw-cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: color-mix(in oklab, var(--fw-text) 70%, transparent); left: calc(var(--fw-pad) + (var(--fw-t) - var(--fw-v0)) * var(--fw-k) * 1px); }
 .fw-root .fw-empty { padding: 40px 16px; text-align: center; color: var(--fw-muted); }
 .fw-root .fw-sticky { position: absolute; top: 0; left: 0; right: 0; z-index: 2; background: var(--fw-surface); box-shadow: 0 1px 0 var(--fw-border), 0 6px 12px -8px rgb(0 0 0 / .35); }
@@ -132,6 +149,10 @@
 .fw-root .fw-row:hover { background: var(--fw-hover); }
 .fw-root .fw-row.fw-active { background: color-mix(in oklab, var(--fw-accent) 7%, transparent); }
 .fw-root .fw-row[aria-selected="true"] { background: color-mix(in oklab, var(--fw-accent) 11%, transparent); }
+/* A selected agent lifts: an accent edge on its row, and its peers recede so the reader sees what the panels below follow. */
+.fw-root-agents[data-selection] .fw-row[aria-selected="true"] { box-shadow: inset 3px 0 0 var(--fw-accent); }
+.fw-root-agents[data-selection] .fw-row:not([aria-selected="true"]) > [role="gridcell"] { opacity: .45; transition: opacity 160ms var(--fw-ease); }
+.fw-root-agents[data-selection] .fw-row:not([aria-selected="true"]):hover > [role="gridcell"] { opacity: .8; }
 .fw-root .fw-row:focus-visible { box-shadow: inset 2px 0 0 var(--fw-accent); }
 .fw-root .fw-sticky-row { background: var(--fw-surface); }
 .fw-root .fw-label { position: relative; display: flex; align-items: center; gap: 8px; min-width: 0; padding: 0 12px 0 calc(12px + var(--depth) * 16px); border-right: 1px solid var(--fw-border); }
@@ -162,12 +183,12 @@
 .fw-root .fw-view-agents .fw-span-name { font-weight: 600; line-height: 18px; }
 .fw-root .fw-view-agents .fw-subtitle { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fw-muted); font-size: 12px; line-height: 16px; }
 .fw-root .fw-view-agents .fw-detail { font-size: 12px; line-height: 16px; }
-.fw-root .fw-agent-dot { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--line, var(--fw-muted)); align-self: flex-start; margin-top: calc((var(--fw-row-h) - 34px) / 2 + 8px); }
+.fw-root .fw-agent-dot { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--line, var(--fw-muted)); }
 
 /* Lanes and marks */
 .fw-root .fw-lane { position: relative; overflow: hidden; min-width: 0; }
 .fw-root .fw-invalid { position: absolute; left: var(--fw-pad); top: 50%; transform: translateY(-50%); color: var(--fw-muted); }
-.fw-root :is(.fw-bar, .fw-seg, .fw-end) {
+.fw-root :is(.fw-bar, .fw-seg, .fw-end, .fw-mark) {
   --x0: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px);
   --w: calc(max(0, min(var(--e), var(--fw-t)) - var(--s)) * var(--fw-k) * 1px);
   --on: clamp(0, (var(--fw-t) - var(--s)) * 1000, 1);
@@ -176,19 +197,32 @@
   left: var(--x0);
   opacity: var(--on);
 }
-.fw-root :is(.fw-bar, .fw-seg) { height: var(--fw-bar-h); margin-top: calc(var(--fw-bar-h) / -2 + var(--fw-bar-shift)); width: max(var(--w), calc(var(--on) * 3px)); border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.fw-root .fw-enter > [role="gridcell"] { animation: fw-unfold 220ms var(--fw-ease) var(--fw-enter-delay) both; }
+.fw-root .fw-enter :is(.fw-bar, .fw-seg) { animation: fw-grow 420ms var(--fw-ease) var(--fw-enter-delay) both; }
+.fw-root .fw-enter .fw-end { animation: fw-land 220ms var(--fw-ease) calc(var(--fw-enter-delay) + 300ms) both; }
+.fw-root .fw-settle :is(.fw-bar, .fw-seg) { animation: fw-settle 600ms var(--fw-ease); }
+.fw-root .fw-settle .fw-end { animation: fw-land 260ms var(--fw-ease); }
+/* A live bar grows with the clock instead of stepping each tick. */
+.fw-root .fw-row[data-running] .fw-bar { transition: width 120ms linear; }
+/* A restart: an amber notch through the bar at that moment; the bar keeps its own state. */
+.fw-root .fw-mark { position: absolute; z-index: 2; left: calc(var(--x0) - 1px); width: 2px; top: calc(50% + var(--fw-bar-shift) - var(--fw-bar-h) / 2 - 4px); height: calc(var(--fw-bar-h) + 8px);
+  border-radius: 2px; background: var(--fw-amber); box-shadow: 0 0 0 1px var(--fw-surface); opacity: var(--on); pointer-events: auto; }
+/* Centered by top, not a negative margin, so measured spacing stays on the grid. */
+.fw-root :is(.fw-bar, .fw-seg) { top: calc(50% + var(--fw-bar-shift) - var(--fw-bar-h) / 2); height: var(--fw-bar-h); width: max(var(--w), calc(var(--on) * 3px)); border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .fw-root .fw-bar { background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); }
 /* The mark under the pointer lifts: a brighter fill and a ring in its own tone. */
 .fw-root :is(.fw-bar, .fw-seg):hover { filter: brightness(1.18); box-shadow: inset 0 0 0 1px var(--line), 0 0 0 2px color-mix(in oklab, var(--line) 55%, transparent); z-index: 1; }
 .fw-root .fw-bar.fw-k-tool { background: var(--dim); box-shadow: inset 0 0 0 1px var(--dim-line); }
 /* A handoff is a moment: a slim pill in the receiving tone, not a block of work. */
-.fw-root .fw-bar.fw-k-handoff { background: var(--line); height: 6px; margin-top: -4px; box-shadow: none; }
+.fw-root .fw-bar.fw-k-handoff { background: var(--line); height: 8px; top: calc(50% + var(--fw-bar-shift) - 4px); box-shadow: none; }
 .fw-root .fw-bar.fw-k-waiting { background: repeating-linear-gradient(-45deg, var(--fw-hatch) 0 1px, transparent 1px 5px); box-shadow: inset 0 0 0 1px var(--fw-hatch); }
 .fw-root .fw-bar.fw-k-failed { background: color-mix(in oklab, var(--fw-failed) 22%, var(--fw-surface)); box-shadow: inset 0 0 0 1px var(--fw-failed); color: var(--fw-failed); }
 .fw-root .fw-bar.fw-k-pipeline { background: linear-gradient(90deg, var(--fw-neutral-bar), color-mix(in oklab, var(--fw-neutral-bar) 55%, var(--fw-surface))); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-text) 12%, transparent); }
 .fw-root .fw-bar.fw-k-pipeline.fw-has-marks { background: color-mix(in oklab, var(--tone) 9%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--tone) 18%, transparent); }
 .fw-root .fw-bar.fw-k-pipeline.fw-has-agents { background: repeating-linear-gradient(-45deg, var(--fw-hatch) 0 1px, transparent 1px 5px), color-mix(in oklab, var(--fw-text) 4%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-text) 12%, transparent); }
 /* An agent bar with no child marks says who it is by its lane color, never a neutral grey. */
+/* In the agent view the bar's own extent between steps is waiting: hatched in the outcome tone, under the step segments. */
+.fw-root .fw-view-agents .fw-bar.fw-k-pipeline.fw-has-marks { background: repeating-linear-gradient(-45deg, color-mix(in oklab, var(--tone) 28%, transparent) 0 1px, transparent 1px 5px), color-mix(in oklab, var(--tone) 9%, transparent); }
 .fw-root .fw-view-agents .fw-bar.fw-k-pipeline:not(.fw-has-marks, .fw-has-agents) { background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); }
 /* A host outcome re-tones the whole lane: dot, bar and marks. */
 .fw-root [data-outcome="ok"], .fw-root [data-outcome="ok"] [data-tone] { --tone: var(--fw-ok); }
@@ -211,7 +245,7 @@
 .fw-root .fw-glyph { display: inline-flex; color: currentColor; }
 .fw-root .fw-glyph svg { width: 11px; height: 11px; stroke-width: 2; }
 .fw-root .fw-seg-model .fw-glyph, .fw-root .fw-k-model .fw-glyph { color: light-dark(var(--tone), #fff); }
-.fw-root .fw-end { display: inline-flex; align-items: center; gap: 8px; margin-top: -12px; height: 20px; left: calc(var(--x0) + max(var(--w), 3px) + 8px); white-space: nowrap; pointer-events: none; }
+.fw-root .fw-end { display: inline-flex; align-items: center; gap: 8px; top: calc(50% + var(--fw-bar-shift) - var(--fw-bar-h) / 2); height: var(--fw-bar-h); left: calc(var(--x0) + max(var(--w), 3px) + 8px); white-space: nowrap; pointer-events: none; }
 .fw-root .fw-duration { font-size: 12px; color: var(--fw-muted); font-variant-numeric: tabular-nums; }
 .fw-root .fw-k-failed ~ .fw-end .fw-duration { color: var(--fw-failed); }
 .fw-root .fw-badge { height: 18px; padding: 0 8px; border-radius: 999px; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--fw-amber); background: color-mix(in oklab, var(--fw-amber) 13%, transparent); border: 1px solid color-mix(in oklab, var(--fw-amber) 28%, transparent); }
@@ -241,7 +275,7 @@
 .fw-root .fw-card[role="tooltip"] { pointer-events: none; }
 .fw-root .fw-card-above .fw-card { transform: translateY(-100%); animation-name: fw-arrive-above; }
 .fw-root .fw-card-agent { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; font-weight: 600; }
-.fw-root .fw-card-agent .fw-agent-dot { margin-top: 0; align-self: center; }
+.fw-root .fw-card-agent .fw-agent-dot { align-self: center; }
 .fw-root .fw-card-head { display: flex; align-items: flex-start; gap: 8px; }
 .fw-root .fw-card-head .fw-icon-tile { flex-basis: 28px; width: 28px; height: 28px; border-radius: 8px; }
 .fw-root .fw-card-head .fw-icon-tile :is(svg, img) { width: 16px; height: 16px; }
@@ -262,12 +296,13 @@
 .fw-root .fw-card-text { margin-top: 12px; }
 .fw-root .fw-card-compact { width: 280px; padding: 12px; }
 .fw-root .fw-card-compact .fw-card-agent { margin-bottom: 8px; font-size: 14px; line-height: 20px; }
-.fw-root .fw-card-who { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fw-root .fw-card-who { min-width: 0; flex: 1; overflow: hidden; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .fw-root .fw-card-detail { margin: -4px 0 8px 16px; color: var(--fw-muted); font-size: 12px; line-height: 16px; overflow-wrap: anywhere; }
 .fw-root .fw-pill-outcome { color: var(--line); background: color-mix(in oklab, var(--tone) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--tone) 35%, transparent); }
 .fw-root .fw-card-cells { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 8px; padding: 8px 12px; border-radius: 8px; background: var(--fw-well); }
 .fw-root .fw-card-cells dt { font-size: 12px; line-height: 16px; color: var(--fw-muted); }
 .fw-root .fw-card-cells dd { font-size: 14px; line-height: 20px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fw-root .fw-card-step { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--fw-border); color: var(--fw-muted); font-size: 12px; line-height: 16px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .fw-root .fw-card-result { margin-top: 8px; font-size: 14px; line-height: 20px; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .fw-root .fw-card-text p { margin-top: 4px; color: var(--fw-text); overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 
@@ -292,6 +327,12 @@
 .fw-root .fw-sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 
 @keyframes fw-spin { to { transform: rotate(360deg); } }
+/* Motion verbs. Grow: an arriving bar extends from its start. Unfold: an arriving row's cells slide in, staggered by
+   --fw-enter-delay. Settle: a bar that just finished eases its edge and lands its end label. */
+@keyframes fw-grow { from { clip-path: inset(0 100% 0 0 round 4px); } }
+@keyframes fw-unfold { from { opacity: 0; translate: 0 -4px; } }
+@keyframes fw-land { from { opacity: 0; translate: -6px 0; } }
+@keyframes fw-settle { 40% { filter: brightness(1.3); } }
 @keyframes fw-pulse { 50% { opacity: .35; } }
 @keyframes fw-arrive { from { opacity: 0; transform: translateY(4px); } }
 @keyframes fw-arrive-above { from { opacity: 0; transform: translateY(calc(-100% - 4px)); } }
@@ -319,10 +360,12 @@
   .fw-root .fw-heading, .fw-root .fw-playback { padding-left: 12px; padding-right: 12px; }
 }
 
-/* The agent timeline is one quiet surface: no inner rules, more air, the axis under the lanes. */
+/* The agent timeline is one quiet surface: no inner rules; controls and axis sit above the lanes. */
 .fw-root-agents .fw-heading { border-bottom: 0; padding: 20px 24px 12px; }
-.fw-root-agents .fw-axis-bottom { border-top: 0; }
-.fw-root-agents .fw-playback { border-top: 0; padding: 8px 24px 20px; }
+.fw-root-agents .fw-axis-top { border-bottom: 0; }
+.fw-root-agents .fw-axis-top .fw-axis-label { border-right-color: transparent; }
+.fw-root-agents .fw-playback { border-top: 0; padding: 0 24px 8px; }
+.fw-root-agents .fw-body { padding-bottom: 12px; }
 .fw-root-agents .fw-view-agents .fw-label { padding-left: 24px; }
 .fw-root-agents .fw-zoom, .fw-root-agents .fw-time { display: none; }
 /* The agent view keeps scrubbing on a hairline track; the lanes above already show the activity. */
@@ -336,13 +379,13 @@
    (At 768 px a 28% column cut 15 of 17 names on a real 17-agent run.) */
 @container (max-width: 899px) {
   /* The root is the queried container, so the variables go on its children. */
-  .fw-root-agents > * { --fw-label-col: 0px; --fw-bar-shift: 8px; }
+  /* In a 40 px row: the name on 0-20 px, a 16 px bar on 20-36 px. */
+  .fw-root-agents > * { --fw-label-col: 0px; --fw-bar-shift: 8px; --fw-bar-h: 16px; }
   .fw-root-agents .fw-view-agents .fw-names { flex-direction: row; align-items: baseline; gap: 8px; min-width: 0; }
-  .fw-root-agents .fw-view-agents .fw-agent-dot { align-self: center; margin-top: 0; }
   /* The label leaves the grid flow, so the lane must claim the track column itself. */
   .fw-root-agents .fw-view-agents .fw-lane { grid-column: 2; }
   /* Elbows pass behind the name, not through its letters. A transform or layout containment would make each row
      its own stacking context and trap the name under the connector layer, so stacked rows place by top instead. */
   .fw-root-agents .fw-view-agents .fw-row { transform: none; top: var(--row-y); contain: style; }
-  .fw-root-agents .fw-view-agents .fw-label { position: absolute; z-index: 3; top: 4px; left: 0; height: 18px; max-width: calc(100% - var(--fw-pad)); padding: 0 8px 0 var(--fw-pad); gap: 8px; align-items: center; pointer-events: none; overflow: hidden; border-radius: 0 4px 4px 0; background: var(--fw-surface); }
+  .fw-root-agents .fw-view-agents .fw-label { position: absolute; z-index: 3; top: 0; left: 0; height: 20px; max-width: calc(100% - var(--fw-pad)); padding: 0 8px 0 var(--fw-pad); gap: 8px; align-items: center; pointer-events: none; overflow: hidden; border-radius: 0 4px 4px 0; background: var(--fw-surface); }
 }

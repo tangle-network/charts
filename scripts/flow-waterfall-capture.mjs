@@ -23,6 +23,8 @@ const open = async (query, viewport = { width: 1185, height: 1016 }, video) => {
   await page.goto(`${base}?${query}`)
   await page.locator('body[data-ready="1"]').waitFor({ state: 'attached', timeout: 30_000 })
   await page.evaluate(() => document.fonts.ready)
+  // Rest frames wait for the first-paint grow and unfold to finish.
+  await page.waitForFunction(() => !document.querySelector('.fw-row.fw-enter'), null, { timeout: 5_000 })
   await page.waitForTimeout(300)
   return { page, context }
 }
@@ -57,6 +59,27 @@ try {
     }
   }
   // Live proof: 60 s of a running session through the relay, recorded, with every span's event-to-pixel time.
+  // FW_JUDGE=<file>: blind-judge frames from one real run: rest, hover and pinned card, dark and light, at 1512x945. The agents
+  // view, as the reference frames show a run: one row per agent with its work segmented (the steps view of a day-long run puts
+  // thousands of sub-second steps at its first pixel). The stat strip and the card header stay in frame.
+  if (process.env.FW_JUDGE) {
+    report.judge = []
+    const file = process.env.FW_JUDGE
+    for (const theme of ['dark', 'light']) {
+      const { page, context } = await open(`fixture=otlp:${file}&view=agents&theme=${theme}&width=1440&height=720&label=Trace`, { width: 1512, height: 945 })
+      await page.screenshot({ path: `${out}/judge-${theme}-rest.png` })
+      const bars = page.locator('.fw-row:not(.fw-sticky-row) .fw-bar')
+      const bar = bars.nth(Math.min(6, Math.max(0, (await bars.count()) - 1)))
+      // Point where a reader would: the bar's centre, which may be one of its segments (each opens its own card).
+      const box = await bar.boundingBox()
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.waitForTimeout(350)
+      await page.screenshot({ path: `${out}/judge-${theme}-hover.png` })
+      await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2); await page.waitForTimeout(350)
+      await page.screenshot({ path: `${out}/judge-${theme}-card.png` })
+      report.judge.push({ theme, bars: await bars.count() })
+      await context.close()
+    }
+  }
   if (process.env.FW_LIVE_RELAY) {
     const seconds = Number(process.env.FW_LIVE_SECONDS ?? 60)
     const context = await browser.newContext({ viewport: { width: 1512, height: 945 }, deviceScaleFactor: 1, recordVideo: { dir: out, size: { width: 1512, height: 945 } } })
@@ -123,6 +146,15 @@ try {
         }
         const linkOpacity = await page.locator('.fw-view-agents .fw-link:not(.fw-link-hot)').first().evaluate(el => Number(getComputedStyle(el).opacity)).catch(() => null)
         report.fit.push({ fixture: tag, barsHovered: n, cardsOpened: opened, restingLinkOpacity: linkOpacity })
+        await context.close()
+      }
+      // A leaf agent hovered: only its own connectors light; the rest stay at their resting strength.
+      {
+        const { page, context } = await open(`fixture=${fixture}&view=agents&theme=dark&pad=0&height=2000`, { width: 1280, height: 1200 })
+        const box = await page.locator('.fw-view-agents .fw-row:not(.fw-sticky-row)').last().locator('.fw-bar').boundingBox()
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.waitForTimeout(350)
+        report.fit.push({ fixture: tag, leafHover: true, hotLinks: await page.locator('.fw-link-hot').count(), restingLinks: await page.locator('.fw-link:not(.fw-link-hot)').count() })
+        await page.screenshot({ path: `${out}/fit-${tag}-leaf-hover-1280.png` })
         await context.close()
       }
       // The hover card on a busy agent's first mark, at a desktop and a phone width.

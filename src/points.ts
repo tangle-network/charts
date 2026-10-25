@@ -100,12 +100,12 @@ export function pointBadge(x: number, y: number, r: number, p: PointFields, limi
   if (p.count !== undefined && p.count > 1) parts.push([`×${p.count}`, "tgc-point-label"]);
   if (!parts.length) return { svg: "", width: 0 };
   // Badges render in the monospace face (figure.css), so they are measured in it.
-  const width = textWidth(parts.map(([t]) => t).join(" "), 10, "mono");
+  const width = textWidth(parts.map(([t]) => t).join(" "), 12, "mono");
   const spans = parts.map(([t, cls], i) => `<tspan class="${cls}">${i ? " " : ""}${esc(t)}</tspan>`).join("");
-  if (above) return { svg: `<text class="tgc-point-badge" x="${Math.round(x * 100) / 100}" y="${Math.round((y - r - 5) * 100) / 100}" font-size="10" text-anchor="middle">${spans}</text>`, width };
+  if (above) return { svg: `<text class="tgc-point-badge" x="${Math.round(x * 100) / 100}" y="${Math.round((y - r - 5) * 100) / 100}" font-size="12" text-anchor="middle">${spans}</text>`, width };
   const left = x + r + 3 + width > limit;
   const tx = left ? x - r - 3 : x + r + 3;
-  return { svg: `<text class="tgc-point-badge" x="${Math.round(tx * 100) / 100}" y="${Math.round((y + 3.5) * 100) / 100}" font-size="10"${left ? ' text-anchor="end"' : ""}>${spans}</text>`, width };
+  return { svg: `<text class="tgc-point-badge" x="${Math.round(tx * 100) / 100}" y="${Math.round((y + 3.5) * 100) / 100}" font-size="12"${left ? ' text-anchor="end"' : ""}>${spans}</text>`, width };
 }
 
 /** A verdict recorded without a value: a square in the strip under the plot, hatched when undecided. */
@@ -149,7 +149,7 @@ export function verdictKey(points: readonly (PointFields & { y: number | null })
   const has = (test: (p: PointFields & { y: number | null }) => boolean) => points.some(test);
   type Item = { glyph: (gx: number, gy: number) => string; label: string };
   const shape = (s: MarkerShape, cls: string) => (gx: number, gy: number) => `<path class="tgc-key-mark ${cls}" d="${markerPath(s, gx + 5, gy - 4, 4)}"/>`;
-  const sign = (t: string, cls: string) => (gx: number, gy: number) => text(gx + 1, gy, t, { size: 11, cls });
+  const sign = (t: string, cls: string) => (gx: number, gy: number) => text(gx + 1, gy, t, { size: 12, cls });
   const items: Item[] = [
     ...MARKER_SHAPES.filter((s) => markers?.[s] && has((p) => p.marker === s)).map((s) => ({ glyph: shape(s, "tgc-key-filled"), label: markers![s]! })),
     ...(has((p) => p.y !== null && p.verdict === "pass") ? [{ glyph: shape("circle", "tgc-key-filled"), label: "filled: pass" }] : []),
@@ -166,10 +166,10 @@ export function verdictKey(points: readonly (PointFields & { y: number | null })
   for (const item of items) {
     // A text sign (×n) is wider than a mark; its label starts after it. Widths leave room for a wider fallback face.
     const lead = item.label === "recorded rows" ? 24 : 16;
-    const w = lead + textWidth(item.label, 11) * 1.1 + 16;
+    const w = lead + textWidth(item.label, 12) * 1.1 + 16;
     if (at > x && at + w - x > width) { at = x; line++; }
     const gy = y + 12 + line * 16;
-    svg += item.glyph(at, gy) + text(at + lead, gy, item.label, { size: 11, cls: "tgc-ink-muted" });
+    svg += item.glyph(at, gy) + text(at + lead, gy, item.label, { size: 12, cls: "tgc-ink-muted" });
     at += w;
   }
   return { svg: items.length ? `<g class="tgc-verdict-key">${svg}</g>` : "", height: items.length ? (line + 1) * 16 + 8 : 0 };

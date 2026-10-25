@@ -1,10 +1,12 @@
 import { type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
-import type { FlowMarker, FlowSpan } from '../flow-trace.js'
+import type { FlowMarker, FlowPause, FlowSpan } from '../flow-trace.js'
 import { type FlowWaterfallRow, spanRunning } from './flow-waterfall-model.js'
 import { type FlowLink, type FlowView, FlowRow, LinkMark, type RowEvents } from './flow-waterfall-row.js'
+import { useRowMotion } from './flow-waterfall-motion.js'
 import { clockTicks, formatClock, type ViewWindow } from './flow-waterfall-time.js'
 
-export const ROW_HEIGHT: Record<FlowView, number> = { spans: 36, agents: 52 }
+// 40 px agent rows keep a 17-agent run, its axis and its controls inside a 945 px viewport.
+export const ROW_HEIGHT: Record<FlowView, number> = { spans: 36, agents: 40 }
 const OVERSCAN = 8
 /** Rows re-render once per CHUNK rows scrolled; overscan covers the rows in between. */
 const CHUNK = 4
@@ -20,7 +22,9 @@ export interface BodyProps extends RowEvents {
   collapsed: Set<string>
   searching: boolean
   slowestId?: string
+  costliestId?: string
   activeId?: string
+  pauses?: readonly FlowPause[]
   selectedId?: string
   /** The agent whose handoff connectors draw at full strength; the rest stay dim in the agent view. */
   focusId?: string
@@ -31,6 +35,7 @@ export interface BodyProps extends RowEvents {
   markers?: FlowMarker[]
   zoomed: boolean
   renderIcon?: (span: FlowSpan) => ReactNode
+  fillByAgent?: boolean
   emptyText: string
   onActiveChange: (id: string) => void
   onScrub: (ms: number) => void
@@ -89,6 +94,7 @@ export function FlowBody(props: BodyProps) {
   const height = Math.min(maxHeight, Math.max(rows.length, 1) * rowHeight)
   const links = useMemo(() => linksFor(rows, props.byId, view), [rows, props.byId, view])
   const index = useMemo(() => new Map(rows.map((row, i) => [row.id, i])), [rows])
+  const motion = useRowMotion(rows)
   // Ticks run into the end-label gutter but stop where a label would be cut at the right edge.
   const msPerPx = (win.endMs - win.startMs) / Math.max(1, trackPx)
   const tickEnd = win.startMs + (trackPx + (view === 'spans' ? 72 : 0)) * msPerPx
@@ -209,7 +215,7 @@ export function FlowBody(props: BodyProps) {
   }
 
   const axis = (
-    <div className={`fw-axis fw-axis-${view === 'agents' ? 'bottom' : 'top'}`}>
+    <div className="fw-axis fw-axis-top">
       <div className="fw-axis-label">
         {view === 'spans' && <>
           {props.onExpandAll && <span className="fw-branch-controls">
@@ -225,6 +231,10 @@ export function FlowBody(props: BodyProps) {
       </div>
       <div className="fw-axis-track" data-fw-track ref={props.onTrack} onPointerDown={scrub} title="Drag to scrub">
         {ticks.map(tick => <span key={tick} className="fw-tick" style={{ '--s': tick } as CSSProperties}>{formatClock(tick)}</span>)}
+        {props.markers?.map(marker => <button key={`e-${marker.at}-${marker.label}`} type="button" className="fw-event" data-tone={marker.tone ?? 'neutral'}
+          style={{ '--s': marker.at } as CSSProperties} title={marker.kind ? `${marker.kind}: ${marker.label}` : marker.label}
+          aria-label={`Jump to ${marker.kind ? `${marker.kind} ` : ''}${marker.label}`}
+          onPointerDown={event => event.stopPropagation()} onClick={() => props.onScrub(marker.at)} />)}
         {showCursor && <span className="fw-cursor-handle" aria-hidden />}
       </div>
     </div>
@@ -232,21 +242,21 @@ export function FlowBody(props: BodyProps) {
 
   const row = (item: FlowWaterfallRow, i: number, isSticky = false) => (
     <FlowRow key={isSticky ? `sticky-${item.id}` : item.id} row={item} view={view} top={i * rowHeight}
-      collapsed={collapsed.has(item.id)} searching={searching} slowest={item.id === slowestId}
+      collapsed={collapsed.has(item.id)} searching={searching} slowest={item.id === slowestId} costliest={item.id === props.costliestId}
       active={item.id === activeId} focusable={!isSticky && (item.id === activeId || (activeId === undefined || !index.has(activeId)) && i === 0)}
-      selected={item.id === selectedId} sticky={isSticky} clockMs={clockMs} renderIcon={props.renderIcon}
+      selected={item.id === selectedId} sticky={isSticky} motion={isSticky ? undefined : motion.get(item.id)} clockMs={clockMs} renderIcon={props.renderIcon} fillByAgent={props.fillByAgent}
       onToggle={props.onToggle} onInspect={props.onInspect} onLeave={props.onLeave} onPin={props.onPin} onActivate={item => props.onActiveChange(item.id)} />
   )
 
   return (
     <div className={`fw-body fw-view-${view}${zoomed ? ' fw-zoomed' : ''}`} ref={surface}>
-      {view === 'spans' && axis}
+      {axis}
       <div className="fw-viewport">
         <div className="fw-gridlayer" aria-hidden>
           {ticks.map(tick => <span key={tick} className="fw-gridline" style={{ '--s': tick } as CSSProperties} />)}
         </div>
         <div ref={scroller} role="treegrid" aria-label="Trace timeline" aria-rowcount={rows.length} aria-multiselectable={false}
-          tabIndex={-1} className="fw-scroller" style={{ height, maxHeight }} onKeyDown={keydown}
+          tabIndex={-1} className="fw-scroller" data-primary-content="" style={{ height, maxHeight }} onKeyDown={keydown}
           onScroll={event => { const next = Math.floor(event.currentTarget.scrollTop / rowHeight / CHUNK); if (next !== chunk) setChunk(next) }}>
           <div className="fw-canvas" style={{ height: rows.length * rowHeight }}>
             <div className="fw-links" aria-hidden>
@@ -258,15 +268,17 @@ export function FlowBody(props: BodyProps) {
           {rows.length === 0 && <p role="status" className="fw-empty">{props.emptyText}</p>}
         </div>
         {view === 'spans' && <StickyRows scroller={scroller} rows={rows} index={index} rowHeight={rowHeight} render={row} />}
-        {props.markers?.length ? <div className="fw-marker-layer">
-          {props.markers.map(marker => <span key={`${marker.at}-${marker.label}`} className="fw-marker" data-tone={marker.tone ?? 'neutral'}
+        {props.markers?.length || props.pauses?.length ? <div className="fw-marker-layer">
+          {props.pauses?.map(pause => <span key={`p-${pause.startMs}`} className="fw-pause" style={{ '--s': pause.startMs, '--e': pause.endMs } as CSSProperties} title={pause.label}>
+            <span className="fw-pause-label">{pause.label}</span>
+          </span>)}
+          {props.markers?.map(marker => <span key={`${marker.at}-${marker.label}`} className="fw-marker" data-tone={marker.tone ?? 'neutral'}
             style={{ '--s': marker.at } as CSSProperties} title={marker.label}>
             {markerLabels.has(marker) && <span className={`fw-marker-label${markerLabels.get(marker) === 'left' ? ' fw-marker-label-left' : ''}`}>{marker.label}</span>}
           </span>)}
         </div> : null}
         {showCursor && <div className="fw-cursor-layer" aria-hidden><span className="fw-cursor" /></div>}
       </div>
-      {view === 'agents' && axis}
     </div>
   )
 }

@@ -1,5 +1,34 @@
 # @tangle-network/charts
 
+## 0.20.0
+
+### Minor Changes
+
+- The agent view shows the same stat strip as the steps view (Duration, Cost, Tokens, LLM calls, Tool calls, Errors); its headline keeps only the agent count and parallel speedup. Its end-label gutter is 176 px so a badge fits beside the duration.
+- Zoom-to-span on click zooms at most 8x, so pinning a sub-second step on a day-long trace keeps its neighbours in view.
+- The view toggle's shown option is disabled (a state, not a control), so clicking it is never a dead click.
+- `FlowTrace.pauses` draws a labelled hatched band across every row for an interval when nothing ran ("Paused 4h40m: host guard cancelled workers"), never blank space. `FlowSpan.marks` puts moments on a bar, such as a restart (an amber notch), without changing the span's state or outcome.
+- Light theme: bar fills carry 42% of the agent hue (was 24%), tool steps 22% (was 12%), outlines the full hue, so agents stay distinct on white.
+- Bars take their agent's hue by default (`agentFill="agent"`); steps and handoff elbows share it, and the outcome moves to the row dot, the legend and the crash glyph. Pass `agentFill="outcome"` for the previous fill.
+- Motion: arriving bars grow from their start and their rows unfold in a 20 ms stagger (first paint, live spans, an unfolded branch); a bar that finishes settles and lands its end label; live bars grow with the clock. Keyed to the row set, so scrolling never replays it; `prefers-reduced-motion` turns it off.
+- `selectedId` and `onDeselect`: the host's selection (such as the agent whose transcript is open) lifts its row with an accent edge and dims its peers in the agent view; a pinned card only highlights its row; Escape closes the card and clears the selection.
+- Bars, segments and end labels sit 8 px from the row edge on the 4 px grid: 24 px agent bars in 40 px rows, 20 px step bars in 36 px rows, phone lanes at 20 px under the name.
+- Time travel hooks: `onTimeChange(t | null)` reports the time the reader moved to (`null` while following live or showing the whole trace). Markers also draw as event dots on the axis; clicking one, or pressing N or P, moves the cursor to the next or previous event. `FlowMarker` adds `kind`, `href` and the `warn` tone.
+- Cost is never "Unknown" when partly known. `otlpFlowTrace` reports the priced floor with `costCoverage` (`{ priced, total }`) instead of dropping the total when one call lacks a price; the waterfall shows `≥$4.12` with "38 of 41 model calls priced". `FlowTrace.billedUsd` shows the real charge beside a list price ("≈$4.12 · $0.00 billed"). A value with no source at all shows "—", and its tooltip names the missing source.
+- `otlpFlowTrace` counts a turn span marked `cli_bridge.usage.scope = sum_of_children` (cli-bridge per-call usage) for display only: totals, prices and the model-call count come from its call spans, so tokens are not counted twice.
+- The span card leaves out Cost and token cells nobody recorded (no "Unknown" or dash), and shows the span's `facts` cells, so a host can show billed amounts or partial counts there.
+- In the agent view a click on an agent's row (its name or empty track) selects it and calls `onSelect`, as a bar click does; before, only the bar or Enter did.
+- The agent view prints each agent's duration and cost at its bar end and marks the slowest agent and the costliest (when two or more are priced), as the Steps view does for steps.
+- In the agent view, the waiting time between an agent's steps is hatched in its outcome tone, under the thinking (full tone) and tool (dim tone) segments.
+- FigureView type sits on the 12/14/18/32 scale with weights 400/600 (lede 15 to 14 px, read line 13 to 12 px, finding weight 650 to 600, plot numbers 15 to 14 px), line heights on the 4 px grid, and table cells pad 8 px.
+- SVG chart text is never below 12 px: axis ticks, point badges, target and verdict-key labels, event labels, heatmap heads, and phone lane labels move from 10 or 11 px to 12 px (latency-range row labels to 12/14), measured at the size they draw so collision and wrap logic stay exact.
+- The waterfall follows the host's light or dark theme (`data-theme` or the `light`/`dark` class) rather than the OS, so a light page on a dark OS no longer shows dark-theme muted text (2.4:1). Bars center by `top` instead of a negative margin.
+- The agent timeline fits a 17-agent run in a 945 px viewport: 40 px rows (name and a one-line subtitle), with play, speed and the time axis above the lanes.
+- `agentFill: 'agent'` colors each agent bar by the agent's own hue, with the outcome on the row dot and the legend; the default `'outcome'` keeps outcome fill.
+- A card opened on a segment inside an agent bar shows the agent's duration, facts and cost, then the segment as one line ("Tool call · 4m 31s").
+- The outcome legend keeps one order on every page: ok, warn, failed, then neutral tones.
+- The agent card's title wraps to two lines, and the card's sentence line shows only what the span did (`output`).
+
 ## 0.19.0
 
 ### Minor Changes

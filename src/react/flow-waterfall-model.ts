@@ -222,6 +222,21 @@ export function slowestRow(rows: FlowWaterfallRow[], clockMs: number): FlowWater
   return best
 }
 
+/** The agents a reader should look at first: the longest one by the clock, and the costliest when two or more are priced. */
+export function agentCallouts(agents: FlowWaterfallRow[], clockMs: number): { slowestId?: string; costliestId?: string } {
+  let slowest: FlowWaterfallRow | undefined, slowestMs = -1, costliest: FlowWaterfallRow | undefined, top = -1, priced = 0
+  for (const row of agents) {
+    if (row.durationLabel === '—' || row.span.startMs > clockMs) continue
+    const ms = (spanRunning(row.span) ? Math.max(row.span.endMs, clockMs) : Math.min(row.span.endMs, clockMs)) - row.span.startMs
+    if (ms > slowestMs) { slowest = row; slowestMs = ms }
+    const cost = row.span.costUsd ?? row.rollupCostUsd
+    if (cost === undefined) continue
+    priced += 1
+    if (cost > top) { costliest = row; top = cost }
+  }
+  return { slowestId: agents.length > 1 ? slowest?.id : undefined, costliestId: priced > 1 && top > 0 ? costliest?.id : undefined }
+}
+
 /** Busy time per agent row: the union of its own work. Their sum over wall time is the parallel speedup. */
 export function busyMs(row: FlowWaterfallRow, clockMs: number): number {
   let total = 0, end = -Infinity
@@ -253,4 +268,21 @@ export function totalsAt(trace: FlowTrace, clockMs: number) {
     toolCalls: tools,
     errors,
   }
+}
+
+/** The cost a reader can rely on: a lower bound when some calls are unpriced, a dash only when nothing is priced. */
+export function costSummary(costUsd: number | undefined, trace: Pick<FlowTrace, 'costBasis' | 'costCoverage' | 'billedUsd'>): { value: string; title: string; label: string } {
+  const list = trace.costBasis === 'list'
+  const label = list ? 'Cost · list price' : 'Cost'
+  if (costUsd === undefined) {
+    return trace.billedUsd !== undefined
+      ? { value: `${formatCost(trace.billedUsd)} billed`, title: 'No list price for these calls; billed is the seat charge', label }
+      : { value: '—', title: 'No cost source: the harness recorded no cost and no price catalog was given', label }
+  }
+  const coverage = trace.costCoverage
+  const partial = coverage !== undefined && coverage.priced < coverage.total
+  const value = `${partial ? '≥' : list ? '≈' : ''}${formatCost(costUsd)}${trace.billedUsd !== undefined ? ` · ${formatCost(trace.billedUsd)} billed` : ''}`
+  const parts = [partial ? `${coverage.priced} of ${coverage.total} model calls priced` : coverage ? `all ${coverage.total} model calls priced` : '',
+    list ? 'at the model catalog list price; not a bill' : '', trace.billedUsd !== undefined ? `billed ${formatCost(trace.billedUsd)} (the seat charge)` : '']
+  return { value, title: parts.filter(Boolean).join('; '), label }
 }

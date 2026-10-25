@@ -107,9 +107,9 @@ export function drawGroups(bands: readonly ChartBand[], extent: (from: number, t
     const from = clip ? Math.max(band.from, clip[0]) : band.from, to = clip ? Math.min(band.to, clip[1]) : band.to;
     if (to < from) return "";
     const [x0, x1] = extent(from, to), w = x1 - x0;
-    const label = w >= 24 ? wrap(band.label, w - 10, 11, "sans", 1).lines[0]! : "";
+    const label = w >= 24 ? wrap(band.label, w - 10, 12, "sans", 1).lines[0]! : "";
     const edges = [x0, x1].filter((x) => x > left + 0.5 && x < right - 0.5).map((x) => line(x, top - 16, x, bottom, "tgc-group-edge")).join("");
-    const bracket = line(x0 + 2, top - 3, x1 - 2, top - 3, "tgc-group-rule") + (label ? text(x0 + 3, top - 7, label, { size: 11, cls: "tgc-group-label" }) : "");
+    const bracket = line(x0 + 2, top - 3, x1 - 2, top - 3, "tgc-group-rule") + (label ? text(x0 + 3, top - 7, label, { size: 12, cls: "tgc-group-label" }) : "");
     return titled(`${band.label}: ${format(band.from)} to ${format(band.to)}`, `<g data-band="group">${edges}${bracket}</g>`);
   }).join("");
 }
@@ -152,7 +152,7 @@ function layoutLabels(groups: MarkGroup[], left: number, right: number, o: MarkL
   const fits = (row: number, a: number, b: number) => taken[row]!.every(([p, q]) => b + gap <= p || a >= q + gap);
   // A label starts at `start` or ends at `end`; a flexible label tries its preferred side, then the other.
   const place = (value: string, start: number, end: number, prefer: "start" | "end", flexible: boolean): Placed | null => {
-    const label = wrap(value, maxW, 11, "sans", 1).lines[0]!, w = textWidth(label, 11);
+    const label = wrap(value, maxW, 12, "sans", 1).lines[0]!, w = textWidth(label, 12);
     for (const anchor of flexible ? [prefer, prefer === "start" ? "end" : "start"] as const : [prefer]) {
       const [a, b] = anchor === "start" ? [start, start + w] : [end - w, end];
       if (a < left - 4 || b > right + 4) continue;
@@ -210,9 +210,9 @@ export function drawMarks(marks: readonly ChartMark[], px: (x: number) => number
   // Labels go over every rule, so a later rule never strikes through an earlier label.
   for (const group of groups) {
     const spot = placed.get(group);
-    if (spot) out += text(spot.x, rowY(spot.row), spot.text, { size: 11, anchor: spot.anchor, cls: "tgc-mark-label" });
+    if (spot) out += text(spot.x, rowY(spot.row), spot.text, { size: 12, anchor: spot.anchor, cls: "tgc-mark-label" });
   }
-  for (const edge of edges) out += `<g data-edge="${edge.anchor === "end" ? "after" : "before"}">${text(edge.x, rowY(edge.row), edge.text, { size: 11, anchor: edge.anchor, cls: "tgc-mark-label tgc-mark-edge" })}</g>`;
+  for (const edge of edges) out += `<g data-edge="${edge.anchor === "end" ? "after" : "before"}">${text(edge.x, rowY(edge.row), edge.text, { size: 12, anchor: edge.anchor, cls: "tgc-mark-label tgc-mark-edge" })}</g>`;
   return out;
 }
 

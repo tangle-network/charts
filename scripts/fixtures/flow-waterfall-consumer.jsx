@@ -25,7 +25,11 @@ function FlowApp({ name }) {
    toolCalls:recorded.spans.filter(s=>['tool','handoff'].includes(s.kind)&&s.startMs<=now).length,
    errors:recorded.spans.filter(s=>s.status==='failed'&&s.endMs<=now).length }; live=false
  }
+ // A pause band and a restart mark, as a Discovery run records them (spawn journal: host guard pause, driver restart).
+ if (name === 'healthy') trace = { ...trace, pauses:[{startMs:Math.round(trace.totalMs*.62),endMs:Math.round(trace.totalMs*.72),label:'Paused: host guard'}],
+  spans:trace.spans.map((s,i)=>i===1?{...s,marks:[{at:Math.round((s.startMs+s.endMs)/2),kind:'restart',label:'Restarted'}]}:s) }
  return <main>{name==='discovery-streaming-replay'&&<p>Recorded Discovery replay ·20x; final totals arrive at settlement</p>}<FlowWaterfall trace={trace} live={live} maxHeight={1800}
   markers={name==='healthy'?[{at:Math.round(trace.totalMs/2),label:'Release v2',tone:'ok'},{at:Math.round(trace.totalMs/2)+50,label:'Release v3'},{at:trace.totalMs-50,label:'Release v4'}]:undefined}
-  onSelect={span=>{window.__fwSelected=[...(window.__fwSelected??[]),span.id??span.name]}} /></main>
+  onSelect={span=>{window.__fwSelected=[...(window.__fwSelected??[]),span.id??span.name]}}
+  onTimeChange={t=>{window.__fwTime=t}} /></main>
 }

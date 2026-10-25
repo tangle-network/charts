@@ -58,9 +58,9 @@ function drawWide(columns: HeatmapColumn[], rows: HeatmapRow[], fmt: (value: num
   const width = Math.ceil(left + columns.length * (cellW + gap));
   let head = "", headHeight = 44;
   columns.forEach((c, i) => {
-    const label = wrap(c.label, cellW - 5, 10, "sans", 3);
-    head += titled(c.label, textBlock(label.lines, left + i * (cellW + gap) + cellW / 2, 14, 12, 'class="tgc-ink-muted" font-size="10" text-anchor="middle"'));
-    headHeight = Math.max(headHeight, 12 + label.lines.length * 12 + 10);
+    const label = wrap(c.label, cellW - 5, 12, "sans", 3);
+    head += titled(c.label, textBlock(label.lines, left + i * (cellW + gap) + cellW / 2, 14, 16, 'class="tgc-ink-muted" font-size="12" text-anchor="middle"'));
+    headHeight = Math.max(headHeight, 12 + label.lines.length * 16 + 8);
   });
   let body = "";
   rows.forEach((r, j) => {
@@ -81,8 +81,8 @@ function drawNarrow(columns: HeatmapColumn[], rows: HeatmapRow[], fmt: (value: n
     body += text(12, top + 18, r.label, { size: 14, weight: 600 });
     columns.forEach((c, i) => {
       const group = Math.floor(i / cols), col = i % cols, x = 12 + col * (cellW + gap), y = top + 29 + group * groupH;
-      const label = wrap(c.label, cellW - 3, 10, "sans", 1);
-      body += titled(c.label, text(x + 2, y + 9, label.lines[0]!, { size: 10, cls: "tgc-ink-muted" }));
+      const label = wrap(c.label, cellW - 3, 12, "sans", 1);
+      body += titled(c.label, text(x + 2, y + 9, label.lines[0]!, { size: 12, cls: "tgc-ink-muted" }));
       body += cellMark(r.cells[i]!, x, y + 13, cellW, 29, `${r.label} · ${c.label}`, fmt);
     });
   });
