@@ -32,7 +32,8 @@
   --fw-h4: light-dark(#b0418a, #dc72bb);
   --fw-h5: light-dark(#6d44c7, #ab8cf7);
   --fw-ease: cubic-bezier(.2, .8, .2, 1);
-  --fw-bar-h: 16px;
+  /* Bar height = row height - 16, so a centered bar sits 8 px from the row edge: 20 px in a 36 px step row. */
+  --fw-bar-h: 20px;
   /* One label column for rows, axis and every lane layer; the agent view caps it lower and drops it on phones. */
   --fw-label-col: min(var(--fw-name-w), 42%);
   --fw-bar-shift: 0px;
@@ -49,7 +50,7 @@
   font-feature-settings: "tnum" 1, "cv11" 1;
   -webkit-font-smoothing: antialiased;
 }
-.fw-root-agents { --fw-bar-h: 20px; --fw-label-col: min(var(--fw-name-w), 28%); border-radius: 16px; }
+.fw-root-agents { --fw-bar-h: 24px; --fw-label-col: min(var(--fw-name-w), 28%); border-radius: 16px; }
 .fw-root *, .fw-root *::before, .fw-root *::after { box-sizing: border-box; }
 .fw-root :is(p, dl, dd, h3, ul) { margin: 0; padding: 0; }
 .fw-root :is(button, input, select) { font: inherit; color: inherit; }
@@ -190,7 +191,7 @@
 .fw-root :is(.fw-bar, .fw-seg):hover { filter: brightness(1.18); box-shadow: inset 0 0 0 1px var(--line), 0 0 0 2px color-mix(in oklab, var(--line) 55%, transparent); z-index: 1; }
 .fw-root .fw-bar.fw-k-tool { background: var(--dim); box-shadow: inset 0 0 0 1px var(--dim-line); }
 /* A handoff is a moment: a slim pill in the receiving tone, not a block of work. */
-.fw-root .fw-bar.fw-k-handoff { background: var(--line); height: 6px; top: calc(50% + var(--fw-bar-shift) - 4px); box-shadow: none; }
+.fw-root .fw-bar.fw-k-handoff { background: var(--line); height: 8px; top: calc(50% + var(--fw-bar-shift) - 4px); box-shadow: none; }
 .fw-root .fw-bar.fw-k-waiting { background: repeating-linear-gradient(-45deg, var(--fw-hatch) 0 1px, transparent 1px 5px); box-shadow: inset 0 0 0 1px var(--fw-hatch); }
 .fw-root .fw-bar.fw-k-failed { background: color-mix(in oklab, var(--fw-failed) 22%, var(--fw-surface)); box-shadow: inset 0 0 0 1px var(--fw-failed); color: var(--fw-failed); }
 .fw-root .fw-bar.fw-k-pipeline { background: linear-gradient(90deg, var(--fw-neutral-bar), color-mix(in oklab, var(--fw-neutral-bar) 55%, var(--fw-surface))); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-text) 12%, transparent); }
@@ -221,7 +222,7 @@
 .fw-root .fw-glyph { display: inline-flex; color: currentColor; }
 .fw-root .fw-glyph svg { width: 11px; height: 11px; stroke-width: 2; }
 .fw-root .fw-seg-model .fw-glyph, .fw-root .fw-k-model .fw-glyph { color: light-dark(var(--tone), #fff); }
-.fw-root .fw-end { display: inline-flex; align-items: center; gap: 8px; top: calc(50% - 12px); height: 20px; left: calc(var(--x0) + max(var(--w), 3px) + 8px); white-space: nowrap; pointer-events: none; }
+.fw-root .fw-end { display: inline-flex; align-items: center; gap: 8px; top: calc(50% + var(--fw-bar-shift) - var(--fw-bar-h) / 2); height: var(--fw-bar-h); left: calc(var(--x0) + max(var(--w), 3px) + 8px); white-space: nowrap; pointer-events: none; }
 .fw-root .fw-duration { font-size: 12px; color: var(--fw-muted); font-variant-numeric: tabular-nums; }
 .fw-root .fw-k-failed ~ .fw-end .fw-duration { color: var(--fw-failed); }
 .fw-root .fw-badge { height: 18px; padding: 0 8px; border-radius: 999px; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--fw-amber); background: color-mix(in oklab, var(--fw-amber) 13%, transparent); border: 1px solid color-mix(in oklab, var(--fw-amber) 28%, transparent); }
@@ -349,13 +350,13 @@
    (At 768 px a 28% column cut 15 of 17 names on a real 17-agent run.) */
 @container (max-width: 899px) {
   /* The root is the queried container, so the variables go on its children. */
-  /* In a 40 px row: the name on 2-20 px, a 16 px bar on 21-37 px. */
-  .fw-root-agents > * { --fw-label-col: 0px; --fw-bar-shift: 9px; --fw-bar-h: 16px; }
+  /* In a 40 px row: the name on 0-20 px, a 16 px bar on 20-36 px. */
+  .fw-root-agents > * { --fw-label-col: 0px; --fw-bar-shift: 8px; --fw-bar-h: 16px; }
   .fw-root-agents .fw-view-agents .fw-names { flex-direction: row; align-items: baseline; gap: 8px; min-width: 0; }
   /* The label leaves the grid flow, so the lane must claim the track column itself. */
   .fw-root-agents .fw-view-agents .fw-lane { grid-column: 2; }
   /* Elbows pass behind the name, not through its letters. A transform or layout containment would make each row
      its own stacking context and trap the name under the connector layer, so stacked rows place by top instead. */
   .fw-root-agents .fw-view-agents .fw-row { transform: none; top: var(--row-y); contain: style; }
-  .fw-root-agents .fw-view-agents .fw-label { position: absolute; z-index: 3; top: 2px; left: 0; height: 18px; max-width: calc(100% - var(--fw-pad)); padding: 0 8px 0 var(--fw-pad); gap: 8px; align-items: center; pointer-events: none; overflow: hidden; border-radius: 0 4px 4px 0; background: var(--fw-surface); }
+  .fw-root-agents .fw-view-agents .fw-label { position: absolute; z-index: 3; top: 0; left: 0; height: 20px; max-width: calc(100% - var(--fw-pad)); padding: 0 8px 0 var(--fw-pad); gap: 8px; align-items: center; pointer-events: none; overflow: hidden; border-radius: 0 4px 4px 0; background: var(--fw-surface); }
 }

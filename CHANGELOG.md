@@ -4,6 +4,7 @@
 
 ### Minor Changes
 
+- Bars, segments and end labels sit 8 px from the row edge on the 4 px grid: 24 px agent bars in 40 px rows, 20 px step bars in 36 px rows, phone lanes at 20 px under the name.
 - Time travel hooks: `onTimeChange(t | null)` reports the time the reader moved to (`null` while following live or showing the whole trace). Markers also draw as event dots on the axis; clicking one, or pressing N or P, moves the cursor to the next or previous event. `FlowMarker` adds `kind`, `href` and the `warn` tone.
 - Cost is never "Unknown" when partly known. `otlpFlowTrace` reports the priced floor with `costCoverage` (`{ priced, total }`) instead of dropping the total when one call lacks a price; the waterfall shows `≥$4.12` with "38 of 41 model calls priced". `FlowTrace.billedUsd` shows the real charge beside a list price ("≈$4.12 · $0.00 billed"). A value with no source at all shows "—", and its tooltip names the missing source.
 - `otlpFlowTrace` counts a turn span marked `cli_bridge.usage.scope = sum_of_children` (cli-bridge per-call usage) for display only: totals, prices and the model-call count come from its call spans, so tokens are not counted twice.

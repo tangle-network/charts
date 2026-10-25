@@ -134,6 +134,11 @@ try {
     return { playback: top('.fw-playback'), axis: top('.fw-axis'), row: top('.fw-view-agents .fw-row'), rowHeight: document.querySelector('.fw-view-agents .fw-row').getBoundingClientRect().height }
   })
   assert.ok(order.playback < order.axis && order.axis < order.row && order.rowHeight === 40, JSON.stringify(order))
+  // Every bar, segment and end label sits on the 4 px grid inside its row (disco-ui-review REVIEW-7 #7).
+  const offGrid = await page.evaluate(() => [...document.querySelectorAll('.fw-row :is(.fw-bar, .fw-seg, .fw-end)')]
+    .map(mark => mark.getBoundingClientRect().top - mark.closest('.fw-row').getBoundingClientRect().top)
+    .filter(offset => Math.abs(offset - Math.round(offset / 4) * 4) > 0.5))
+  assert.deepEqual(offGrid, [])
   await page.keyboard.press('Escape')
   await page.getByRole('radio', { name: 'Steps' }).click()
   checks.onSelect = 'PASS'
