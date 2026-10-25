@@ -151,17 +151,11 @@ try {
     .map(mark => mark.getBoundingClientRect().top - mark.closest('.fw-row').getBoundingClientRect().top)
     .filter(offset => Math.abs(offset - Math.round(offset / 4) * 4) > 0.5))
   assert.deepEqual(offGrid, [])
-  // The selected agent lifts (accent edge) and any peers recede; Escape clears it. This story has one agent, so peers are
-  // measured only when present.
-  const lifted = await page.evaluate(() => {
-    const row = document.querySelector('[data-selection] .fw-view-agents .fw-row[aria-selected="true"]')
-    const peer = document.querySelector('[data-selection] .fw-view-agents .fw-row:not([aria-selected="true"]):not(:hover) > [role="gridcell"]')
-    return { edge: row ? getComputedStyle(row).boxShadow : null, peer: peer ? Number(getComputedStyle(peer).opacity) : null }
-  })
-  assert.ok(lifted.edge && lifted.edge !== 'none', `selected row edge ${lifted.edge}`)
-  assert.ok(lifted.peer === null || lifted.peer < 0.6, `peer opacity ${lifted.peer}`)
-  await page.keyboard.press('Escape')
+  // A pinned card highlights its row without dimming the run (peers dim only for a host selectedId); Escape clears it.
+  assert.equal(await page.locator('.fw-view-agents .fw-row[aria-selected="true"]').count(), 1)
   assert.equal(await page.locator('[data-flow-waterfall][data-selection]').count(), 0)
+  await page.keyboard.press('Escape')
+  assert.equal(await page.locator('.fw-view-agents .fw-row[aria-selected="true"]').count(), 0)
   await page.getByRole('radio', { name: 'Steps' }).click()
   checks.onSelect = 'PASS'
   // The event track: one dot per marker; a click moves the cursor there and reports the time; N steps to the next.

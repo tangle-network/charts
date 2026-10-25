@@ -44,7 +44,8 @@ export interface FlowWaterfallProps {
   /** What a bar's color means: the agent (default), whose hue its steps and handoffs share, with the outcome on the row dot, legend and
    * crash glyph; or its `outcome`. */
   agentFill?: 'outcome' | 'agent'
-  /** The row the host has selected, such as the agent whose transcript is open: it lifts and, in the agent view, its peers dim. */
+  /** The row the host has selected, such as the agent whose transcript is open: it lifts and, in the agent view, its peers dim.
+   * A pinned card alone only highlights its row, so the rest of the run stays readable around it. */
   selectedId?: string
   /** Escape clears the host's selection, after closing any open card. */
   onDeselect?: () => void
@@ -329,7 +330,7 @@ export function FlowWaterfall({
   )
 
   return (
-    <section ref={root} data-flow-waterfall aria-label={label} className={`fw-root fw-root-${view}`} data-selection={selection ? '' : undefined}
+    <section ref={root} data-flow-waterfall aria-label={label} className={`fw-root fw-root-${view}`} data-selection={selectedId ? '' : undefined}
       style={{ '--fw-name-w': `${nameWidth}px`, '--fw-pad': `${LANE_PAD}px`, '--fw-row-h': `${ROW_HEIGHT[view]}px` } as CSSProperties}>
       <header className="fw-heading">
         <div className="fw-title-block">
