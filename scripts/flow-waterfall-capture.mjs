@@ -82,7 +82,57 @@ try {
       samples }
     console.log(JSON.stringify({ live: { ...report.live, samples: undefined } }))
   }
+  // Fit: the agent view sized only by its container, 320 to 2560 px, and across a live resize; no page scroll sideways.
+  if (only === 'fit') {
+    const measure = page => page.evaluate(() => {
+      const root = document.querySelector('[data-flow-waterfall]').getBoundingClientRect()
+      const track = document.querySelector('[data-fw-track]').getBoundingClientRect()
+      const names = [...document.querySelectorAll('.fw-name-text')]
+      const cut = names.filter(el => el.scrollWidth > el.clientWidth)
+      return { pageOverflowPx: document.documentElement.scrollWidth - innerWidth, rootPx: Math.round(root.width), trackPx: Math.round(track.width),
+        rootInside: root.left >= 0 && root.right <= innerWidth + 0.5, ticks: document.querySelectorAll('.fw-axis .fw-tick').length,
+        // Every agent row paints a lane at least half the component wide, with bars inside it.
+        narrowLanes: [...document.querySelectorAll('.fw-view-agents .fw-row:not(.fw-sticky-row) .fw-lane')].filter(el => el.getBoundingClientRect().width < root.width / 2).length,
+        paintedBars: [...document.querySelectorAll('.fw-view-agents .fw-row:not(.fw-sticky-row) .fw-bar')].filter(el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.right > 0 && r.left < innerWidth }).length,
+        stacked: getComputedStyle(document.querySelector('.fw-view-agents .fw-label')).position === 'absolute', labelColPx: Math.round(document.querySelector('.fw-view-agents .fw-row')?.firstElementChild?.getBoundingClientRect().width ?? 0),
+        names: names.length, truncated: cut.length, truncatedWithTitle: cut.filter(el => el.closest('[title]')?.title.includes(el.textContent)).length }
+    })
+    report.fit = []
+    // FW_FIT: comma-separated demo fixtures; long runs come from FW_DATA_DIR as otlp:<file>, names=long is the worst case.
+    const fixtures = (process.env.FW_FIT ?? 'release,discovery').split(',')
+    for (const fixture of fixtures) {
+      const tag = fixture.replace(/^otlp:|\.otlp\.jsonl|&.*$/g, '') + (fixture.includes('names=long') ? '-long' : '')
+      for (const width of [320, 390, 768, 1280, 1920, 2560]) {
+        const { page, context } = await open(`fixture=${fixture}&view=agents&theme=dark&pad=0&height=2000`, { width, height: 1200 })
+        report.fit.push({ fixture: tag, width, ...(await measure(page)) })
+        await shot(page, `fit-${tag}-${width}`)
+        await context.close()
+      }
+      // The hover card on a busy agent's first mark, at a desktop and a phone width.
+      for (const width of [1280, 390]) {
+        const { page, context } = await open(`fixture=${fixture}&view=agents&theme=dark&pad=0&height=2000`, { width, height: 1200 })
+        const mark = page.locator('.fw-view-agents .fw-row:not(.fw-sticky-row) :is(.fw-seg, .fw-bar)').nth(3)
+        await mark.hover(); await page.waitForTimeout(350)
+        report.fit.push({ fixture: tag, card: width, shown: await page.locator('.fw-card').count(), words: (await page.locator('.fw-card').innerText().catch(() => '')).split(/\s+/).filter(Boolean).length })
+        await page.screenshot({ path: `${out}/fit-${tag}-card-${width}.png` })
+        await context.close()
+      }
+      // A resize recording: 1920 down to 390 and back, in steps, at the served layout.
+      const { page, context } = await open(`fixture=${fixture}&view=agents&theme=dark&pad=0&height=2000`, { width: 1920, height: 1200 }, true)
+      const before = await measure(page)
+      const steps = [1600, 1280, 1024, 768, 640, 560, 480, 390, 480, 640, 1024, 1440, 1920]
+      const during = []
+      for (const width of steps) { await page.setViewportSize({ width, height: 1200 }); await page.waitForTimeout(450); during.push({ width, ...(await measure(page)) }) }
+      await context.close()
+      const video = readdirSync(out).find(name => name.endsWith('.webm') && !name.startsWith('fit-') && !name.startsWith('interaction') && !name.startsWith('live'))
+      if (video) renameSync(`${out}/${video}`, `${out}/fit-${tag}-resize.webm`)
+      report.fit.push({ fixture: tag, resize: steps.join('>'), trackBefore: before.trackPx, maxPageOverflowPx: Math.max(...during.map(d => d.pageOverflowPx)), tracks: during.map(d => d.trackPx) })
+    }
+    console.log(JSON.stringify(report.fit))
+    throw Object.assign(new Error('only fit'), { skip: true })
+  }
   if (only === 'otlp' || only === 'live') throw Object.assign(new Error('only otlp'), { skip: true })
+  if (only !== 'perf') {
   // Reference 1 and 2: the span waterfall, both themes, at the reference viewport, through the run.
   for (const theme of ['light', 'dark']) {
     const { page, context } = await open(`fixture=release&theme=${theme}&width=1140`)
@@ -126,6 +176,7 @@ try {
     await context.close()
   }
 
+  }
   // First paint at 500 spans, median of five.
   const paints = []
   for (let i = 0; i < 5; i++) {
@@ -156,12 +207,30 @@ try {
       const sorted = [...frames].sort((a, b) => a - b)
       const mean = frames.reduce((a, b) => a + b, 0) / frames.length
       const worstWindow = Math.min(...frames.map((_, i) => { const w = frames.slice(i, i + 30); return w.length < 30 ? Infinity : 1000 / (w.reduce((a, b) => a + b, 0) / w.length) }))
-      return { frames: frames.length, meanFps: 1000 / mean, p95FrameMs: sorted[Math.floor(sorted.length * 0.95)], worst30FrameFps: worstWindow, longFrames: frames.filter(f => f > 1000 / 55).length }
+      return { frames: frames.length, meanFps: 1000 / mean, p95FrameMs: sorted[Math.floor(sorted.length * 0.95)], worst30FrameFps: Number.isFinite(worstWindow) ? worstWindow : null, longFrames: frames.filter(f => f > 1000 / 55).length }
     }, drive.name)
     await context.close()
     return result
   }
   report.perf.scroll5000 = await fps('fixture=load&n=5000&theme=dark&width=1140&height=800', { name: 'scroll' })
+  // Renderer CPU per scroll step over a fixed 150 steps: process CPU time, not wall time, so a
+  // loaded host stretches it far less than fps. Compare commits on this number.
+  report.perf.scrollCost5000 = await (async () => {
+    const { page, context } = await open('fixture=load&n=5000&theme=dark&width=1140&height=800')
+    const cdp = await context.newCDPSession(page)
+    await cdp.send('Performance.enable')
+    const read = async () => Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map(m => [m.name, m.value]))
+    const steps = 150
+    const before = await read()
+    await page.evaluate(async (n) => {
+      const scroller = document.querySelector('.fw-scroller')
+      for (let i = 0; i < n; i++) { scroller.scrollTop += 24; await new Promise(r => requestAnimationFrame(r)) }
+    }, steps)
+    const after = await read()
+    await context.close()
+    const per = key => (after[key] - before[key]) * 1000 / steps
+    return { steps, cpuMsPerStep: per('ProcessTime'), taskMsPerStep: per('TaskDuration'), scriptMsPerStep: per('ScriptDuration'), layoutMsPerStep: per('LayoutDuration'), styleMsPerStep: per('RecalcStyleDuration') }
+  })()
   report.perf.playback = await (async () => {
     const { page, context } = await open('fixture=release&theme=dark&width=1140')
     await page.getByRole('button', { name: 'Restart' }).click()
@@ -178,7 +247,7 @@ try {
   })()
 
   // One uncut recording of each interaction: expand, hover, play and scrub, zoom, agent focus.
-  {
+  if (only !== 'perf') {
     const { page, context } = await open('fixture=release&theme=dark&width=1140', { width: 1185, height: 1016 }, true)
     const pause = ms => page.waitForTimeout(ms)
     await pause(600)

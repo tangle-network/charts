@@ -1,4 +1,4 @@
-import { type CSSProperties, type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { type CSSProperties, type ReactNode, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { FlowMarker, FlowSpan, FlowTrace } from '../flow-trace.js'
 import { FlowBody, ROW_HEIGHT } from './flow-waterfall-body.js'
 import { SpanCard } from './flow-waterfall-card.js'
@@ -101,6 +101,18 @@ export function FlowWaterfall({
   }, [rows])
   const visible = useMemo(() => view === 'agents' ? agents : visibleFlowWaterfallRows(rows, query, collapsed), [view, agents, rows, query, collapsed])
   const slowest = view === 'spans' ? slowestRow(rows, clockMs) : undefined
+
+  // The agent label column fits the longest agent name (CSS caps it at 28%) until the reader drags it.
+  const resized = useRef(false)
+  useLayoutEffect(() => {
+    if (view !== 'agents' || resized.current || !root.current) return
+    let widest = 0
+    for (const text of root.current.querySelectorAll<HTMLElement>('.fw-view-agents .fw-row:not(.fw-sticky-row) .fw-name-text')) {
+      const label = text.closest<HTMLElement>('.fw-label')
+      if (label) widest = Math.max(widest, text.scrollWidth + label.clientWidth - text.clientWidth)
+    }
+    if (widest > 0) setNameWidth(Math.max(140, Math.min(560, Math.ceil(widest) + 16)))
+  }, [view, agents])
 
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
@@ -302,7 +314,7 @@ export function FlowWaterfall({
         emptyText={rows.length === 0 ? 'No spans yet. Waiting for trace events.' : `No matching steps for “${query}”.`}
         onToggle={toggle} onInspect={inspect} onLeave={leave} onPin={pin} onActivate={row => setActiveId(row.id)}
         onActiveChange={setActiveId} onScrub={scrubTo} onZoom={zoomBy} onPan={pan}
-        nameWidth={nameWidth} onNameWidth={px => setNameWidth(Math.max(140, Math.min(560, px)))} onTrack={setLaneElement}
+        nameWidth={nameWidth} onNameWidth={px => { resized.current = true; setNameWidth(Math.max(140, Math.min(560, px))) }} onTrack={setLaneElement}
         onExpandAll={rows.some(row => row.hasChildren) ? () => setCollapsed(new Set()) : undefined}
         onCollapseAll={() => setCollapsed(new Set(rows.filter(row => row.hasChildren).map(row => row.id)))} />
       {card && cardRow && <div className={`fw-card-anchor${card.above ? ' fw-card-above' : ''}`}
