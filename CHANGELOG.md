@@ -2,6 +2,7 @@
 
 ## 0.20.1
 
+- `live.css` sizes are px on the 12/14 type scale with 4 px gaps instead of em, so hosts no longer pin them in their own scopes.
 - `otlpFlowTrace` sets `costUpperBound` when no priced call splits cached from fresh input (cli-bridge), and the strip shows the list cost as "≤$x" with the reason, instead of "≈".
 - Agent view: a key names each mark (Model call, Tool call, Waiting, Handoff, Failed turn), listing only kinds the run has.
 - Agent view: a failed turn keeps its failed outline without a × glyph; one warning mark by the agent's name says it failed (blind judges: "red x's everywhere").
