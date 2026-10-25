@@ -23,6 +23,8 @@ const open = async (query, viewport = { width: 1185, height: 1016 }, video) => {
   await page.goto(`${base}?${query}`)
   await page.locator('body[data-ready="1"]').waitFor({ state: 'attached', timeout: 30_000 })
   await page.evaluate(() => document.fonts.ready)
+  // Rest frames wait for the first-paint grow and unfold to finish.
+  await page.waitForFunction(() => !document.querySelector('.fw-row.fw-enter'), null, { timeout: 5_000 })
   await page.waitForTimeout(300)
   return { page, context }
 }
