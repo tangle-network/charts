@@ -4,6 +4,8 @@
 
 ### Minor Changes
 
+- Bars take their agent's hue by default (`agentFill="agent"`); steps and handoff elbows share it, and the outcome moves to the row dot, the legend and the crash glyph. Pass `agentFill="outcome"` for the previous fill.
+- Motion: arriving bars grow from their start and their rows unfold in a 20 ms stagger (first paint, live spans, an unfolded branch); a bar that finishes settles and lands its end label; live bars grow with the clock. Keyed to the row set, so scrolling never replays it; `prefers-reduced-motion` turns it off.
 - `selectedId` and `onDeselect`: the host's selection (such as the agent whose transcript is open) lifts its row with an accent edge and dims its peers in the agent view; a pinned card selects the same way; Escape closes the card and clears the selection.
 - Bars, segments and end labels sit 8 px from the row edge on the 4 px grid: 24 px agent bars in 40 px rows, 20 px step bars in 36 px rows, phone lanes at 20 px under the name.
 - Time travel hooks: `onTimeChange(t | null)` reports the time the reader moved to (`null` while following live or showing the whole trace). Markers also draw as event dots on the axis; clicking one, or pressing N or P, moves the cursor to the next or previous event. `FlowMarker` adds `kind`, `href` and the `warn` tone.

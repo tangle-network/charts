@@ -40,7 +40,8 @@ export interface FlowWaterfallProps {
   markers?: FlowMarker[]
   /** The time the reader moved to, in trace ms; `null` when following live or showing the whole trace. */
   onTimeChange?: (t: number | null) => void
-  /** What an agent bar's color means: its `outcome` (default), or the agent itself, with the outcome on the row dot and legend. */
+  /** What a bar's color means: the agent (default), whose hue its steps and handoffs share, with the outcome on the row dot, legend and
+   * crash glyph; or its `outcome`. */
   agentFill?: 'outcome' | 'agent'
   /** The row the host has selected, such as the agent whose transcript is open: it lifts and, in the agent view, its peers dim. */
   selectedId?: string
@@ -94,7 +95,7 @@ const headlineSeconds = (ms: number) => ms < 60_000 ? `${(ms / 1000).toFixed(1)}
 /** Shared trace inspector: the agent timeline and the span waterfall over one clock.
  * Data remains producer-owned; playback, zoom and folding change presentation only. */
 export function FlowWaterfall({
-  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers, onTimeChange, agentFill = 'outcome', selectedId, onDeselect,
+  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers, onTimeChange, agentFill = 'agent', selectedId, onDeselect,
 }: FlowWaterfallProps) {
   const root = useRef<HTMLElement>(null)
   const search = useRef<HTMLInputElement>(null)

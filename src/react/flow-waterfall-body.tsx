@@ -2,6 +2,7 @@ import { type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPoint
 import type { FlowMarker, FlowSpan } from '../flow-trace.js'
 import { type FlowWaterfallRow, spanRunning } from './flow-waterfall-model.js'
 import { type FlowLink, type FlowView, FlowRow, LinkMark, type RowEvents } from './flow-waterfall-row.js'
+import { useRowMotion } from './flow-waterfall-motion.js'
 import { clockTicks, formatClock, type ViewWindow } from './flow-waterfall-time.js'
 
 // 40 px agent rows keep a 17-agent run, its axis and its controls inside a 945 px viewport.
@@ -92,6 +93,7 @@ export function FlowBody(props: BodyProps) {
   const height = Math.min(maxHeight, Math.max(rows.length, 1) * rowHeight)
   const links = useMemo(() => linksFor(rows, props.byId, view), [rows, props.byId, view])
   const index = useMemo(() => new Map(rows.map((row, i) => [row.id, i])), [rows])
+  const motion = useRowMotion(rows)
   // Ticks run into the end-label gutter but stop where a label would be cut at the right edge.
   const msPerPx = (win.endMs - win.startMs) / Math.max(1, trackPx)
   const tickEnd = win.startMs + (trackPx + (view === 'spans' ? 72 : 0)) * msPerPx
@@ -241,7 +243,7 @@ export function FlowBody(props: BodyProps) {
     <FlowRow key={isSticky ? `sticky-${item.id}` : item.id} row={item} view={view} top={i * rowHeight}
       collapsed={collapsed.has(item.id)} searching={searching} slowest={item.id === slowestId} costliest={item.id === props.costliestId}
       active={item.id === activeId} focusable={!isSticky && (item.id === activeId || (activeId === undefined || !index.has(activeId)) && i === 0)}
-      selected={item.id === selectedId} sticky={isSticky} clockMs={clockMs} renderIcon={props.renderIcon} fillByAgent={props.fillByAgent}
+      selected={item.id === selectedId} sticky={isSticky} motion={isSticky ? undefined : motion.get(item.id)} clockMs={clockMs} renderIcon={props.renderIcon} fillByAgent={props.fillByAgent}
       onToggle={props.onToggle} onInspect={props.onInspect} onLeave={props.onLeave} onPin={props.onPin} onActivate={item => props.onActiveChange(item.id)} />
   )
 

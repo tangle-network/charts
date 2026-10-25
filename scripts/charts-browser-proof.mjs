@@ -187,6 +187,14 @@ try {
     assert.equal(await root.locator('[data-span-id]').count(), 1)
     await page.getByRole('button', { name: 'Expand all', exact: true }).click()
     assert.equal(await root.locator('[data-span-id]').count(), 53)
+    // Unfold: the rows that just appeared move, then rest; scrolling the virtualized tree never replays it.
+    assert.ok(await root.locator('.fw-row.fw-enter').count() > 0)
+    await page.waitForFunction(() => !document.querySelector('.fw-row.fw-enter'), null, { timeout: 3000 })
+    await root.locator('.fw-scroller').evaluate(element => { element.scrollTop = element.scrollHeight })
+    await page.waitForTimeout(100)
+    assert.equal(await root.locator('.fw-row.fw-enter').count(), 0)
+    await root.locator('.fw-scroller').evaluate(element => { element.scrollTop = 0 })
+    checks.motion = 'PASS'
     checks.nesting = 'PASS'
     checks.collapseExpand = 'PASS'
     const terms = await root.locator('dt').allTextContents()

@@ -3,6 +3,7 @@ import type { FlowSpan } from '../flow-trace.js'
 import { KIND_LABEL } from './flow-waterfall-card.js'
 import { AlertGlyph, ChevronGlyph, FailGlyph, KindGlyph, RetryGlyph } from './flow-waterfall-icons.js'
 import { type FlowSegment, type FlowWaterfallRow, formatCost, formatSpanDuration, spanRunning, toneKey } from './flow-waterfall-model.js'
+import type { RowMotion } from './flow-waterfall-motion.js'
 
 export type FlowView = 'spans' | 'agents'
 
@@ -30,6 +31,8 @@ export interface RowProps extends RowEvents {
   active: boolean
   focusable: boolean
   selected: boolean
+  /** Grow and unfold when the row just arrived, settle when it just finished; undefined when it rests. */
+  motion?: RowMotion
   sticky?: boolean
   /** Clock at 10 Hz; only running rows read it, so idle rows skip re-render. */
   clockMs: number
@@ -62,7 +65,7 @@ function endLabel(row: FlowWaterfallRow, clockMs: number): string {
 
 /** One trace row. Geometry comes from CSS variables, so a row re-renders only when its own state changes. */
 export const FlowRow = memo(function FlowRow(props: RowProps) {
-  const { row, view, top, collapsed, searching, slowest, costliest, active, focusable, selected, sticky, clockMs, renderIcon, fillByAgent } = props
+  const { row, view, top, collapsed, searching, slowest, costliest, active, focusable, selected, sticky, clockMs, renderIcon, fillByAgent, motion } = props
   const span = row.span
   const running = spanRunning(span)
   const agentView = view === 'agents'
@@ -75,11 +78,11 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   const inspect = (event: { currentTarget: HTMLElement }) => props.onInspect(row.id, event.currentTarget)
 
   return (
-    <div role="row" data-span-id={row.id} data-span-kind={kind} data-slowest={slowest || undefined}
+    <div role="row" data-span-id={row.id} data-span-kind={kind} data-slowest={slowest || undefined} data-running={running || undefined}
       aria-level={agentView ? undefined : row.depth + 1} aria-expanded={row.hasChildren && !agentView ? !folded : undefined}
       aria-selected={selected} tabIndex={focusable ? 0 : -1} data-tone={toneKey(row.tone)} data-outcome={fillByAgent ? undefined : span.outcome?.tone}
-      className={`fw-row${active ? ' fw-active' : ''}${sticky ? ' fw-sticky-row' : ''}${isAgent ? ' fw-agent-row' : ''}`}
-      style={{ '--row-y': `${top}px` } as CSSProperties}
+      className={`fw-row${active ? ' fw-active' : ''}${sticky ? ' fw-sticky-row' : ''}${isAgent ? ' fw-agent-row' : ''}${motion?.enter !== undefined ? ' fw-enter' : ''}${motion?.settle ? ' fw-settle' : ''}`}
+      style={{ '--row-y': `${top}px`, '--fw-enter-delay': `${motion?.enter ?? 0}ms` } as CSSProperties}
       onFocus={event => { if (event.target === event.currentTarget) props.onActivate(row) }}
       onClick={event => {
         props.onActivate(row)
@@ -130,7 +133,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   )
 }, (a, b) => a.row === b.row && a.view === b.view && a.top === b.top && a.collapsed === b.collapsed && a.searching === b.searching &&
   a.slowest === b.slowest && a.costliest === b.costliest && a.active === b.active && a.focusable === b.focusable && a.selected === b.selected &&
-  a.sticky === b.sticky && a.renderIcon === b.renderIcon && a.fillByAgent === b.fillByAgent && (a.clockMs === b.clockMs || !open(a.row, a.clockMs) && !open(b.row, b.clockMs)))
+  a.sticky === b.sticky && a.motion === b.motion && a.renderIcon === b.renderIcon && a.fillByAgent === b.fillByAgent && (a.clockMs === b.clockMs || !open(a.row, a.clockMs) && !open(b.row, b.clockMs)))
 
 export interface FlowLink { id: string; from: number; to: number; atMs: number; tone: number; dir: 'down' | 'up' }
 
