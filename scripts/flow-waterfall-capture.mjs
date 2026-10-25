@@ -70,9 +70,11 @@ try {
       await page.screenshot({ path: `${out}/judge-${theme}-rest.png` })
       const bars = page.locator('.fw-row:not(.fw-sticky-row) .fw-bar')
       const bar = bars.nth(Math.min(6, Math.max(0, (await bars.count()) - 1)))
-      await bar.hover(); await page.waitForTimeout(350)
+      // Point where a reader would: the bar's centre, which may be one of its segments (each opens its own card).
+      const box = await bar.boundingBox()
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.waitForTimeout(350)
       await page.screenshot({ path: `${out}/judge-${theme}-hover.png` })
-      await bar.click(); await page.waitForTimeout(350)
+      await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2); await page.waitForTimeout(350)
       await page.screenshot({ path: `${out}/judge-${theme}-card.png` })
       report.judge.push({ theme, bars: await bars.count() })
       await context.close()
