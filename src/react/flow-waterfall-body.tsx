@@ -255,7 +255,7 @@ export function FlowBody(props: BodyProps) {
           {ticks.map(tick => <span key={tick} className="fw-gridline" style={{ '--s': tick } as CSSProperties} />)}
         </div>
         <div ref={scroller} role="treegrid" aria-label="Trace timeline" aria-rowcount={rows.length} aria-multiselectable={false}
-          tabIndex={-1} className="fw-scroller" style={{ height, maxHeight }} onKeyDown={keydown}
+          tabIndex={-1} className="fw-scroller" data-primary-content="" style={{ height, maxHeight }} onKeyDown={keydown}
           onScroll={event => { const next = Math.floor(event.currentTarget.scrollTop / rowHeight / CHUNK); if (next !== chunk) setChunk(next) }}>
           <div className="fw-canvas" style={{ height: rows.length * rowHeight }}>
             <div className="fw-links" aria-hidden>
