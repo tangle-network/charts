@@ -306,7 +306,10 @@
 .fw-root-agents .fw-axis-bottom { border-top: 0; }
 .fw-root-agents .fw-playback { border-top: 0; padding: 8px 24px 20px; }
 .fw-root-agents .fw-view-agents .fw-label { padding-left: 24px; }
-.fw-root-agents .fw-overview, .fw-root-agents .fw-zoom, .fw-root-agents .fw-time { display: none; }
+.fw-root-agents .fw-zoom, .fw-root-agents .fw-time { display: none; }
+/* The agent view keeps scrubbing on a hairline track; the lanes above already show the activity. */
+.fw-root-agents .fw-overview-marks { top: 13px; height: 2px; box-shadow: none; }
+.fw-root-agents .fw-overview-marks > * { display: none; }
 .fw-root-agents .fw-legend { margin-left: auto; }
 .fw-root .fw-segmented { display: inline-flex; padding: 2px; border-radius: 10px; background: var(--fw-well); border: 1px solid var(--fw-border); }
 .fw-root .fw-segmented button { appearance: none; border: 0; background: transparent; height: 26px; min-width: 36px; padding: 0 10px; border-radius: 8px; font-size: 13px; color: var(--fw-muted); cursor: pointer; font-variant-numeric: tabular-nums; transition: background-color 120ms var(--fw-ease), color 120ms var(--fw-ease); }
