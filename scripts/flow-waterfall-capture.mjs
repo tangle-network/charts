@@ -115,8 +115,9 @@ try {
         const n = Math.min(10, await rows.count())
         let opened = 0
         for (let i = 0; i < n; i++) {
-          const bar = rows.nth(i).locator('.fw-bar')
-          await bar.hover(); await page.waitForTimeout(250)
+          // The pointer goes where a reader's would: the bar's centre, whatever mark sits on top there.
+          const box = await rows.nth(i).locator('.fw-bar').boundingBox()
+          await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.waitForTimeout(250)
           const name = await rows.nth(i).locator('.fw-name-text').innerText()
           if ((await page.locator('.fw-card').count()) && (await page.locator('.fw-card').innerText()).includes(name.slice(0, 12))) opened += 1
         }
