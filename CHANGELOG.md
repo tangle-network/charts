@@ -10,6 +10,7 @@
 - The span card leaves out Cost and token cells nobody recorded (no "Unknown" or dash), and shows the span's `facts` cells, so a host can show billed amounts or partial counts there.
 - In the agent view a click on an agent's row (its name or empty track) selects it and calls `onSelect`, as a bar click does; before, only the bar or Enter did.
 - The agent view prints each agent's duration and cost at its bar end and marks the slowest agent and the costliest (when two or more are priced), as the Steps view does for steps.
+- In the agent view, the waiting time between an agent's steps is hatched in its outcome tone, under the thinking (full tone) and tool (dim tone) segments.
 - Agent subtitles take two lines before an ellipsis; the stacked phone layout keeps one.
 - The outcome legend keeps one order on every page: ok, warn, failed, then neutral tones.
 - The agent card's title wraps to two lines, and the card's sentence line shows only what the span did (`output`).
