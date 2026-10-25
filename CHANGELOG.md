@@ -4,6 +4,7 @@
 
 ### Minor Changes
 
+- The agent view shows the same stat strip as the steps view (Duration, Cost, Tokens, LLM calls, Tool calls, Errors); its headline keeps only the agent count and parallel speedup. Its end-label gutter is 176 px so a badge fits beside the duration.
 - Zoom-to-span on click zooms at most 8x, so pinning a sub-second step on a day-long trace keeps its neighbours in view.
 - The view toggle's shown option is disabled (a state, not a control), so clicking it is never a dead click.
 - `FlowTrace.pauses` draws a labelled hatched band across every row for an interval when nothing ran ("Paused 4h40m: host guard cancelled workers"), never blank space. `FlowSpan.marks` puts moments on a bar, such as a restart (an amber notch), without changing the span's state or outcome.

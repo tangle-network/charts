@@ -15,7 +15,8 @@ import { clampWindow, type ViewWindow, zoomWindow } from './flow-waterfall-time.
 export type { FlowView } from './flow-waterfall-row.js'
 
 const LANE_PAD = 12
-const END_LABEL_GUTTER: Record<FlowView, number> = { spans: 120, agents: 120 }
+// The agents view's end labels carry a Slowest or Costliest badge after the duration, so its gutter is wider.
+const END_LABEL_GUTTER: Record<FlowView, number> = { spans: 120, agents: 176 }
 const NAME_WIDTH: Record<FlowView, number> = { spans: 320, agents: 240 }
 
 export interface FlowWaterfallProps {
@@ -90,7 +91,6 @@ function OutcomeLegend({ agents }: { agents: FlowWaterfallRow[] }) {
   </ul>
 }
 
-const headlineSeconds = (ms: number) => ms < 60_000 ? `${(ms / 1000).toFixed(1)}s` : formatSpanDuration(ms)
 
 /** Shared trace inspector: the agent timeline and the span waterfall over one clock.
  * Data remains producer-owned; playback, zoom and folding change presentation only. */
@@ -308,7 +308,7 @@ export function FlowWaterfall({
   // Scrubbing shows the run as of the playhead; the full trace shows the producer's totals.
   const scrubbing = position !== null || playing
   const at = scrubbing ? totalsAt(trace, clockMs) : undefined
-  const { cost, tokens, errors, summary } = summaryCells(trace, at, scrubbing ? clockMs : limit)
+  const { errors, summary } = summaryCells(trace, at, scrubbing ? clockMs : limit)
   const busy = agents.reduce((sum, row) => sum + busyMs(row, limit), 0)
   const speedup = limit > 0 ? busy / limit : 0
   const done = !isLive && !trace.spans.some(spanRunning)
@@ -339,9 +339,9 @@ export function FlowWaterfall({
             {isLive && <span className="fw-state fw-state-live">Live</span>}
           </div>
           {view === 'agents' && <p className="fw-headline" aria-live="polite">
-            {done
-              ? <><span className="fw-done-mark" aria-label="done">✓</span>{agents.length} {agents.length === 1 ? 'agent' : 'agents'} · {headlineSeconds(limit)}{speedup >= 1.05 ? ` · ${speedup.toFixed(1)}x parallel` : ''}{cost.value !== '—' ? <span title={cost.title}> · {cost.value}</span> : ''}</>
-              : <>{headlineSeconds(clockMs)} · {tokens.toLocaleString()} tokens{cost.value !== '—' ? <span title={cost.title}> · {cost.value}</span> : ''}</>}
+            {/* Duration, cost and tokens live in the stat strip below; the headline says only what the strip cannot. */}
+            {done && <span className="fw-done-mark" aria-label="done">✓</span>}
+            {agents.length} {agents.length === 1 ? 'agent' : 'agents'}{done && speedup >= 1.05 ? ` · ${speedup.toFixed(1)}x parallel` : ''}
           </p>}
           <OutcomeLegend agents={agents} />
         </div>
@@ -360,12 +360,12 @@ export function FlowWaterfall({
           </div>}
         </div>
       </header>
-      {view === 'spans' && <dl className="fw-summary">
+      <dl className="fw-summary">
         {summary.map(([name, value, title]) => <div key={name} className={name === 'Errors' && errors > 0 ? 'fw-has-errors' : undefined}>
           <dt>{name}</dt>
           <dd className="fw-value" title={title}>{value}</dd>
         </div>)}
-      </dl>}
+      </dl>
       {view === 'agents' && playback}
       <FlowBody rows={visible} byId={byId} totalRows={rows.length} view={view} maxHeight={rowsHeight} collapsed={collapsed} searching={Boolean(query.trim())}
         pauses={trace.pauses} slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
