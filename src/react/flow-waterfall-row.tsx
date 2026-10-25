@@ -2,7 +2,7 @@ import { type CSSProperties, type ReactNode, memo } from 'react'
 import type { FlowSpan } from '../flow-trace.js'
 import { KIND_LABEL } from './flow-waterfall-card.js'
 import { AlertGlyph, ChevronGlyph, FailGlyph, KindGlyph, RetryGlyph } from './flow-waterfall-icons.js'
-import { type FlowSegment, type FlowWaterfallRow, formatCost, formatSpanDuration, spanRunning, toneKey } from './flow-waterfall-model.js'
+import { type FlowSegment, type FlowWaterfallRow, agentSummary, formatCost, formatSpanDuration, spanRunning, toneKey } from './flow-waterfall-model.js'
 import type { RowMotion } from './flow-waterfall-motion.js'
 
 export type FlowView = 'spans' | 'agents'
@@ -39,11 +39,13 @@ export interface RowProps extends RowEvents {
   renderIcon?: (span: FlowSpan) => ReactNode
   fillByAgent?: boolean
   sharedDetail?: string
+  /** A family row whose members are shown below it. */
+  familyOpen?: boolean
 }
 
-function Segment({ mark, events, agentView }: { mark: FlowSegment; events: RowEvents; agentView: boolean }) {
-  // In the agent view a failed turn keeps its failed outline but no glyph: one mark per agent, by its name, says it failed.
-  const glyph = mark.kind === 'failed' ? (agentView ? null : <FailGlyph />) : mark.retry ? <RetryGlyph /> : null
+function Segment({ mark, events, agentView, ending }: { mark: FlowSegment; events: RowEvents; agentView: boolean; ending?: boolean }) {
+  // In the agent view only the turn that ended a failed agent carries the failure glyph; a retry always shows its own.
+  const glyph = mark.kind === 'failed' ? (agentView && !ending ? null : <FailGlyph />) : mark.retry ? <RetryGlyph /> : null
   return <span className={`fw-seg fw-seg-${mark.kind}`} data-tone={toneKey(mark.tone)} style={at(mark.startMs, mark.endMs)}
     onPointerEnter={agentView ? event => events.onInspect(mark.id, event.currentTarget) : undefined}
     onClick={agentView ? event => { event.stopPropagation(); events.onPin(mark.id, event.currentTarget) } : undefined}>
@@ -78,6 +80,8 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   const marks = isAgent || row.hasChildren ? (folded && !agentView ? row.segments : row.own) : []
   const label = endLabel(row, clockMs)
   const inspect = (event: { currentTarget: HTMLElement }) => props.onInspect(row.id, event.currentTarget)
+  const family = agentView && row.id.startsWith('family:')
+  const ending = agentView && !row.ok ? marks.map(mark => mark.kind).lastIndexOf('failed') : -1
 
   return (
     <div role="row" data-span-id={row.id} data-span-kind={kind} data-slowest={slowest || undefined} data-running={running || undefined}
@@ -88,11 +92,15 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
       onFocus={event => { if (event.target === event.currentTarget) props.onActivate(row) }}
       onClick={event => {
         props.onActivate(row)
+        if (family) { props.onToggle(row); return }
         // In the agent view a click anywhere on the row opens the agent, as its bar does; readers click the name first.
         const bar = agentView ? event.currentTarget.querySelector<HTMLElement>('.fw-bar') : null
         if (bar) props.onPin(row.id, bar)
       }}>
-      <div role="gridcell" className="fw-label" style={{ '--depth': agentView ? 0 : row.depth } as CSSProperties}>
+      <div role="gridcell" className="fw-label" style={{ '--depth': agentView ? (row.family ? 1 : 0) : row.depth } as CSSProperties}>
+        {family && <button type="button" tabIndex={-1} className={`fw-toggle${props.familyOpen ? ' fw-open' : ''}`}
+          aria-label={`${props.familyOpen ? 'Collapse' : 'Expand'} ${row.name}`} aria-expanded={Boolean(props.familyOpen)}
+          onClick={event => { event.stopPropagation(); props.onToggle(row) }}><ChevronGlyph /></button>}
         {!agentView && <span className="fw-guides" aria-hidden />}
         {!agentView && (row.hasChildren
           ? <button type="button" tabIndex={-1} className={`fw-toggle${folded ? '' : ' fw-open'}`} disabled={searching}
@@ -109,7 +117,8 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
             {running && <span className="fw-spinner" role="status" aria-label="running" />}
             <span className="fw-name-text">{row.name}</span>
           </span>
-          {agentView && span.detail && span.detail !== props.sharedDetail && <span className="fw-subtitle">{span.detail}</span>}
+          {/* Two levels on every agent row: the name, then how it ended and how much it did. */}
+          {agentView && <span className="fw-subtitle">{span.detail && span.detail !== props.sharedDetail ? `${span.detail} · ${agentSummary(row)}` : agentSummary(row)}</span>}
           {agentView && renderIcon && <span className="fw-detail-icon" aria-hidden>{renderIcon(span)}</span>}
         </span>
         {folded && <span className="fw-count" aria-label={`${row.descendants} hidden steps`}>+{row.descendants}</span>}
@@ -125,7 +134,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
             {!isAgent && !row.ok && <span className="fw-glyph"><FailGlyph /></span>}
             {!isAgent && row.ok && row.retry && <span className="fw-glyph"><RetryGlyph /></span>}
           </span>
-          {marks.map((mark, i) => <Segment key={`${mark.id}-${i}`} mark={mark} events={props} agentView={agentView} />)}
+          {marks.map((mark, i) => <Segment key={`${mark.id}-${i}`} mark={mark} events={props} agentView={agentView} ending={i === ending} />)}
           <span className="fw-end" style={at(span.startMs, running ? OPEN_END : span.endMs)}>
             <span className="fw-duration">{label}</span>
             {slowest && <span className="fw-badge">Slowest</span>}
@@ -137,7 +146,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   )
 }, (a, b) => a.row === b.row && a.view === b.view && a.top === b.top && a.collapsed === b.collapsed && a.searching === b.searching &&
   a.slowest === b.slowest && a.costliest === b.costliest && a.active === b.active && a.focusable === b.focusable && a.selected === b.selected &&
-  a.sticky === b.sticky && a.motion === b.motion && a.renderIcon === b.renderIcon && a.fillByAgent === b.fillByAgent && a.sharedDetail === b.sharedDetail && (a.clockMs === b.clockMs || !open(a.row, a.clockMs) && !open(b.row, b.clockMs)))
+  a.sticky === b.sticky && a.motion === b.motion && a.renderIcon === b.renderIcon && a.fillByAgent === b.fillByAgent && a.sharedDetail === b.sharedDetail && a.familyOpen === b.familyOpen && (a.clockMs === b.clockMs || !open(a.row, a.clockMs) && !open(b.row, b.clockMs)))
 
 export interface FlowLink { id: string; from: number; to: number; atMs: number; tone: number; dir: 'down' | 'up' }
 

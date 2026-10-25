@@ -38,6 +38,8 @@ export interface FlowWaterfallRow {
   hasAgents: boolean
   /** Recorded cost of the row and its descendants, only when every model call below it has a recorded cost. */
   rollupCostUsd?: number
+  /** Agent view: the family row this agent belongs to, when agents sharing a role are folded together. */
+  family?: string
 }
 
 /** The CSS hue slot: 0 is the root agent's neutral, then five agent hues cycle. */
@@ -286,4 +288,53 @@ export function costSummary(costUsd: number | undefined, trace: Pick<FlowTrace, 
   const parts = [partial ? `${coverage.priced} of ${coverage.total} model calls priced` : coverage ? `all ${coverage.total} model calls priced` : '',
     list ? 'at the model catalog list price; not a bill' : '', upper ? 'cached input is not split out, so it is priced as fresh input: at most this' : '', trace.billedUsd !== undefined ? `billed ${formatCost(trace.billedUsd)} (the seat charge)` : '']
   return { value, title: parts.filter(Boolean).join('; '), label }
+}
+
+/** The role an agent plays: its name without a trailing counter ("memscale-engineer-3", "Subagent 2"). */
+const roleOf = (name: string) => name.replace(/[-\s]\d+$/, '')
+
+/**
+ * Agents sharing a role fold into one family row until opened: a 17-agent run reads as its few roles, and the bar of a
+ * family carries every member's work in each member's hue. Members follow their opened family, marked with `family`.
+ */
+export function agentFamilies(agents: readonly FlowWaterfallRow[], open: ReadonlySet<string>): FlowWaterfallRow[] {
+  const groups = new Map<string, FlowWaterfallRow[]>()
+  for (const row of agents) {
+    const key = row.parentId === undefined ? `root:${row.id}` : roleOf(row.name)
+    groups.set(key, [...(groups.get(key) ?? []), row])
+  }
+  const out: FlowWaterfallRow[] = []
+  for (const [role, members] of groups) {
+    if (members.length < 2) { out.push(...members); continue }
+    const id = `family:${role}`
+    const startMs = Math.min(...members.map(row => row.span.startMs))
+    const endMs = Math.max(...members.map(row => row.span.endMs))
+    const running = members.some(row => spanRunning(row.span))
+    const costs = members.map(row => row.span.costUsd ?? row.rollupCostUsd)
+    const failed = members.filter(row => !row.ok).length
+    out.push({
+      // The family hangs off its members' parent, so the spawn elbow reaches it from the agent that started them.
+      id, parentId: members[0]!.parentId, name: `${role} ×${members.length}`, kind: 'pipeline', durationLabel: formatSpanDuration(endMs - startMs),
+      approx: members.some(row => row.approx), ok: failed === 0, depth: 0, hasChildren: true, tone: members[0]!.tone,
+      descendants: members.length, segments: [], retry: false, hasAgents: false,
+      own: members.flatMap(row => row.own).sort((a, b) => a.startMs - b.startMs),
+      ...(costs.every(cost => cost !== undefined) ? { rollupCostUsd: costs.reduce<number>((sum, cost) => sum + (cost ?? 0), 0) } : {}),
+      span: { id, kind: 'pipeline', name: role, startMs, endMs, status: running ? 'running' : failed ? 'failed' : 'done', detail: members[0]!.span.detail, meta: { failedAgents: failed } },
+    })
+    if (open.has(id)) out.push(...members.map(row => ({ ...row, family: id })))
+  }
+  return out
+}
+
+/** The second line of an agent row: how it ended and how much it did ("failed · 3 turns · 412 tool calls", "6 agents · 4 failed"). */
+export function agentSummary(row: FlowWaterfallRow): string {
+  if (row.id.startsWith('family:')) {
+    const failed = Number(row.span.meta?.failedAgents ?? 0)
+    return `${row.descendants} agents${failed ? ` · ${failed} failed` : ''}`
+  }
+  const count = (kind: FlowSegment['kind']) => row.own.reduce((sum, mark) => sum + (mark.kind === kind ? mark.count : 0), 0)
+  const turns = count('model') + count('failed')
+  const tools = count('tool')
+  const state = row.span.outcome?.label ?? (spanRunning(row.span) ? 'running' : row.ok ? 'done' : 'failed')
+  return [state, turns ? `${turns} ${turns === 1 ? 'turn' : 'turns'}` : '', tools ? `${tools} tool ${tools === 1 ? 'call' : 'calls'}` : ''].filter(Boolean).join(' · ')
 }

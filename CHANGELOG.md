@@ -4,6 +4,9 @@
 
 - Agent view: one faint curved elbow per spawn at rest, in the agent's hue, at full strength for the agent under the pointer, pinned or focused.
 - Agent view: the kind key sits directly above the lanes.
+- Agent view: agents sharing a role (a name that differs only by a trailing counter) fold into one family row, `memscale-engineer ×6`, whose bar carries every member's work in its member's hue; its chevron or a click opens the members beneath it.
+- Agent view: every agent row has a second line saying how it ended and how much it did (`failed · 3 turns · 412 tool calls`; a family: `6 agents · 4 failed`), after the model when agents differ.
+- Agent view: the turn that ended a failed agent carries the failure glyph inside the bar, and retries keep theirs.
 - Agent view: when every agent runs the same model, the headline names it once and the rows leave it out.
 - Agent view: a failed turn draws like any turn and the warning by the name is muted; the agent's failure shows once, by its name and its end label.
 - Live: the body keeps its full height as agents arrive, so the page below does not shift.

@@ -6,7 +6,7 @@ import { useTraceClock } from './flow-waterfall-clock.js'
 import { FailGlyph, SearchGlyph, TraceGlyph } from './flow-waterfall-icons.js'
 import { PlaybackBar } from './flow-waterfall-playback.js'
 import {
-  agentCallouts, busyMs, costSummary, type FlowWaterfallRow, flowWaterfallRows, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
+  agentCallouts, agentFamilies, busyMs, costSummary, type FlowWaterfallRow, flowWaterfallRows, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
   toneKey, totalsAt, visibleFlowWaterfallRows,
 } from './flow-waterfall-model.js'
 import type { FlowView } from './flow-waterfall-row.js'
@@ -163,9 +163,10 @@ export function FlowWaterfall({
   }, [rows])
   // When every agent runs the same model, the header says it once instead of every row repeating it.
   const sharedDetail = agents.length > 1 && agents.every(row => row.span.detail && row.span.detail === agents[0]?.span.detail) ? agents[0]?.span.detail : undefined
-  const visible = useMemo(() => view === 'agents' ? agents : visibleFlowWaterfallRows(rows, query, collapsed), [view, agents, rows, query, collapsed])
+  const [openFamilies, setOpenFamilies] = useState<ReadonlySet<string>>(new Set())
+  const visible = useMemo(() => view === 'agents' ? agentFamilies(agents, openFamilies) : visibleFlowWaterfallRows(rows, query, collapsed), [view, agents, openFamilies, rows, query, collapsed])
   const slowest = view === 'spans' ? slowestRow(rows, clockMs) : undefined
-  const callouts = useMemo<ReturnType<typeof agentCallouts>>(() => view === 'agents' ? agentCallouts(agents, clockMs) : {}, [view, agents, clockMs])
+  const callouts = useMemo<ReturnType<typeof agentCallouts>>(() => view === 'agents' ? agentCallouts(visible, clockMs) : {}, [view, visible, clockMs])
   const rowsHeight = maxHeight ?? (view === 'agents' ? ROW_HEIGHT.agents * 20 : 640)
 
   // The agent label column fits the longest agent name (CSS caps it at 28%) until the reader drags it.
@@ -251,6 +252,7 @@ export function FlowWaterfall({
   // Rows are memoized without their handlers, so handlers stay stable and read the latest state through a ref.
   const latest = useRef({ toggle: (_row: FlowWaterfallRow) => {}, pin: (_target: string, _element: HTMLElement) => {}, inspect: (_target: string, _element: HTMLElement) => {} })
   const toggleNow = (row: FlowWaterfallRow) => {
+    if (row.id.startsWith('family:')) { setOpenFamilies(open => new Set(open.has(row.id) ? [...open].filter(id => id !== row.id) : [...open, row.id])); return }
     onSelect?.(row.span)
     if (view === 'agents') {
       // Expanding an agent opens the span tree with that agent unfolded and its peers folded.
@@ -387,7 +389,7 @@ export function FlowWaterfall({
       {/* The key sits right above the lanes it explains (round 2: a key at the foot went unseen by 2 of 3 judges). */}
       {view === 'agents' && <KindLegend rows={rows} />}
       <FlowBody rows={visible} byId={byId} totalRows={rows.length} view={view} maxHeight={rowsHeight} collapsed={collapsed} searching={Boolean(query.trim())}
-        pauses={trace.pauses} sharedDetail={sharedDetail} fixedHeight={isLive} slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
+        pauses={trace.pauses} sharedDetail={sharedDetail} openFamilies={openFamilies} fixedHeight={isLive} slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
         trackPx={trackPx} showCursor={showCursor} markers={markers} fillByAgent={agentFill === 'agent'} zoomed={zoom !== null} renderIcon={renderIcon}
         emptyText={rows.length === 0 ? 'No spans yet. Waiting for trace events.' : `No matching steps for “${query}”.`}
         onToggle={toggle} onInspect={inspect} onLeave={leave} onPin={pin} onActivate={row => setActiveId(row.id)}
