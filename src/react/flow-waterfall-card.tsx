@@ -81,9 +81,11 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
       <dl className="fw-card-stats">
         <div><dt>Duration</dt><dd>{duration}</dd></div>
         <div><dt>Started</dt><dd>+{formatSpanDuration(Math.max(0, span.startMs))}</dd></div>
-        <div><dt>Cost</dt><dd>{span.costUsd === undefined ? unknown : formatCost(span.costUsd)}</dd></div>
-        {tokens && <div><dt>Tokens in</dt><dd>{count(span.promptTokens)}</dd></div>}
-        {tokens && <div><dt>Tokens out</dt><dd>{count(span.completionTokens)}</dd></div>}
+        {/* A value nobody recorded is left out, not printed as unknown; the host's own facts follow. */}
+        {span.costUsd !== undefined && <div><dt>Cost</dt><dd>{formatCost(span.costUsd)}</dd></div>}
+        {tokens && span.promptTokens !== undefined && <div><dt>Tokens in</dt><dd>{count(span.promptTokens)}</dd></div>}
+        {tokens && span.completionTokens !== undefined && <div><dt>Tokens out</dt><dd>{count(span.completionTokens)}</dd></div>}
+        {(span.facts ?? []).slice(0, 3).map(fact => <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.value}</dd></div>)}
         {row.hasChildren && <div><dt>Steps</dt><dd>{row.descendants}</dd></div>}
       </dl>
       {span.input && <div className="fw-card-text"><div className="fw-card-label">Input</div><p>{span.input}</p></div>}
