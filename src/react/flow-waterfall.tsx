@@ -26,8 +26,6 @@ export interface FlowWaterfallProps {
   startedAt?: number
   /** Accessible name also distinguishes multiple waterfalls on one page. */
   label?: string
-  /** One line after the title: the run's goal or question. */
-  description?: string
   /** Fold all branches on first mount for large traces; search still reveals matches. */
   defaultCollapsed?: boolean
   /** `agents` shows one row per agent (the agent timeline); expanding a row opens the full span tree. */
@@ -45,7 +43,7 @@ const headlineSeconds = (ms: number) => ms < 60_000 ? `${(ms / 1000).toFixed(1)}
 /** Shared trace inspector: the agent timeline and the span waterfall over one clock.
  * Data remains producer-owned; playback, zoom and folding change presentation only. */
 export function FlowWaterfall({
-  trace, live, startedAt, label = 'Trace waterfall', description, defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight = 640,
+  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight = 640,
 }: FlowWaterfallProps) {
   const root = useRef<HTMLElement>(null)
   const search = useRef<HTMLInputElement>(null)
@@ -264,13 +262,12 @@ export function FlowWaterfall({
           <div className="fw-title-line">
             <span className="fw-title-glyph" aria-hidden><TraceGlyph /></span>
             <h3 className="fw-title">{label}</h3>
-            {description && <span className="fw-description">{description}</span>}
-            <span className={`fw-state ${isLive ? 'fw-state-live' : done ? 'fw-state-done' : ''}`}>{isLive ? 'Live' : done ? 'Done' : 'Recorded'}</span>
+            {isLive && <span className="fw-state fw-state-live">Live</span>}
           </div>
           {view === 'agents' && <p className="fw-headline" aria-live="polite">
             {done
-              ? <><span className="fw-done-mark" aria-hidden>✓</span>{agents.length} {agents.length === 1 ? 'agent' : 'agents'} · {headlineSeconds(limit)}{speedup >= 1.05 ? ` · ${speedup.toFixed(1)}x faster than sequential` : ''}{trace.costUsd !== undefined ? ` · ${formatCost(trace.costUsd)}` : ''}</>
-              : <>Running · {headlineSeconds(clockMs)} · {tokens.toLocaleString()} tokens{trace.costUsd !== undefined ? ` · ${formatCost(trace.costUsd)}` : ''}</>}
+              ? <><span className="fw-done-mark" aria-label="done">✓</span>{agents.length} {agents.length === 1 ? 'agent' : 'agents'} · {headlineSeconds(limit)}{speedup >= 1.05 ? ` · ${speedup.toFixed(1)}x parallel` : ''}{trace.costUsd !== undefined ? ` · ${formatCost(trace.costUsd)}` : ''}</>
+              : <>{headlineSeconds(clockMs)} · {tokens.toLocaleString()} tokens{trace.costUsd !== undefined ? ` · ${formatCost(trace.costUsd)}` : ''}</>}
           </p>}
         </div>
         <div className="fw-tools">
@@ -285,7 +282,6 @@ export function FlowWaterfall({
               onChange={event => setQuery(event.target.value)} onKeyDown={event => {
                 if (event.key === 'Escape') { setQuery(''); event.stopPropagation() }
               }} className="fw-search-input" />
-            <kbd className="fw-kbd" title="Search trace (⌘F / Ctrl+F)">⌘F</kbd>
           </div>}
         </div>
       </header>

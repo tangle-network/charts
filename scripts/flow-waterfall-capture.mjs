@@ -12,7 +12,7 @@ const only = process.env.FW_ONLY
 const server = spawn(process.execPath, ['scripts/flow-waterfall-demo.mjs', String(port), ...(run21c ? [run21c] : [])], { stdio: ['ignore', 'pipe', 'inherit'] })
 await new Promise((resolve, reject) => { server.stdout.on('data', resolve); server.on('exit', reject) })
 const base = `http://127.0.0.1:${port}/`
-const report = { frames: [], perf: {} }
+const report = { frames: [], perf: {}, words: {} }
 const browser = await chromium.launch()
 const errors = []
 const open = async (query, viewport = { width: 1185, height: 1016 }, video) => {
@@ -30,6 +30,8 @@ const shot = async (page, name) => {
   const path = `${out}/${name}.png`
   await page.locator('[data-flow-waterfall]').screenshot({ path, animations: 'disabled' })
   report.frames.push(name)
+  // Words on screen (Drew 2026-10-25: cut taglines, helper text and secondary labels); counted from rendered text.
+  report.words[name] = (await page.locator('[data-flow-waterfall]').innerText()).split(/\s+/).filter(Boolean).length
 }
 const seek = async (page, fraction) => {
   const slider = page.getByLabel('Playback position')
@@ -83,7 +85,7 @@ try {
   if (only === 'otlp' || only === 'live') throw Object.assign(new Error('only otlp'), { skip: true })
   // Reference 1 and 2: the span waterfall, both themes, at the reference viewport, through the run.
   for (const theme of ['light', 'dark']) {
-    const { page, context } = await open(`fixture=release&theme=${theme}&width=1140&description=Ship annual billing by Friday`)
+    const { page, context } = await open(`fixture=release&theme=${theme}&width=1140`)
     for (const f of [0.25, 0.5, 0.75]) { await seek(page, f); await shot(page, `spans-${theme}-${Math.round(f * 100)}`) }
     await page.getByRole('button', { name: 'Show full trace' }).click()
     await shot(page, `spans-${theme}-done`)

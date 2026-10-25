@@ -137,7 +137,12 @@ try {
     assert.deepEqual(await root.locator('dd').allTextContents(), ['7m 11s', 'Unknown', '754.4k', 'Unknown', '35', '3'])
     assert.equal(await root.locator('dd').nth(2).getAttribute('title'), '754,448 tokens')
     checks.summary = 'PASS'
-    const kinds = await root.locator('.fw-bar').evaluateAll(elements => Object.fromEntries(elements.map(element => [element.closest('[data-span-kind]').dataset.spanKind, getComputedStyle(element).backgroundColor])))
+    // Each kind is painted distinctly: a fill colour, or a pattern (hatched waiting) in background-image.
+    const kinds = await root.locator('.fw-bar').evaluateAll(elements => Object.fromEntries(elements.map(element => {
+      const style = getComputedStyle(element)
+      const paint = style.backgroundImage !== 'none' ? style.backgroundImage : style.backgroundColor
+      return [element.closest('[data-span-kind]').dataset.spanKind, paint]
+    })))
     assert.equal(Object.keys(kinds).length, 6)
     assert.equal(new Set(Object.values(kinds)).size, 6)
     assert.ok(!Object.values(kinds).includes('rgba(0, 0, 0, 0)'))

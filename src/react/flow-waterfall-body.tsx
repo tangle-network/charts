@@ -194,7 +194,6 @@ export function FlowBody(props: BodyProps) {
     <div className={`fw-axis fw-axis-${view === 'agents' ? 'bottom' : 'top'}`}>
       <div className="fw-axis-label">
         {view === 'spans' && <>
-          <span className="fw-muted">Steps</span><span className="fw-steps-count">{rows.length === props.totalRows ? rows.length : `${rows.length}/${props.totalRows}`}</span>
           {props.onExpandAll && <span className="fw-branch-controls">
             <button type="button" className="fw-text-button" onClick={props.onExpandAll}>Expand all</button>
             <button type="button" className="fw-text-button" onClick={props.onCollapseAll}>Collapse all</button>

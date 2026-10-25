@@ -62,7 +62,7 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
         <span className="fw-icon-tile" aria-hidden>{renderIcon?.(span) ?? <KindGlyph kind={span.kind} />}</span>
         <div className="fw-card-title">
           <div className="fw-card-name">{span.name}</div>
-          <div className="fw-muted">{KIND_LABEL[span.kind]}{span.detail ? ` · ${span.detail}` : ''}</div>
+          {span.detail && <div className="fw-muted">{span.detail}</div>}
         </div>
         <span className={`fw-pill fw-pill-${status.toLowerCase()}`}>{status}</span>
         {pinned && <button type="button" className="fw-icon-button" aria-label="Close details" onClick={onClose} autoFocus><CloseGlyph /></button>}

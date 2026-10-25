@@ -94,10 +94,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
             {running && <span className="fw-spinner" role="status" aria-label="running" />}
             <span className="fw-name-text">{row.name}</span>
           </span>
-          {span.detail && <span className="fw-detail">
-            {agentView && renderIcon && <span className="fw-detail-icon" aria-hidden>{renderIcon(span)}</span>}
-            <span className="fw-detail-text">{span.detail}</span>
-          </span>}
+          {agentView && renderIcon && <span className="fw-detail-icon" aria-hidden>{renderIcon(span)}</span>}
         </span>
         {folded && <span className="fw-count" aria-label={`${row.descendants} hidden steps`}>+{row.descendants}</span>}
         {!row.ok && <span className="fw-alert"><AlertGlyph label="failed" /></span>}

@@ -1,5 +1,5 @@
 import type { CSSProperties, RefObject } from 'react'
-import { FailGlyph, FitGlyph, PauseGlyph, PlayGlyph, RestartGlyph, ZoomInGlyph, ZoomOutGlyph } from './flow-waterfall-icons.js'
+import { FitGlyph, PauseGlyph, PlayGlyph, RestartGlyph, ZoomInGlyph, ZoomOutGlyph } from './flow-waterfall-icons.js'
 import { type FlowSegment, formatSpanDuration, toneKey } from './flow-waterfall-model.js'
 import type { FlowView } from './flow-waterfall-row.js'
 import type { ViewWindow } from './flow-waterfall-time.js'
@@ -64,13 +64,6 @@ export function PlaybackBar({ view, playing, limit, clockMs, speed, zoom, marks,
         <button type="button" className="fw-icon-button" aria-label="Zoom in" disabled={limit === 0} onClick={() => onZoom(0.5)}><ZoomInGlyph /></button>
         <button type="button" className="fw-icon-button" aria-label="Fit the whole trace" disabled={!zoom} onClick={onFit}><FitGlyph /></button>
       </div>
-      <ul className="fw-legend" aria-label="Span types">
-        <li><span className="fw-swatch fw-swatch-model" aria-hidden />{view === 'agents' ? 'Thinking' : 'Model call'}</li>
-        <li><span className="fw-swatch fw-swatch-tool" aria-hidden />Tool call</li>
-        <li><span className="fw-swatch fw-swatch-waiting" aria-hidden />Waiting</li>
-        <li><span className="fw-swatch fw-swatch-handoff" aria-hidden />Handoff</li>
-        <li><span className="fw-swatch fw-swatch-failed" aria-hidden><FailGlyph /></span>Failed</li>
-      </ul>
     </footer>
   )
 }
