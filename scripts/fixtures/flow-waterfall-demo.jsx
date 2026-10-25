@@ -1,5 +1,5 @@
 // Demo routes for the trace inspector: reference-shaped fixtures, recorded Discovery runs and a synthetic load trace.
-// Query: fixture=release|incident|discovery|run21c|load|otlp:<file under the data dir>, view=spans|agents, theme=dark|light, live=1, rate=N, n=N, width=px.
+// Query: fixture=release|incident|discovery|run21c|load|otlp:<file under the data dir>, view=spans|agents, theme=dark|light, live=1, rate=N, n=N, width=px, markers=<JSON FlowMarker[]>.
 import { createRoot } from 'react-dom/client'
 import { useEffect, useState } from 'react'
 import { FlowWaterfall } from '../../src/react/index.ts'
@@ -115,7 +115,9 @@ function App({ trace }) {
   return <main style={{ width: params.get('width') ? `${params.get('width')}px` : 'auto', maxWidth: '100%', margin: '0 auto', padding: Number(params.get('pad') ?? 24) }}>
     <FlowWaterfall trace={shown} live={live && now < trace.totalMs} label={params.get('label') ?? 'Trace'}
       defaultView={params.get('view') ?? 'spans'}
-      defaultCollapsed={params.get('collapsed') === '1'} maxHeight={Number(params.get('height') ?? 640)} />
+      defaultCollapsed={params.get('collapsed') === '1'} maxHeight={Number(params.get('height') ?? 640)}
+      markers={params.get('markers') ? JSON.parse(params.get('markers')) : undefined}
+      onSelect={span => { window.__fwSelected = [...(window.__fwSelected ?? []), span.id ?? span.name] }} />
   </main>
 }
 

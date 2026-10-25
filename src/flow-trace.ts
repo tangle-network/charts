@@ -28,6 +28,14 @@ export interface FlowSpan {
   meta?: Record<string, unknown>
 }
 
+/** A labelled instant on the trace clock, such as a release or an alert; drawn as a line across the rows. */
+export interface FlowMarker {
+  /** Trace-relative milliseconds, on the same clock as span startMs. */
+  at: number
+  label: string
+  tone?: 'neutral' | 'ok' | 'failed'
+}
+
 /** Describe the structure of a flow trace including spans, timing, tokens, cost, and tool calls */
 export interface FlowTrace {
   spans: FlowSpan[]

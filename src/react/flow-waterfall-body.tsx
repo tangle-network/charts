@@ -1,5 +1,5 @@
 import { type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
-import type { FlowSpan } from '../flow-trace.js'
+import type { FlowMarker, FlowSpan } from '../flow-trace.js'
 import { type FlowWaterfallRow, spanRunning } from './flow-waterfall-model.js'
 import { type FlowLink, type FlowView, FlowRow, LinkMark, type RowEvents } from './flow-waterfall-row.js'
 import { clockTicks, formatClock, type ViewWindow } from './flow-waterfall-time.js'
@@ -26,6 +26,7 @@ export interface BodyProps extends RowEvents {
   window: ViewWindow
   trackPx: number
   showCursor: boolean
+  markers?: FlowMarker[]
   zoomed: boolean
   renderIcon?: (span: FlowSpan) => ReactNode
   emptyText: string
@@ -240,6 +241,10 @@ export function FlowBody(props: BodyProps) {
           {rows.length === 0 && <p role="status" className="fw-empty">{props.emptyText}</p>}
         </div>
         {view === 'spans' && <StickyRows scroller={scroller} rows={rows} index={index} rowHeight={rowHeight} render={row} />}
+        {props.markers?.length ? <div className="fw-marker-layer">
+          {props.markers.map(marker => <span key={`${marker.at}-${marker.label}`} className="fw-marker" data-tone={marker.tone ?? 'neutral'}
+            style={{ '--s': marker.at } as CSSProperties}><span className="fw-marker-label">{marker.label}</span></span>)}
+        </div> : null}
         {showCursor && <div className="fw-cursor-layer" aria-hidden><span className="fw-cursor" /></div>}
       </div>
       {view === 'agents' && axis}

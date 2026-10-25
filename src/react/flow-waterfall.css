@@ -114,6 +114,11 @@
 .fw-root .fw-gridlayer, .fw-root .fw-cursor-layer { position: absolute; top: 0; bottom: 0; left: min(var(--fw-name-w), 42%); right: 0; overflow: hidden; pointer-events: none; }
 .fw-root .fw-gridline { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--fw-grid); left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); }
 .fw-root .fw-cursor-layer { z-index: 3; }
+.fw-root .fw-marker-layer { position: absolute; top: 0; bottom: 0; left: min(var(--fw-name-w), 42%); right: 0; overflow: hidden; pointer-events: none; z-index: 2; }
+.fw-root .fw-marker { --fw-marker: var(--fw-muted); position: absolute; top: 0; bottom: 0; width: 0; border-left: 1px dashed var(--fw-marker); left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); }
+.fw-root .fw-marker[data-tone="ok"] { --fw-marker: var(--fw-ok); }
+.fw-root .fw-marker[data-tone="failed"] { --fw-marker: var(--fw-failed); }
+.fw-root .fw-marker-label { position: absolute; top: 2px; left: 3px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 5px; border-radius: 4px; font-size: 11px; line-height: 16px; color: var(--fw-marker); background: var(--fw-surface); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-marker) 40%, transparent); }
 .fw-root .fw-cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: color-mix(in oklab, var(--fw-text) 70%, transparent); left: calc(var(--fw-pad) + (var(--fw-t) - var(--fw-v0)) * var(--fw-k) * 1px); }
 .fw-root .fw-empty { padding: 40px 16px; text-align: center; color: var(--fw-muted); }
 .fw-root .fw-sticky { position: absolute; top: 0; left: 0; right: 0; z-index: 2; background: var(--fw-surface); box-shadow: 0 1px 0 var(--fw-border), 0 6px 12px -8px rgb(0 0 0 / .35); }
