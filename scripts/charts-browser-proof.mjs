@@ -133,6 +133,8 @@ try {
   await page.getByRole('radio', { name: 'Agents' }).click()
   // The shown view is a state, not a dead control.
   assert.equal(await page.getByRole('radio', { name: 'Agents' }).isDisabled(), true)
+  // ...and still reads as the selected option, not as a greyed-out control.
+  assert.equal(await page.getByRole('radio', { name: 'Agents' }).evaluate(el => getComputedStyle(el).opacity), '1')
   await page.locator('.fw-view-agents .fw-row:not(.fw-sticky-row) .fw-name-text').first().click()
   assert.equal((await page.evaluate(() => window.__fwSelected ?? [])).length, 2)
   // Agent bars state their duration at the bar end, as step bars do.
