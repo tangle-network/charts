@@ -8,7 +8,7 @@ function FlowApp({ name }) {
   return () => clearInterval(timer)
  }, [name])
  let trace = recorded, live
- if (name === 'healthy') trace = healthy
+ if (name === 'healthy') trace = { ...healthy, spans: healthy.spans.map(s => s.kind === 'pipeline' ? { ...s, outcome: { tone: 'ok', label: 'Shipped' } } : s) }
  if (name === 'empty-flow-trace') trace = { spans: [], totalMs: 0, promptTokens: 0, completionTokens: 0, toolCalls: 0 }
  if (name === 'growing-live-trace') { trace = { spans: [
   { id:'root',kind:'pipeline',name:'Orchestrator',startMs:0,endMs:60000,status:'running' },
@@ -26,6 +26,6 @@ function FlowApp({ name }) {
    errors:recorded.spans.filter(s=>s.status==='failed'&&s.endMs<=now).length }; live=false
  }
  return <main>{name==='discovery-streaming-replay'&&<p>Recorded Discovery replay ·20x; final totals arrive at settlement</p>}<FlowWaterfall trace={trace} live={live} maxHeight={1800}
-  markers={name==='healthy'?[{at:Math.round(trace.totalMs/2),label:'Release v2',tone:'ok'}]:undefined}
+  markers={name==='healthy'?[{at:Math.round(trace.totalMs/2),label:'Release v2',tone:'ok'},{at:Math.round(trace.totalMs/2)+50,label:'Release v3'},{at:trace.totalMs-50,label:'Release v4'}]:undefined}
   onSelect={span=>{window.__fwSelected=[...(window.__fwSelected??[]),span.id??span.name]}} /></main>
 }
