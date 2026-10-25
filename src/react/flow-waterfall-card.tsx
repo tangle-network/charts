@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import type { FlowSpan } from '../flow-trace.js'
-import { CloseGlyph, KindGlyph, ReturnGlyph } from './flow-waterfall-icons.js'
+import { CloseGlyph, KindGlyph } from './flow-waterfall-icons.js'
 import { type FlowWaterfallRow, formatCost, formatCount, formatSpanDuration, spanRunning, toneKey } from './flow-waterfall-model.js'
 
 export const KIND_LABEL: Record<FlowSpan['kind'], string> = {
@@ -36,20 +36,22 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
   const owner = agent && agent.id !== row.id ? agent : undefined
   const duration = Number.isFinite(end - span.startMs) && end >= span.startMs ? formatSpanDuration(end - span.startMs) : '—'
   if (compact) {
+    // The reference tooltip: who and the outcome, two or three recorded values, one sentence.
     const who = owner ?? row
     const tokenCount = span.promptTokens !== undefined || span.completionTokens !== undefined ? (span.promptTokens ?? 0) + (span.completionTokens ?? 0) : undefined
-    const meta = [span.kind === 'model' ? 'Thinking' : KIND_LABEL[span.kind], duration, tokenCount !== undefined ? `${tokenCount.toLocaleString()} tokens` : undefined, span.costUsd !== undefined ? formatCost(span.costUsd) : undefined]
+    const cells: [string, ReactNode][] = [[span.kind === 'model' ? 'Thinking' : KIND_LABEL[span.kind], duration]]
+    if (tokenCount !== undefined) cells.push(['Tokens', count(tokenCount)])
+    if (span.costUsd !== undefined) cells.push(['Cost', formatCost(span.costUsd)])
     return (
       <div id={id} role={pinned ? 'dialog' : 'tooltip'} aria-label={pinned ? `${span.name} details` : undefined}
         className="fw-card fw-card-compact" data-tone={toneKey(who.tone)} style={{ left, top }}
         onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); onClose() } }}>
-        <div className="fw-card-agent"><span className="fw-agent-dot" aria-hidden />{who.name}{who.span.detail && <span className="fw-muted"> {who.span.detail}</span>}
-          {!row.ok && <span className="fw-pill fw-pill-failed" style={{ marginLeft: 'auto' }}>Failed</span>}
-          {pinned && <button type="button" className="fw-icon-button" style={{ marginLeft: row.ok ? 'auto' : 0, width: 20, height: 20 }} aria-label="Close details" onClick={onClose} autoFocus><CloseGlyph /></button>}
+        <div className="fw-card-agent"><span className="fw-agent-dot" aria-hidden /><span className="fw-card-who">{who.name}</span>
+          <span className={`fw-pill fw-pill-${status.toLowerCase()}`}>{status}</span>
+          {pinned && <button type="button" className="fw-icon-button" style={{ width: 20, height: 20 }} aria-label="Close details" onClick={onClose} autoFocus><CloseGlyph /></button>}
         </div>
-        <div className="fw-card-result">{span.output ?? span.name}</div>
-        <div className="fw-card-meta">{meta.filter(Boolean).join(' · ')}</div>
-        {span.input && <div className="fw-card-message"><ReturnGlyph /><span>{span.input}</span></div>}
+        <dl className="fw-card-cells">{cells.map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl>
+        <p className="fw-card-result">{span.output ?? span.name}</p>
       </div>
     )
   }
