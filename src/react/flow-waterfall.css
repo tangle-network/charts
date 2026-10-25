@@ -86,7 +86,8 @@
 .fw-root .fw-tools { display: flex; align-items: center; gap: 8px; }
 .fw-root .fw-views { display: inline-flex; padding: 4px; border-radius: 8px; background: var(--fw-well); border: 1px solid var(--fw-border); }
 .fw-root .fw-view-button { appearance: none; border: 0; background: transparent; height: 24px; padding: 0 12px; border-radius: 6px; font-size: 14px; color: var(--fw-muted); cursor: pointer; transition: background-color 120ms var(--fw-ease), color 120ms var(--fw-ease); }
-.fw-root .fw-view-button[aria-checked="true"] { background: var(--fw-surface); color: var(--fw-text); box-shadow: 0 1px 2px rgb(0 0 0 / .12), 0 0 0 1px var(--fw-border); }
+/* The shown view is a state, not a control: no click target, no pointer. */
+.fw-root .fw-view-button[aria-checked="true"] { cursor: default; background: var(--fw-surface); color: var(--fw-text); box-shadow: 0 1px 2px rgb(0 0 0 / .12), 0 0 0 1px var(--fw-border); }
 .fw-root .fw-search { position: relative; display: flex; align-items: center; }
 .fw-root .fw-search-glyph { position: absolute; left: 8px; display: inline-flex; color: var(--fw-muted); pointer-events: none; }
 .fw-root .fw-search-input { appearance: none; width: 200px; height: 32px; padding: 0 12px 0 28px; border: 1px solid var(--fw-border); border-radius: 8px; background: var(--fw-well); font-size: 14px; }

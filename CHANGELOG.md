@@ -4,6 +4,7 @@
 
 ### Minor Changes
 
+- The view toggle's shown option is disabled (a state, not a control), so clicking it is never a dead click.
 - `FlowTrace.pauses` draws a labelled hatched band across every row for an interval when nothing ran ("Paused 4h40m: host guard cancelled workers"), never blank space. `FlowSpan.marks` puts moments on a bar, such as a restart (an amber notch), without changing the span's state or outcome.
 - Light theme: bar fills carry 42% of the agent hue (was 24%), tool steps 22% (was 12%), outlines the full hue, so agents stay distinct on white.
 - Bars take their agent's hue by default (`agentFill="agent"`); steps and handoff elbows share it, and the outcome moves to the row dot, the legend and the crash glyph. Pass `agentFill="outcome"` for the previous fill.

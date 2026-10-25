@@ -131,6 +131,8 @@ try {
   await page.keyboard.press('Escape')
   // In the agent view a click on an agent's name selects it too, not only its bar.
   await page.getByRole('radio', { name: 'Agents' }).click()
+  // The shown view is a state, not a dead control.
+  assert.equal(await page.getByRole('radio', { name: 'Agents' }).isDisabled(), true)
   await page.locator('.fw-view-agents .fw-row:not(.fw-sticky-row) .fw-name-text').first().click()
   assert.equal((await page.evaluate(() => window.__fwSelected ?? [])).length, 2)
   // Agent bars state their duration at the bar end, as step bars do.

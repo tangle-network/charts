@@ -346,7 +346,7 @@ export function FlowWaterfall({
         </div>
         <div className="fw-tools">
           <div className="fw-views" role="radiogroup" aria-label="Trace view">
-            {(['agents', 'spans'] as const).map(option => <button key={option} type="button" role="radio" aria-checked={view === option}
+            {(['agents', 'spans'] as const).map(option => <button key={option} type="button" role="radio" aria-checked={view === option} disabled={view === option}
               className="fw-view-button" onClick={() => { setView(option); setNameWidth(NAME_WIDTH[option]); setCard(null) }}>{option === 'agents' ? 'Agents' : 'Steps'}</button>)}
           </div>
           {view === 'spans' && <div className="fw-search">
