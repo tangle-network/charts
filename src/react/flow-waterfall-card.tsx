@@ -40,9 +40,12 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
     const who = owner ?? row
     const outcome = who.span.outcome
     const tokenCount = span.promptTokens !== undefined || span.completionTokens !== undefined ? (span.promptTokens ?? 0) + (span.completionTokens ?? 0) : undefined
-    const cells: [string, ReactNode][] = [[span.kind === 'model' ? 'Thinking' : KIND_LABEL[span.kind], duration], ['Started', `+${formatSpanDuration(Math.max(0, span.startMs))}`]]
+    const cells: [string, ReactNode][] = [[span.kind === 'model' ? 'Thinking' : KIND_LABEL[span.kind], duration]]
+    for (const fact of (span.facts ?? who.span.facts ?? []).slice(0, 3)) cells.push([fact.label, fact.value])
+    cells.push(['Started', `+${formatSpanDuration(Math.max(0, span.startMs))}`])
     if (tokenCount !== undefined) cells.push(['Tokens', count(tokenCount)])
     if (span.costUsd !== undefined) cells.push(['Cost', formatCost(span.costUsd)])
+    cells.splice(6)
     // The sentence is what the span did; a name repeated from the title says nothing.
     const sentence = [span.output, span.id === who.id ? undefined : span.name].find(text => text && text !== who.name)
     return (

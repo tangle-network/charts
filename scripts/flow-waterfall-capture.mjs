@@ -108,6 +108,22 @@ try {
         await shot(page, `fit-${tag}-${width}`)
         await context.close()
       }
+      // Every bar opens its card: hover each of the first ten agents' bars in order, as the review does.
+      {
+        const { page, context } = await open(`fixture=${fixture}&view=agents&theme=dark&pad=0&height=2000`, { width: 1512, height: 1200 })
+        const rows = page.locator('.fw-view-agents .fw-row:not(.fw-sticky-row)')
+        const n = Math.min(10, await rows.count())
+        let opened = 0
+        for (let i = 0; i < n; i++) {
+          const bar = rows.nth(i).locator('.fw-bar')
+          await bar.hover({ position: { x: 4, y: 6 } }); await page.waitForTimeout(250)
+          const name = await rows.nth(i).locator('.fw-name-text').innerText()
+          if ((await page.locator('.fw-card').count()) && (await page.locator('.fw-card').innerText()).includes(name.slice(0, 12))) opened += 1
+        }
+        const linkOpacity = await page.locator('.fw-view-agents .fw-link:not(.fw-link-hot)').first().evaluate(el => Number(getComputedStyle(el).opacity)).catch(() => null)
+        report.fit.push({ fixture: tag, barsHovered: n, cardsOpened: opened, restingLinkOpacity: linkOpacity })
+        await context.close()
+      }
       // The hover card on a busy agent's first mark, at a desktop and a phone width.
       for (const width of [1280, 390]) {
         const { page, context } = await open(`fixture=${fixture}&view=agents&theme=dark&pad=0&height=2000`, { width, height: 1200 })

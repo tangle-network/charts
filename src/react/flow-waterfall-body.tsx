@@ -22,6 +22,8 @@ export interface BodyProps extends RowEvents {
   slowestId?: string
   activeId?: string
   selectedId?: string
+  /** The agent whose handoff connectors draw at full strength; the rest stay dim in the agent view. */
+  focusId?: string
   clockMs: number
   window: ViewWindow
   trackPx: number
@@ -249,7 +251,7 @@ export function FlowBody(props: BodyProps) {
           <div className="fw-canvas" style={{ height: rows.length * rowHeight }}>
             <div className="fw-links" aria-hidden>
               {links.filter(link => Math.max(link.from, link.to) >= first && Math.min(link.from, link.to) <= last)
-                .map(link => <LinkMark key={link.id} link={link} rowHeight={rowHeight} />)}
+                .map(link => <LinkMark key={link.id} link={link} rowHeight={rowHeight} hot={props.focusId !== undefined && (rows[link.from]?.id === props.focusId || rows[link.to]?.id === props.focusId)} />)}
             </div>
             {rows.slice(first, last).map((item, offset) => row(item, first + offset))}
           </div>
