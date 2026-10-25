@@ -320,4 +320,7 @@
   .fw-root-agents .fw-view-agents .fw-agent-dot { align-self: center; margin-top: 0; }
   /* The label leaves the grid flow, so the lane must claim the track column itself. */
   .fw-root-agents .fw-view-agents .fw-lane { grid-column: 2; }
+  /* Elbows pass behind the name, not through its letters. */
+  .fw-root-agents .fw-view-agents .fw-names { padding-right: 4px; border-radius: 4px; background: var(--fw-surface); }
+  .fw-root-agents .fw-view-agents .fw-row:hover .fw-names { background: transparent; }
 }
