@@ -2,6 +2,7 @@
 
 ## 0.20.1
 
+- `HBars`: every bar answers a hover with its label and value, or the row's own `title` (from disco-evolve-play's #28).
 - `live.css` sizes are px on the 12/14 type scale with 4 px gaps instead of em, so hosts no longer pin them in their own scopes.
 - `otlpFlowTrace` sets `costUpperBound` when no priced call splits cached from fresh input (cli-bridge), and the strip shows the list cost as "≤$x" with the reason, instead of "≈".
 - Agent view: a key names each mark (Model call, Tool call, Waiting, Handoff, Failed turn), listing only kinds the run has.
