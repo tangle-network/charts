@@ -125,7 +125,8 @@ try {
   assert.equal(await root.locator('[data-span-id]').count(), 53)
   await page.screenshot({ path: `${output}/recorded-desktop-dark.png`, fullPage: true })
   await page.keyboard.press('Control+f')
-  assert.equal(await page.getByRole('searchbox', { name: 'Search trace' }).evaluate(el => el === document.activeElement), true)
+  // Focus moves on the next animation frame, which a loaded host can delay; wait for it rather than sample once.
+  await page.waitForFunction(() => document.activeElement?.matches('input[type="search"]'), null, { timeout: 5000 })
   await page.getByRole('searchbox', { name: 'Search trace' }).fill('no-such-trace-step')
   await page.getByRole('status').filter({ hasText: 'No matching steps' }).waitFor({ timeout: 3000 })
   checks.search = 'PASS'
