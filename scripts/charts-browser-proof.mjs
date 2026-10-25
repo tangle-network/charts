@@ -164,7 +164,8 @@ try {
   checks.onSelect = 'PASS'
   // The event track: one dot per marker; a click moves the cursor there and reports the time; N steps to the next.
   assert.equal(await page.locator('.fw-event').count(), 3)
-  await page.locator('.fw-event').first().click()
+  // v2 and v3 are 50 ms apart, so at full-trace zoom v3's dot lies on v2's; click the visible one, and N reaches v4.
+  await page.getByRole('button', { name: 'Jump to Release v3' }).click()
   const jumped = await page.evaluate(() => window.__fwTime)
   assert.ok(typeof jumped === 'number' && jumped > 0, `onTimeChange got ${jumped}`)
   await page.locator('[data-flow-waterfall] [role="treegrid"]').focus()
