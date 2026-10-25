@@ -330,7 +330,7 @@ export function FlowWaterfall({
         </div>)}
       </dl>}
       <FlowBody rows={visible} byId={byId} totalRows={rows.length} view={view} maxHeight={rowsHeight} collapsed={collapsed} searching={Boolean(query.trim())}
-        slowestId={slowest?.id} activeId={activeId} selectedId={card?.pinned ? card.target : undefined} clockMs={clockMs} window={win}
+        slowestId={slowest?.id} activeId={activeId} selectedId={card?.pinned ? card.target : undefined} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
         trackPx={trackPx} showCursor={showCursor} markers={markers} zoomed={zoom !== null} renderIcon={renderIcon}
         emptyText={rows.length === 0 ? 'No spans yet. Waiting for trace events.' : `No matching steps for “${query}”.`}
         onToggle={toggle} onInspect={inspect} onLeave={leave} onPin={pin} onActivate={row => setActiveId(row.id)}

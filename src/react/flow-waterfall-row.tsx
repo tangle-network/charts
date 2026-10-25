@@ -94,6 +94,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
             {running && <span className="fw-spinner" role="status" aria-label="running" />}
             <span className="fw-name-text">{row.name}</span>
           </span>
+          {agentView && span.detail && <span className="fw-subtitle">{span.detail}</span>}
           {agentView && renderIcon && <span className="fw-detail-icon" aria-hidden>{renderIcon(span)}</span>}
         </span>
         {folded && <span className="fw-count" aria-label={`${row.descendants} hidden steps`}>+{row.descendants}</span>}
@@ -124,12 +125,12 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
 export interface FlowLink { id: string; from: number; to: number; atMs: number; tone: number; dir: 'down' | 'up' }
 
 /** An elbow connector between two rows at one moment, drawn in the row's tone; appears when the clock reaches it. */
-export function LinkMark({ link, rowHeight }: { link: FlowLink; rowHeight: number }) {
+export function LinkMark({ link, rowHeight, hot }: { link: FlowLink; rowHeight: number; hot?: boolean }) {
   const upper = Math.min(link.from, link.to), lower = Math.max(link.from, link.to)
   const style = {
     ...at(link.atMs, link.atMs),
     top: upper * rowHeight + rowHeight / 2 + 5,
     height: (lower - upper) * rowHeight - 5,
   } as CSSProperties
-  return <span className={`fw-link fw-link-${link.dir}`} data-tone={toneKey(link.tone)} style={style} aria-hidden />
+  return <span className={`fw-link fw-link-${link.dir}${hot ? ' fw-link-hot' : ''}`} data-tone={toneKey(link.tone)} style={style} aria-hidden />
 }

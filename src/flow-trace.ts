@@ -27,6 +27,8 @@ export interface FlowSpan {
   handoffTo?: string
   /** The host's verdict on an agent span, such as shipped or crashed: colors its lane and joins the legend. */
   outcome?: FlowOutcome
+  /** Up to three host facts shown as extra key/value cells in the span card, such as releases or commits. */
+  facts?: readonly { label: string; value: string }[]
   meta?: Record<string, unknown>
 }
 

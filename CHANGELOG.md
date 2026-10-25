@@ -1,5 +1,20 @@
 # @tangle-network/charts
 
+## 0.19.0
+
+### Minor Changes
+
+- `FlowSpan.facts` (up to three `{ label, value }`) adds host facts, such as releases or commits, as cells in the span card.
+- The agent view shows each agent's `detail` as a muted subtitle under its name.
+- Agent-view handoff connectors rest at 30% opacity; the hovered, pinned or focused agent's connectors draw at full strength.
+- A hover card no longer takes the pointer, so it never covers the next bar: every bar opens its card (only a pinned card is interactive).
+
+## 0.18.2
+
+### Patch Changes
+
+- The agent card shows the agent's outcome label as its status pill (in the outcome's color), the agent span's `detail` (such as the outcome sentence, harness and model) under the name, and a Started cell. The sentence line shows what the span did and is left out rather than repeating the agent's name.
+
 ## 0.18.1
 
 ### Patch Changes

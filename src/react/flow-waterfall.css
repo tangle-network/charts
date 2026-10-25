@@ -160,6 +160,7 @@
 .fw-root .fw-view-agents .fw-label { padding-left: 16px; gap: 12px; border-right: 0; }
 .fw-root .fw-view-agents .fw-names { flex-direction: column; align-items: flex-start; gap: 0; }
 .fw-root .fw-view-agents .fw-span-name { font-weight: 600; line-height: 18px; }
+.fw-root .fw-view-agents .fw-subtitle { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fw-muted); font-size: 12px; line-height: 16px; }
 .fw-root .fw-view-agents .fw-detail { font-size: 12px; line-height: 16px; }
 .fw-root .fw-agent-dot { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--line, var(--fw-muted)); align-self: flex-start; margin-top: calc((var(--fw-row-h) - 34px) / 2 + 8px); }
 
@@ -223,6 +224,9 @@
   opacity: clamp(0, (var(--fw-t) - var(--s)) * 1000, 1);
 }
 .fw-root .fw-view-spans .fw-link { opacity: calc(clamp(0, (var(--fw-t) - var(--s)) * 1000, 1) * .7); }
+/* Agent-view connectors stay quiet at 30% until their agent is hovered, pinned or focused. */
+.fw-root .fw-view-agents .fw-link:not(.fw-link-hot) { opacity: calc(clamp(0, (var(--fw-t) - var(--s)) * 1000, 1) * .3); }
+.fw-root .fw-link { transition: opacity 160ms var(--fw-ease); }
 .fw-root .fw-link-down { left: calc(var(--x) - 8px); border-left-width: 1.5px; border-bottom-left-radius: 6px; }
 .fw-root .fw-link-up { left: var(--x); border-right-width: 1.5px; border-bottom-right-radius: 6px; }
 .fw-root .fw-link::before { content: ""; position: absolute; top: -3.5px; width: 5px; height: 5px; border-radius: 50%; background: var(--line); box-shadow: 0 0 0 1.5px var(--fw-surface); }
@@ -233,6 +237,8 @@
 .fw-root .fw-card-anchor { display: contents; }
 .fw-root .fw-card { position: absolute; z-index: 20; width: 320px; padding: 12px; border-radius: 12px; background: var(--fw-raised); border: 1px solid var(--fw-border);
   box-shadow: 0 12px 32px -8px rgb(0 0 0 / .28), 0 2px 6px rgb(0 0 0 / .08); animation: fw-arrive 140ms var(--fw-ease); }
+/* A hover card never covers the next mark: only a pinned card (a dialog) takes the pointer. */
+.fw-root .fw-card[role="tooltip"] { pointer-events: none; }
 .fw-root .fw-card-above .fw-card { transform: translateY(-100%); animation-name: fw-arrive-above; }
 .fw-root .fw-card-agent { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; font-weight: 600; }
 .fw-root .fw-card-agent .fw-agent-dot { margin-top: 0; align-self: center; }
@@ -257,7 +263,9 @@
 .fw-root .fw-card-compact { width: 280px; padding: 12px; }
 .fw-root .fw-card-compact .fw-card-agent { margin-bottom: 8px; font-size: 14px; line-height: 20px; }
 .fw-root .fw-card-who { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fw-root .fw-card-cells { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; padding: 8px 12px; border-radius: 8px; background: var(--fw-well); }
+.fw-root .fw-card-detail { margin: -4px 0 8px 16px; color: var(--fw-muted); font-size: 12px; line-height: 16px; overflow-wrap: anywhere; }
+.fw-root .fw-pill-outcome { color: var(--line); background: color-mix(in oklab, var(--tone) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--tone) 35%, transparent); }
+.fw-root .fw-card-cells { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 8px; padding: 8px 12px; border-radius: 8px; background: var(--fw-well); }
 .fw-root .fw-card-cells dt { font-size: 12px; line-height: 16px; color: var(--fw-muted); }
 .fw-root .fw-card-cells dd { font-size: 14px; line-height: 20px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .fw-root .fw-card-result { margin-top: 8px; font-size: 14px; line-height: 20px; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }

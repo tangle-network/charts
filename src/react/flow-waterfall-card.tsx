@@ -36,22 +36,31 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
   const owner = agent && agent.id !== row.id ? agent : undefined
   const duration = Number.isFinite(end - span.startMs) && end >= span.startMs ? formatSpanDuration(end - span.startMs) : '—'
   if (compact) {
-    // The reference tooltip: who and the outcome, two or three recorded values, one sentence.
+    // The reference tooltip: who and the outcome, harness and model, two to four recorded values, one sentence.
     const who = owner ?? row
+    const outcome = who.span.outcome
     const tokenCount = span.promptTokens !== undefined || span.completionTokens !== undefined ? (span.promptTokens ?? 0) + (span.completionTokens ?? 0) : undefined
     const cells: [string, ReactNode][] = [[span.kind === 'model' ? 'Thinking' : KIND_LABEL[span.kind], duration]]
+    for (const fact of (span.facts ?? who.span.facts ?? []).slice(0, 3)) cells.push([fact.label, fact.value])
+    cells.push(['Started', `+${formatSpanDuration(Math.max(0, span.startMs))}`])
     if (tokenCount !== undefined) cells.push(['Tokens', count(tokenCount)])
     if (span.costUsd !== undefined) cells.push(['Cost', formatCost(span.costUsd)])
+    cells.splice(6)
+    // The sentence is what the span did; a name repeated from the title says nothing.
+    const sentence = [span.output, span.id === who.id ? undefined : span.name].find(text => text && text !== who.name)
     return (
       <div id={id} role={pinned ? 'dialog' : 'tooltip'} aria-label={pinned ? `${span.name} details` : undefined}
-        className="fw-card fw-card-compact" data-tone={toneKey(who.tone)} style={{ left, top }}
+        className="fw-card fw-card-compact" data-tone={toneKey(who.tone)} data-outcome={outcome?.tone} style={{ left, top }}
         onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); onClose() } }}>
         <div className="fw-card-agent"><span className="fw-agent-dot" aria-hidden /><span className="fw-card-who">{who.name}</span>
-          <span className={`fw-pill fw-pill-${status.toLowerCase()}`}>{status}</span>
+          {outcome
+            ? <span className="fw-pill fw-pill-outcome" data-tone="0" data-outcome={outcome.tone}>{outcome.label}</span>
+            : <span className={`fw-pill fw-pill-${status.toLowerCase()}`}>{status}</span>}
           {pinned && <button type="button" className="fw-icon-button" style={{ width: 20, height: 20 }} aria-label="Close details" onClick={onClose} autoFocus><CloseGlyph /></button>}
         </div>
+        {who.span.detail && <p className="fw-card-detail">{who.span.detail}</p>}
         <dl className="fw-card-cells">{cells.map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl>
-        <p className="fw-card-result">{span.output ?? span.name}</p>
+        {sentence && <p className="fw-card-result">{sentence}</p>}
       </div>
     )
   }
