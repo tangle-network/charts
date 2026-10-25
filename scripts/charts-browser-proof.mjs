@@ -102,6 +102,20 @@ try {
   await page.setViewportSize({ width:1100,height:900 })
   await story('healthy')
   assert.match(await page.locator('[data-slowest]').innerText(), /sandbox_run_command/)
+  // A marker sits at its instant on the lane, mid-trace here, and its label is painted.
+  const marker = await page.locator('.fw-marker').evaluate(el => {
+    const lane = el.parentElement.getBoundingClientRect(), box = el.getBoundingClientRect(), label = el.querySelector('.fw-marker-label').getBoundingClientRect()
+    return { at: (box.left - lane.left) / lane.width, height: box.height, label: label.width, color: getComputedStyle(el).borderLeftColor }
+  })
+  assert.ok(marker.at > 0.3 && marker.at < 0.7, `marker at ${marker.at}`)
+  assert.ok(marker.height > 100 && marker.label > 40)
+  assert.equal(await page.locator('.fw-marker-label').innerText(), 'Release v2')
+  checks.markers = 'PASS'
+  // Pinning a bar hands its span to onSelect.
+  await page.locator('.fw-bar').first().click()
+  assert.equal((await page.evaluate(() => window.__fwSelected ?? [])).length, 1)
+  await page.keyboard.press('Escape')
+  checks.onSelect = 'PASS'
   await page.screenshot({ path: `${output}/healthy-desktop-dark.png`, fullPage: true })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.screenshot({ path: `${output}/healthy-phone-dark.png`, fullPage: true })

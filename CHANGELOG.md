@@ -1,5 +1,12 @@
 # @tangle-network/charts
 
+## 0.17.0
+
+### Minor Changes
+
+- `FlowWaterfall` takes `onSelect(span)`, called when a row is opened or a bar is pinned, so a host can open its own drill-down; the built-in behavior still runs.
+- `FlowWaterfall` takes `markers`: labelled instants (`{ at, label, tone }`, `FlowMarker`) drawn as dashed lines across the rows on the trace clock, such as releases.
+
 ## 0.16.0
 
 ### Minor Changes

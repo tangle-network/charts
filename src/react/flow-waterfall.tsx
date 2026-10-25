@@ -1,5 +1,5 @@
 import { type CSSProperties, type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
-import type { FlowSpan, FlowTrace } from '../flow-trace.js'
+import type { FlowMarker, FlowSpan, FlowTrace } from '../flow-trace.js'
 import { FlowBody, ROW_HEIGHT } from './flow-waterfall-body.js'
 import { SpanCard } from './flow-waterfall-card.js'
 import { useTraceClock } from './flow-waterfall-clock.js'
@@ -34,6 +34,10 @@ export interface FlowWaterfallProps {
   renderIcon?: (span: FlowSpan) => ReactNode
   /** Scroll height of the rows; the tree is virtualized beyond it. */
   maxHeight?: number
+  /** Called when a row is opened or a bar is pinned, with that row's span; the built-in behavior still runs. */
+  onSelect?: (span: FlowSpan) => void
+  /** Labelled instants, such as releases, drawn across the rows on the trace clock. */
+  markers?: FlowMarker[]
 }
 
 interface CardState { target: string; pinned: boolean; left: number; top: number; above: boolean }
@@ -43,7 +47,7 @@ const headlineSeconds = (ms: number) => ms < 60_000 ? `${(ms / 1000).toFixed(1)}
 /** Shared trace inspector: the agent timeline and the span waterfall over one clock.
  * Data remains producer-owned; playback, zoom and folding change presentation only. */
 export function FlowWaterfall({
-  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight = 640,
+  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight = 640, onSelect, markers,
 }: FlowWaterfallProps) {
   const root = useRef<HTMLElement>(null)
   const search = useRef<HTMLInputElement>(null)
@@ -162,6 +166,7 @@ export function FlowWaterfall({
   // Rows are memoized without their handlers, so handlers stay stable and read the latest state through a ref.
   const latest = useRef({ toggle: (_row: FlowWaterfallRow) => {}, pin: (_target: string, _element: HTMLElement) => {}, inspect: (_target: string, _element: HTMLElement) => {} })
   const toggleNow = (row: FlowWaterfallRow) => {
+    onSelect?.(row.span)
     if (view === 'agents') {
       // Expanding an agent opens the span tree with that agent unfolded and its peers folded.
       const keep = new Set<string>()
@@ -211,7 +216,7 @@ export function FlowWaterfall({
   latest.current.pin = (target, element) => {
     place(target, element, true)
     const row = byId.get(target)
-    if (row) zoomTo(row)
+    if (row) { onSelect?.(row.span); zoomTo(row) }
   }
   const pin = useCallback((target: string, element: HTMLElement) => latest.current.pin(target, element), [])
   const closeCard = () => {
@@ -293,7 +298,7 @@ export function FlowWaterfall({
       </dl>}
       <FlowBody rows={visible} byId={byId} totalRows={rows.length} view={view} maxHeight={maxHeight} collapsed={collapsed} searching={Boolean(query.trim())}
         slowestId={slowest?.id} activeId={activeId} selectedId={card?.pinned ? card.target : undefined} clockMs={clockMs} window={win}
-        trackPx={trackPx} showCursor={showCursor} zoomed={zoom !== null} renderIcon={renderIcon}
+        trackPx={trackPx} showCursor={showCursor} markers={markers} zoomed={zoom !== null} renderIcon={renderIcon}
         emptyText={rows.length === 0 ? 'No spans yet. Waiting for trace events.' : `No matching steps for “${query}”.`}
         onToggle={toggle} onInspect={inspect} onLeave={leave} onPin={pin} onActivate={row => setActiveId(row.id)}
         onActiveChange={setActiveId} onScrub={scrubTo} onZoom={zoomBy} onPan={pan}
