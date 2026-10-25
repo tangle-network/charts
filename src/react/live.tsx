@@ -134,8 +134,9 @@ export function DayBars({ days, series, format = formatCompact, rows = 13, missi
   )
 }
 
-/** Ranked horizontal bars with the value and an optional note on each row; past `limit` rows the rest are counted. */
-export function HBars({ rows, format = formatCompact, color = LIVE_SERIES[0], max, limit = 8 }: { rows: { label: string; value: number; note?: string; color?: string; href?: string }[]; format?: (v: number) => string; color?: string; max?: number; limit?: number }) {
+/** Ranked horizontal bars with the value and an optional note on each row; past `limit` rows the rest are counted.
+ * Every bar has a tooltip: the row's `title`, else its label and value. */
+export function HBars({ rows, format = formatCompact, color = LIVE_SERIES[0], max, limit = 8 }: { rows: { label: string; value: number; note?: string; color?: string; href?: string; title?: string }[]; format?: (v: number) => string; color?: string; max?: number; limit?: number }) {
   const top = max ?? Math.max(1, ...rows.map((row) => row.value))
   if (!rows.length) return <p className="ov-empty">Nothing recorded.</p>
   const rest = rows.slice(limit)
@@ -144,7 +145,7 @@ export function HBars({ rows, format = formatCompact, color = LIVE_SERIES[0], ma
       {rows.slice(0, limit).map((row) => {
         const content = (
           <>
-            <span className="ov-hbar-label" title={row.label}>{row.label}</span>
+            <span className="ov-hbar-label">{row.label}</span>
             <span className="ov-hbar-track">
               <span style={{ width: `${Math.max(1, (row.value / top) * 100)}%`, background: row.color ?? color }} />
             </span>
@@ -152,7 +153,8 @@ export function HBars({ rows, format = formatCompact, color = LIVE_SERIES[0], ma
             {row.note && <span className="ov-hbar-note">{row.note}</span>}
           </>
         )
-        return <li key={row.label}>{row.href ? <a href={row.href}>{content}</a> : <div>{content}</div>}</li>
+        const title = row.title ?? `${row.label}: ${format(row.value)}`
+        return <li key={row.label}>{row.href ? <a href={row.href} title={title}>{content}</a> : <div title={title}>{content}</div>}</li>
       })}
       {rest.length > 0 && <li className="ov-hbars-more">+{rest.length} more · {format(rest.reduce((a, row) => a + row.value, 0))}</li>}
     </ol>
