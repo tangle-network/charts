@@ -3,7 +3,7 @@ import type { FlowMarker, FlowSpan, FlowTrace } from '../flow-trace.js'
 import { FlowBody, ROW_HEIGHT } from './flow-waterfall-body.js'
 import { SpanCard } from './flow-waterfall-card.js'
 import { useTraceClock } from './flow-waterfall-clock.js'
-import { SearchGlyph, TraceGlyph } from './flow-waterfall-icons.js'
+import { FailGlyph, SearchGlyph, TraceGlyph } from './flow-waterfall-icons.js'
 import { PlaybackBar } from './flow-waterfall-playback.js'
 import {
   busyMs, type FlowWaterfallRow, flowWaterfallRows, formatCost, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
@@ -53,8 +53,11 @@ function OutcomeLegend({ agents }: { agents: FlowWaterfallRow[] }) {
     items.set(outcome.label, item)
   }
   if (items.size === 0) return null
+  // A failed step inside a finished agent is a different fact from a failed agent, so it gets its own key.
+  const failedSteps = agents.reduce((sum, row) => sum + row.own.reduce((n, mark) => n + (mark.kind === 'failed' ? mark.count : 0), 0), 0)
   return <ul className="fw-legend" aria-label="Outcomes">
     {[...items].map(([label, item]) => <li key={label}><span className="fw-swatch" data-tone="0" data-outcome={item.tone} aria-hidden />{label} <b>{item.count}</b></li>)}
+    {failedSteps > 0 && <li><span className="fw-swatch-step" aria-hidden><FailGlyph /></span>Failed step <b>{failedSteps}</b></li>}
   </ul>
 }
 
