@@ -61,9 +61,16 @@ async function source(name) {
 }
 
 /** Reveal a recorded trace as a stream: spans appear at their start and run until their end. */
+/** The trace as it stood at `now`: spans that began, and run totals summed from the calls that finished by then. */
 function reveal(trace, now) {
+  const done = trace.spans.filter(s => s.kind === 'model' && s.endMs <= now)
+  const sum = key => done.reduce((total, s) => total + (s[key] ?? 0), 0)
+  const priced = done.filter(s => s.costUsd !== undefined)
   return { ...trace, totalMs: now,
     spans: trace.spans.filter(s => s.startMs <= now).map(s => s.endMs > now ? { ...s, endMs: now, status: 'running' } : s),
+    promptTokens: sum('promptTokens'), completionTokens: sum('completionTokens'), modelCalls: done.length,
+    costUsd: priced.length ? priced.reduce((total, s) => total + s.costUsd, 0) : undefined,
+    costCoverage: trace.costCoverage ? { priced: priced.length, total: done.length } : undefined,
     toolCalls: trace.spans.filter(s => s.kind === 'tool' && s.startMs <= now).length,
     errors: trace.spans.filter(s => s.status === 'failed' && s.endMs <= now).length }
 }
