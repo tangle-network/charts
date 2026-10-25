@@ -83,6 +83,7 @@ try {
     console.log(JSON.stringify({ live: { ...report.live, samples: undefined } }))
   }
   if (only === 'otlp' || only === 'live') throw Object.assign(new Error('only otlp'), { skip: true })
+  if (only !== 'perf') {
   // Reference 1 and 2: the span waterfall, both themes, at the reference viewport, through the run.
   for (const theme of ['light', 'dark']) {
     const { page, context } = await open(`fixture=release&theme=${theme}&width=1140`)
@@ -126,6 +127,7 @@ try {
     await context.close()
   }
 
+  }
   // First paint at 500 spans, median of five.
   const paints = []
   for (let i = 0; i < 5; i++) {
@@ -178,7 +180,7 @@ try {
   })()
 
   // One uncut recording of each interaction: expand, hover, play and scrub, zoom, agent focus.
-  {
+  if (only !== 'perf') {
     const { page, context } = await open('fixture=release&theme=dark&width=1140', { width: 1185, height: 1016 }, true)
     const pause = ms => page.waitForTimeout(ms)
     await pause(600)
