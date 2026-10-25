@@ -93,10 +93,17 @@ try {
       await page.goto(`${base}?fixture=otlp:${file}&view=agents&theme=dark&width=1440&height=720&label=Trace${desc}`)
       await page.waitForTimeout(2500)
       await page.goto(`${base}?fixture=otlp:${file}&view=agents&theme=dark&width=1440&height=720&label=Trace${desc}&live=1&rate=6000`)
-      await page.waitForTimeout(16000)
+      // The component's own width while the run replays: it must hold still (round 2's recording showed 200-1000 px).
+      const widths = []
+      for (let i = 0; i < 32; i++) {
+        widths.push(Math.round(await page.locator('[data-flow-waterfall]').evaluate(el => el.getBoundingClientRect().width).catch(() => -1)))
+        await page.waitForTimeout(500)
+      }
+      report.judge.push({ replayWidths: widths, steady: Math.max(...widths) - Math.min(...widths) <= 2 })
+      console.log('replay widths', JSON.stringify(widths))
+      const video = page.video()
       await context.close()
-      const video = readdirSync(out).find(name => name.endsWith('.webm') && !name.startsWith('fit-') && !name.startsWith('live') && !name.startsWith('judge'))
-      if (video) renameSync(`${out}/${video}`, `${out}/judge-motion.webm`)
+      await video?.saveAs(`${out}/judge-motion.webm`)
     }
   }
   if (process.env.FW_LIVE_RELAY) {
