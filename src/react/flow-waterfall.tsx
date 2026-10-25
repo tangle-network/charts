@@ -79,7 +79,7 @@ const TONE_ORDER = ['ok', 'warn', 'failed', 'neutral']
 /** What each mark means, as the agent view draws it; a key only for kinds the run has. */
 function KindLegend({ rows }: { rows: FlowWaterfallRow[] }) {
   const has = (kind: string) => rows.some(row => row.own.some(mark => mark.kind === kind) || row.span.kind === kind)
-  const keys: [string, string][] = [['model', 'Model call'], ['tool', 'Tool call'], ['waiting', 'Waiting'], ['handoff', 'Handoff'], ['failed', 'Failed turn']]
+  const keys: [string, string][] = [['model', 'Model call'], ['tool', 'Tool call'], ['waiting', 'Waiting'], ['handoff', 'Handoff']]
   const shown = keys.filter(([kind]) => kind === 'waiting' ? rows.some(row => row.kind === 'pipeline') : kind === 'handoff' ? rows.some(row => row.span.handoffTo || row.hasAgents) : has(kind))
   if (shown.length === 0) return null
   return <ul className="fw-legend fw-kinds" aria-label="Key">
@@ -161,6 +161,8 @@ export function FlowWaterfall({
     const pipelines = rows.filter(row => row.kind === 'pipeline')
     return pipelines.length ? pipelines : rows.filter(row => !row.parentId)
   }, [rows])
+  // When every agent runs the same model, the header says it once instead of every row repeating it.
+  const sharedDetail = agents.length > 1 && agents.every(row => row.span.detail && row.span.detail === agents[0]?.span.detail) ? agents[0]?.span.detail : undefined
   const visible = useMemo(() => view === 'agents' ? agents : visibleFlowWaterfallRows(rows, query, collapsed), [view, agents, rows, query, collapsed])
   const slowest = view === 'spans' ? slowestRow(rows, clockMs) : undefined
   const callouts = useMemo<ReturnType<typeof agentCallouts>>(() => view === 'agents' ? agentCallouts(agents, clockMs) : {}, [view, agents, clockMs])
@@ -356,7 +358,7 @@ export function FlowWaterfall({
           {view === 'agents' && <p className="fw-headline" aria-live="polite">
             {/* Duration, cost and tokens live in the stat strip below; the headline says only what the strip cannot. */}
             {done && <span className="fw-done-mark" aria-label="done">✓</span>}
-            {agents.length} {agents.length === 1 ? 'agent' : 'agents'}{done && speedup >= 1.05 ? ` · ${speedup.toFixed(1)}x parallel` : ''}
+            {agents.length} {agents.length === 1 ? 'agent' : 'agents'}{sharedDetail ? ` · ${sharedDetail}` : ''}{done && speedup >= 1.05 ? ` · ${speedup.toFixed(1)}x parallel` : ''}
           </p>}
           <OutcomeLegend agents={agents} />
         </div>
@@ -385,7 +387,7 @@ export function FlowWaterfall({
       {/* The key sits right above the lanes it explains (round 2: a key at the foot went unseen by 2 of 3 judges). */}
       {view === 'agents' && <KindLegend rows={rows} />}
       <FlowBody rows={visible} byId={byId} totalRows={rows.length} view={view} maxHeight={rowsHeight} collapsed={collapsed} searching={Boolean(query.trim())}
-        pauses={trace.pauses} slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
+        pauses={trace.pauses} sharedDetail={sharedDetail} fixedHeight={isLive} slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
         trackPx={trackPx} showCursor={showCursor} markers={markers} fillByAgent={agentFill === 'agent'} zoomed={zoom !== null} renderIcon={renderIcon}
         emptyText={rows.length === 0 ? 'No spans yet. Waiting for trace events.' : `No matching steps for “${query}”.`}
         onToggle={toggle} onInspect={inspect} onLeave={leave} onPin={pin} onActivate={row => setActiveId(row.id)}

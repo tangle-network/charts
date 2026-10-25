@@ -25,6 +25,10 @@ export interface BodyProps extends RowEvents {
   costliestId?: string
   activeId?: string
   pauses?: readonly FlowPause[]
+  /** The model every agent shares: rows leave it out because the header names it. */
+  sharedDetail?: string
+  /** Live: the body keeps its full height as agents arrive, so the page below never shifts. */
+  fixedHeight?: boolean
   selectedId?: string
   /** The agent whose handoff connectors draw at full strength; the rest stay dim in the agent view. */
   focusId?: string
@@ -91,7 +95,7 @@ export function FlowBody(props: BodyProps) {
   const [viewport, setViewport] = useState(maxHeight)
   const latest = useRef(props)
   latest.current = props
-  const height = Math.min(maxHeight, Math.max(rows.length, 1) * rowHeight)
+  const height = props.fixedHeight ? maxHeight : Math.min(maxHeight, Math.max(rows.length, 1) * rowHeight)
   const links = useMemo(() => linksFor(rows, props.byId, view), [rows, props.byId, view])
   const index = useMemo(() => new Map(rows.map((row, i) => [row.id, i])), [rows])
   const motion = useRowMotion(rows)
@@ -244,7 +248,7 @@ export function FlowBody(props: BodyProps) {
     <FlowRow key={isSticky ? `sticky-${item.id}` : item.id} row={item} view={view} top={i * rowHeight}
       collapsed={collapsed.has(item.id)} searching={searching} slowest={item.id === slowestId} costliest={item.id === props.costliestId}
       active={item.id === activeId} focusable={!isSticky && (item.id === activeId || (activeId === undefined || !index.has(activeId)) && i === 0)}
-      selected={item.id === selectedId} sticky={isSticky} motion={isSticky ? undefined : motion.get(item.id)} clockMs={clockMs} renderIcon={props.renderIcon} fillByAgent={props.fillByAgent}
+      selected={item.id === selectedId} sticky={isSticky} motion={isSticky ? undefined : motion.get(item.id)} clockMs={clockMs} renderIcon={props.renderIcon} fillByAgent={props.fillByAgent} sharedDetail={props.sharedDetail}
       onToggle={props.onToggle} onInspect={props.onInspect} onLeave={props.onLeave} onPin={props.onPin} onActivate={item => props.onActiveChange(item.id)} />
   )
 

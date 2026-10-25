@@ -2,9 +2,13 @@
 
 ## 0.20.2
 
-- Agent view: connectors appear only for the agent under the pointer, pinned or focused (17 resting elbows read as a tangle).
+- Agent view: one faint curved elbow per spawn at rest, in the agent's hue, at full strength for the agent under the pointer, pinned or focused.
 - Agent view: the kind key sits directly above the lanes.
-- Light theme: bars carry 74% of the agent hue (tool steps 38%).
+- Agent view: when every agent runs the same model, the headline names it once and the rows leave it out.
+- Agent view: a failed turn draws like any turn and the warning by the name is muted; the agent's failure shows once, by its name and its end label.
+- Live: the body keeps its full height as agents arrive, so the page below does not shift.
+- Light theme: bars carry 88% of the agent hue (tool steps 46%).
+- Demo harness: live replay sums run totals from the calls finished so far; the motion recording is captured in its own folder.
 
 ## 0.20.1
 

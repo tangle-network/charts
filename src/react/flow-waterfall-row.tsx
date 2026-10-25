@@ -38,6 +38,7 @@ export interface RowProps extends RowEvents {
   clockMs: number
   renderIcon?: (span: FlowSpan) => ReactNode
   fillByAgent?: boolean
+  sharedDetail?: string
 }
 
 function Segment({ mark, events, agentView }: { mark: FlowSegment; events: RowEvents; agentView: boolean }) {
@@ -108,7 +109,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
             {running && <span className="fw-spinner" role="status" aria-label="running" />}
             <span className="fw-name-text">{row.name}</span>
           </span>
-          {agentView && span.detail && <span className="fw-subtitle">{span.detail}</span>}
+          {agentView && span.detail && span.detail !== props.sharedDetail && <span className="fw-subtitle">{span.detail}</span>}
           {agentView && renderIcon && <span className="fw-detail-icon" aria-hidden>{renderIcon(span)}</span>}
         </span>
         {folded && <span className="fw-count" aria-label={`${row.descendants} hidden steps`}>+{row.descendants}</span>}
@@ -136,7 +137,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   )
 }, (a, b) => a.row === b.row && a.view === b.view && a.top === b.top && a.collapsed === b.collapsed && a.searching === b.searching &&
   a.slowest === b.slowest && a.costliest === b.costliest && a.active === b.active && a.focusable === b.focusable && a.selected === b.selected &&
-  a.sticky === b.sticky && a.motion === b.motion && a.renderIcon === b.renderIcon && a.fillByAgent === b.fillByAgent && (a.clockMs === b.clockMs || !open(a.row, a.clockMs) && !open(b.row, b.clockMs)))
+  a.sticky === b.sticky && a.motion === b.motion && a.renderIcon === b.renderIcon && a.fillByAgent === b.fillByAgent && a.sharedDetail === b.sharedDetail && (a.clockMs === b.clockMs || !open(a.row, a.clockMs) && !open(b.row, b.clockMs)))
 
 export interface FlowLink { id: string; from: number; to: number; atMs: number; tone: number; dir: 'down' | 'up' }
 
