@@ -13,6 +13,7 @@
 - In the agent view, the waiting time between an agent's steps is hatched in its outcome tone, under the thinking (full tone) and tool (dim tone) segments.
 - FigureView type sits on the 12/14/18/32 scale with weights 400/600 (lede 15 to 14 px, read line 13 to 12 px, finding weight 650 to 600, plot numbers 15 to 14 px), line heights on the 4 px grid, and table cells pad 8 px.
 - SVG chart text is never below 12 px: axis ticks, point badges, target and verdict-key labels, event labels, heatmap heads, and phone lane labels move from 10 or 11 px to 12 px (latency-range row labels to 12/14), measured at the size they draw so collision and wrap logic stay exact.
+- The waterfall follows the host's light or dark theme (`data-theme` or the `light`/`dark` class) rather than the OS, so a light page on a dark OS no longer shows dark-theme muted text (2.4:1). Bars center by `top` instead of a negative margin.
 - The agent timeline fits a 17-agent run in a 945 px viewport: 40 px rows (name and a one-line subtitle), with play, speed and the time axis above the lanes.
 - `agentFill: 'agent'` colors each agent bar by the agent's own hue, with the outcome on the row dot and the legend; the default `'outcome'` keeps outcome fill.
 - A card opened on a segment inside an agent bar shows the agent's duration, facts and cost, then the segment as one line ("Tool call · 4m 31s").

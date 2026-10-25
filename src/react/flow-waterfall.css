@@ -2,7 +2,11 @@
  * Geometry reads three variables the clock writes every frame: --fw-t (clock ms), --fw-v0 (window start ms)
  * and --fw-k (px per ms). A mark carries --s and --e (its start and end ms), so growth, playback and zoom
  * move marks without a React render.
- * Type uses four sizes (11, 13, 14, 20 px); spacing sits on a 4 px grid. */
+ * Type uses the 12/14/18 px scale; spacing sits on a 4 px grid. */
+/* light-dark() follows the host's Brand theme (data-theme or the light/dark class), not the OS: a light page
+   on a dark OS otherwise resolves the dark fallbacks and muted text drops to 2.4:1. */
+:is(:root[data-theme="light"], .light) .fw-root { color-scheme: light; }
+:is(:root[data-theme="dark"], .dark) .fw-root { color-scheme: dark; }
 .fw-root {
   --fw-text: var(--text-primary, light-dark(#23232b, #ececf1));
   --fw-muted: var(--text-muted, light-dark(#5d5d68, #a4a4b0));
@@ -179,13 +183,14 @@
   left: var(--x0);
   opacity: var(--on);
 }
-.fw-root :is(.fw-bar, .fw-seg) { height: var(--fw-bar-h); margin-top: calc(var(--fw-bar-h) / -2 + var(--fw-bar-shift)); width: max(var(--w), calc(var(--on) * 3px)); border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+/* Centered by top, not a negative margin, so measured spacing stays on the grid. */
+.fw-root :is(.fw-bar, .fw-seg) { top: calc(50% + var(--fw-bar-shift) - var(--fw-bar-h) / 2); height: var(--fw-bar-h); width: max(var(--w), calc(var(--on) * 3px)); border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .fw-root .fw-bar { background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); }
 /* The mark under the pointer lifts: a brighter fill and a ring in its own tone. */
 .fw-root :is(.fw-bar, .fw-seg):hover { filter: brightness(1.18); box-shadow: inset 0 0 0 1px var(--line), 0 0 0 2px color-mix(in oklab, var(--line) 55%, transparent); z-index: 1; }
 .fw-root .fw-bar.fw-k-tool { background: var(--dim); box-shadow: inset 0 0 0 1px var(--dim-line); }
 /* A handoff is a moment: a slim pill in the receiving tone, not a block of work. */
-.fw-root .fw-bar.fw-k-handoff { background: var(--line); height: 6px; margin-top: -4px; box-shadow: none; }
+.fw-root .fw-bar.fw-k-handoff { background: var(--line); height: 6px; top: calc(50% + var(--fw-bar-shift) - 4px); box-shadow: none; }
 .fw-root .fw-bar.fw-k-waiting { background: repeating-linear-gradient(-45deg, var(--fw-hatch) 0 1px, transparent 1px 5px); box-shadow: inset 0 0 0 1px var(--fw-hatch); }
 .fw-root .fw-bar.fw-k-failed { background: color-mix(in oklab, var(--fw-failed) 22%, var(--fw-surface)); box-shadow: inset 0 0 0 1px var(--fw-failed); color: var(--fw-failed); }
 .fw-root .fw-bar.fw-k-pipeline { background: linear-gradient(90deg, var(--fw-neutral-bar), color-mix(in oklab, var(--fw-neutral-bar) 55%, var(--fw-surface))); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-text) 12%, transparent); }
@@ -216,7 +221,7 @@
 .fw-root .fw-glyph { display: inline-flex; color: currentColor; }
 .fw-root .fw-glyph svg { width: 11px; height: 11px; stroke-width: 2; }
 .fw-root .fw-seg-model .fw-glyph, .fw-root .fw-k-model .fw-glyph { color: light-dark(var(--tone), #fff); }
-.fw-root .fw-end { display: inline-flex; align-items: center; gap: 8px; margin-top: -12px; height: 20px; left: calc(var(--x0) + max(var(--w), 3px) + 8px); white-space: nowrap; pointer-events: none; }
+.fw-root .fw-end { display: inline-flex; align-items: center; gap: 8px; top: calc(50% - 12px); height: 20px; left: calc(var(--x0) + max(var(--w), 3px) + 8px); white-space: nowrap; pointer-events: none; }
 .fw-root .fw-duration { font-size: 12px; color: var(--fw-muted); font-variant-numeric: tabular-nums; }
 .fw-root .fw-k-failed ~ .fw-end .fw-duration { color: var(--fw-failed); }
 .fw-root .fw-badge { height: 18px; padding: 0 8px; border-radius: 999px; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--fw-amber); background: color-mix(in oklab, var(--fw-amber) 13%, transparent); border: 1px solid color-mix(in oklab, var(--fw-amber) 28%, transparent); }
