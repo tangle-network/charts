@@ -257,6 +257,8 @@
 .fw-root .fw-card-compact { width: 280px; padding: 12px; }
 .fw-root .fw-card-compact .fw-card-agent { margin-bottom: 8px; font-size: 14px; line-height: 20px; }
 .fw-root .fw-card-who { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fw-root .fw-card-detail { margin: -4px 0 8px 16px; color: var(--fw-muted); font-size: 12px; line-height: 16px; overflow-wrap: anywhere; }
+.fw-root .fw-pill-outcome { color: var(--line); background: color-mix(in oklab, var(--tone) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--tone) 35%, transparent); }
 .fw-root .fw-card-cells { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; padding: 8px 12px; border-radius: 8px; background: var(--fw-well); }
 .fw-root .fw-card-cells dt { font-size: 12px; line-height: 16px; color: var(--fw-muted); }
 .fw-root .fw-card-cells dd { font-size: 14px; line-height: 20px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }

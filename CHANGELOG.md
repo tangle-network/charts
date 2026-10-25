@@ -1,5 +1,11 @@
 # @tangle-network/charts
 
+## 0.18.2
+
+### Patch Changes
+
+- The agent card shows the agent's outcome label as its status pill (in the outcome's color), the agent span's `detail` (such as the outcome sentence, harness and model) under the name, and a Started cell. The sentence line shows what the span did and is left out rather than repeating the agent's name.
+
 ## 0.18.1
 
 ### Patch Changes
