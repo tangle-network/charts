@@ -1,5 +1,13 @@
 # @tangle-network/charts
 
+## 0.20.1
+
+- Agent view: a key names each mark (Model call, Tool call, Waiting, Handoff, Failed turn), listing only kinds the run has.
+- Agent view: a failed turn keeps its failed outline without a × glyph; one warning mark by the agent's name says it failed (blind judges: "red x's everywhere").
+- `description` puts one line beside the title, such as the run's goal, so the view opens on what the run was for.
+- Light theme: bars carry 58% of the agent hue (tool steps 30%).
+- Card titles wrap between words, never at a hyphen.
+
 ## 0.20.0
 
 ### Minor Changes

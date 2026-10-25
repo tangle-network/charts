@@ -41,7 +41,8 @@ export interface RowProps extends RowEvents {
 }
 
 function Segment({ mark, events, agentView }: { mark: FlowSegment; events: RowEvents; agentView: boolean }) {
-  const glyph = mark.kind === 'failed' ? <FailGlyph /> : mark.retry ? <RetryGlyph /> : null
+  // In the agent view a failed turn keeps its failed outline but no glyph: one mark per agent, by its name, says it failed.
+  const glyph = mark.kind === 'failed' ? (agentView ? null : <FailGlyph />) : mark.retry ? <RetryGlyph /> : null
   return <span className={`fw-seg fw-seg-${mark.kind}`} data-tone={toneKey(mark.tone)} style={at(mark.startMs, mark.endMs)}
     onPointerEnter={agentView ? event => events.onInspect(mark.id, event.currentTarget) : undefined}
     onClick={agentView ? event => { event.stopPropagation(); events.onPin(mark.id, event.currentTarget) } : undefined}>

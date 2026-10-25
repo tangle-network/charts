@@ -44,6 +44,8 @@ export interface FlowWaterfallProps {
   /** What a bar's color means: the agent (default), whose hue its steps and handoffs share, with the outcome on the row dot, legend and
    * crash glyph; or its `outcome`. */
   agentFill?: 'outcome' | 'agent'
+  /** One line beside the title saying what the run was for, such as its goal. */
+  description?: string
   /** The row the host has selected, such as the agent whose transcript is open: it lifts and, in the agent view, its peers dim.
    * A pinned card alone only highlights its row, so the rest of the run stays readable around it. */
   selectedId?: string
@@ -74,6 +76,17 @@ function summaryCells(trace: FlowTrace, at: ReturnType<typeof totalsAt> | undefi
 // Outcome keys keep one order on every page: good news first, then what needs a look, then what produced nothing.
 const TONE_ORDER = ['ok', 'warn', 'failed', 'neutral']
 
+/** What each mark means, as the agent view draws it; a key only for kinds the run has. */
+function KindLegend({ rows }: { rows: FlowWaterfallRow[] }) {
+  const has = (kind: string) => rows.some(row => row.own.some(mark => mark.kind === kind) || row.span.kind === kind)
+  const keys: [string, string][] = [['model', 'Model call'], ['tool', 'Tool call'], ['waiting', 'Waiting'], ['handoff', 'Handoff'], ['failed', 'Failed turn']]
+  const shown = keys.filter(([kind]) => kind === 'waiting' ? rows.some(row => row.kind === 'pipeline') : kind === 'handoff' ? rows.some(row => row.span.handoffTo || row.hasAgents) : has(kind))
+  if (shown.length === 0) return null
+  return <ul className="fw-legend fw-kinds" aria-label="Key">
+    {shown.map(([kind, name]) => <li key={kind}><span className={`fw-swatch-${kind === 'waiting' ? 'wait' : kind}`} aria-hidden />{name}</li>)}
+  </ul>
+}
+
 function OutcomeLegend({ agents }: { agents: FlowWaterfallRow[] }) {
   const items = new Map<string, { tone: string; count: number }>()
   for (const row of agents) {
@@ -96,7 +109,7 @@ function OutcomeLegend({ agents }: { agents: FlowWaterfallRow[] }) {
 /** Shared trace inspector: the agent timeline and the span waterfall over one clock.
  * Data remains producer-owned; playback, zoom and folding change presentation only. */
 export function FlowWaterfall({
-  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers, onTimeChange, agentFill = 'agent', selectedId, onDeselect,
+  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers, onTimeChange, agentFill = 'agent', selectedId, onDeselect, description,
 }: FlowWaterfallProps) {
   const root = useRef<HTMLElement>(null)
   const search = useRef<HTMLInputElement>(null)
@@ -337,6 +350,7 @@ export function FlowWaterfall({
           <div className="fw-title-line">
             <span className="fw-title-glyph" aria-hidden><TraceGlyph /></span>
             <h3 className="fw-title">{label}</h3>
+            {description && <p className="fw-description" title={description}>{description}</p>}
             {isLive && <span className="fw-state fw-state-live">Live</span>}
           </div>
           {view === 'agents' && <p className="fw-headline" aria-live="polite">
@@ -381,6 +395,7 @@ export function FlowWaterfall({
         onPointerEnter={() => clearTimeout(hideTimer.current)} onPointerLeave={card.pinned ? undefined : leave}>
         <SpanCard id={cardId} row={cardRow} agent={cardAgent} clockMs={clockMs} left={card.left} top={card.top} pinned={card.pinned} onClose={closeCard} renderIcon={renderIcon} compact={view === 'agents'} />
       </div>}
+      {view === 'agents' && <KindLegend rows={rows} />}
       {view === 'spans' && playback}
     </section>
   )
