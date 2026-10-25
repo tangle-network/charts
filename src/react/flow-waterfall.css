@@ -62,11 +62,13 @@
 .fw-root [data-tone="3"] { --tone: var(--fw-h3); }
 .fw-root [data-tone="4"] { --tone: var(--fw-h4); }
 .fw-root [data-tone="5"] { --tone: var(--fw-h5); }
+/* Light fills carry enough of the hue to tell agents apart on white (round 8: 24% read as "pale mint on gray"); the outline is
+   the full hue, which passes 3:1 against the surface, so every mark keeps its edge. */
 .fw-root [data-tone] {
-  --fill: light-dark(color-mix(in oklab, var(--tone) 24%, #fff), color-mix(in oklab, var(--tone) 86%, #000));
-  --line: light-dark(color-mix(in oklab, var(--tone) 62%, #fff), var(--tone));
-  --dim: light-dark(color-mix(in oklab, var(--tone) 12%, #fff), color-mix(in oklab, var(--tone) 40%, #17171d));
-  --dim-line: light-dark(color-mix(in oklab, var(--tone) 36%, #fff), color-mix(in oklab, var(--tone) 55%, #17171d));
+  --fill: light-dark(color-mix(in oklab, var(--tone) 42%, #fff), color-mix(in oklab, var(--tone) 86%, #000));
+  --line: light-dark(var(--tone), var(--tone));
+  --dim: light-dark(color-mix(in oklab, var(--tone) 22%, #fff), color-mix(in oklab, var(--tone) 40%, #17171d));
+  --dim-line: light-dark(color-mix(in oklab, var(--tone) 70%, #fff), color-mix(in oklab, var(--tone) 55%, #17171d));
 }
 
 /* Header */

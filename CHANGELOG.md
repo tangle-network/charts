@@ -4,6 +4,7 @@
 
 ### Minor Changes
 
+- Light theme: bar fills carry 42% of the agent hue (was 24%), tool steps 22% (was 12%), outlines the full hue, so agents stay distinct on white.
 - Bars take their agent's hue by default (`agentFill="agent"`); steps and handoff elbows share it, and the outcome moves to the row dot, the legend and the crash glyph. Pass `agentFill="outcome"` for the previous fill.
 - Motion: arriving bars grow from their start and their rows unfold in a 20 ms stagger (first paint, live spans, an unfolded branch); a bar that finishes settles and lands its end label; live bars grow with the clock. Keyed to the row set, so scrolling never replays it; `prefers-reduced-motion` turns it off.
 - `selectedId` and `onDeselect`: the host's selection (such as the agent whose transcript is open) lifts its row with an accent edge and dims its peers in the agent view; a pinned card selects the same way; Escape closes the card and clears the selection.
