@@ -216,7 +216,8 @@ export function FlowWaterfall({
     const width = current.endMs - current.startMs
     const end = spanRunning(span) ? Math.max(span.endMs, clockMs) : span.endMs
     if (view !== 'spans' || !Number.isFinite(end) || (end - span.startMs) / Math.max(1, width) > 0.25) return
-    const pad = Math.max((end - span.startMs) * 0.15, 500)
+    // One click zooms at most 8x, so a 0 ms step on a day-long run keeps its neighbours in view instead of a 1 s window.
+    const pad = Math.max((end - span.startMs) * 0.15, 500, (width / 8 - (end - span.startMs)) / 2)
     const target = clampWindow({ startMs: span.startMs - pad, endMs: end + pad }, limit)
     cancelAnimationFrame(zoomFrame.current)
     if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { setZoom(target); return }

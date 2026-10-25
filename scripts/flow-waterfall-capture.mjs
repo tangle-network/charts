@@ -59,13 +59,14 @@ try {
     }
   }
   // Live proof: 60 s of a running session through the relay, recorded, with every span's event-to-pixel time.
-  // FW_JUDGE=<file>: blind-judge frames from one real run in the steps view, as the reference frames show it: rest, hover and
-  // pinned card, dark and light, at 1512x945. The stat strip and the card header stay in frame.
+  // FW_JUDGE=<file>: blind-judge frames from one real run: rest, hover and pinned card, dark and light, at 1512x945. The agents
+  // view, as the reference frames show a run: one row per agent with its work segmented (the steps view of a day-long run puts
+  // thousands of sub-second steps at its first pixel). The stat strip and the card header stay in frame.
   if (process.env.FW_JUDGE) {
     report.judge = []
     const file = process.env.FW_JUDGE
     for (const theme of ['dark', 'light']) {
-      const { page, context } = await open(`fixture=otlp:${file}&view=spans&theme=${theme}&width=1440&height=720&label=Trace`, { width: 1512, height: 945 })
+      const { page, context } = await open(`fixture=otlp:${file}&view=agents&theme=${theme}&width=1440&height=720&label=Trace`, { width: 1512, height: 945 })
       await page.screenshot({ path: `${out}/judge-${theme}-rest.png` })
       const bars = page.locator('.fw-row:not(.fw-sticky-row) .fw-bar')
       const bar = bars.nth(Math.min(6, Math.max(0, (await bars.count()) - 1)))
