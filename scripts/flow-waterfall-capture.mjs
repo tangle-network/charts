@@ -88,7 +88,8 @@ try {
     }
     if (process.env.FW_JUDGE_VIDEO) {
       // First paint (grow, unfold) and then the run replayed live, so bars grow and settle as their spans arrive.
-      // Its own folder: the fit capture renames whatever unnamed webm it finds in `out`, which once took this recording.
+      // Its own folder, and every other recording here renames only Playwright's unnamed page@ files: the fit step once
+      // renamed judge-motion.webm to its own resize recording.
       const raw = `${out}/motion-raw`
       mkdirSync(raw, { recursive: true })
       const context = await browser.newContext({ viewport: { width: 1512, height: 945 }, deviceScaleFactor: 1, recordVideo: { dir: raw, size: { width: 1512, height: 945 } } })
@@ -125,7 +126,7 @@ try {
     await page.screenshot({ path: `${out}/live-end.png` })
     const samples = await page.evaluate(() => window.__fwLatency)
     await context.close()
-    const video = readdirSync(out).find(name => name.endsWith('.webm') && !name.startsWith('interaction') && !name.startsWith('live'))
+    const video = readdirSync(out).find(name => name.startsWith('page@') && name.endsWith('.webm'))
     if (video) renameSync(`${out}/${video}`, `${out}/live-60s.webm`)
     const q = (values, p) => { const sorted = [...values].sort((a, b) => a - b); return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))] }
     const pixel = samples.map(sample => sample.eventToPixelMs)
@@ -204,7 +205,7 @@ try {
       const during = []
       for (const width of steps) { await page.setViewportSize({ width, height: 1200 }); await page.waitForTimeout(450); during.push({ width, ...(await measure(page)) }) }
       await context.close()
-      const video = readdirSync(out).find(name => name.endsWith('.webm') && !name.startsWith('fit-') && !name.startsWith('interaction') && !name.startsWith('live'))
+      const video = readdirSync(out).find(name => name.startsWith('page@') && name.endsWith('.webm'))
       if (video) renameSync(`${out}/${video}`, `${out}/fit-${tag}-resize.webm`)
       report.fit.push({ fixture: tag, resize: steps.join('>'), trackBefore: before.trackPx, maxPageOverflowPx: Math.max(...during.map(d => d.pageOverflowPx)), tracks: during.map(d => d.trackPx) })
     }
@@ -345,7 +346,7 @@ try {
     await page.getByRole('radio', { name: 'Agents' }).click(); await pause(1200)
     await page.locator('[data-span-id="wri"]').click(); await page.keyboard.press('ArrowRight'); await pause(1200)
     await context.close()
-    const video = readdirSync(out).find(name => name.endsWith('.webm') && !name.startsWith('interaction'))
+    const video = readdirSync(out).find(name => name.startsWith('page@') && name.endsWith('.webm'))
     if (video) renameSync(`${out}/${video}`, `${out}/interaction-spans.webm`)
   }
 } catch (error) {
