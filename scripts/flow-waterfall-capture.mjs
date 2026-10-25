@@ -91,6 +91,9 @@ try {
       const cut = names.filter(el => el.scrollWidth > el.clientWidth)
       return { pageOverflowPx: document.documentElement.scrollWidth - innerWidth, rootPx: Math.round(root.width), trackPx: Math.round(track.width),
         rootInside: root.left >= 0 && root.right <= innerWidth + 0.5, ticks: document.querySelectorAll('.fw-axis .fw-tick').length,
+        // Every agent row paints a lane at least half the component wide, with bars inside it.
+        narrowLanes: [...document.querySelectorAll('.fw-view-agents .fw-row:not(.fw-sticky-row) .fw-lane')].filter(el => el.getBoundingClientRect().width < root.width / 2).length,
+        paintedBars: [...document.querySelectorAll('.fw-view-agents .fw-row:not(.fw-sticky-row) .fw-bar')].filter(el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.right > 0 && r.left < innerWidth }).length,
         stacked: getComputedStyle(document.querySelector('.fw-view-agents .fw-label')).position === 'absolute', labelColPx: Math.round(document.querySelector('.fw-view-agents .fw-row')?.firstElementChild?.getBoundingClientRect().width ?? 0),
         names: names.length, truncated: cut.length, truncatedWithTitle: cut.filter(el => el.closest('[title]')?.title.includes(el.textContent)).length }
     })

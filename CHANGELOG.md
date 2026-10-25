@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- The agent view fits long runs: its label column fits the longest agent name, capped at 28% of the width (was a fixed 240 px up to 42%), and below 640 px each agent's name sits on its own line above a full-width lane, so nothing truncates on a phone.
+- The agent view fits long runs: its label column fits the longest agent name, capped at 28% of the width (was a fixed 240 px up to 42%), and below 900 px each agent's name sits on its own line above a full-width lane, so nothing truncates on a phone or tablet.
 - The agent view's card is a compact tooltip: the agent and its outcome, two or three recorded values (time, tokens, cost) and one sentence. The mark under the pointer lifts.
 - FlowWaterfall type uses four sizes (12, 14, 18 px) and two weights (400, 600); its padding, margins and gaps sit on the 4 px grid.
 
