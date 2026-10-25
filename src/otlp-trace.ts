@@ -141,6 +141,7 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
   let errors = 0
   let cost = 0
   let unpriced = 0
+  let priced = 0
   const offset = (iso: string) => time(iso) - origin
   // Grouped agents in separate traces join on the spawn that started them: each agent with no spawn of its own
   // takes the latest unclaimed spawn call in another agent that began before it.
@@ -195,7 +196,7 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
     completionTokens += completion ?? 0
     const listPrice = kind === 'model' && model && options.price && (prompt !== undefined || completion !== undefined)
       ? options.price(model, prompt ?? 0, completion ?? 0) : undefined
-    if (listPrice !== undefined) cost += listPrice
+    if (listPrice !== undefined) { cost += listPrice; priced++ }
     else if (kind === 'model' && (prompt || completion)) unpriced++
     out.push({
       id: span.span_id, ...(parentId ? { parentId } : {}), kind, name, startMs, endMs,
@@ -212,6 +213,8 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
   return {
     spans: out, totalMs: Number.isFinite(last - origin) ? last - origin : 0, promptTokens, completionTokens,
     toolCalls, modelCalls, errors, omitted,
-    ...(options.price && unpriced === 0 && cost > 0 ? { costUsd: cost, costBasis: 'list' as const } : {}),
+    // A partly priced run still has a known floor: report it with its coverage rather than nothing.
+    ...(options.price && priced > 0
+      ? { costUsd: cost, costBasis: 'list' as const, costCoverage: { priced, total: priced + unpriced } } : {}),
   }
 }

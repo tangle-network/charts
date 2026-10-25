@@ -123,6 +123,15 @@ try {
   assert.equal((await page.evaluate(() => window.__fwSelected ?? [])).length, 1)
   await page.keyboard.press('Escape')
   checks.onSelect = 'PASS'
+  // The event track: one dot per marker; a click moves the cursor there and reports the time; N steps to the next.
+  assert.equal(await page.locator('.fw-event').count(), 3)
+  await page.locator('.fw-event').first().click()
+  const jumped = await page.evaluate(() => window.__fwTime)
+  assert.ok(typeof jumped === 'number' && jumped > 0, `onTimeChange got ${jumped}`)
+  await page.locator('[data-flow-waterfall] [role="treegrid"]').focus()
+  await page.keyboard.press('n')
+  await page.waitForFunction(previous => window.__fwTime > previous, jumped, { timeout: 5000 })
+  checks.eventTrack = 'PASS'
   await page.screenshot({ path: `${output}/healthy-desktop-dark.png`, fullPage: true })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.screenshot({ path: `${output}/healthy-phone-dark.png`, fullPage: true })
@@ -156,7 +165,7 @@ try {
     checks.collapseExpand = 'PASS'
     const terms = await root.locator('dt').allTextContents()
     assert.deepEqual(terms, ['Duration', 'Cost', 'Tokens', 'LLM calls', 'Tool calls', 'Errors'])
-    assert.deepEqual(await root.locator('dd').allTextContents(), ['7m 11s', 'Unknown', '754.4k', 'Unknown', '35', '3'])
+    assert.deepEqual(await root.locator('dd').allTextContents(), ['7m 11s', '—', '754.4k', '—', '35', '3'])
     assert.equal(await root.locator('dd').nth(2).getAttribute('title'), '754,448 tokens')
     checks.summary = 'PASS'
     // Each kind is painted distinctly: a fill colour, or a pattern (hatched waiting) in background-image.

@@ -27,5 +27,6 @@ function FlowApp({ name }) {
  }
  return <main>{name==='discovery-streaming-replay'&&<p>Recorded Discovery replay ·20x; final totals arrive at settlement</p>}<FlowWaterfall trace={trace} live={live} maxHeight={1800}
   markers={name==='healthy'?[{at:Math.round(trace.totalMs/2),label:'Release v2',tone:'ok'},{at:Math.round(trace.totalMs/2)+50,label:'Release v3'},{at:trace.totalMs-50,label:'Release v4'}]:undefined}
-  onSelect={span=>{window.__fwSelected=[...(window.__fwSelected??[]),span.id??span.name]}} /></main>
+  onSelect={span=>{window.__fwSelected=[...(window.__fwSelected??[]),span.id??span.name]}}
+  onTimeChange={t=>{window.__fwTime=t}} /></main>
 }

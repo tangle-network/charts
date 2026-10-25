@@ -23,7 +23,7 @@ export interface SpanCardProps {
   compact?: boolean
 }
 
-const unknown = <span className="fw-unknown" title="Not recorded by the harness">Unknown</span>
+const unknown = <span className="fw-unknown" title="Not recorded by the harness">—</span>
 const count = (n: number | undefined) => n === undefined ? unknown : <span title={n.toLocaleString()}>{formatCount(n)}</span>
 
 /** The span card: what ran, for how long, at what recorded cost, on what input. */
@@ -47,7 +47,7 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
     if (span.costUsd !== undefined) cells.push(['Cost', formatCost(span.costUsd)])
     cells.splice(6)
     // The sentence is what the span did; a name repeated from the title says nothing.
-    const sentence = [span.output, span.id === who.id ? undefined : span.name].find(text => text && text !== who.name)
+    const sentence = span.output && span.output !== who.name ? span.output : undefined
     return (
       <div id={id} role={pinned ? 'dialog' : 'tooltip'} aria-label={pinned ? `${span.name} details` : undefined}
         className="fw-card fw-card-compact" data-tone={toneKey(who.tone)} data-outcome={outcome?.tone} style={{ left, top }}

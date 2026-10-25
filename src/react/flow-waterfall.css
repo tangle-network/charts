@@ -123,6 +123,12 @@
 .fw-root .fw-marker[data-tone="failed"] { --fw-marker: var(--fw-failed); }
 .fw-root .fw-marker-label { position: absolute; top: 2px; left: 3px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 4px; border-radius: 4px; font-size: 12px; line-height: 16px; color: var(--fw-marker); background: var(--fw-surface); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-marker) 40%, transparent); }
 .fw-root .fw-marker-label-left { left: auto; right: 3px; }
+.fw-root .fw-marker[data-tone="warn"], .fw-root .fw-event[data-tone="warn"] { --fw-marker: var(--fw-amber); }
+/* The event track: one dot per marker on the axis; click or N/P moves the cursor there. */
+.fw-root .fw-event { --fw-marker: var(--fw-muted); position: absolute; bottom: 2px; width: 8px; height: 8px; margin-left: -4px; padding: 0; border: 0; border-radius: 50%; background: var(--fw-marker); box-shadow: 0 0 0 2px var(--fw-surface); cursor: pointer; z-index: 4; left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); }
+.fw-root .fw-event[data-tone="ok"] { --fw-marker: var(--fw-ok); }
+.fw-root .fw-event[data-tone="failed"] { --fw-marker: var(--fw-failed); }
+.fw-root .fw-event:hover, .fw-root .fw-event:focus-visible { transform: scale(1.4); outline: 0; }
 .fw-root .fw-cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: color-mix(in oklab, var(--fw-text) 70%, transparent); left: calc(var(--fw-pad) + (var(--fw-t) - var(--fw-v0)) * var(--fw-k) * 1px); }
 .fw-root .fw-empty { padding: 40px 16px; text-align: center; color: var(--fw-muted); }
 .fw-root .fw-sticky { position: absolute; top: 0; left: 0; right: 0; z-index: 2; background: var(--fw-surface); box-shadow: 0 1px 0 var(--fw-border), 0 6px 12px -8px rgb(0 0 0 / .35); }
@@ -262,7 +268,7 @@
 .fw-root .fw-card-text { margin-top: 12px; }
 .fw-root .fw-card-compact { width: 280px; padding: 12px; }
 .fw-root .fw-card-compact .fw-card-agent { margin-bottom: 8px; font-size: 14px; line-height: 20px; }
-.fw-root .fw-card-who { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fw-root .fw-card-who { min-width: 0; flex: 1; overflow: hidden; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .fw-root .fw-card-detail { margin: -4px 0 8px 16px; color: var(--fw-muted); font-size: 12px; line-height: 16px; overflow-wrap: anywhere; }
 .fw-root .fw-pill-outcome { color: var(--line); background: color-mix(in oklab, var(--tone) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--tone) 35%, transparent); }
 .fw-root .fw-card-cells { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 8px; padding: 8px 12px; border-radius: 8px; background: var(--fw-well); }

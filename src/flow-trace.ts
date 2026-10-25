@@ -43,7 +43,11 @@ export interface FlowMarker {
   /** Trace-relative milliseconds, on the same clock as span startMs. */
   at: number
   label: string
-  tone?: 'neutral' | 'ok' | 'failed'
+  tone?: 'neutral' | 'ok' | 'failed' | 'warn'
+  /** What happened, such as release, verdict, spawn or crash; shown with the label on the event track. */
+  kind?: string
+  /** Where the event lives, for hosts that open it. */
+  href?: string
 }
 
 /** Describe the structure of a flow trace including spans, timing, tokens, cost, and tool calls */
@@ -56,6 +60,10 @@ export interface FlowTrace {
   costUsd?: number
   /** `list`: priced from a model catalog's list prices, not a bill; the summary says so. */
   costBasis?: 'billed' | 'list'
+  /** How many model calls `costUsd` covers; when `priced < total` the total is a lower bound and shown as one. */
+  costCoverage?: { priced: number; total: number }
+  /** The real charge when the producer knows it (for example $0 on a subscription seat), shown beside a list price. */
+  billedUsd?: number
   toolCalls: number
   /** Authoritative LLM request count when supplied; absent means unknown. */
   modelCalls?: number

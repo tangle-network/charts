@@ -1,5 +1,13 @@
 # @tangle-network/charts
 
+## 0.20.0
+
+### Minor Changes
+
+- Time travel hooks: `onTimeChange(t | null)` reports the time the reader moved to (`null` while following live or showing the whole trace). Markers also draw as event dots on the axis; clicking one, or pressing N or P, moves the cursor to the next or previous event. `FlowMarker` adds `kind`, `href` and the `warn` tone.
+- Cost is never "Unknown" when partly known. `otlpFlowTrace` reports the priced floor with `costCoverage` (`{ priced, total }`) instead of dropping the total when one call lacks a price; the waterfall shows `≥$4.12` with "38 of 41 model calls priced". `FlowTrace.billedUsd` shows the real charge beside a list price ("≈$4.12 · $0.00 billed"). A value with no source at all shows "—", and its tooltip names the missing source.
+- The agent card's title wraps to two lines, and the card's sentence line shows only what the span did (`output`).
+
 ## 0.19.0
 
 ### Minor Changes

@@ -125,6 +125,15 @@ try {
         report.fit.push({ fixture: tag, barsHovered: n, cardsOpened: opened, restingLinkOpacity: linkOpacity })
         await context.close()
       }
+      // A leaf agent hovered: only its own connectors light; the rest stay at their resting strength.
+      {
+        const { page, context } = await open(`fixture=${fixture}&view=agents&theme=dark&pad=0&height=2000`, { width: 1280, height: 1200 })
+        const box = await page.locator('.fw-view-agents .fw-row:not(.fw-sticky-row)').last().locator('.fw-bar').boundingBox()
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.waitForTimeout(350)
+        report.fit.push({ fixture: tag, leafHover: true, hotLinks: await page.locator('.fw-link-hot').count(), restingLinks: await page.locator('.fw-link:not(.fw-link-hot)').count() })
+        await page.screenshot({ path: `${out}/fit-${tag}-leaf-hover-1280.png` })
+        await context.close()
+      }
       // The hover card on a busy agent's first mark, at a desktop and a phone width.
       for (const width of [1280, 390]) {
         const { page, context } = await open(`fixture=${fixture}&view=agents&theme=dark&pad=0&height=2000`, { width, height: 1200 })

@@ -6,7 +6,7 @@ import { useTraceClock } from './flow-waterfall-clock.js'
 import { FailGlyph, SearchGlyph, TraceGlyph } from './flow-waterfall-icons.js'
 import { PlaybackBar } from './flow-waterfall-playback.js'
 import {
-  busyMs, type FlowWaterfallRow, flowWaterfallRows, formatCost, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
+  busyMs, costSummary, type FlowWaterfallRow, flowWaterfallRows, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
   toneKey, totalsAt, visibleFlowWaterfallRows,
 } from './flow-waterfall-model.js'
 import type { FlowView } from './flow-waterfall-row.js'
@@ -36,11 +36,30 @@ export interface FlowWaterfallProps {
   maxHeight?: number
   /** Called when a row is opened or a bar is pinned, with that row's span; the built-in behavior still runs. */
   onSelect?: (span: FlowSpan) => void
-  /** Labelled instants, such as releases, drawn across the rows on the trace clock. */
+  /** Labelled instants, such as releases, drawn across the rows and as event dots on the axis; click or N/P jumps to one. */
   markers?: FlowMarker[]
+  /** The time the reader moved to, in trace ms; `null` when following live or showing the whole trace. */
+  onTimeChange?: (t: number | null) => void
 }
 
 interface CardState { target: string; pinned: boolean; left: number; top: number; above: boolean }
+
+/** The summary strip: as of the playhead while scrubbing, the producer's totals otherwise. */
+function summaryCells(trace: FlowTrace, at: ReturnType<typeof totalsAt> | undefined, durationMs: number) {
+  const cost = costSummary(at ? at.costUsd : trace.costUsd, trace)
+  const tokens = at ? at.tokens : trace.promptTokens + trace.completionTokens
+  const modelCalls = at ? at.modelCalls : trace.modelCalls
+  const errors = at ? at.errors : trace.errors ?? trace.spans.filter(spanFailed).length
+  const summary: [string, ReactNode, string?][] = [
+    ['Duration', formatSpanDuration(durationMs)],
+    [cost.label, cost.value, cost.title],
+    ['Tokens', formatCount(tokens), `${tokens.toLocaleString()} tokens`],
+    ['LLM calls', modelCalls === undefined ? '—' : modelCalls.toLocaleString(), modelCalls === undefined ? 'Model output windows do not establish the number of LLM requests' : undefined],
+    ['Tool calls', (at ? at.toolCalls : trace.toolCalls).toLocaleString()],
+    ['Errors', errors.toLocaleString()],
+  ]
+  return { cost, tokens, errors, summary }
+}
 
 /** One legend item per outcome label the agents carry, with its count; nothing when no agent has an outcome. */
 function OutcomeLegend({ agents }: { agents: FlowWaterfallRow[] }) {
@@ -66,7 +85,7 @@ const headlineSeconds = (ms: number) => ms < 60_000 ? `${(ms / 1000).toFixed(1)}
 /** Shared trace inspector: the agent timeline and the span waterfall over one clock.
  * Data remains producer-owned; playback, zoom and folding change presentation only. */
 export function FlowWaterfall({
-  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers,
+  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers, onTimeChange,
 }: FlowWaterfallProps) {
   const root = useRef<HTMLElement>(null)
   const search = useRef<HTMLInputElement>(null)
@@ -151,6 +170,12 @@ export function FlowWaterfall({
       else if (event.key === '-' || event.key === '_') zoomBy(2)
       else if (event.key === '0') setZoom(null)
       else if (event.key === 'Escape' && card) closeCard()
+      else if ((event.key === 'n' || event.key === 'p') && markers?.length) {
+        // N and P step through the event track from wherever the cursor stands.
+        const ats = markers.map(marker => marker.at).sort((a, b) => a - b)
+        const next = event.key === 'n' ? ats.find(at => at > clockMs + 1) : [...ats].reverse().find(at => at < clockMs - 1)
+        if (next !== undefined) { event.preventDefault(); scrubTo(next) }
+      }
     }
     document.addEventListener('keydown', keydown)
     return () => document.removeEventListener('keydown', keydown)
@@ -258,6 +283,9 @@ export function FlowWaterfall({
   }
 
   const scrubTo = useCallback((ms: number) => { setPlaying(false); setPosition(Math.min(ms, clock.limitMs())) }, [clock])
+  const timeListener = useRef(onTimeChange)
+  timeListener.current = onTimeChange
+  useEffect(() => { timeListener.current?.(position) }, [position])
   const togglePlay = () => {
     if (playing) { setPosition(clock.positionMs()); setPlaying(false); return }
     if (position === null || position >= limit - 1) setPosition(0)
@@ -267,19 +295,7 @@ export function FlowWaterfall({
   // Scrubbing shows the run as of the playhead; the full trace shows the producer's totals.
   const scrubbing = position !== null || playing
   const at = scrubbing ? totalsAt(trace, clockMs) : undefined
-  const costUsd = at ? at.costUsd : trace.costUsd
-  const tokens = at ? at.tokens : trace.promptTokens + trace.completionTokens
-  const modelCalls = at ? at.modelCalls : trace.modelCalls
-  const errors = at ? at.errors : trace.errors ?? trace.spans.filter(spanFailed).length
-  const summary: [string, ReactNode, string?][] = [
-    ['Duration', formatSpanDuration(scrubbing ? clockMs : limit)],
-    [trace.costBasis === 'list' ? 'Cost · list price' : 'Cost', costUsd === undefined ? 'Unknown' : formatCost(costUsd),
-      costUsd === undefined ? 'The harness recorded no cost for this trace' : trace.costBasis === 'list' ? 'Input and output tokens at the model catalog list price; not a bill' : undefined],
-    ['Tokens', formatCount(tokens), `${tokens.toLocaleString()} tokens`],
-    ['LLM calls', modelCalls === undefined ? 'Unknown' : modelCalls.toLocaleString(), modelCalls === undefined ? 'Model output windows do not establish the number of LLM requests' : undefined],
-    ['Tool calls', (at ? at.toolCalls : trace.toolCalls).toLocaleString()],
-    ['Errors', errors.toLocaleString()],
-  ]
+  const { cost, tokens, errors, summary } = summaryCells(trace, at, scrubbing ? clockMs : limit)
   const busy = agents.reduce((sum, row) => sum + busyMs(row, limit), 0)
   const speedup = limit > 0 ? busy / limit : 0
   const done = !isLive && !trace.spans.some(spanRunning)
@@ -303,8 +319,8 @@ export function FlowWaterfall({
           </div>
           {view === 'agents' && <p className="fw-headline" aria-live="polite">
             {done
-              ? <><span className="fw-done-mark" aria-label="done">✓</span>{agents.length} {agents.length === 1 ? 'agent' : 'agents'} · {headlineSeconds(limit)}{speedup >= 1.05 ? ` · ${speedup.toFixed(1)}x parallel` : ''}{trace.costUsd !== undefined ? ` · ${formatCost(trace.costUsd)}` : ''}</>
-              : <>{headlineSeconds(clockMs)} · {tokens.toLocaleString()} tokens{trace.costUsd !== undefined ? ` · ${formatCost(trace.costUsd)}` : ''}</>}
+              ? <><span className="fw-done-mark" aria-label="done">✓</span>{agents.length} {agents.length === 1 ? 'agent' : 'agents'} · {headlineSeconds(limit)}{speedup >= 1.05 ? ` · ${speedup.toFixed(1)}x parallel` : ''}{cost.value !== '—' ? <span title={cost.title}> · {cost.value}</span> : ''}</>
+              : <>{headlineSeconds(clockMs)} · {tokens.toLocaleString()} tokens{cost.value !== '—' ? <span title={cost.title}> · {cost.value}</span> : ''}</>}
           </p>}
           <OutcomeLegend agents={agents} />
         </div>

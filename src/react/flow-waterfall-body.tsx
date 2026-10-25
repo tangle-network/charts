@@ -225,6 +225,10 @@ export function FlowBody(props: BodyProps) {
       </div>
       <div className="fw-axis-track" data-fw-track ref={props.onTrack} onPointerDown={scrub} title="Drag to scrub">
         {ticks.map(tick => <span key={tick} className="fw-tick" style={{ '--s': tick } as CSSProperties}>{formatClock(tick)}</span>)}
+        {props.markers?.map(marker => <button key={`e-${marker.at}-${marker.label}`} type="button" className="fw-event" data-tone={marker.tone ?? 'neutral'}
+          style={{ '--s': marker.at } as CSSProperties} title={marker.kind ? `${marker.kind}: ${marker.label}` : marker.label}
+          aria-label={`Jump to ${marker.kind ? `${marker.kind} ` : ''}${marker.label}`}
+          onPointerDown={event => event.stopPropagation()} onClick={() => props.onScrub(marker.at)} />)}
         {showCursor && <span className="fw-cursor-handle" aria-hidden />}
       </div>
     </div>

@@ -254,3 +254,20 @@ export function totalsAt(trace: FlowTrace, clockMs: number) {
     errors,
   }
 }
+
+/** The cost a reader can rely on: a lower bound when some calls are unpriced, a dash only when nothing is priced. */
+export function costSummary(costUsd: number | undefined, trace: Pick<FlowTrace, 'costBasis' | 'costCoverage' | 'billedUsd'>): { value: string; title: string; label: string } {
+  const list = trace.costBasis === 'list'
+  const label = list ? 'Cost · list price' : 'Cost'
+  if (costUsd === undefined) {
+    return trace.billedUsd !== undefined
+      ? { value: `${formatCost(trace.billedUsd)} billed`, title: 'No list price for these calls; billed is the seat charge', label }
+      : { value: '—', title: 'No cost source: the harness recorded no cost and no price catalog was given', label }
+  }
+  const coverage = trace.costCoverage
+  const partial = coverage !== undefined && coverage.priced < coverage.total
+  const value = `${partial ? '≥' : list ? '≈' : ''}${formatCost(costUsd)}${trace.billedUsd !== undefined ? ` · ${formatCost(trace.billedUsd)} billed` : ''}`
+  const parts = [partial ? `${coverage.priced} of ${coverage.total} model calls priced` : coverage ? `all ${coverage.total} model calls priced` : '',
+    list ? 'at the model catalog list price; not a bill' : '', trace.billedUsd !== undefined ? `billed ${formatCost(trace.billedUsd)} (the seat charge)` : '']
+  return { value, title: parts.filter(Boolean).join('; '), label }
+}
