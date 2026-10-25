@@ -149,12 +149,15 @@ try {
     .map(mark => mark.getBoundingClientRect().top - mark.closest('.fw-row').getBoundingClientRect().top)
     .filter(offset => Math.abs(offset - Math.round(offset / 4) * 4) > 0.5))
   assert.deepEqual(offGrid, [])
-  // The selected agent lifts and its peers recede; Escape clears it.
-  const dimmed = await page.evaluate(() => {
+  // The selected agent lifts (accent edge) and any peers recede; Escape clears it. This story has one agent, so peers are
+  // measured only when present.
+  const lifted = await page.evaluate(() => {
+    const row = document.querySelector('[data-selection] .fw-view-agents .fw-row[aria-selected="true"]')
     const peer = document.querySelector('[data-selection] .fw-view-agents .fw-row:not([aria-selected="true"]):not(:hover) > [role="gridcell"]')
-    return peer ? Number(getComputedStyle(peer).opacity) : null
+    return { edge: row ? getComputedStyle(row).boxShadow : null, peer: peer ? Number(getComputedStyle(peer).opacity) : null }
   })
-  assert.ok(dimmed !== null && dimmed < 0.6, `peer opacity ${dimmed}`)
+  assert.ok(lifted.edge && lifted.edge !== 'none', `selected row edge ${lifted.edge}`)
+  assert.ok(lifted.peer === null || lifted.peer < 0.6, `peer opacity ${lifted.peer}`)
   await page.keyboard.press('Escape')
   assert.equal(await page.locator('[data-flow-waterfall][data-selection]').count(), 0)
   await page.getByRole('radio', { name: 'Steps' }).click()
