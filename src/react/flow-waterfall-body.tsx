@@ -91,6 +91,21 @@ export function FlowBody(props: BodyProps) {
   const msPerPx = (win.endMs - win.startMs) / Math.max(1, trackPx)
   const tickEnd = win.startMs + (trackPx + (view === 'spans' ? 72 : 0)) * msPerPx
   const ticks = clockTicks(win.startMs, tickEnd, Math.max(1, trackPx + (view === 'spans' ? 72 : 0)))
+  // Marker labels thin out where they would collide (the line stays) and flip left at the right edge.
+  const markerLabels = useMemo(() => {
+    const shown = new Map<FlowMarker, 'right' | 'left'>()
+    let freeFrom = -Infinity
+    for (const marker of [...(props.markers ?? [])].sort((a, b) => a.at - b.at)) {
+      const x = (marker.at - win.startMs) / msPerPx
+      const width = marker.label.length * 7 + 16
+      const side = x + width > trackPx ? 'left' : 'right'
+      const left = side === 'right' ? x : x - width
+      if (x < 0 || x > trackPx || left < freeFrom) continue
+      shown.set(marker, side)
+      freeFrom = left + width + 8
+    }
+    return shown
+  }, [props.markers, win.startMs, msPerPx, trackPx])
 
   useEffect(() => {
     const element = scroller.current
@@ -243,7 +258,9 @@ export function FlowBody(props: BodyProps) {
         {view === 'spans' && <StickyRows scroller={scroller} rows={rows} index={index} rowHeight={rowHeight} render={row} />}
         {props.markers?.length ? <div className="fw-marker-layer">
           {props.markers.map(marker => <span key={`${marker.at}-${marker.label}`} className="fw-marker" data-tone={marker.tone ?? 'neutral'}
-            style={{ '--s': marker.at } as CSSProperties}><span className="fw-marker-label">{marker.label}</span></span>)}
+            style={{ '--s': marker.at } as CSSProperties} title={marker.label}>
+            {markerLabels.has(marker) && <span className={`fw-marker-label${markerLabels.get(marker) === 'left' ? ' fw-marker-label-left' : ''}`}>{marker.label}</span>}
+          </span>)}
         </div> : null}
         {showCursor && <div className="fw-cursor-layer" aria-hidden><span className="fw-cursor" /></div>}
       </div>

@@ -102,14 +102,21 @@ try {
   await page.setViewportSize({ width:1100,height:900 })
   await story('healthy')
   assert.match(await page.locator('[data-slowest]').innerText(), /sandbox_run_command/)
-  // A marker sits at its instant on the lane, mid-trace here, and its label is painted.
-  const marker = await page.locator('.fw-marker').evaluate(el => {
+  // An agent's outcome colors its lane and joins the legend with a count.
+  assert.equal((await page.locator('.fw-legend').innerText()).replace(/\s+/g, ' ').trim(), 'Shipped 1')
+  assert.equal(await page.locator('[data-span-kind="pipeline"][data-outcome="ok"]').count(), 1)
+  checks.outcomes = 'PASS'
+  // Three markers: two collide mid-trace, so one label shows and both lines stay; the last flips left at the edge.
+  assert.equal(await page.locator('.fw-marker').count(), 3)
+  assert.equal(await page.locator('.fw-marker-label').count(), 2)
+  assert.equal(await page.locator('.fw-marker-label-left').innerText(), 'Release v4')
+  const marker = await page.locator('.fw-marker').first().evaluate(el => {
     const lane = el.parentElement.getBoundingClientRect(), box = el.getBoundingClientRect(), label = el.querySelector('.fw-marker-label').getBoundingClientRect()
     return { at: (box.left - lane.left) / lane.width, height: box.height, label: label.width, color: getComputedStyle(el).borderLeftColor }
   })
   assert.ok(marker.at > 0.3 && marker.at < 0.7, `marker at ${marker.at}`)
   assert.ok(marker.height > 100 && marker.label > 40)
-  assert.equal(await page.locator('.fw-marker-label').innerText(), 'Release v2')
+  assert.equal(await page.locator('.fw-marker-label').first().innerText(), 'Release v2')
   checks.markers = 'PASS'
   // Pinning a bar hands its span to onSelect.
   await page.locator('.fw-bar').first().click()

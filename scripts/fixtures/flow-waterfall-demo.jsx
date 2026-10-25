@@ -1,5 +1,5 @@
 // Demo routes for the trace inspector: reference-shaped fixtures, recorded Discovery runs and a synthetic load trace.
-// Query: fixture=release|incident|discovery|run21c|load|otlp:<file under the data dir>, view=spans|agents, theme=dark|light, live=1, rate=N, n=N, width=px, markers=<JSON FlowMarker[]>, names=long (otlp worst-case labels).
+// Query: fixture=release|incident|discovery|run21c|load|otlp:<file under the data dir>, view=spans|agents, theme=dark|light, live=1, rate=N, n=N, width=px, markers=<JSON FlowMarker[]>, names=long (otlp worst-case labels), outcomes=1 (status as outcome).
 import { createRoot } from 'react-dom/client'
 import { useEffect, useState } from 'react'
 import { FlowWaterfall } from '../../src/react/index.ts'
@@ -47,6 +47,9 @@ async function source(name) {
     const catalog = await fetch('https://router.tangle.tools/v1/models').then(r => r.json()).catch(() => null)
     const trace = otlpFlowTrace(spans, catalog ? { price: catalogPrice(catalog) } : {})
     window.__fwConvertMs = performance.now() - started
+    // outcomes=1: each agent's recorded status as its outcome, so the legend and lane colors show on real runs.
+    if (params.get('outcomes') === '1') trace.spans = trace.spans.map(span => span.kind !== 'pipeline' ? span
+      : { ...span, outcome: span.status === 'failed' ? { tone: 'failed', label: 'Failed' } : span.status === 'running' ? { tone: 'warn', label: 'Running' } : { tone: 'ok', label: 'Finished' } })
     // names=long: worst-case proof only, agent names lengthened to the run page's longest labels.
     if (params.get('names') === 'long') {
       const parts = ['tower', 'FFT', 'RS', 'commit', 'evalarg', 'sumcheck', 'ligerito']

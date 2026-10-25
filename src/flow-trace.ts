@@ -25,7 +25,15 @@ export interface FlowSpan {
   retryOf?: string
   /** For a handoff, the span that received the work; a connector joins the two rows. */
   handoffTo?: string
+  /** The host's verdict on an agent span, such as shipped or crashed: colors its lane and joins the legend. */
+  outcome?: FlowOutcome
   meta?: Record<string, unknown>
+}
+
+/** A host verdict: `label` is the legend text, `tone` the status color. */
+export interface FlowOutcome {
+  tone: 'ok' | 'neutral' | 'failed' | 'warn'
+  label: string
 }
 
 /** A labelled instant on the trace clock, such as a release or an alert; drawn as a line across the rows. */

@@ -75,7 +75,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   return (
     <div role="row" data-span-id={row.id} data-span-kind={kind} data-slowest={slowest || undefined}
       aria-level={agentView ? undefined : row.depth + 1} aria-expanded={row.hasChildren && !agentView ? !folded : undefined}
-      aria-selected={selected} tabIndex={focusable ? 0 : -1} data-tone={toneKey(row.tone)}
+      aria-selected={selected} tabIndex={focusable ? 0 : -1} data-tone={toneKey(row.tone)} data-outcome={span.outcome?.tone}
       className={`fw-row${active ? ' fw-active' : ''}${sticky ? ' fw-sticky-row' : ''}${isAgent ? ' fw-agent-row' : ''}`}
       style={{ transform: `translateY(${top}px)` }}
       onFocus={event => { if (event.target === event.currentTarget) props.onActivate(row) }}
