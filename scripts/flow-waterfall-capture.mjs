@@ -108,6 +108,15 @@ try {
         await shot(page, `fit-${tag}-${width}`)
         await context.close()
       }
+      // The hover card on a busy agent's first mark, at a desktop and a phone width.
+      for (const width of [1280, 390]) {
+        const { page, context } = await open(`fixture=${fixture}&view=agents&theme=dark&pad=0&height=2000`, { width, height: 1200 })
+        const mark = page.locator('.fw-view-agents .fw-row:not(.fw-sticky-row) :is(.fw-seg, .fw-bar)').nth(3)
+        await mark.hover(); await page.waitForTimeout(350)
+        report.fit.push({ fixture: tag, card: width, shown: await page.locator('.fw-card').count(), words: (await page.locator('.fw-card').innerText().catch(() => '')).split(/\s+/).filter(Boolean).length })
+        await page.screenshot({ path: `${out}/fit-${tag}-card-${width}.png` })
+        await context.close()
+      }
       // A resize recording: 1920 down to 390 and back, in steps, at the served layout.
       const { page, context } = await open(`fixture=${fixture}&view=agents&theme=dark&pad=0&height=2000`, { width: 1920, height: 1200 }, true)
       const before = await measure(page)
