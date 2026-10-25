@@ -140,6 +140,10 @@
 .fw-root .fw-row:hover { background: var(--fw-hover); }
 .fw-root .fw-row.fw-active { background: color-mix(in oklab, var(--fw-accent) 7%, transparent); }
 .fw-root .fw-row[aria-selected="true"] { background: color-mix(in oklab, var(--fw-accent) 11%, transparent); }
+/* A selected agent lifts: an accent edge on its row, and its peers recede so the reader sees what the panels below follow. */
+.fw-root-agents[data-selection] .fw-row[aria-selected="true"] { box-shadow: inset 3px 0 0 var(--fw-accent); }
+.fw-root-agents[data-selection] .fw-row:not([aria-selected="true"]) > [role="gridcell"] { opacity: .45; transition: opacity 160ms var(--fw-ease); }
+.fw-root-agents[data-selection] .fw-row:not([aria-selected="true"]):hover > [role="gridcell"] { opacity: .8; }
 .fw-root .fw-row:focus-visible { box-shadow: inset 2px 0 0 var(--fw-accent); }
 .fw-root .fw-sticky-row { background: var(--fw-surface); }
 .fw-root .fw-label { position: relative; display: flex; align-items: center; gap: 8px; min-width: 0; padding: 0 12px 0 calc(12px + var(--depth) * 16px); border-right: 1px solid var(--fw-border); }

@@ -42,6 +42,10 @@ export interface FlowWaterfallProps {
   onTimeChange?: (t: number | null) => void
   /** What an agent bar's color means: its `outcome` (default), or the agent itself, with the outcome on the row dot and legend. */
   agentFill?: 'outcome' | 'agent'
+  /** The row the host has selected, such as the agent whose transcript is open: it lifts and, in the agent view, its peers dim. */
+  selectedId?: string
+  /** Escape clears the host's selection, after closing any open card. */
+  onDeselect?: () => void
 }
 
 interface CardState { target: string; pinned: boolean; left: number; top: number; above: boolean }
@@ -90,7 +94,7 @@ const headlineSeconds = (ms: number) => ms < 60_000 ? `${(ms / 1000).toFixed(1)}
 /** Shared trace inspector: the agent timeline and the span waterfall over one clock.
  * Data remains producer-owned; playback, zoom and folding change presentation only. */
 export function FlowWaterfall({
-  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers, onTimeChange, agentFill = 'outcome',
+  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers, onTimeChange, agentFill = 'outcome', selectedId, onDeselect,
 }: FlowWaterfallProps) {
   const root = useRef<HTMLElement>(null)
   const search = useRef<HTMLInputElement>(null)
@@ -175,7 +179,7 @@ export function FlowWaterfall({
       if (event.key === '+' || event.key === '=') zoomBy(0.5)
       else if (event.key === '-' || event.key === '_') zoomBy(2)
       else if (event.key === '0') setZoom(null)
-      else if (event.key === 'Escape' && card) closeCard()
+      else if (event.key === 'Escape' && (card || selectedId)) { if (card) closeCard(); onDeselect?.() }
       else if ((event.key === 'n' || event.key === 'p') && markers?.length) {
         // N and P step through the event track from wherever the cursor stands.
         const ats = markers.map(marker => marker.at).sort((a, b) => a - b)
@@ -282,6 +286,7 @@ export function FlowWaterfall({
     if (row) { onSelect?.(row.span); zoomTo(row) }
   }
   const pin = useCallback((target: string, element: HTMLElement) => latest.current.pin(target, element), [])
+  const selection = selectedId ?? (card?.pinned ? card.target : undefined)
   const closeCard = () => {
     const target = card?.target
     setCard(null)
@@ -322,7 +327,7 @@ export function FlowWaterfall({
   )
 
   return (
-    <section ref={root} data-flow-waterfall aria-label={label} className={`fw-root fw-root-${view}`}
+    <section ref={root} data-flow-waterfall aria-label={label} className={`fw-root fw-root-${view}`} data-selection={selection ? '' : undefined}
       style={{ '--fw-name-w': `${nameWidth}px`, '--fw-pad': `${LANE_PAD}px`, '--fw-row-h': `${ROW_HEIGHT[view]}px` } as CSSProperties}>
       <header className="fw-heading">
         <div className="fw-title-block">
@@ -361,7 +366,7 @@ export function FlowWaterfall({
       </dl>}
       {view === 'agents' && playback}
       <FlowBody rows={visible} byId={byId} totalRows={rows.length} view={view} maxHeight={rowsHeight} collapsed={collapsed} searching={Boolean(query.trim())}
-        slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} activeId={activeId} selectedId={card?.pinned ? card.target : undefined} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
+        slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
         trackPx={trackPx} showCursor={showCursor} markers={markers} fillByAgent={agentFill === 'agent'} zoomed={zoom !== null} renderIcon={renderIcon}
         emptyText={rows.length === 0 ? 'No spans yet. Waiting for trace events.' : `No matching steps for “${query}”.`}
         onToggle={toggle} onInspect={inspect} onLeave={leave} onPin={pin} onActivate={row => setActiveId(row.id)}

@@ -139,7 +139,14 @@ try {
     .map(mark => mark.getBoundingClientRect().top - mark.closest('.fw-row').getBoundingClientRect().top)
     .filter(offset => Math.abs(offset - Math.round(offset / 4) * 4) > 0.5))
   assert.deepEqual(offGrid, [])
+  // The selected agent lifts and its peers recede; Escape clears it.
+  const dimmed = await page.evaluate(() => {
+    const peer = document.querySelector('[data-selection] .fw-view-agents .fw-row:not([aria-selected="true"]):not(:hover) > [role="gridcell"]')
+    return peer ? Number(getComputedStyle(peer).opacity) : null
+  })
+  assert.ok(dimmed !== null && dimmed < 0.6, `peer opacity ${dimmed}`)
   await page.keyboard.press('Escape')
+  assert.equal(await page.locator('[data-flow-waterfall][data-selection]').count(), 0)
   await page.getByRole('radio', { name: 'Steps' }).click()
   checks.onSelect = 'PASS'
   // The event track: one dot per marker; a click moves the cursor there and reports the time; N steps to the next.
