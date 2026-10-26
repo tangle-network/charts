@@ -348,7 +348,9 @@ export function agentSummary(row: FlowWaterfallRow): string {
   const turns = count('model') + count('failed')
   const tools = count('tool')
   const state = row.span.outcome?.label ?? (spanRunning(row.span) ? 'running' : row.ok ? 'done' : 'failed')
-  return [state, turns ? `${turns} ${turns === 1 ? 'turn' : 'turns'}` : '', tools ? `${tools} tool ${tools === 1 ? 'call' : 'calls'}` : ''].filter(Boolean).join(' · ')
+  // An agent's model calls are its turns; inside one step they are model calls.
+  const unit = row.kind === 'pipeline' ? ['turn', 'turns'] : ['model call', 'model calls']
+  return [state, turns ? `${turns} ${turns === 1 ? unit[0] : unit[1]}` : '', tools ? `${tools} tool ${tools === 1 ? 'call' : 'calls'}` : ''].filter(Boolean).join(' · ')
 }
 
 /**
