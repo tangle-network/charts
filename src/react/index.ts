@@ -22,6 +22,8 @@ export type {
   WaterfallBarProps, WaterfallRowProps, WaterfallHeaderProps,
 } from "./waterfall.js";
 export { DayBars, Events, HBars, Histogram, Lines, Meter, Spark, Gantt, LIVE_SERIES, formatCompact } from "./live.js";
+export { Gap } from "./gap.js";
+export type { GapBand, GapProps } from "./gap.js";
 export type { LineSeries, MeterSegment } from "./live.js";
 export { FigureView } from "./figure-view.js";
 export type { FigureAtWidth, FigureViewProps } from "./figure-view.js";

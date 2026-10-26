@@ -89,3 +89,11 @@ line.ov-gridline { stroke: color-mix(in srgb, var(--chart-live-faint, #777) 22%,
 .tgc-dot-map { color: var(--chart-live-muted, #8a8a8a); }
 .tgc-dot-map canvas:focus-visible { outline: 2px solid var(--chart-accent, #7760bd); outline-offset: 2px; }
 .tgc-dot-map-tip { z-index: 2; max-width: 300px; padding: 6px 9px; border-radius: 6px; background: var(--chart-tip-bg, #262626); color: var(--chart-tip-ink, #eee); font: 12px/1.4 ui-sans-serif, system-ui, sans-serif; white-space: pre-line; box-shadow: 0 4px 14px rgb(0 0 0 / .3); }
+.ov-gap { width: 100%; min-width: 96px; height: 24px; }
+.ov-gap svg { display: block; overflow: visible; }
+.ov-gap-track { stroke: color-mix(in srgb, var(--chart-live-faint, #777) 40%, transparent); stroke-width: 1; }
+.ov-gap-tick { stroke: color-mix(in srgb, var(--chart-live-faint, #777) 60%, transparent); stroke-width: 1; }
+.ov-gap-target { fill: color-mix(in srgb, var(--chart-live-pass, #2f9e6e) 28%, transparent); stroke: var(--chart-live-pass, #2f9e6e); stroke-width: 1; }
+.ov-gap-stretch { fill: none; stroke: var(--chart-live-pass, #2f9e6e); stroke-width: 1; stroke-dasharray: 3 3; }
+.ov-gap-span { stroke-width: 2; stroke-dasharray: 2 4; stroke-linecap: round; }
+.ov-gap-value { cursor: default; }
