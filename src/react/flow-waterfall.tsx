@@ -6,7 +6,7 @@ import { useTraceClock } from './flow-waterfall-clock.js'
 import { FailGlyph, SearchGlyph, TraceGlyph } from './flow-waterfall-icons.js'
 import { PlaybackBar } from './flow-waterfall-playback.js'
 import {
-  agentCallouts, agentViewRows, busyMs, drawnRow, costSummary, type FlowWaterfallRow, flowWaterfallRows, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
+  agentCallouts, agentViewRows, defaultOpenFamilies, busyMs, drawnRow, costSummary, type FlowWaterfallRow, flowWaterfallRows, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
   toneKey, totalsAt, visibleFlowWaterfallRows,
 } from './flow-waterfall-model.js'
 import type { FlowView } from './flow-waterfall-row.js'
@@ -15,6 +15,8 @@ import { clampWindow, type ViewWindow, zoomWindow } from './flow-waterfall-time.
 export type { FlowView } from './flow-waterfall-row.js'
 
 const LANE_PAD = 12
+// The agents view shows this many rows before it scrolls; a run whose agents all fit lists every agent rather than folding families.
+const AGENT_ROWS = 20
 // The agents view's end labels carry a Slowest or Costliest badge after the duration, so its gutter is wider.
 const END_LABEL_GUTTER: Record<FlowView, number> = { spans: 120, agents: 176 }
 const NAME_WIDTH: Record<FlowView, number> = { spans: 320, agents: 240 }
@@ -41,9 +43,10 @@ export interface FlowWaterfallProps {
   markers?: FlowMarker[]
   /** The time the reader moved to, in trace ms; `null` when following live or showing the whole trace. */
   onTimeChange?: (t: number | null) => void
-  /** What a bar's color means: the agent (default), whose hue its steps and handoffs share, with the outcome on the row dot, legend and
-   * crash glyph; or its `outcome`. */
-  agentFill?: 'outcome' | 'agent'
+  /** What an agent bar's color means. `muted` (default): every agent one quiet tone, with color spent on state only: the outcome on
+   * the row dot, red for failure, amber for the slowest. `agent`: each agent its own hue, shared by its steps and handoffs. `outcome`: the
+   * bar takes its outcome's color. */
+  agentFill?: 'muted' | 'outcome' | 'agent'
   /** One line beside the title saying what the run was for, such as its goal. */
   description?: string
   /** The row the host has selected, such as the agent whose transcript is open: it lifts and, in the agent view, its peers dim.
@@ -112,7 +115,7 @@ function OutcomeLegend({ agents }: { agents: FlowWaterfallRow[] }) {
 /** Shared trace inspector: the agent timeline and the span waterfall over one clock.
  * Data remains producer-owned; playback, zoom and folding change presentation only. */
 export function FlowWaterfall({
-  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers, onTimeChange, agentFill = 'agent', selectedId, onDeselect, description, summary: showSummary = true,
+  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers, onTimeChange, agentFill = 'muted', selectedId, onDeselect, description, summary: showSummary = true,
 }: FlowWaterfallProps) {
   const root = useRef<HTMLElement>(null)
   const search = useRef<HTMLInputElement>(null)
@@ -166,12 +169,14 @@ export function FlowWaterfall({
   }, [rows])
   // When every agent runs the same model, the header says it once instead of every row repeating it.
   const sharedDetail = agents.length > 1 && agents.every(row => row.span.detail && row.span.detail === agents[0]?.span.detail) ? agents[0]?.span.detail : undefined
-  const [openFamilies, setOpenFamilies] = useState<ReadonlySet<string>>(new Set())
+  // Families the reader flipped from their default: open when every agent fits the body, folded on bigger runs.
+  const [flippedFamilies, setFlippedFamilies] = useState<ReadonlySet<string>>(new Set())
+  const openFamilies = useMemo(() => defaultOpenFamilies(agents, AGENT_ROWS, flippedFamilies), [agents, flippedFamilies])
   const [openSteps, setOpenSteps] = useState<ReadonlySet<string>>(new Set())
   const visible = useMemo(() => view === 'agents' ? agentViewRows(agents, rows, openFamilies, openSteps) : visibleFlowWaterfallRows(rows, query, collapsed), [view, agents, rows, openFamilies, openSteps, query, collapsed])
   const slowest = view === 'spans' ? slowestRow(rows, clockMs) : undefined
   const callouts = useMemo<ReturnType<typeof agentCallouts>>(() => view === 'agents' ? agentCallouts(visible, clockMs) : {}, [view, visible, clockMs])
-  const rowsHeight = maxHeight ?? (view === 'agents' ? ROW_HEIGHT.agents * 20 : 640)
+  const rowsHeight = maxHeight ?? (view === 'agents' ? ROW_HEIGHT.agents * AGENT_ROWS : 640)
 
   // The agent label column fits the longest agent name (CSS caps it at 28%) until the reader drags it.
   const resized = useRef(false)
@@ -258,7 +263,7 @@ export function FlowWaterfall({
   const toggleNow = (row: FlowWaterfallRow) => {
     // In the agent view a family opens its members and an agent opens its own steps, in place.
     const flip = (open: ReadonlySet<string>) => new Set(open.has(row.id) ? [...open].filter(id => id !== row.id) : [...open, row.id])
-    if (row.id.startsWith('family:')) { setOpenFamilies(flip); return }
+    if (row.id.startsWith('family:')) { setFlippedFamilies(flip); return }
     onSelect?.(row.span)
     if (view === 'agents') { setOpenSteps(flip); setActiveId(row.id); return }
     if (collapsed.has(row.id)) zoomTo(row)
@@ -351,7 +356,7 @@ export function FlowWaterfall({
   )
 
   return (
-    <section ref={root} data-flow-waterfall aria-label={label} className={`fw-root fw-root-${view}`} data-selection={selectedId ? '' : undefined}
+    <section ref={root} data-flow-waterfall aria-label={label} className={`fw-root fw-root-${view} fw-fill-${agentFill}`} data-selection={selectedId ? '' : undefined}
       style={{ '--fw-name-w': `${nameWidth}px`, '--fw-pad': `${LANE_PAD}px`, '--fw-row-h': `${ROW_HEIGHT[view]}px` } as CSSProperties}>
       <header className="fw-heading">
         <div className="fw-title-block">
@@ -394,7 +399,7 @@ export function FlowWaterfall({
       {view === 'agents' && <KindLegend rows={rows} />}
       <FlowBody rows={visible} byId={byId} totalRows={rows.length} view={view} maxHeight={rowsHeight} collapsed={collapsed} searching={Boolean(query.trim())}
         pauses={trace.pauses} cursorLine={moving} sharedDetail={sharedDetail} expandedIds={view === 'agents' ? new Set([...openFamilies, ...openSteps]) : undefined} holdHeight={isLive} slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
-        trackPx={trackPx} showCursor={showCursor} markers={markers} fillByAgent={agentFill === 'agent'} zoomed={zoom !== null} renderIcon={renderIcon}
+        trackPx={trackPx} showCursor={showCursor} markers={markers} fillByAgent={agentFill !== 'outcome'} zoomed={zoom !== null} renderIcon={renderIcon}
         emptyText={rows.length === 0 ? 'No spans yet. Waiting for trace events.' : `No matching steps for “${query}”.`}
         onToggle={toggle} onInspect={inspect} onLeave={leave} onPin={pin} onActivate={row => setActiveId(row.id)}
         onActiveChange={setActiveId} onScrub={scrubTo} onZoom={zoomBy} onPan={pan}

@@ -123,13 +123,18 @@
 .fw-root .fw-gridline { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--fw-grid); left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); }
 .fw-root .fw-cursor-layer { z-index: 3; }
 .fw-root .fw-marker-layer { position: absolute; top: 0; bottom: 0; left: var(--fw-label-col); right: 0; overflow: hidden; pointer-events: none; z-index: 2; }
-.fw-root .fw-marker { --fw-marker: var(--fw-muted); position: absolute; top: 0; bottom: 0; width: 0; border-left: 1px dashed var(--fw-marker); left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); }
+/* An event's line is drawn behind the rows, with the gridlines, so bars and labels cover it; its label stays on top. */
+.fw-root .fw-marker { --fw-marker: var(--fw-muted); position: absolute; top: 0; bottom: 0; width: 0; left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); }
+.fw-root .fw-marker-line { --fw-marker: var(--fw-muted); position: absolute; top: 0; bottom: 0; border-left: 1px dashed var(--fw-marker); left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); }
+.fw-root .fw-marker-line[data-tone="ok"] { --fw-marker: var(--fw-ok); }
+.fw-root .fw-marker-line[data-tone="failed"] { --fw-marker: var(--fw-failed); }
 .fw-root .fw-marker[data-tone="ok"] { --fw-marker: var(--fw-ok); }
 .fw-root .fw-marker[data-tone="failed"] { --fw-marker: var(--fw-failed); }
 /* A pause: the run stood still. A hatched band across every row with its reason on top, never blank space. */
 .fw-root .fw-pause { position: absolute; top: 0; bottom: 0; left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); width: calc(max(0, var(--e) - var(--s)) * var(--fw-k) * 1px);
   background: repeating-linear-gradient(-45deg, color-mix(in oklab, var(--fw-text) 9%, transparent) 0 1px, transparent 1px 6px), color-mix(in oklab, var(--fw-text) 4%, transparent);
   border-inline: 1px dashed color-mix(in oklab, var(--fw-text) 24%, transparent); }
+.fw-root .fw-pause-label b { font-weight: 600; color: var(--fw-text); }
 .fw-root .fw-pause-label { position: sticky; top: 4px; display: block; width: max-content; max-width: calc(100% - 8px); margin: 4px auto 0; padding: 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   border-radius: 4px; font-size: 12px; line-height: 20px; color: var(--fw-muted); background: var(--fw-surface); box-shadow: inset 0 0 0 1px var(--fw-border); }
 /* The label alone takes the pointer, for its reason; the band stays click-through to the rows. */
@@ -231,6 +236,10 @@
 .fw-root .fw-view-agents .fw-bar.fw-k-pipeline.fw-has-marks { background: repeating-linear-gradient(-45deg, color-mix(in oklab, var(--tone) 28%, transparent) 0 1px, transparent 1px 5px), color-mix(in oklab, var(--tone) 9%, transparent); }
 .fw-root .fw-view-agents .fw-bar.fw-k-pipeline:not(.fw-has-marks, .fw-has-agents) { background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); }
 /* A host outcome re-tones the whole lane: dot, bar and marks. */
+/* Muted agents (the default): one quiet tone for every agent bar, its steps and handoffs; the slowest agent alone takes amber, and
+   failure keeps its red glyph, so color only ever means state. */
+.fw-root.fw-fill-muted .fw-view-agents [data-tone] { --tone: var(--fw-h0); }
+.fw-root.fw-fill-muted .fw-view-agents .fw-row[data-slowest], .fw-root.fw-fill-muted .fw-view-agents .fw-row[data-slowest] [data-tone] { --tone: var(--fw-amber); }
 .fw-root [data-outcome="ok"], .fw-root [data-outcome="ok"] [data-tone] { --tone: var(--fw-ok); }
 .fw-root [data-outcome="failed"], .fw-root [data-outcome="failed"] [data-tone] { --tone: var(--fw-failed); }
 .fw-root [data-outcome="warn"], .fw-root [data-outcome="warn"] [data-tone] { --tone: var(--fw-amber); }
@@ -260,7 +269,10 @@
 .fw-root .fw-glyph { display: inline-flex; color: currentColor; }
 .fw-root .fw-glyph svg { width: 11px; height: 11px; stroke-width: 2; }
 .fw-root .fw-seg-model .fw-glyph, .fw-root .fw-k-model .fw-glyph { color: light-dark(var(--tone), #fff); }
-.fw-root .fw-end { z-index: 2; display: inline-flex; align-items: center; gap: 8px; top: calc(50% + var(--fw-bar-shift) - var(--fw-bar-h) / 2); height: var(--fw-bar-h); left: calc(var(--x0) + max(var(--w), 3px) + 8px); white-space: nowrap; pointer-events: none; }
+/* End labels sit on the surface, so connectors and event lines stop at them, and never run past the lane: a label that would
+   be cut at the right edge slides back over its bar's tail instead. */
+.fw-root .fw-end { z-index: 2; display: inline-flex; align-items: center; gap: 8px; top: calc(50% + var(--fw-bar-shift) - var(--fw-bar-h) / 2); height: var(--fw-bar-h);
+  left: min(calc(var(--x0) + max(var(--w), 3px) + 4px), calc(100% - var(--fw-end-w, 0px) - 4px)); padding: 0 4px; border-radius: 4px; background: var(--fw-surface); white-space: nowrap; pointer-events: none; }
 .fw-root .fw-duration { font-size: 12px; color: var(--fw-muted); font-variant-numeric: tabular-nums; }
 .fw-root .fw-k-failed ~ .fw-end .fw-duration { color: var(--fw-failed); }
 .fw-root .fw-badge { height: 18px; padding: 0 8px; border-radius: 999px; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--fw-amber); background: color-mix(in oklab, var(--fw-amber) 13%, transparent); border: 1px solid color-mix(in oklab, var(--fw-amber) 28%, transparent); }

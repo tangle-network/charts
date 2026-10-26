@@ -121,7 +121,8 @@ try {
   checks.markers = 'PASS'
   // A pause is a labelled band across the rows; a restart is a notch on its bar, not the bar's state.
   assert.equal(await page.locator('.fw-pause').count(), 1)
-  assert.equal((await page.locator('.fw-pause-label').innerText()).trim(), 'Paused: host guard')
+  // The band's length leads its label, so a narrow band keeps the number when the reason is cut.
+  assert.match((await page.locator('.fw-pause-label').innerText()).trim(), /^\d+(\.\d)? (s|min|h) Paused: host guard$/)
   assert.ok((await page.locator('.fw-pause').evaluate(el => el.getBoundingClientRect().width)) > 8)
   assert.equal(await page.locator('.fw-mark[data-mark="restart"]').count(), 1)
   checks.pauseAndRestart = 'PASS'
@@ -194,6 +195,18 @@ try {
   assert.ok(hostMarks.length > 0 && hostMarks.every(m => m.top >= 0 && m.bottom >= 0), `host marks overflow their rows: ${JSON.stringify(hostMarks)}`)
   await page.screenshot({ path: `${output}/host-marks.png` })
   checks.hostMarks = 'PASS'
+  // Every end label (duration, cost, Slowest/Costliest) stays inside its lane, on the surface, at 1100 px and on a phone.
+  for (const width of [1100, 390]) {
+    await page.setViewportSize({ width, height: 900 })
+    await page.waitForTimeout(200)
+    const ends = await page.evaluate(() => [...document.querySelectorAll('.fw-view-agents .fw-end')].map(end => {
+      const lane = end.closest('.fw-lane').getBoundingClientRect(), box = end.getBoundingClientRect()
+      return { over: Math.round(box.right - lane.right), opaque: getComputedStyle(end).backgroundColor !== 'rgba(0, 0, 0, 0)', text: end.innerText }
+    }))
+    assert.ok(ends.length > 0 && ends.every(end => end.over <= 0 && end.opaque), `end labels cut or see-through at ${width}: ${JSON.stringify(ends.filter(end => end.over > 0 || !end.opaque))}`)
+  }
+  await page.setViewportSize({ width: 1100, height: 900 })
+  checks.endLabelsFit = 'PASS'
   await story('recorded-discovery')
   const root = page.locator('[data-flow-waterfall]')
   assert.equal(await root.locator('[data-span-id]').count(), 53)

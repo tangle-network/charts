@@ -4,6 +4,7 @@ import { type FlowWaterfallRow, spanRunning } from './flow-waterfall-model.js'
 import { type FlowLink, type FlowView, FlowRow, LinkMark, type RowEvents } from './flow-waterfall-row.js'
 import { useRowMotion } from './flow-waterfall-motion.js'
 import { clockTicks, formatClock, type ViewWindow } from './flow-waterfall-time.js'
+import { duration } from '../format.js'
 
 // 40 px agent rows keep a 17-agent run, its axis and its controls inside a 945 px viewport.
 export const ROW_HEIGHT: Record<FlowView, number> = { spans: 36, agents: 40 }
@@ -273,6 +274,7 @@ export function FlowBody(props: BodyProps) {
       <div className="fw-viewport">
         <div className="fw-gridlayer" aria-hidden>
           {ticks.map(tick => <span key={tick} className="fw-gridline" style={{ '--s': tick } as CSSProperties} />)}
+          {props.markers?.map(marker => <span key={`l-${marker.at}-${marker.label}`} className="fw-marker-line" data-tone={marker.tone ?? 'neutral'} style={{ '--s': marker.at } as CSSProperties} />)}
         </div>
         <div ref={scroller} role="treegrid" aria-label="Trace timeline" aria-rowcount={rows.length} aria-multiselectable={false}
           tabIndex={-1} className="fw-scroller" data-primary-content="" style={{ height, maxHeight }} onKeyDown={keydown}
@@ -289,7 +291,10 @@ export function FlowBody(props: BodyProps) {
         {view === 'spans' && <StickyRows scroller={scroller} rows={rows} index={index} rowHeight={rowHeight} render={row} />}
         {props.markers?.length || props.pauses?.length ? <div className="fw-marker-layer">
           {props.pauses?.map(pause => <span key={`p-${pause.startMs}`} className="fw-pause" style={{ '--s': pause.startMs, '--e': pause.endMs } as CSSProperties} title={pause.label}>
-            <span className="fw-pause-label" title={pause.detail} tabIndex={pause.detail ? 0 : undefined} aria-label={pause.detail ? `${pause.label}: ${pause.detail}` : undefined}>{pause.label}</span>
+            <span className="fw-pause-label" title={pause.detail} tabIndex={pause.detail ? 0 : undefined} aria-label={pause.detail ? `${pause.label}: ${pause.detail}` : undefined}>
+              {/* Its length leads, so a narrow band still shows how long the run stood still before the reason is cut. */}
+              <b>{duration(pause.endMs - pause.startMs)}</b> {pause.label}
+            </span>
           </span>)}
           {props.markers?.map(marker => <span key={`${marker.at}-${marker.label}`} className="fw-marker" data-tone={marker.tone ?? 'neutral'}
             style={{ '--s': marker.at } as CSSProperties} title={marker.label}>

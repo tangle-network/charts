@@ -1,5 +1,13 @@
 # @tangle-network/charts
 
+## 0.21.5
+
+- `agentFill` gains `muted`, now the default: every agent bar in one quiet tone, the slowest agent in amber, failure in red and the outcome on the row dot, so color only means state (blind A/B against reference trace UIs, 10-26). `agent` keeps a hue per agent.
+- Agent view: families (`role ×N`) start open when every agent fits the 20-row body, so a run lists each agent and its steps; bigger runs still fold them, and a click flips either way.
+- End labels never run past the lane: a duration, cost and Slowest/Costliest badge that would be cut at the right edge slides back over its bar's tail. Labels sit on the surface, so connectors and event lines stop at them instead of striking through the cost.
+- Event lines draw behind the rows, with the gridlines; their labels stay on top.
+- A pause band's label leads with its length ("45.0 min Paused: …"), so a narrow band keeps the number when the reason is cut. Hosts can drop the duration from `FlowPause.label`.
+
 ## 0.21.4
 
 - Agent view: a host's `renderIcon` mark leads the row's second line instead of taking a third line that overflowed the 40 px row into the next agent's name.

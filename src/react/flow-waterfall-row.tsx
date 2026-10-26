@@ -10,6 +10,8 @@ export type FlowView = 'spans' | 'agents'
 /** Running ends are drawn to the clock; CSS clips with min(), so a far-future end stands in for "still open". */
 export const OPEN_END = 1e13
 const at = (startMs: number, endMs: number): CSSProperties => ({ '--s': startMs, '--e': Number.isFinite(endMs) ? endMs : OPEN_END } as CSSProperties)
+// 12 px tabular text runs about 7 px a character; each badge adds its gap, padding and word.
+const endLabelWidth = (label: string, slowest?: boolean, costliest?: boolean) => label.length * 7 + 8 + (slowest ? 74 : 0) + (costliest ? 84 : 0)
 
 export interface RowEvents {
   onToggle: (row: FlowWaterfallRow) => void
@@ -143,7 +145,8 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
             {!isAgent && row.ok && row.retry && <span className="fw-glyph"><RetryGlyph /></span>}
           </span>
           {marks.map((mark, i) => <Segment key={`${mark.id}-${i}`} mark={mark} events={props} agentView={agentView} ending={i === ending} />)}
-          <span className="fw-end" style={at(span.startMs, running ? OPEN_END : span.endMs)}>
+          {/* Its width rides along so a label that would run past the lane's right edge slides back over the bar's tail. */}
+          <span className="fw-end" style={{ ...at(span.startMs, running ? OPEN_END : span.endMs), '--fw-end-w': `${endLabelWidth(label, slowest, costliest)}px` } as CSSProperties}>
             <span className="fw-duration">{label}</span>
             {slowest && <span className="fw-badge">Slowest</span>}
             {costliest && <span className="fw-badge">Costliest</span>}
