@@ -294,8 +294,10 @@ try {
     }
     await page.getByRole('button',{name:'Follow live',exact:true}).click()
     assert.equal(await page.getByRole('button',{name:'Follow live',exact:true}).count(),0)
+    // Following live jumps the cursor to the end on the next frame, not synchronously with the click (a 00:13Z gate read it
+    // first and saw 8,787 of 76,635), so wait for the position to reach the end.
+    await page.waitForFunction(() => { const el = document.querySelector('input[type=range]'); return Number(el.value) === Number(el.max) }, null, { timeout: 5000 })
     const following = await page.getByLabel('Playback position').evaluate(el=>({value:Number(el.value),max:Number(el.max)}))
-    assert.equal(following.value,following.max)
     await page.waitForFunction(previous=>Number(document.querySelector('input[type=range]').max)>previous,following.max)
     assert.equal(await page.getByLabel('Playback position').evaluate(el=>Number(el.value)===Number(el.max)),true)
     await story('discovery-streaming-replay')
