@@ -6,7 +6,7 @@ import { useTraceClock } from './flow-waterfall-clock.js'
 import { FailGlyph, SearchGlyph, TraceGlyph } from './flow-waterfall-icons.js'
 import { PlaybackBar } from './flow-waterfall-playback.js'
 import {
-  agentCallouts, busyMs, costSummary, type FlowWaterfallRow, flowWaterfallRows, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
+  agentCallouts, agentViewRows, busyMs, costSummary, type FlowWaterfallRow, flowWaterfallRows, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
   toneKey, totalsAt, visibleFlowWaterfallRows,
 } from './flow-waterfall-model.js'
 import type { FlowView } from './flow-waterfall-row.js'
@@ -51,6 +51,8 @@ export interface FlowWaterfallProps {
   selectedId?: string
   /** Escape clears the host's selection, after closing any open card. */
   onDeselect?: () => void
+  /** Show the stat strip (default); a page with its own stat row passes false. */
+  summary?: boolean
 }
 
 interface CardState { target: string; pinned: boolean; left: number; top: number; above: boolean }
@@ -63,10 +65,11 @@ function summaryCells(trace: FlowTrace, at: ReturnType<typeof totalsAt> | undefi
   const errors = at ? at.errors : trace.errors ?? trace.spans.filter(spanFailed).length
   const summary: [string, ReactNode, string?][] = [
     ['Duration', formatSpanDuration(durationMs)],
-    [cost.label, cost.value, cost.title],
+    // No cost source at all: the tile goes rather than print a dash beside real numbers.
+    ...(cost.value === '—' ? [] : [[cost.label, cost.value, cost.title] as [string, ReactNode, string?]]),
     ['Tokens', formatCount(tokens), `${tokens.toLocaleString()} tokens`],
     ['LLM calls', modelCalls === undefined ? '—' : modelCalls.toLocaleString(), modelCalls === undefined ? 'Model output windows do not establish the number of LLM requests' : undefined],
-    ['Tool calls', (at ? at.toolCalls : trace.toolCalls).toLocaleString()],
+    ['Tool calls', (at ? at.toolCalls : trace.toolCalls)?.toLocaleString() ?? '—', (at ? at.toolCalls : trace.toolCalls) === undefined ? 'The producer did not count tool calls' : undefined],
     ['Errors', errors.toLocaleString()],
   ]
   return { cost, tokens, errors, summary }
@@ -79,7 +82,7 @@ const TONE_ORDER = ['ok', 'warn', 'failed', 'neutral']
 /** What each mark means, as the agent view draws it; a key only for kinds the run has. */
 function KindLegend({ rows }: { rows: FlowWaterfallRow[] }) {
   const has = (kind: string) => rows.some(row => row.own.some(mark => mark.kind === kind) || row.span.kind === kind)
-  const keys: [string, string][] = [['model', 'Model call'], ['tool', 'Tool call'], ['waiting', 'Waiting'], ['handoff', 'Handoff'], ['failed', 'Failed turn']]
+  const keys: [string, string][] = [['model', 'Model call'], ['tool', 'Tool call'], ['waiting', 'Waiting'], ['handoff', 'Handoff']]
   const shown = keys.filter(([kind]) => kind === 'waiting' ? rows.some(row => row.kind === 'pipeline') : kind === 'handoff' ? rows.some(row => row.span.handoffTo || row.hasAgents) : has(kind))
   if (shown.length === 0) return null
   return <ul className="fw-legend fw-kinds" aria-label="Key">
@@ -109,7 +112,7 @@ function OutcomeLegend({ agents }: { agents: FlowWaterfallRow[] }) {
 /** Shared trace inspector: the agent timeline and the span waterfall over one clock.
  * Data remains producer-owned; playback, zoom and folding change presentation only. */
 export function FlowWaterfall({
-  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers, onTimeChange, agentFill = 'agent', selectedId, onDeselect, description,
+  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers, onTimeChange, agentFill = 'agent', selectedId, onDeselect, description, summary: showSummary = true,
 }: FlowWaterfallProps) {
   const root = useRef<HTMLElement>(null)
   const search = useRef<HTMLInputElement>(null)
@@ -161,9 +164,13 @@ export function FlowWaterfall({
     const pipelines = rows.filter(row => row.kind === 'pipeline')
     return pipelines.length ? pipelines : rows.filter(row => !row.parentId)
   }, [rows])
-  const visible = useMemo(() => view === 'agents' ? agents : visibleFlowWaterfallRows(rows, query, collapsed), [view, agents, rows, query, collapsed])
+  // When every agent runs the same model, the header says it once instead of every row repeating it.
+  const sharedDetail = agents.length > 1 && agents.every(row => row.span.detail && row.span.detail === agents[0]?.span.detail) ? agents[0]?.span.detail : undefined
+  const [openFamilies, setOpenFamilies] = useState<ReadonlySet<string>>(new Set())
+  const [openSteps, setOpenSteps] = useState<ReadonlySet<string>>(new Set())
+  const visible = useMemo(() => view === 'agents' ? agentViewRows(agents, rows, openFamilies, openSteps) : visibleFlowWaterfallRows(rows, query, collapsed), [view, agents, rows, openFamilies, openSteps, query, collapsed])
   const slowest = view === 'spans' ? slowestRow(rows, clockMs) : undefined
-  const callouts = useMemo<ReturnType<typeof agentCallouts>>(() => view === 'agents' ? agentCallouts(agents, clockMs) : {}, [view, agents, clockMs])
+  const callouts = useMemo<ReturnType<typeof agentCallouts>>(() => view === 'agents' ? agentCallouts(visible, clockMs) : {}, [view, visible, clockMs])
   const rowsHeight = maxHeight ?? (view === 'agents' ? ROW_HEIGHT.agents * 20 : 640)
 
   // The agent label column fits the longest agent name (CSS caps it at 28%) until the reader drags it.
@@ -249,16 +256,11 @@ export function FlowWaterfall({
   // Rows are memoized without their handlers, so handlers stay stable and read the latest state through a ref.
   const latest = useRef({ toggle: (_row: FlowWaterfallRow) => {}, pin: (_target: string, _element: HTMLElement) => {}, inspect: (_target: string, _element: HTMLElement) => {} })
   const toggleNow = (row: FlowWaterfallRow) => {
+    // In the agent view a family opens its members and an agent opens its own steps, in place.
+    const flip = (open: ReadonlySet<string>) => new Set(open.has(row.id) ? [...open].filter(id => id !== row.id) : [...open, row.id])
+    if (row.id.startsWith('family:')) { setOpenFamilies(flip); return }
     onSelect?.(row.span)
-    if (view === 'agents') {
-      // Expanding an agent opens the span tree with that agent unfolded and its peers folded.
-      const keep = new Set<string>()
-      for (let cursor: FlowWaterfallRow | undefined = row; cursor; cursor = cursor.parentId ? byId.get(cursor.parentId) : undefined) keep.add(cursor.id)
-      setCollapsed(new Set(rows.filter(item => item.hasChildren && !keep.has(item.id) && item.kind === 'pipeline').map(item => item.id)))
-      setView('spans')
-      setActiveId(row.id)
-      return
-    }
+    if (view === 'agents') { setOpenSteps(flip); setActiveId(row.id); return }
     if (collapsed.has(row.id)) zoomTo(row)
     setCollapsed(previous => {
       const next = new Set(previous)
@@ -326,12 +328,16 @@ export function FlowWaterfall({
   const busy = agents.reduce((sum, row) => sum + busyMs(row, limit), 0)
   const speedup = limit > 0 ? busy / limit : 0
   const done = !isLive && !trace.spans.some(spanRunning)
-  const cardRow = card ? byId.get(card.target) : undefined
+  // The card takes the row as drawn (a family recolours its members), so its dot matches the lane it describes.
+  const shown = (row?: FlowWaterfallRow) => row && (visible.find(item => item.id === row.id) ?? row)
+  const cardRow = shown(card ? byId.get(card.target) : undefined)
   const cardAgent = cardRow && (() => {
-    for (let cursor: FlowWaterfallRow | undefined = cardRow; cursor; cursor = cursor.parentId ? byId.get(cursor.parentId) : undefined) if (cursor.kind === 'pipeline') return cursor
+    for (let cursor: FlowWaterfallRow | undefined = cardRow; cursor; cursor = cursor.parentId ? byId.get(cursor.parentId) : undefined) if (cursor.kind === 'pipeline') return shown(cursor)
     return undefined
   })()
-  const showCursor = isLive || position !== null || playing
+  // The agent view keeps its playhead dot in sight at rest, at the end of the run; the line shows only while it moves.
+  const moving = isLive || position !== null || playing
+  const showCursor = moving || view === 'agents'
   const overviewMarks = useMemo(() => rows.filter(row => !row.parentId).flatMap(row => row.hasChildren ? row.segments : row.kind === 'pipeline' ? [] : [{ startMs: row.span.startMs, endMs: row.span.endMs, kind: row.ok ? 'tool' as const : 'failed' as const, tone: row.tone, id: row.id, count: 1, retry: false }]), [rows])
 
   // The agent timeline puts play and speed above its lanes, so they stay in view on a long run.
@@ -356,7 +362,7 @@ export function FlowWaterfall({
           {view === 'agents' && <p className="fw-headline" aria-live="polite">
             {/* Duration, cost and tokens live in the stat strip below; the headline says only what the strip cannot. */}
             {done && <span className="fw-done-mark" aria-label="done">✓</span>}
-            {agents.length} {agents.length === 1 ? 'agent' : 'agents'}{done && speedup >= 1.05 ? ` · ${speedup.toFixed(1)}x parallel` : ''}
+            {agents.length} {agents.length === 1 ? 'agent' : 'agents'}{sharedDetail ? ` · ${sharedDetail}` : ''}{done && speedup >= 1.05 ? ` · ${speedup.toFixed(1)}x parallel` : ''}
           </p>}
           <OutcomeLegend agents={agents} />
         </div>
@@ -375,15 +381,17 @@ export function FlowWaterfall({
           </div>}
         </div>
       </header>
-      <dl className="fw-summary">
+      {showSummary && <dl className="fw-summary">
         {summary.map(([name, value, title]) => <div key={name} className={name === 'Errors' && errors > 0 ? 'fw-has-errors' : undefined}>
           <dt>{name}</dt>
           <dd className="fw-value" title={title}>{value}</dd>
         </div>)}
-      </dl>
+      </dl>}
       {view === 'agents' && playback}
+      {/* The key sits right above the lanes it explains (round 2: a key at the foot went unseen by 2 of 3 judges). */}
+      {view === 'agents' && <KindLegend rows={rows} />}
       <FlowBody rows={visible} byId={byId} totalRows={rows.length} view={view} maxHeight={rowsHeight} collapsed={collapsed} searching={Boolean(query.trim())}
-        pauses={trace.pauses} slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
+        pauses={trace.pauses} cursorLine={moving} sharedDetail={sharedDetail} expandedIds={view === 'agents' ? new Set([...openFamilies, ...openSteps]) : undefined} fixedHeight={isLive} slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
         trackPx={trackPx} showCursor={showCursor} markers={markers} fillByAgent={agentFill === 'agent'} zoomed={zoom !== null} renderIcon={renderIcon}
         emptyText={rows.length === 0 ? 'No spans yet. Waiting for trace events.' : `No matching steps for “${query}”.`}
         onToggle={toggle} onInspect={inspect} onLeave={leave} onPin={pin} onActivate={row => setActiveId(row.id)}
@@ -395,7 +403,6 @@ export function FlowWaterfall({
         onPointerEnter={() => clearTimeout(hideTimer.current)} onPointerLeave={card.pinned ? undefined : leave}>
         <SpanCard id={cardId} row={cardRow} agent={cardAgent} clockMs={clockMs} left={card.left} top={card.top} pinned={card.pinned} onClose={closeCard} renderIcon={renderIcon} compact={view === 'agents'} />
       </div>}
-      {view === 'agents' && <KindLegend rows={rows} />}
       {view === 'spans' && playback}
     </section>
   )

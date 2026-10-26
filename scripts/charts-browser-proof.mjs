@@ -151,6 +151,13 @@ try {
     .map(mark => mark.getBoundingClientRect().top - mark.closest('.fw-row').getBoundingClientRect().top)
     .filter(offset => Math.abs(offset - Math.round(offset / 4) * 4) > 0.5))
   assert.deepEqual(offGrid, [])
+  // In the agent view the card docks under the lanes: it never covers a row.
+  const docked = await page.evaluate(() => {
+    const card = document.querySelector('.fw-card')?.getBoundingClientRect()
+    const rows = [...document.querySelectorAll('.fw-view-agents .fw-row')].map(row => row.getBoundingClientRect())
+    return card ? rows.every(row => row.bottom <= card.top + 1) : null
+  })
+  assert.equal(docked, true)
   // A pinned card highlights its row without dimming the run (peers dim only for a host selectedId); Escape clears it.
   assert.equal(await page.locator('.fw-view-agents .fw-row[aria-selected="true"]').count(), 1)
   assert.equal(await page.locator('[data-flow-waterfall][data-selection]').count(), 0)
@@ -163,6 +170,9 @@ try {
   // v2 and v3 are 50 ms apart, so at full-trace zoom v3's dot lies on v2's; click the visible one, and N reaches v4.
   await page.getByRole('button', { name: 'Jump to Release v3' }).click()
   const jumped = await page.evaluate(() => window.__fwTime)
+  // The jump says where it went: the event's label stays up on the axis and its dot reads pressed.
+  assert.equal((await page.locator('.fw-event-label').innerText()).trim(), 'Release v3')
+  assert.equal(await page.getByRole('button', { name: 'Jump to Release v3' }).getAttribute('aria-pressed'), 'true')
   assert.ok(typeof jumped === 'number' && jumped > 0, `onTimeChange got ${jumped}`)
   await page.locator('[data-flow-waterfall] [role="treegrid"]').focus()
   await page.keyboard.press('n')
@@ -208,9 +218,10 @@ try {
     checks.nesting = 'PASS'
     checks.collapseExpand = 'PASS'
     const terms = await root.locator('dt').allTextContents()
-    assert.deepEqual(terms, ['Duration', 'Cost', 'Tokens', 'LLM calls', 'Tool calls', 'Errors'])
-    assert.deepEqual(await root.locator('dd').allTextContents(), ['7m 11s', '—', '754.4k', '—', '35', '3'])
-    assert.equal(await root.locator('dd').nth(2).getAttribute('title'), '754,448 tokens')
+    // This trace has no cost source, so the Cost tile is left out rather than printed as a dash.
+    assert.deepEqual(terms, ['Duration', 'Tokens', 'LLM calls', 'Tool calls', 'Errors'])
+    assert.deepEqual(await root.locator('dd').allTextContents(), ['7m 11s', '754.4k', '—', '35', '3'])
+    assert.equal(await root.locator('dd').nth(1).getAttribute('title'), '754,448 tokens')
     checks.summary = 'PASS'
     // Each kind is painted distinctly: a fill colour, or a pattern (hatched waiting) in background-image.
     const kinds = await root.locator('.fw-bar').evaluateAll(elements => Object.fromEntries(elements.map(element => {
@@ -294,8 +305,10 @@ try {
     }
     await page.getByRole('button',{name:'Follow live',exact:true}).click()
     assert.equal(await page.getByRole('button',{name:'Follow live',exact:true}).count(),0)
+    // Following live jumps the cursor to the end on the next frame, not synchronously with the click (a 00:13Z gate read it
+    // first and saw 8,787 of 76,635), so wait for the position to reach the end.
+    await page.waitForFunction(() => { const el = document.querySelector('input[type=range]'); return Number(el.value) === Number(el.max) }, null, { timeout: 5000 })
     const following = await page.getByLabel('Playback position').evaluate(el=>({value:Number(el.value),max:Number(el.max)}))
-    assert.equal(following.value,following.max)
     await page.waitForFunction(previous=>Number(document.querySelector('input[type=range]').max)>previous,following.max)
     assert.equal(await page.getByLabel('Playback position').evaluate(el=>Number(el.value)===Number(el.max)),true)
     await story('discovery-streaming-replay')

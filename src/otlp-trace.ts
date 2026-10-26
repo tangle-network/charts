@@ -226,6 +226,6 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
     toolCalls, modelCalls, errors, omitted,
     // A partly priced run still has a known floor: report it with its coverage rather than nothing.
     ...(options.price && priced > 0
-      ? { costUsd: cost, costBasis: 'list' as const, costCoverage: { priced, total: priced + unpriced }, ...(cacheSplit ? {} : { costUpperBound: true }) } : {}),
+      ? { costUsd: cost, costBasis: 'list' as const, costCoverage: { priced, total: priced + unpriced }, ...(cacheSplit ? {} : { costBound: 'upper' as const }) } : {}),
   }
 }

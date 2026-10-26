@@ -57,7 +57,8 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
     if (cost !== undefined) cells.push(['Cost', formatCost(cost)])
     cells.splice(6)
     const kind = span.kind === 'model' ? 'Thinking' : KIND_LABEL[span.kind]
-    const step = owner ? `${kind}${span.name && span.name !== kind && span.name.toLowerCase() !== span.kind ? ` ${span.name}` : ''} · ${duration}${row.ok ? '' : ' · failed'}` : undefined
+    // A zero-length step (an instant event) has nothing to say in a step line ("Thinking Model call 0ms").
+    const step = owner && span.endMs > span.startMs ? `${kind}${span.name && span.name !== kind && span.name.toLowerCase() !== span.kind ? ` ${span.name}` : ''} · ${duration}${row.ok ? '' : ' · failed'}` : undefined
     // The sentence is what the agent did; a name repeated from the title says nothing.
     const sentence = !owner && span.output && span.output !== who.name ? span.output : undefined
     return (
@@ -83,7 +84,7 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
       onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); onClose() } }}>
       {owner && <div className="fw-card-agent"><span className="fw-agent-dot" aria-hidden />{owner.name}{owner.span.detail && <span className="fw-muted"> {owner.span.detail}</span>}</div>}
       <div className="fw-card-head">
-        <span className="fw-icon-tile" aria-hidden>{renderIcon?.(span) ?? <KindGlyph kind={span.kind} />}</span>
+        <span className="fw-icon-tile" aria-hidden>{renderIcon?.(span) ?? <KindGlyph kind={span.kind} name={span.name} />}</span>
         <div className="fw-card-title">
           <div className="fw-card-name">{keepWords(span.name)}</div>
           {span.detail && <div className="fw-muted">{span.detail}</div>}

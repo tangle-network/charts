@@ -77,13 +77,15 @@ export interface FlowTrace {
   costUsd?: number
   /** `list`: priced from a model catalog's list prices, not a bill; the summary says so. */
   costBasis?: 'billed' | 'list'
-  /** The list cost is at most this: the input counts include cached tokens priced as fresh input. */
-  costUpperBound?: boolean
+  /** `costUsd` is a bound, not a count: `lower` prints "≥" (a floor, such as the larger of usage and meter per agent),
+   * `upper` prints "≤" (list price on inputs that include cached tokens priced as fresh). */
+  costBound?: 'lower' | 'upper'
   /** How many model calls `costUsd` covers; when `priced < total` the total is a lower bound and shown as one. */
   costCoverage?: { priced: number; total: number }
   /** The real charge when the producer knows it (for example $0 on a subscription seat), shown beside a list price. */
   billedUsd?: number
-  toolCalls: number
+  /** Tool calls the producer counted; absent means unknown and is shown as a dash, never as zero. */
+  toolCalls?: number
   /** Authoritative LLM request count when supplied; absent means unknown. */
   modelCalls?: number
   errors?: number

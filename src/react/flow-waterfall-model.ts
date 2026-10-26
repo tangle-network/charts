@@ -11,6 +11,8 @@ export interface FlowSegment {
   id: string
   count: number
   retry: boolean
+  /** In a family row, every other member's marks take a darker shade of the family's one hue. */
+  alt?: boolean
 }
 
 export interface FlowWaterfallRow {
@@ -32,12 +34,20 @@ export interface FlowWaterfallRow {
   segments: FlowSegment[]
   /** Direct non-agent children: the row's own thinking and tool work, drawn over its waiting extent. */
   own: FlowSegment[]
+  /** Direct children counted from the spans, before marks merge for display (merging depends on zoom). */
+  counts?: { model: number; tool: number; failed: number }
   /** The span retries a failed one; its bar carries a retry glyph. */
   retry: boolean
   /** The row delegates to child agents, so the gaps in its own work are waiting. */
   hasAgents: boolean
   /** Recorded cost of the row and its descendants, only when every model call below it has a recorded cost. */
   rollupCostUsd?: number
+  /** Agent view: the family row this agent belongs to, when agents sharing a role are folded together. */
+  family?: string
+  /** Agent view: the agent whose steps this row is, shown nested under it. */
+  stepOf?: string
+  /** Agent view: indent level (members under a family, steps under an agent). */
+  inset?: number
 }
 
 /** The CSS hue slot: 0 is the root agent's neutral, then five agent hues cycle. */
@@ -158,7 +168,13 @@ export function flowWaterfallRows(trace: FlowTrace, resolutionMs?: number): Flow
       const childCost = child.hasChildren ? child.rollupCostUsd : child.span.costUsd
       if (childCost === undefined) { if (child.kind === 'model' || child.hasChildren) costKnown = false }
       else cost += childCost
-      if (child.kind !== 'pipeline' && child.kind !== 'waiting' && ordered(child.span)) row.own.push(segmentOf(child))
+      if (child.kind !== 'pipeline' && child.kind !== 'waiting' && ordered(child.span)) {
+        row.own.push(segmentOf(child))
+        const counts = row.counts ??= { model: 0, tool: 0, failed: 0 }
+        if (!child.ok) counts.failed++
+        else if (child.kind === 'model') counts.model++
+        else counts.tool++
+      }
     }
     if (row.hasChildren && costKnown) row.rollupCostUsd = cost
     if (row.hasChildren) {
@@ -265,13 +281,13 @@ export function totalsAt(trace: FlowTrace, clockMs: number) {
     costUsd: trace.costUsd === undefined ? undefined : costs ? cost : trace.costUsd,
     tokens: counted ? tokens : trace.promptTokens + trace.completionTokens,
     modelCalls: trace.modelCalls === undefined ? undefined : models,
-    toolCalls: tools,
+    toolCalls: trace.toolCalls === undefined ? undefined : tools,
     errors,
   }
 }
 
 /** The cost a reader can rely on: a lower bound when some calls are unpriced, a dash only when nothing is priced. */
-export function costSummary(costUsd: number | undefined, trace: Pick<FlowTrace, 'costBasis' | 'costCoverage' | 'billedUsd' | 'costUpperBound'>): { value: string; title: string; label: string } {
+export function costSummary(costUsd: number | undefined, trace: Pick<FlowTrace, 'costBasis' | 'costCoverage' | 'billedUsd' | 'costBound'>): { value: string; title: string; label: string } {
   const list = trace.costBasis === 'list'
   const label = list ? 'Cost · list price' : 'Cost'
   if (costUsd === undefined) {
@@ -281,9 +297,112 @@ export function costSummary(costUsd: number | undefined, trace: Pick<FlowTrace, 
   }
   const coverage = trace.costCoverage
   const partial = coverage !== undefined && coverage.priced < coverage.total
-  const upper = !partial && trace.costUpperBound === true
-  const value = `${partial ? '≥' : upper ? '≤' : list ? '≈' : ''}${formatCost(costUsd)}${trace.billedUsd !== undefined ? ` · ${formatCost(trace.billedUsd)} billed` : ''}`
+  const upper = !partial && trace.costBound === 'upper'
+  const value = `${partial || trace.costBound === 'lower' ? '≥' : upper ? '≤' : list ? '≈' : ''}${formatCost(costUsd)}${trace.billedUsd !== undefined ? ` · ${formatCost(trace.billedUsd)} billed` : ''}`
   const parts = [partial ? `${coverage.priced} of ${coverage.total} model calls priced` : coverage ? `all ${coverage.total} model calls priced` : '',
-    list ? 'at the model catalog list price; not a bill' : '', upper ? 'cached input is not split out, so it is priced as fresh input: at most this' : '', trace.billedUsd !== undefined ? `billed ${formatCost(trace.billedUsd)} (the seat charge)` : '']
+    list ? 'at the model catalog list price; not a bill' : '', upper ? 'cached input is not split out, so it is priced as fresh input: at most this' : '', trace.costBound === 'lower' ? 'a floor: the producer reports at least this' : '', trace.billedUsd !== undefined ? `billed ${formatCost(trace.billedUsd)} (the seat charge)` : '']
   return { value, title: parts.filter(Boolean).join('; '), label }
+}
+
+/** The role an agent plays: its name without a trailing counter ("memscale-engineer-3", "Subagent 2"). */
+const roleOf = (name: string) => name.replace(/[-\s]\d+$/, '')
+
+/**
+ * Agents sharing a role fold into one family row until opened: a 17-agent run reads as its few roles, and the bar of a
+ * family carries every member's work in each member's hue. Members follow their opened family, marked with `family`.
+ */
+export function agentFamilies(agents: readonly FlowWaterfallRow[], open: ReadonlySet<string>): FlowWaterfallRow[] {
+  const groups = new Map<string, FlowWaterfallRow[]>()
+  for (const row of agents) {
+    const key = row.parentId === undefined ? `root:${row.id}` : roleOf(row.name)
+    groups.set(key, [...(groups.get(key) ?? []), row])
+  }
+  const out: FlowWaterfallRow[] = []
+  // Each top-level row takes the next hue slot, so no two families share a hue band (two cyan families read as one).
+  let next = 0
+  const hue = (row: FlowWaterfallRow) => row.tone <= 0 ? row.tone : ++next
+  for (const [role, members] of groups) {
+    if (members.length < 2) { out.push(...members.map(row => ({ ...row, tone: hue(row) }))); continue }
+    const tone = hue(members[0]!)
+    const id = `family:${role}`
+    const startMs = Math.min(...members.map(row => row.span.startMs))
+    const endMs = Math.max(...members.map(row => row.span.endMs))
+    const running = members.some(row => spanRunning(row.span))
+    const costs = members.map(row => row.span.costUsd ?? row.rollupCostUsd)
+    const known = costs.filter((cost): cost is number => cost !== undefined)
+    const failed = members.filter(row => !row.ok).length
+    out.push({
+      // The family hangs off its members' parent, so the spawn elbow reaches it from the agent that started them.
+      id, parentId: members[0]!.parentId, name: `${role} ×${members.length}`, kind: 'pipeline', durationLabel: formatSpanDuration(endMs - startMs),
+      approx: members.some(row => row.approx), ok: failed === 0, depth: 0, hasChildren: true, tone,
+      descendants: members.length, segments: [], retry: false, hasAgents: false,
+      // One hue per family (round 5: mixed member hues in one lane read as "muddy"); members alternate shades of it.
+      own: members.flatMap((row, i) => row.own.map(mark => ({ ...mark, tone, alt: i % 2 === 1 }))).sort((a, b) => a.startMs - b.startMs),
+      ...(known.length ? { rollupCostUsd: known.reduce((sum, cost) => sum + cost, 0) } : {}),
+      span: { id, kind: 'pipeline', name: role, startMs, endMs, status: running ? 'running' : failed ? 'failed' : 'done', detail: members[0]!.span.detail, meta: { failedAgents: failed, costPartial: known.length < members.length } },
+    })
+    if (open.has(id)) out.push(...members.map((row, i) => ({ ...row, family: id, inset: 1, tone, own: row.own.map(mark => ({ ...mark, tone, alt: i % 2 === 1 })) })))
+  }
+  return out
+}
+
+/** The second line of an agent row: how it ended and how much it did ("failed · 3 turns · 412 tool calls", "6 agents · 4 failed"). */
+export function agentSummary(row: FlowWaterfallRow): string {
+  if (row.id.startsWith('family:')) {
+    const failed = Number(row.span.meta?.failedAgents ?? 0)
+    return `${row.descendants} agents${failed ? ` · ${failed} failed` : ''}`
+  }
+  // A folded run of steps already says its count in its name; its second line says how it ended.
+  if (row.id.startsWith('run:')) { const failed = row.own.filter(mark => mark.kind === 'failed').length; return failed ? `${failed} failed` : 'all done' }
+  // Counted from the spans, not the display marks: merging short neighbours changes with zoom (Codex review on #30).
+  const counts = row.counts ?? { model: 0, tool: 0, failed: 0 }
+  const turns = counts.model + counts.failed
+  const tools = counts.tool
+  const state = row.span.outcome?.label ?? (spanRunning(row.span) ? 'running' : row.ok ? 'done' : 'failed')
+  // An agent's model calls are its turns; inside one step they are model calls.
+  const unit = row.kind === 'pipeline' ? ['turn', 'turns'] : ['model call', 'model calls']
+  return [state, turns ? `${turns} ${turns === 1 ? unit[0] : unit[1]}` : '', tools ? `${tools} tool ${tools === 1 ? 'call' : 'calls'}` : ''].filter(Boolean).join(' · ')
+}
+
+/**
+ * The agent view's rows: families folded until opened, and an opened agent's own steps (its turns and tool calls, not its
+ * child agents) nested beneath it with their icons, durations and costs, as a reader drills from the run into one agent.
+ */
+export function agentViewRows(agents: readonly FlowWaterfallRow[], rows: readonly FlowWaterfallRow[], openFamilies: ReadonlySet<string>, openSteps: ReadonlySet<string>): FlowWaterfallRow[] {
+  const base = agentFamilies(agents, openFamilies)
+  if (openSteps.size === 0) return base
+  const steps = new Map<string, FlowWaterfallRow[]>()
+  for (const row of rows) {
+    if (row.parentId === undefined || !openSteps.has(row.parentId) || row.kind === 'pipeline') continue
+    steps.set(row.parentId, [...(steps.get(row.parentId) ?? []), row])
+  }
+  return base.flatMap(row => openSteps.has(row.id)
+    ? [row, ...stepRuns(steps.get(row.id) ?? []).map(step => ({ ...step, stepOf: row.id, inset: (row.inset ?? 0) + 1, tone: row.tone, own: step.own.map(mark => ({ ...mark, tone: row.tone })) }))]
+    : [row])
+}
+
+/** Three or more consecutive steps of one kind and name read as one row ("15 model calls · 4h"), each a mark in its bar. */
+function stepRuns(steps: readonly FlowWaterfallRow[]): FlowWaterfallRow[] {
+  const out: FlowWaterfallRow[] = []
+  for (let i = 0; i < steps.length;) {
+    let j = i
+    while (j < steps.length && steps[j]!.kind === steps[i]!.kind && steps[j]!.name === steps[i]!.name) j++
+    const run = steps.slice(i, j)
+    if (run.length < 3) { out.push(...run); i = j; continue }
+    const first = run[0]!
+    const startMs = Math.min(...run.map(step => step.span.startMs))
+    const endMs = Math.max(...run.map(step => step.span.endMs))
+    const failed = run.filter(step => !step.ok).length
+    const costs = run.map(step => step.span.costUsd ?? step.rollupCostUsd).filter((cost): cost is number => cost !== undefined)
+    const noun = first.kind === 'model' ? 'model calls' : first.kind === 'tool' ? `${first.name} calls` : `${first.name} steps`
+    out.push({
+      ...first, id: `run:${first.id}`, name: `${run.length} ${noun}`, durationLabel: formatSpanDuration(endMs - startMs), ok: failed === 0,
+      hasChildren: false, descendants: 0, segments: [],
+      own: run.map(step => ({ startMs: step.span.startMs, endMs: step.span.endMs, kind: step.ok ? (step.kind === 'model' ? 'model' : 'tool') : 'failed', tone: first.tone, id: step.id, count: 1, retry: step.retry })),
+      ...(costs.length ? { rollupCostUsd: costs.reduce((sum, cost) => sum + cost, 0) } : {}),
+      span: { ...first.span, id: `run:${first.id}`, name: `${run.length} ${noun}`, startMs, endMs, status: failed ? 'failed' : first.span.status, costUsd: undefined },
+    })
+    i = j
+  }
+  return out
 }

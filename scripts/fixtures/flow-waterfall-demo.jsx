@@ -43,8 +43,10 @@ async function source(name) {
   if (name.startsWith('otlp:')) {
     const started = performance.now()
     const { spans } = parseOtlpJsonl(await (await fetch(`/data/${name.slice(5)}`)).text())
-    // List prices come from the Router's catalog, the price owner, when the page can reach it.
-    const catalog = await fetch('https://router.tangle.tools/v1/models').then(r => r.json()).catch(() => null)
+    // List prices come from the Router's catalog, the price owner: a copy saved beside the data for this capture when there
+    // is one (so every frame prices alike), else the live catalog when the page can reach it.
+    const catalog = await fetch('/data/router-models.json').then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .catch(() => fetch('https://router.tangle.tools/v1/models').then(r => r.json())).catch(() => null)
     const trace = otlpFlowTrace(spans, catalog ? { price: catalogPrice(catalog) } : {})
     window.__fwConvertMs = performance.now() - started
     // outcomes=1: each agent's recorded status as its outcome, so the legend and lane colors show on real runs.
@@ -61,9 +63,16 @@ async function source(name) {
 }
 
 /** Reveal a recorded trace as a stream: spans appear at their start and run until their end. */
+/** The trace as it stood at `now`: spans that began, and run totals summed from the calls that finished by then. */
 function reveal(trace, now) {
+  const done = trace.spans.filter(s => s.kind === 'model' && s.endMs <= now)
+  const sum = key => done.reduce((total, s) => total + (s[key] ?? 0), 0)
+  const priced = done.filter(s => s.costUsd !== undefined)
   return { ...trace, totalMs: now,
     spans: trace.spans.filter(s => s.startMs <= now).map(s => s.endMs > now ? { ...s, endMs: now, status: 'running' } : s),
+    promptTokens: sum('promptTokens'), completionTokens: sum('completionTokens'), modelCalls: done.length,
+    costUsd: priced.length ? priced.reduce((total, s) => total + s.costUsd, 0) : undefined,
+    costCoverage: trace.costCoverage ? { priced: priced.length, total: done.length } : undefined,
     toolCalls: trace.spans.filter(s => s.kind === 'tool' && s.startMs <= now).length,
     errors: trace.spans.filter(s => s.status === 'failed' && s.endMs <= now).length }
 }

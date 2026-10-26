@@ -1,5 +1,29 @@
 # @tangle-network/charts
 
+## 0.20.2
+
+- Agent rows count their turns and tool calls from the spans, not the merged display marks, so the counts no longer change with zoom; a trace without `toolCalls` keeps the dash during playback (both from Codex review on #30).
+- Agent view: three or more consecutive steps of one kind and name fold into one row ("15 model calls"), each step a mark in its bar. Tool steps carry a generic identity glyph by name (terminal, file, pencil, lens, globe, branch). The playhead stays in sight at rest. End labels sit above connectors. The card's dot takes the lane's drawn hue. The Cost tile is left out when no cost source exists. Light bars carry the full hue (tool steps 62%).
+- Event track: the event a reader jumps to keeps its label up on the axis and its dot reads pressed, so the jump says where it went.
+- `FlowTrace.costBound: 'lower' | 'upper'` marks `costUsd` as a floor ("≥") or a ceiling ("≤"); it replaces 0.20.1's `costUpperBound` flag, which `otlpFlowTrace` now writes as `costBound: 'upper'`.
+- `FlowTrace.toolCalls` is optional: absent shows a dash with its reason, never "0". `summary={false}` drops the stat strip for a page with its own stat row.
+- Agent view: one faint curved elbow per spawn at rest, in the agent's hue, at full strength for the agent under the pointer, pinned or focused.
+- Agent view: the kind key sits directly above the lanes.
+- Agent view: agents sharing a role (a name that differs only by a trailing counter) fold into one family row, `memscale-engineer ×6`, whose bar carries every member's work in its member's hue; its chevron or a click opens the members beneath it.
+- Agent view: every agent row has a second line saying how it ended and how much it did (`failed · 3 turns · 412 tool calls`; a family: `6 agents · 4 failed`), after the model when agents differ.
+- Agent view: the turn that ended a failed agent carries the failure glyph inside the bar, and retries keep theirs.
+- Agent view: an agent's chevron opens its own steps (turns and tool calls) nested beneath it, with their icons, end labels and a summary line, instead of switching to the steps view.
+- Agent view: every top-level row takes the next hue slot, so no two families share a hue; dark fills carry 94% of the hue; spawn elbows rest at 60%.
+- Agent view: a family row keeps one hue, its members alternating shades of it, and its end label shows the family's duration and cost (a floor, "≥", when some members recorded none).
+- Agent view: the card docks under the lanes instead of covering the plot; the scrubber track shows its progress.
+- Cards: a zero-length step gets no step line.
+- Agent view: when every agent runs the same model, the headline names it once and the rows leave it out.
+- Agent view: a failed turn draws like any turn and the warning by the name is muted; the agent's failure shows once, by its name and its end label.
+- Live: the body keeps its full height as agents arrive, so the page below does not shift.
+- Light theme: bars carry 88% of the agent hue (tool steps 46%).
+- `live.css`: meter key values use weight 600, so live charts keep to the 400/600 pair.
+- Demo harness: live replay sums run totals from the calls finished so far; the motion recording is captured in its own folder.
+
 ## 0.20.1
 
 - `HBars`: every bar answers a hover with its label and value, or the row's own `title` (from disco-evolve-play's #28).

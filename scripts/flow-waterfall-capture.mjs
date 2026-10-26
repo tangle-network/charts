@@ -73,32 +73,77 @@ try {
     for (const [source, view, prefix, extra] of sets) {
       for (const theme of ['dark', 'light']) {
         const { page, context } = await open(`fixture=otlp:${source}&view=${view}&theme=${theme}&width=1440&height=720&label=Trace${extra}`, { width: 1512, height: 945 })
-        await page.screenshot({ path: `${out}/judge-${prefix}${theme}-rest.png` })
+        // Frames crop to the component with a 32 px margin, as the reference frames show only the trace card.
+        // A tall viewport, so opening a family never scrolls the header out of the crop.
+        await page.setViewportSize({ width: 1512, height: 1800 })
+        const shot = async name => {
+          const box = await page.locator('[data-flow-waterfall]').boundingBox()
+          await page.screenshot({ path: `${out}/judge-${prefix}${theme}-${name}.png`, clip: { x: Math.max(0, box.x - 32), y: Math.max(0, box.y - 32), width: Math.min(1512, box.width + 64), height: box.height + 64 } })
+        }
+        // Headless captures draw no pointer; the reference stills do. Draw one exactly where the hover or click is.
+        const cursor = (x, y) => page.evaluate(([cx, cy]) => {
+          document.getElementById('judge-cursor')?.remove()
+          const el = document.createElement('div')
+          el.id = 'judge-cursor'
+          el.style.cssText = `position:fixed;left:${cx}px;top:${cy}px;z-index:99999;pointer-events:none;width:18px;height:26px`
+          el.innerHTML = '<svg viewBox="0 0 18 26" width="18" height="26"><path d="M1 1v20l5-5 4 9 3-1.5-4-8.5h7z" fill="#111" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>'
+          document.body.appendChild(el)
+        }, [x, y])
+        await shot('rest')
         const bars = page.locator('.fw-row:not(.fw-sticky-row) .fw-bar')
-        const bar = bars.nth(Math.min(view === 'agents' ? 6 : 3, Math.max(0, (await bars.count()) - 1)))
+        const bar = bars.nth(Math.min(view === 'agents' ? 2 : 3, Math.max(0, (await bars.count()) - 1)))
         // Point where a reader would: the bar's centre, which may be one of its segments (each opens its own card).
         const box = await bar.boundingBox()
         await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.waitForTimeout(350)
-        await page.screenshot({ path: `${out}/judge-${prefix}${theme}-hover.png` })
-        await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2); await page.waitForTimeout(350)
-        await page.screenshot({ path: `${out}/judge-${prefix}${theme}-card.png` })
+        await cursor(box.x + box.width / 2, box.y + box.height / 2)
+        await shot('hover')
+        // The card state opens a family when there is one, then pins its first member, as a reader drilling in would.
+        const family = page.locator('.fw-row[data-span-id^="family:"] .fw-toggle').first()
+        if (view === 'agents' && await family.count()) {
+          await family.click(); await page.waitForFunction(() => !document.querySelector('.fw-row.fw-enter'), null, { timeout: 3000 })
+          // Then the member's own steps, nested beneath it, and the first step's card: run, family, agent, step.
+          const memberToggle = page.locator('.fw-row:not([data-span-id^="family:"]) .fw-toggle').nth(1)
+          if (await memberToggle.count()) { await memberToggle.click(); await page.waitForFunction(() => !document.querySelector('.fw-row.fw-enter'), null, { timeout: 3000 }) }
+          // Click the step's own row, so the card describes the step, not a tool segment inside it.
+          const target = page.locator('.fw-row.fw-step .fw-name-text').first()
+          const m = (await target.count()) ? await target.boundingBox() : await page.locator('.fw-row:not([data-span-id^="family:"]) .fw-bar').nth(1).boundingBox()
+          const at = { x: m.x + Math.min(24, m.width / 2), y: m.y + m.height / 2 }
+          await page.mouse.click(at.x, at.y)
+          await page.waitForTimeout(350)
+          await cursor(at.x, at.y)
+        } else { await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2); await cursor(box.x + box.width / 2, box.y + box.height / 2) }
+        await page.waitForTimeout(350)
+        await shot('card')
         report.judge.push({ source, view, theme, bars: await bars.count() })
         await context.close()
       }
     }
     if (process.env.FW_JUDGE_VIDEO) {
       // First paint (grow, unfold) and then the run replayed live, so bars grow and settle as their spans arrive.
-      const context = await browser.newContext({ viewport: { width: 1512, height: 945 }, deviceScaleFactor: 1, recordVideo: { dir: out, size: { width: 1512, height: 945 } } })
+      // Its own folder, and every other recording here renames only Playwright's unnamed page@ files: the fit step once
+      // renamed judge-motion.webm to its own resize recording.
+      const raw = `${out}/motion-raw`
+      mkdirSync(raw, { recursive: true })
+      const context = await browser.newContext({ viewport: { width: 1512, height: 945 }, deviceScaleFactor: 1, recordVideo: { dir: raw, size: { width: 1512, height: 945 } } })
       const page = await context.newPage()
       await page.goto(`${base}?fixture=otlp:${file}&view=agents&theme=dark&width=1440&height=720&label=Trace${desc}`)
       await page.waitForTimeout(2500)
       await page.goto(`${base}?fixture=otlp:${file}&view=agents&theme=dark&width=1440&height=720&label=Trace${desc}&live=1&rate=6000`)
-      await page.waitForTimeout(16000)
+      // The component's own width while the run replays: it must hold still (round 2's recording showed 200-1000 px).
+      const widths = []
+      for (let i = 0; i < 32; i++) {
+        widths.push(Math.round(await page.locator('[data-flow-waterfall]').evaluate(el => el.getBoundingClientRect().width).catch(() => -1)))
+        await page.waitForTimeout(500)
+      }
+      report.judge.push({ replayWidths: widths, steady: Math.max(...widths) - Math.min(...widths) <= 2 })
+      console.log('replay widths', JSON.stringify(widths))
       await context.close()
-      const video = readdirSync(out).find(name => name.endsWith('.webm') && !name.startsWith('fit-') && !name.startsWith('live') && !name.startsWith('judge'))
-      if (video) renameSync(`${out}/${video}`, `${out}/judge-motion.webm`)
+      const recorded = readdirSync(raw).filter(name => name.endsWith('.webm'))
+      if (recorded.length !== 1) throw new Error(`motion recording: expected one webm, found ${recorded.length}`)
+      renameSync(`${raw}/${recorded[0]}`, `${out}/judge-motion.webm`)
     }
   }
+  if (only === 'judge') throw Object.assign(new Error('only judge'), { skip: true })
   if (process.env.FW_LIVE_RELAY) {
     const seconds = Number(process.env.FW_LIVE_SECONDS ?? 60)
     const context = await browser.newContext({ viewport: { width: 1512, height: 945 }, deviceScaleFactor: 1, recordVideo: { dir: out, size: { width: 1512, height: 945 } } })
@@ -113,7 +158,7 @@ try {
     await page.screenshot({ path: `${out}/live-end.png` })
     const samples = await page.evaluate(() => window.__fwLatency)
     await context.close()
-    const video = readdirSync(out).find(name => name.endsWith('.webm') && !name.startsWith('interaction') && !name.startsWith('live'))
+    const video = readdirSync(out).find(name => name.startsWith('page@') && name.endsWith('.webm'))
     if (video) renameSync(`${out}/${video}`, `${out}/live-60s.webm`)
     const q = (values, p) => { const sorted = [...values].sort((a, b) => a - b); return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))] }
     const pixel = samples.map(sample => sample.eventToPixelMs)
@@ -192,7 +237,7 @@ try {
       const during = []
       for (const width of steps) { await page.setViewportSize({ width, height: 1200 }); await page.waitForTimeout(450); during.push({ width, ...(await measure(page)) }) }
       await context.close()
-      const video = readdirSync(out).find(name => name.endsWith('.webm') && !name.startsWith('fit-') && !name.startsWith('interaction') && !name.startsWith('live'))
+      const video = readdirSync(out).find(name => name.startsWith('page@') && name.endsWith('.webm'))
       if (video) renameSync(`${out}/${video}`, `${out}/fit-${tag}-resize.webm`)
       report.fit.push({ fixture: tag, resize: steps.join('>'), trackBefore: before.trackPx, maxPageOverflowPx: Math.max(...during.map(d => d.pageOverflowPx)), tracks: during.map(d => d.trackPx) })
     }
@@ -333,7 +378,7 @@ try {
     await page.getByRole('radio', { name: 'Agents' }).click(); await pause(1200)
     await page.locator('[data-span-id="wri"]').click(); await page.keyboard.press('ArrowRight'); await pause(1200)
     await context.close()
-    const video = readdirSync(out).find(name => name.endsWith('.webm') && !name.startsWith('interaction'))
+    const video = readdirSync(out).find(name => name.startsWith('page@') && name.endsWith('.webm'))
     if (video) renameSync(`${out}/${video}`, `${out}/interaction-spans.webm`)
   }
 } catch (error) {
