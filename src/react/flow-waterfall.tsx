@@ -51,6 +51,8 @@ export interface FlowWaterfallProps {
   selectedId?: string
   /** Escape clears the host's selection, after closing any open card. */
   onDeselect?: () => void
+  /** Show the stat strip (default); a page with its own stat row passes false. */
+  summary?: boolean
 }
 
 interface CardState { target: string; pinned: boolean; left: number; top: number; above: boolean }
@@ -66,7 +68,7 @@ function summaryCells(trace: FlowTrace, at: ReturnType<typeof totalsAt> | undefi
     [cost.label, cost.value, cost.title],
     ['Tokens', formatCount(tokens), `${tokens.toLocaleString()} tokens`],
     ['LLM calls', modelCalls === undefined ? '—' : modelCalls.toLocaleString(), modelCalls === undefined ? 'Model output windows do not establish the number of LLM requests' : undefined],
-    ['Tool calls', (at ? at.toolCalls : trace.toolCalls).toLocaleString()],
+    ['Tool calls', (at ? at.toolCalls : trace.toolCalls)?.toLocaleString() ?? '—', (at ? at.toolCalls : trace.toolCalls) === undefined ? 'The producer did not count tool calls' : undefined],
     ['Errors', errors.toLocaleString()],
   ]
   return { cost, tokens, errors, summary }
@@ -109,7 +111,7 @@ function OutcomeLegend({ agents }: { agents: FlowWaterfallRow[] }) {
 /** Shared trace inspector: the agent timeline and the span waterfall over one clock.
  * Data remains producer-owned; playback, zoom and folding change presentation only. */
 export function FlowWaterfall({
-  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers, onTimeChange, agentFill = 'agent', selectedId, onDeselect, description,
+  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers, onTimeChange, agentFill = 'agent', selectedId, onDeselect, description, summary: showSummary = true,
 }: FlowWaterfallProps) {
   const root = useRef<HTMLElement>(null)
   const search = useRef<HTMLInputElement>(null)
@@ -374,12 +376,12 @@ export function FlowWaterfall({
           </div>}
         </div>
       </header>
-      <dl className="fw-summary">
+      {showSummary && <dl className="fw-summary">
         {summary.map(([name, value, title]) => <div key={name} className={name === 'Errors' && errors > 0 ? 'fw-has-errors' : undefined}>
           <dt>{name}</dt>
           <dd className="fw-value" title={title}>{value}</dd>
         </div>)}
-      </dl>
+      </dl>}
       {view === 'agents' && playback}
       {/* The key sits right above the lanes it explains (round 2: a key at the foot went unseen by 2 of 3 judges). */}
       {view === 'agents' && <KindLegend rows={rows} />}

@@ -83,7 +83,8 @@ export interface FlowTrace {
   costCoverage?: { priced: number; total: number }
   /** The real charge when the producer knows it (for example $0 on a subscription seat), shown beside a list price. */
   billedUsd?: number
-  toolCalls: number
+  /** Tool calls the producer counted; absent means unknown and is shown as a dash, never as zero. */
+  toolCalls?: number
   /** Authoritative LLM request count when supplied; absent means unknown. */
   modelCalls?: number
   errors?: number

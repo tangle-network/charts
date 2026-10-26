@@ -2,6 +2,7 @@
 
 ## 0.20.2
 
+- `FlowTrace.toolCalls` is optional: absent shows a dash with its reason, never "0". `summary={false}` drops the stat strip for a page with its own stat row.
 - Agent view: one faint curved elbow per spawn at rest, in the agent's hue, at full strength for the agent under the pointer, pinned or focused.
 - Agent view: the kind key sits directly above the lanes.
 - Agent view: agents sharing a role (a name that differs only by a trailing counter) fold into one family row, `memscale-engineer ×6`, whose bar carries every member's work in its member's hue; its chevron or a click opens the members beneath it.
