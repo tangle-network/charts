@@ -1,5 +1,9 @@
 # @tangle-network/charts
 
+## 0.21.0
+
+- `Gap` (react): one reading against its target band, and an optional stretch band, on a log or linear scale. A measured value is a dot; a bound is an open arrow pointing where the true value lies. A dashed span runs to the nearest target edge, and every mark has a tooltip. For a metric's distance from its paper number, as in a bar strip.
+
 ## 0.20.3
 
 - The card of a member of a folded family takes the family's hue, so its dot matches the lane.
