@@ -278,6 +278,8 @@ try {
     const duration = await page.locator('dd').first().innerText()
     await page.waitForFunction(previous => document.querySelector('dd').textContent !== previous, duration)
     await page.screenshot({ path: `${output}/live-growing.png`, fullPage: true })
+    const fit = await page.evaluate(() => ({ body: document.querySelector('.fw-scroller').clientHeight, rows: document.querySelector('.fw-canvas').offsetHeight }))
+    assert.ok(fit.body <= fit.rows + 1, `A live body leaves ${fit.body - fit.rows} px empty below its rows`)
     const rowDuration = await page.locator('[data-span-id="tool"] .fw-duration').innerText()
     await page.waitForFunction(previous => document.querySelector('[data-span-id="tool"] .fw-duration').textContent !== previous, rowDuration)
     // Sample the real browser clock and the rendered range input while live ticks continue.
