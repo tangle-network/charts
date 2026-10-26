@@ -243,17 +243,21 @@ export function slowestRow(rows: FlowWaterfallRow[], clockMs: number): FlowWater
 
 /** The agents a reader should look at first: the longest one by the clock, and the costliest when two or more are priced. */
 export function agentCallouts(agents: FlowWaterfallRow[], clockMs: number): { slowestId?: string; costliestId?: string } {
-  let slowest: FlowWaterfallRow | undefined, slowestMs = -1, costliest: FlowWaterfallRow | undefined, top = -1, priced = 0
+  let slowest: FlowWaterfallRow | undefined, slowestMs = -1, costliest: FlowWaterfallRow | undefined, top = -1, priced = 0, timed = 0
   for (const row of agents) {
     if (row.durationLabel === '—' || row.span.startMs > clockMs) continue
-    const ms = (spanRunning(row.span) ? Math.max(row.span.endMs, clockMs) : Math.min(row.span.endMs, clockMs)) - row.span.startMs
-    if (ms > slowestMs) { slowest = row; slowestMs = ms }
+    // Slowest ranks agents with a parent: the root spans the whole run by construction, so it would always win.
+    if (row.kind === 'pipeline' && row.parentId !== undefined) {
+      const ms = (spanRunning(row.span) ? Math.max(row.span.endMs, clockMs) : Math.min(row.span.endMs, clockMs)) - row.span.startMs
+      timed += 1
+      if (ms > slowestMs) { slowest = row; slowestMs = ms }
+    }
     const cost = row.span.costUsd ?? row.rollupCostUsd
     if (cost === undefined) continue
     priced += 1
     if (cost > top) { costliest = row; top = cost }
   }
-  return { slowestId: agents.length > 1 ? slowest?.id : undefined, costliestId: priced > 1 && top > 0 ? costliest?.id : undefined }
+  return { slowestId: timed > 1 ? slowest?.id : undefined, costliestId: priced > 1 && top > 0 ? costliest?.id : undefined }
 }
 
 /** Busy time per agent row: the union of its own work. Their sum over wall time is the parallel speedup. */
