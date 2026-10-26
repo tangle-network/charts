@@ -48,7 +48,10 @@ export interface FlowSpanMark {
 export interface FlowPause {
   startMs: number
   endMs: number
+  /** A few words on the band, such as 'Paused 4 h 40 m'. */
   label: string
+  /** The full reason, shown on hover and focus of the label rather than printed across the rows. */
+  detail?: string
 }
 
 /** A host verdict: `label` is the legend text, `tone` the status color. */
