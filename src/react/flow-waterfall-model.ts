@@ -13,6 +13,8 @@ export interface FlowSegment {
   retry: boolean
   /** In a family row, every other member's marks take a darker shade of the family's one hue. */
   alt?: boolean
+  /** The first merged span's name, e.g. a tool's: shown in the segment's tooltip, and in the bar when one step fits it. */
+  name?: string
 }
 
 export interface FlowWaterfallRow {
@@ -201,6 +203,7 @@ function segmentOf(row: FlowWaterfallRow): FlowSegment {
     id: row.id,
     count: 1,
     retry: row.retry,
+    name: row.name,
   }
 }
 
@@ -352,7 +355,7 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
     out.push({
       // The family hangs off its members' parent, so the spawn elbow reaches it from the agent that started them.
       costFloor: known.length < members.length || members.some(row => row.costFloor),
-      id, parentId: members[0]!.parentId, name: `${role} ×${members.length}`, kind: 'pipeline', durationLabel: formatSpanDuration(endMs - startMs),
+      id, parentId: members[0]!.parentId, name: role, kind: 'pipeline', durationLabel: formatSpanDuration(endMs - startMs),
       approx: members.some(row => row.approx), ok: failed === 0, depth: 0, hasChildren: true, tone,
       descendants: members.length, segments: [], retry: false, hasAgents: false,
       // One hue per family (round 5: mixed member hues in one lane read as "muddy"); members alternate shades of it.
@@ -423,7 +426,7 @@ function stepRuns(steps: readonly FlowWaterfallRow[]): FlowWaterfallRow[] {
     out.push({
       ...first, id: `run:${first.id}`, name: `${run.length} ${noun}`, durationLabel: formatSpanDuration(endMs - startMs), ok: failed === 0,
       hasChildren: false, descendants: 0, segments: [],
-      own: run.map(step => ({ startMs: step.span.startMs, endMs: step.span.endMs, kind: step.ok ? (step.kind === 'model' ? 'model' : 'tool') : 'failed', tone: first.tone, id: step.id, count: 1, retry: step.retry })),
+      own: run.map(step => ({ startMs: step.span.startMs, endMs: step.span.endMs, kind: step.ok ? (step.kind === 'model' ? 'model' : 'tool') : 'failed', tone: first.tone, id: step.id, count: 1, retry: step.retry, name: step.name })),
       ...(costs.length ? { rollupCostUsd: costs.reduce((sum, cost) => sum + cost, 0) } : {}),
       span: { ...first.span, id: `run:${first.id}`, name: `${run.length} ${noun}`, startMs, endMs, status: failed ? 'failed' : first.span.status, costUsd: undefined },
     })
