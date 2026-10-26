@@ -43,8 +43,10 @@ async function source(name) {
   if (name.startsWith('otlp:')) {
     const started = performance.now()
     const { spans } = parseOtlpJsonl(await (await fetch(`/data/${name.slice(5)}`)).text())
-    // List prices come from the Router's catalog, the price owner, when the page can reach it.
-    const catalog = await fetch('https://router.tangle.tools/v1/models').then(r => r.json()).catch(() => null)
+    // List prices come from the Router's catalog, the price owner: a copy saved beside the data for this capture when there
+    // is one (so every frame prices alike), else the live catalog when the page can reach it.
+    const catalog = await fetch('/data/router-models.json').then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .catch(() => fetch('https://router.tangle.tools/v1/models').then(r => r.json())).catch(() => null)
     const trace = otlpFlowTrace(spans, catalog ? { price: catalogPrice(catalog) } : {})
     window.__fwConvertMs = performance.now() - started
     // outcomes=1: each agent's recorded status as its outcome, so the legend and lane colors show on real runs.
