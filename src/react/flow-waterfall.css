@@ -66,10 +66,11 @@
 .fw-root [data-tone="3"] { --tone: var(--fw-h3); }
 .fw-root [data-tone="4"] { --tone: var(--fw-h4); }
 .fw-root [data-tone="5"] { --tone: var(--fw-h5); }
-/* The fill and outline are the full hue, which passes 3:1 against the card, so every mark keeps its edge; the dim shade (tool
-   calls) mixes the hue toward the card, more of it on a dark card. */
+/* The outline is the full hue, which passes 3:1 against the card, so every mark keeps its edge; on a dark card the fill sits a
+   step toward the canvas, so a bar reads apart from a handoff pill in the full hue. The dim shade (tool calls) mixes the hue
+   toward the card, more of it on a dark card. */
 .fw-root [data-tone] {
-  --fill: var(--tone);
+  --fill: light-dark(var(--tone), color-mix(in oklab, var(--tone) 94%, hsl(var(--hsl-background))));
   --line: var(--tone);
   --dim: light-dark(color-mix(in oklab, var(--tone) 62%, var(--fw-surface)), color-mix(in oklab, var(--tone) 40%, var(--fw-surface)));
   --dim-line: light-dark(color-mix(in oklab, var(--tone) 70%, var(--fw-surface)), color-mix(in oklab, var(--tone) 55%, var(--fw-surface)));
