@@ -41,9 +41,10 @@ export interface FlowWaterfallProps {
   markers?: FlowMarker[]
   /** The time the reader moved to, in trace ms; `null` when following live or showing the whole trace. */
   onTimeChange?: (t: number | null) => void
-  /** What a bar's color means: the agent (default), whose hue its steps and handoffs share, with the outcome on the row dot, legend and
-   * crash glyph; or its `outcome`. */
-  agentFill?: 'outcome' | 'agent'
+  /** What an agent bar's color means. `muted` (default): every agent one quiet tone, with color spent on state only: the outcome on
+   * the row dot, red for failure, amber for the slowest. `agent`: each agent its own hue, shared by its steps and handoffs. `outcome`: the
+   * bar takes its outcome's color. */
+  agentFill?: 'muted' | 'outcome' | 'agent'
   /** One line beside the title saying what the run was for, such as its goal. */
   description?: string
   /** The row the host has selected, such as the agent whose transcript is open: it lifts and, in the agent view, its peers dim.
@@ -112,7 +113,7 @@ function OutcomeLegend({ agents }: { agents: FlowWaterfallRow[] }) {
 /** Shared trace inspector: the agent timeline and the span waterfall over one clock.
  * Data remains producer-owned; playback, zoom and folding change presentation only. */
 export function FlowWaterfall({
-  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers, onTimeChange, agentFill = 'agent', selectedId, onDeselect, description, summary: showSummary = true,
+  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers, onTimeChange, agentFill = 'muted', selectedId, onDeselect, description, summary: showSummary = true,
 }: FlowWaterfallProps) {
   const root = useRef<HTMLElement>(null)
   const search = useRef<HTMLInputElement>(null)
@@ -351,7 +352,7 @@ export function FlowWaterfall({
   )
 
   return (
-    <section ref={root} data-flow-waterfall aria-label={label} className={`fw-root fw-root-${view}`} data-selection={selectedId ? '' : undefined}
+    <section ref={root} data-flow-waterfall aria-label={label} className={`fw-root fw-root-${view} fw-fill-${agentFill}`} data-selection={selectedId ? '' : undefined}
       style={{ '--fw-name-w': `${nameWidth}px`, '--fw-pad': `${LANE_PAD}px`, '--fw-row-h': `${ROW_HEIGHT[view]}px` } as CSSProperties}>
       <header className="fw-heading">
         <div className="fw-title-block">
@@ -394,7 +395,7 @@ export function FlowWaterfall({
       {view === 'agents' && <KindLegend rows={rows} />}
       <FlowBody rows={visible} byId={byId} totalRows={rows.length} view={view} maxHeight={rowsHeight} collapsed={collapsed} searching={Boolean(query.trim())}
         pauses={trace.pauses} cursorLine={moving} sharedDetail={sharedDetail} expandedIds={view === 'agents' ? new Set([...openFamilies, ...openSteps]) : undefined} holdHeight={isLive} slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
-        trackPx={trackPx} showCursor={showCursor} markers={markers} fillByAgent={agentFill === 'agent'} zoomed={zoom !== null} renderIcon={renderIcon}
+        trackPx={trackPx} showCursor={showCursor} markers={markers} fillByAgent={agentFill !== 'outcome'} zoomed={zoom !== null} renderIcon={renderIcon}
         emptyText={rows.length === 0 ? 'No spans yet. Waiting for trace events.' : `No matching steps for “${query}”.`}
         onToggle={toggle} onInspect={inspect} onLeave={leave} onPin={pin} onActivate={row => setActiveId(row.id)}
         onActiveChange={setActiveId} onScrub={scrubTo} onZoom={zoomBy} onPan={pan}

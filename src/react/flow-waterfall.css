@@ -236,6 +236,10 @@
 .fw-root .fw-view-agents .fw-bar.fw-k-pipeline.fw-has-marks { background: repeating-linear-gradient(-45deg, color-mix(in oklab, var(--tone) 28%, transparent) 0 1px, transparent 1px 5px), color-mix(in oklab, var(--tone) 9%, transparent); }
 .fw-root .fw-view-agents .fw-bar.fw-k-pipeline:not(.fw-has-marks, .fw-has-agents) { background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); }
 /* A host outcome re-tones the whole lane: dot, bar and marks. */
+/* Muted agents (the default): one quiet tone for every agent bar, its steps and handoffs; the slowest agent alone takes amber, and
+   failure keeps its red glyph, so color only ever means state. */
+.fw-root.fw-fill-muted .fw-view-agents [data-tone] { --tone: var(--fw-h0); }
+.fw-root.fw-fill-muted .fw-view-agents .fw-row[data-slowest], .fw-root.fw-fill-muted .fw-view-agents .fw-row[data-slowest] [data-tone] { --tone: var(--fw-amber); }
 .fw-root [data-outcome="ok"], .fw-root [data-outcome="ok"] [data-tone] { --tone: var(--fw-ok); }
 .fw-root [data-outcome="failed"], .fw-root [data-outcome="failed"] [data-tone] { --tone: var(--fw-failed); }
 .fw-root [data-outcome="warn"], .fw-root [data-outcome="warn"] [data-tone] { --tone: var(--fw-amber); }
