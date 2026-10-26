@@ -70,6 +70,15 @@ describe("FlowWaterfall host-owned state", () => {
     expect(rowIds(container)).toEqual(["root", "build", "link"]);
   });
 
+  it("marks matched rows apart from the ancestors shown for context", () => {
+    const { container } = render(<FlowWaterfall trace={trace} query="link" />);
+    const mark = (id: string) =>
+      container.querySelector<HTMLElement>(`[role="treegrid"] [role="row"][data-span-id="${id}"]:not(.fw-sticky-row)`)?.dataset.search;
+    expect(mark("link")).toBe("match");
+    expect(mark("build")).toBe("context");
+    expect(mark("root")).toBe("context");
+  });
+
   it("zooms from the host's window and reports each change", () => {
     const seen: (FlowWaterfallWindow | null)[] = [];
     const window = { startMs: 200, endMs: 600 };

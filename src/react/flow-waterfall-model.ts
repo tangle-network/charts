@@ -207,15 +207,20 @@ function segmentOf(row: FlowWaterfallRow): FlowSegment {
   }
 }
 
+/** The rows a search term matches by themselves, before ancestor context is added. */
+export function searchMatchIds(rows: readonly FlowWaterfallRow[], query: string, matchSpan?: (span: FlowSpan, query: string) => boolean): ReadonlySet<string> {
+  const term = query.trim()
+  const lower = term.toLowerCase()
+  return new Set(rows.filter(row => matchSpan ? matchSpan(row.span, term) : `${row.name} ${row.span.detail ?? ''} ${row.kind} ${row.ok ? '' : 'failed'} ${row.span.status ?? ''}`.toLowerCase().includes(lower)).map(row => row.id))
+}
+
 /** Search keeps ancestor context and deliberately reveals matches inside collapsed branches. */
 export function visibleFlowWaterfallRows(rows: FlowWaterfallRow[], query: string, collapsed: ReadonlySet<string>, matchSpan?: (span: FlowSpan, query: string) => boolean): FlowWaterfallRow[] {
   const byId = new Map(rows.map(row => [row.id, row]))
-  const term = query.trim().toLowerCase()
-  if (term) {
+  if (query.trim()) {
     const matching = new Set<string>()
-    for (const row of rows) {
-      if (matchSpan ? !matchSpan(row.span, query.trim()) : !`${row.name} ${row.span.detail ?? ''} ${row.kind} ${row.ok ? '' : 'failed'} ${row.span.status ?? ''}`.toLowerCase().includes(term)) continue
-      let cursor: FlowWaterfallRow | undefined = row
+    for (const id of searchMatchIds(rows, query, matchSpan)) {
+      let cursor = byId.get(id)
       while (cursor && !matching.has(cursor.id)) {
         matching.add(cursor.id)
         cursor = cursor.parentId ? byId.get(cursor.parentId) : undefined
@@ -248,7 +253,12 @@ export function slowestRow(rows: FlowWaterfallRow[], clockMs: number): FlowWater
  * chain ends last wins. Cutting latency anywhere else leaves the trace's end unchanged. */
 export function criticalPathIds(rows: readonly FlowWaterfallRow[]): ReadonlySet<string> {
   const children = new Map<string, FlowWaterfallRow[]>()
-  for (const row of rows) if (row.parentId) children.set(row.parentId, [...children.get(row.parentId) ?? [], row])
+  for (const row of rows) {
+    if (!row.parentId) continue
+    const siblings = children.get(row.parentId)
+    if (siblings) siblings.push(row)
+    else children.set(row.parentId, [row])
+  }
   let best: { end: number; chain: string[] } | undefined
   for (const root of rows) {
     if (root.parentId) continue

@@ -224,6 +224,9 @@
 .fw-root .fw-row[data-running] .fw-bar { transition: width 120ms linear; }
 /* The chain that gates the trace's end: an accent edge under its bars, so cutting latency there is visibly what moves the end. */
 .fw-root .fw-row[data-critical] .fw-bar { box-shadow: inset 0 -2px 0 var(--fw-accent); }
+/* While searching, ancestors shown only for context recede and the matching names stand out. */
+.fw-root .fw-row[data-search="context"] .fw-label { opacity: 0.55; }
+.fw-root .fw-row[data-search="match"] .fw-name-text { font-weight: 600; }
 /* A restart: an amber notch through the bar at that moment; the bar keeps its own state. */
 .fw-root .fw-mark { position: absolute; z-index: 2; left: calc(var(--x0) - 1px); width: 2px; top: calc(50% + var(--fw-bar-shift) - var(--fw-bar-h) / 2 - 4px); height: calc(var(--fw-bar-h) + 8px);
   border-radius: 2px; background: var(--fw-amber); box-shadow: 0 0 0 1px var(--fw-surface); opacity: var(--on); pointer-events: auto; }
