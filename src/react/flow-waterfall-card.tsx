@@ -57,7 +57,8 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
     if (cost !== undefined) cells.push(['Cost', formatCost(cost)])
     cells.splice(6)
     const kind = span.kind === 'model' ? 'Thinking' : KIND_LABEL[span.kind]
-    const step = owner ? `${kind}${span.name && span.name !== kind && span.name.toLowerCase() !== span.kind ? ` ${span.name}` : ''} · ${duration}${row.ok ? '' : ' · failed'}` : undefined
+    // A zero-length step (an instant event) has nothing to say in a step line ("Thinking Model call 0ms").
+    const step = owner && span.endMs > span.startMs ? `${kind}${span.name && span.name !== kind && span.name.toLowerCase() !== span.kind ? ` ${span.name}` : ''} · ${duration}${row.ok ? '' : ' · failed'}` : undefined
     // The sentence is what the agent did; a name repeated from the title says nothing.
     const sentence = !owner && span.output && span.output !== who.name ? span.output : undefined
     return (

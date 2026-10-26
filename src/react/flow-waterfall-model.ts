@@ -11,6 +11,8 @@ export interface FlowSegment {
   id: string
   count: number
   retry: boolean
+  /** In a family row, every other member's marks take a darker shade of the family's one hue. */
+  alt?: boolean
 }
 
 export interface FlowWaterfallRow {
@@ -311,15 +313,17 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
     const endMs = Math.max(...members.map(row => row.span.endMs))
     const running = members.some(row => spanRunning(row.span))
     const costs = members.map(row => row.span.costUsd ?? row.rollupCostUsd)
+    const known = costs.filter((cost): cost is number => cost !== undefined)
     const failed = members.filter(row => !row.ok).length
     out.push({
       // The family hangs off its members' parent, so the spawn elbow reaches it from the agent that started them.
       id, parentId: members[0]!.parentId, name: `${role} ×${members.length}`, kind: 'pipeline', durationLabel: formatSpanDuration(endMs - startMs),
       approx: members.some(row => row.approx), ok: failed === 0, depth: 0, hasChildren: true, tone: members[0]!.tone,
       descendants: members.length, segments: [], retry: false, hasAgents: false,
-      own: members.flatMap(row => row.own).sort((a, b) => a.startMs - b.startMs),
-      ...(costs.every(cost => cost !== undefined) ? { rollupCostUsd: costs.reduce<number>((sum, cost) => sum + (cost ?? 0), 0) } : {}),
-      span: { id, kind: 'pipeline', name: role, startMs, endMs, status: running ? 'running' : failed ? 'failed' : 'done', detail: members[0]!.span.detail, meta: { failedAgents: failed } },
+      // One hue per family (round 5: mixed member hues in one lane read as "muddy"); members alternate shades of it.
+      own: members.flatMap((row, i) => row.own.map(mark => ({ ...mark, tone: members[0]!.tone, alt: i % 2 === 1 }))).sort((a, b) => a.startMs - b.startMs),
+      ...(known.length ? { rollupCostUsd: known.reduce((sum, cost) => sum + cost, 0) } : {}),
+      span: { id, kind: 'pipeline', name: role, startMs, endMs, status: running ? 'running' : failed ? 'failed' : 'done', detail: members[0]!.span.detail, meta: { failedAgents: failed, costPartial: known.length < members.length } },
     })
     if (open.has(id)) out.push(...members.map(row => ({ ...row, family: id })))
   }

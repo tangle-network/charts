@@ -46,7 +46,7 @@ export interface RowProps extends RowEvents {
 function Segment({ mark, events, agentView, ending }: { mark: FlowSegment; events: RowEvents; agentView: boolean; ending?: boolean }) {
   // In the agent view only the turn that ended a failed agent carries the failure glyph; a retry always shows its own.
   const glyph = mark.kind === 'failed' ? (agentView && !ending ? null : <FailGlyph />) : mark.retry ? <RetryGlyph /> : null
-  return <span className={`fw-seg fw-seg-${mark.kind}`} data-tone={toneKey(mark.tone)} style={at(mark.startMs, mark.endMs)}
+  return <span className={`fw-seg fw-seg-${mark.kind}${mark.alt ? ' fw-seg-alt' : ''}`} data-tone={toneKey(mark.tone)} style={at(mark.startMs, mark.endMs)}
     onPointerEnter={agentView ? event => events.onInspect(mark.id, event.currentTarget) : undefined}
     onClick={agentView ? event => { event.stopPropagation(); events.onPin(mark.id, event.currentTarget) } : undefined}>
     {glyph && <span className="fw-glyph">{glyph}</span>}
@@ -64,7 +64,8 @@ function endLabel(row: FlowWaterfallRow, clockMs: number): string {
   if (!spanRunning(span) && clockMs < span.endMs) return `${formatSpanDuration(Math.max(0, clockMs - span.startMs))}${row.approx ? '~' : ''}`
   const duration = spanRunning(span) ? `${formatSpanDuration(Math.max(span.endMs, clockMs) - span.startMs)}${row.approx ? '~' : ''}` : row.durationLabel
   const cost = span.costUsd ?? (row.rollupCostUsd ? row.rollupCostUsd : undefined)
-  return cost === undefined ? duration : `${duration} · ${formatCost(cost)}`
+  // A family's cost is a floor when some members recorded none.
+  return cost === undefined ? duration : `${duration} · ${span.meta?.costPartial ? '≥' : ''}${formatCost(cost)}`
 }
 
 /** One trace row. Geometry comes from CSS variables, so a row re-renders only when its own state changes. */
