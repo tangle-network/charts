@@ -28,7 +28,7 @@ export interface BodyProps extends RowEvents {
   /** The model every agent shares: rows leave it out because the header names it. */
   sharedDetail?: string
   /** Live: the body keeps its full height as agents arrive, so the page below never shifts. */
-  fixedHeight?: boolean
+  holdHeight?: boolean
   /** The playhead's line across the rows; without it only the dot on the axis shows. */
   cursorLine?: boolean
   /** Agent view: family and agent rows opened in place. */
@@ -99,7 +99,11 @@ export function FlowBody(props: BodyProps) {
   const [viewport, setViewport] = useState(maxHeight)
   const latest = useRef(props)
   latest.current = props
-  const height = props.fixedHeight ? maxHeight : Math.min(maxHeight, Math.max(rows.length, 1) * rowHeight)
+  // A live body fits its rows and grows with them, but never shrinks while live, so a row folding away cannot pull the page
+  // up under the reader. A fixed live height left empty space below a short run (330 px on 22a at 1512 x 945).
+  const tallest = useRef(0)
+  if (!props.holdHeight) tallest.current = 0
+  const height = tallest.current = Math.max(tallest.current, Math.min(maxHeight, Math.max(rows.length, 1) * rowHeight))
   const links = useMemo(() => linksFor(rows, props.byId, view), [rows, props.byId, view])
   const index = useMemo(() => new Map(rows.map((row, i) => [row.id, i])), [rows])
   const motion = useRowMotion(rows)

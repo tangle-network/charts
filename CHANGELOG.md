@@ -1,5 +1,9 @@
 # @tangle-network/charts
 
+## 0.21.3
+
+- A live trace's body fits its rows and grows as rows arrive instead of holding the full height, so a short live run leaves no empty band under its last row. It still never shrinks while live.
+
 ## 0.21.2
 
 - Agent view: the Slowest badge ranks only agents with a parent; the root spans the whole run by construction and always won (hard-code audit D16).
