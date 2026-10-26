@@ -42,6 +42,10 @@ export interface FlowWaterfallRow {
   rollupCostUsd?: number
   /** Agent view: the family row this agent belongs to, when agents sharing a role are folded together. */
   family?: string
+  /** Agent view: the agent whose steps this row is, shown nested under it. */
+  stepOf?: string
+  /** Agent view: indent level (members under a family, steps under an agent). */
+  inset?: number
 }
 
 /** The CSS hue slot: 0 is the root agent's neutral, then five agent hues cycle. */
@@ -329,7 +333,7 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
       ...(known.length ? { rollupCostUsd: known.reduce((sum, cost) => sum + cost, 0) } : {}),
       span: { id, kind: 'pipeline', name: role, startMs, endMs, status: running ? 'running' : failed ? 'failed' : 'done', detail: members[0]!.span.detail, meta: { failedAgents: failed, costPartial: known.length < members.length } },
     })
-    if (open.has(id)) out.push(...members.map((row, i) => ({ ...row, family: id, tone, own: row.own.map(mark => ({ ...mark, tone, alt: i % 2 === 1 })) })))
+    if (open.has(id)) out.push(...members.map((row, i) => ({ ...row, family: id, inset: 1, tone, own: row.own.map(mark => ({ ...mark, tone, alt: i % 2 === 1 })) })))
   }
   return out
 }
@@ -345,4 +349,21 @@ export function agentSummary(row: FlowWaterfallRow): string {
   const tools = count('tool')
   const state = row.span.outcome?.label ?? (spanRunning(row.span) ? 'running' : row.ok ? 'done' : 'failed')
   return [state, turns ? `${turns} ${turns === 1 ? 'turn' : 'turns'}` : '', tools ? `${tools} tool ${tools === 1 ? 'call' : 'calls'}` : ''].filter(Boolean).join(' · ')
+}
+
+/**
+ * The agent view's rows: families folded until opened, and an opened agent's own steps (its turns and tool calls, not its
+ * child agents) nested beneath it with their icons, durations and costs, as a reader drills from the run into one agent.
+ */
+export function agentViewRows(agents: readonly FlowWaterfallRow[], rows: readonly FlowWaterfallRow[], openFamilies: ReadonlySet<string>, openSteps: ReadonlySet<string>): FlowWaterfallRow[] {
+  const base = agentFamilies(agents, openFamilies)
+  if (openSteps.size === 0) return base
+  const steps = new Map<string, FlowWaterfallRow[]>()
+  for (const row of rows) {
+    if (row.parentId === undefined || !openSteps.has(row.parentId) || row.kind === 'pipeline') continue
+    steps.set(row.parentId, [...(steps.get(row.parentId) ?? []), row])
+  }
+  return base.flatMap(row => openSteps.has(row.id)
+    ? [row, ...(steps.get(row.id) ?? []).map(step => ({ ...step, stepOf: row.id, inset: (row.inset ?? 0) + 1, tone: row.tone, own: step.own.map(mark => ({ ...mark, tone: row.tone })) }))]
+    : [row])
 }

@@ -39,8 +39,8 @@ export interface RowProps extends RowEvents {
   renderIcon?: (span: FlowSpan) => ReactNode
   fillByAgent?: boolean
   sharedDetail?: string
-  /** A family row whose members are shown below it. */
-  familyOpen?: boolean
+  /** Agent view: a family or agent opened in place, its members or steps shown below it. */
+  expanded?: boolean
 }
 
 function Segment({ mark, events, agentView, ending }: { mark: FlowSegment; events: RowEvents; agentView: boolean; ending?: boolean }) {
@@ -82,13 +82,16 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   const label = endLabel(row, clockMs)
   const inspect = (event: { currentTarget: HTMLElement }) => props.onInspect(row.id, event.currentTarget)
   const family = agentView && row.id.startsWith('family:')
+  const step = agentView && row.stepOf !== undefined
+  // An agent with its own steps opens them in place; a family opens its members.
+  const opens = family || (agentView && isAgent && row.own.length > 0)
   const ending = agentView && !row.ok ? marks.map(mark => mark.kind).lastIndexOf('failed') : -1
 
   return (
     <div role="row" data-span-id={row.id} data-span-kind={kind} data-slowest={slowest || undefined} data-running={running || undefined}
       aria-level={agentView ? undefined : row.depth + 1} aria-expanded={row.hasChildren && !agentView ? !folded : undefined}
       aria-selected={selected} tabIndex={focusable ? 0 : -1} data-tone={toneKey(row.tone)} data-outcome={fillByAgent ? undefined : span.outcome?.tone}
-      className={`fw-row${active ? ' fw-active' : ''}${sticky ? ' fw-sticky-row' : ''}${isAgent ? ' fw-agent-row' : ''}${motion?.enter !== undefined ? ' fw-enter' : ''}${motion?.settle ? ' fw-settle' : ''}`}
+      className={`fw-row${active ? ' fw-active' : ''}${sticky ? ' fw-sticky-row' : ''}${isAgent ? ' fw-agent-row' : ''}${step ? ' fw-step' : ''}${motion?.enter !== undefined ? ' fw-enter' : ''}${motion?.settle ? ' fw-settle' : ''}`}
       style={{ '--row-y': `${top}px`, '--fw-enter-delay': `${motion?.enter ?? 0}ms` } as CSSProperties}
       onFocus={event => { if (event.target === event.currentTarget) props.onActivate(row) }}
       onClick={event => {
@@ -98,9 +101,9 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
         const bar = agentView ? event.currentTarget.querySelector<HTMLElement>('.fw-bar') : null
         if (bar) props.onPin(row.id, bar)
       }}>
-      <div role="gridcell" className="fw-label" style={{ '--depth': agentView ? (row.family ? 1 : 0) : row.depth } as CSSProperties}>
-        {family && <button type="button" tabIndex={-1} className={`fw-toggle${props.familyOpen ? ' fw-open' : ''}`}
-          aria-label={`${props.familyOpen ? 'Collapse' : 'Expand'} ${row.name}`} aria-expanded={Boolean(props.familyOpen)}
+      <div role="gridcell" className="fw-label" style={{ '--depth': agentView ? (row.inset ?? 0) : row.depth } as CSSProperties}>
+        {opens && <button type="button" tabIndex={-1} className={`fw-toggle${props.expanded ? ' fw-open' : ''}`}
+          aria-label={`${props.expanded ? 'Collapse' : 'Expand'} ${row.name}`} aria-expanded={Boolean(props.expanded)}
           onClick={event => { event.stopPropagation(); props.onToggle(row) }}><ChevronGlyph /></button>}
         {!agentView && <span className="fw-guides" aria-hidden />}
         {!agentView && (row.hasChildren
@@ -108,13 +111,13 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
             aria-label={`${folded ? 'Expand' : 'Collapse'} ${row.name}`} aria-expanded={!folded}
             onClick={event => { event.stopPropagation(); props.onToggle(row) }}><ChevronGlyph /></button>
           : <span className="fw-toggle-space" aria-hidden />)}
-        {!agentView && <span className="fw-icon-tile" aria-hidden>{renderIcon?.(span) ?? <KindGlyph kind={span.kind} />}</span>}
+        {(!agentView || step) && <span className="fw-icon-tile" aria-hidden>{renderIcon?.(span) ?? <KindGlyph kind={span.kind} />}</span>}
         <span className="fw-names" title={`${row.name}${span.detail ? ` · ${span.detail}` : ''} · ${KIND_LABEL[span.kind]}${running ? ' · running' : ''}${row.ok ? '' : ' · failed'}`}>
           <span className={`fw-span-name${isAgent || row.hasChildren ? ' fw-strong' : ''}`}>
             {/* With agent fill, the outcome rides on the agent's dot in both views. */}
             {fillByAgent && isAgent && span.outcome
               ? <span className="fw-agent-dot" data-tone="0" data-outcome={span.outcome.tone} title={span.outcome.label} aria-hidden />
-              : agentView && <span className="fw-agent-dot" aria-hidden />}
+              : agentView && !step && <span className="fw-agent-dot" aria-hidden />}
             {running && <span className="fw-spinner" role="status" aria-label="running" />}
             <span className="fw-name-text">{row.name}</span>
           </span>
@@ -147,7 +150,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   )
 }, (a, b) => a.row === b.row && a.view === b.view && a.top === b.top && a.collapsed === b.collapsed && a.searching === b.searching &&
   a.slowest === b.slowest && a.costliest === b.costliest && a.active === b.active && a.focusable === b.focusable && a.selected === b.selected &&
-  a.sticky === b.sticky && a.motion === b.motion && a.renderIcon === b.renderIcon && a.fillByAgent === b.fillByAgent && a.sharedDetail === b.sharedDetail && a.familyOpen === b.familyOpen && (a.clockMs === b.clockMs || !open(a.row, a.clockMs) && !open(b.row, b.clockMs)))
+  a.sticky === b.sticky && a.motion === b.motion && a.renderIcon === b.renderIcon && a.fillByAgent === b.fillByAgent && a.sharedDetail === b.sharedDetail && a.expanded === b.expanded && (a.clockMs === b.clockMs || !open(a.row, a.clockMs) && !open(b.row, b.clockMs)))
 
 export interface FlowLink { id: string; from: number; to: number; atMs: number; tone: number; dir: 'down' | 'up' }
 

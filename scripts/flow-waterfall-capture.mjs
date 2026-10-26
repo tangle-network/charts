@@ -89,7 +89,11 @@ try {
         const family = page.locator('.fw-row[data-span-id^="family:"] .fw-toggle').first()
         if (view === 'agents' && await family.count()) {
           await family.click(); await page.waitForFunction(() => !document.querySelector('.fw-row.fw-enter'), null, { timeout: 3000 })
-          const member = page.locator('.fw-row:not([data-span-id^="family:"]) .fw-bar').nth(1)
+          // Then the member's own steps, nested beneath it, and the first step's card: run, family, agent, step.
+          const memberToggle = page.locator('.fw-row:not([data-span-id^="family:"]) .fw-toggle').nth(1)
+          if (await memberToggle.count()) { await memberToggle.click(); await page.waitForFunction(() => !document.querySelector('.fw-row.fw-enter'), null, { timeout: 3000 }) }
+          const target = page.locator('.fw-row.fw-step .fw-bar').first()
+          const member = (await target.count()) ? target : page.locator('.fw-row:not([data-span-id^="family:"]) .fw-bar').nth(1)
           const m = await member.boundingBox()
           await page.mouse.click(m.x + Math.min(12, m.width / 2), m.y + m.height / 2)
         } else await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
