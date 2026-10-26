@@ -107,7 +107,8 @@ try {
           // Click the step's own row, so the card describes the step, not a tool segment inside it.
           const target = page.locator('.fw-row.fw-step .fw-name-text').first()
           const m = (await target.count()) ? await target.boundingBox() : await page.locator('.fw-row:not([data-span-id^="family:"]) .fw-bar').nth(1).boundingBox()
-          const at = { x: m.x + Math.min(24, m.width / 2), y: m.y + m.height / 2 }
+          // Click at the end of the step's name, so the drawn pointer does not cover its second line.
+          const at = { x: m.x + m.width - 2, y: m.y + m.height / 2 }
           await page.mouse.click(at.x, at.y)
           await page.waitForTimeout(350)
           await cursor(at.x, at.y)

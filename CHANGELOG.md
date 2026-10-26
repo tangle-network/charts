@@ -1,5 +1,10 @@
 # @tangle-network/charts
 
+## 0.20.3
+
+- The card of a member of a folded family takes the family's hue, so its dot matches the lane.
+- Connectors draw under the rows, so end labels and Slowest/Costliest badges sit above them.
+
 ## 0.20.2
 
 - Agent rows count their turns and tool calls from the spans, not the merged display marks, so the counts no longer change with zoom; a trace without `toolCalls` keeps the dash during playback (both from Codex review on #30).

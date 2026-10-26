@@ -262,7 +262,8 @@
 .fw-root .fw-badge { height: 18px; padding: 0 8px; border-radius: 999px; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--fw-amber); background: color-mix(in oklab, var(--fw-amber) 13%, transparent); border: 1px solid color-mix(in oklab, var(--fw-amber) 28%, transparent); }
 
 /* Handoff elbows: 1.5 px stroke, 6 px radius, a 5 px dot where the handoff leaves its sender. */
-.fw-root .fw-links { position: absolute; top: 0; bottom: 0; left: var(--fw-label-col); right: 0; overflow: hidden; pointer-events: none; z-index: 1; }
+/* Under the rows (which follow it), so end labels and badges always sit above the connectors. */
+.fw-root .fw-links { position: absolute; top: 0; bottom: 0; left: var(--fw-label-col); right: 0; overflow: hidden; pointer-events: none; z-index: 0; }
 .fw-root .fw-link {
   --x: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px);
   position: absolute; width: 8px; border: 0 solid var(--line); border-bottom-width: 1.5px; translate: 0 var(--fw-bar-shift);
