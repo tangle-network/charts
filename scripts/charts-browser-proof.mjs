@@ -170,6 +170,9 @@ try {
   // v2 and v3 are 50 ms apart, so at full-trace zoom v3's dot lies on v2's; click the visible one, and N reaches v4.
   await page.getByRole('button', { name: 'Jump to Release v3' }).click()
   const jumped = await page.evaluate(() => window.__fwTime)
+  // The jump says where it went: the event's label stays up on the axis and its dot reads pressed.
+  assert.equal((await page.locator('.fw-event-label').innerText()).trim(), 'Release v3')
+  assert.equal(await page.getByRole('button', { name: 'Jump to Release v3' }).getAttribute('aria-pressed'), 'true')
   assert.ok(typeof jumped === 'number' && jumped > 0, `onTimeChange got ${jumped}`)
   await page.locator('[data-flow-waterfall] [role="treegrid"]').focus()
   await page.keyboard.press('n')

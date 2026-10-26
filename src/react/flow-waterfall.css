@@ -138,6 +138,8 @@
 /* The event track: one dot per marker on the axis; click or N/P moves the cursor there. */
 .fw-root .fw-event { --fw-marker: var(--fw-muted); position: absolute; bottom: 2px; width: 8px; height: 8px; margin-left: -4px; padding: 0; border: 0; border-radius: 50%; background: var(--fw-marker); box-shadow: 0 0 0 2px var(--fw-surface); cursor: pointer; z-index: 4; left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); }
 .fw-root .fw-event[data-tone="ok"] { --fw-marker: var(--fw-ok); }
+.fw-root .fw-event[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--fw-surface), 0 0 0 4px var(--fw-marker); }
+.fw-root .fw-event-label { position: absolute; bottom: 14px; z-index: 5; transform: translateX(-50%); left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); padding: 0 8px; border-radius: 4px; background: var(--fw-surface); box-shadow: inset 0 0 0 1px var(--fw-border); color: var(--fw-text); font-size: 12px; line-height: 20px; white-space: nowrap; pointer-events: none; }
 .fw-root .fw-event[data-tone="failed"] { --fw-marker: var(--fw-failed); }
 .fw-root .fw-event:hover, .fw-root .fw-event:focus-visible { transform: scale(1.4); outline: 0; }
 .fw-root .fw-cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: color-mix(in oklab, var(--fw-text) 70%, transparent); left: calc(var(--fw-pad) + (var(--fw-t) - var(--fw-v0)) * var(--fw-k) * 1px); }

@@ -101,6 +101,8 @@ export function FlowBody(props: BodyProps) {
   const links = useMemo(() => linksFor(rows, props.byId, view), [rows, props.byId, view])
   const index = useMemo(() => new Map(rows.map((row, i) => [row.id, i])), [rows])
   const motion = useRowMotion(rows)
+  // The event the reader jumped to keeps its label up on the axis, so the jump says where it went.
+  const [jumped, setJumped] = useState<FlowMarker>()
   // Ticks run into the end-label gutter but stop where a label would be cut at the right edge.
   const msPerPx = (win.endMs - win.startMs) / Math.max(1, trackPx)
   const tickEnd = win.startMs + (trackPx + (view === 'spans' ? 72 : 0)) * msPerPx
@@ -239,8 +241,9 @@ export function FlowBody(props: BodyProps) {
         {ticks.map(tick => <span key={tick} className="fw-tick" style={{ '--s': tick } as CSSProperties}>{formatClock(tick)}</span>)}
         {props.markers?.map(marker => <button key={`e-${marker.at}-${marker.label}`} type="button" className="fw-event" data-tone={marker.tone ?? 'neutral'}
           style={{ '--s': marker.at } as CSSProperties} title={marker.kind ? `${marker.kind}: ${marker.label}` : marker.label}
-          aria-label={`Jump to ${marker.kind ? `${marker.kind} ` : ''}${marker.label}`}
-          onPointerDown={event => event.stopPropagation()} onClick={() => props.onScrub(marker.at)} />)}
+          aria-label={`Jump to ${marker.kind ? `${marker.kind} ` : ''}${marker.label}`} aria-pressed={jumped === marker}
+          onPointerDown={event => event.stopPropagation()} onClick={() => { setJumped(marker); props.onScrub(marker.at) }} />)}
+        {jumped && <span className="fw-event-label" data-tone={jumped.tone ?? 'neutral'} style={{ '--s': jumped.at } as CSSProperties}>{jumped.label}</span>}
         {showCursor && <span className="fw-cursor-handle" aria-hidden />}
       </div>
     </div>
