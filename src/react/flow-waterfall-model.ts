@@ -339,7 +339,7 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
       // One hue per family (round 5: mixed member hues in one lane read as "muddy"); members alternate shades of it.
       own: members.flatMap((row, i) => row.own.map(mark => ({ ...mark, tone, alt: i % 2 === 1 }))).sort((a, b) => a.startMs - b.startMs),
       ...(known.length ? { rollupCostUsd: known.reduce((sum, cost) => sum + cost, 0) } : {}),
-      span: { id, kind: 'pipeline', name: role, startMs, endMs, status: running ? 'running' : failed ? 'failed' : 'done', detail: members[0]!.span.detail, meta: { failedAgents: failed, costPartial: known.length < members.length } },
+      span: { id, kind: 'pipeline', name: role, startMs, endMs, status: running ? 'running' : failed ? 'failed' : 'done', detail: members[0]!.span.detail, meta: { failedAgents: failed, costPartial: known.length < members.length, members: members.map(row => row.id) } },
     })
     if (open.has(id)) out.push(...members.map((row, i) => ({ ...row, family: id, inset: 1, tone, own: row.own.map(mark => ({ ...mark, tone, alt: i % 2 === 1 })) })))
   }
@@ -405,4 +405,12 @@ function stepRuns(steps: readonly FlowWaterfallRow[]): FlowWaterfallRow[] {
     i = j
   }
   return out
+}
+
+/** A row as the view draws it: its drawn copy, or for a member of a folded family, itself in the family's hue. */
+export function drawnRow(row: FlowWaterfallRow, visible: readonly FlowWaterfallRow[]): FlowWaterfallRow {
+  const drawn = visible.find(item => item.id === row.id)
+  if (drawn) return drawn
+  const family = visible.find(item => (item.span.meta?.members as string[] | undefined)?.includes(row.id))
+  return family ? { ...row, tone: family.tone } : row
 }

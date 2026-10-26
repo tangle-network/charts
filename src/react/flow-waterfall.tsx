@@ -6,7 +6,7 @@ import { useTraceClock } from './flow-waterfall-clock.js'
 import { FailGlyph, SearchGlyph, TraceGlyph } from './flow-waterfall-icons.js'
 import { PlaybackBar } from './flow-waterfall-playback.js'
 import {
-  agentCallouts, agentViewRows, busyMs, costSummary, type FlowWaterfallRow, flowWaterfallRows, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
+  agentCallouts, agentViewRows, busyMs, drawnRow, costSummary, type FlowWaterfallRow, flowWaterfallRows, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
   toneKey, totalsAt, visibleFlowWaterfallRows,
 } from './flow-waterfall-model.js'
 import type { FlowView } from './flow-waterfall-row.js'
@@ -329,7 +329,7 @@ export function FlowWaterfall({
   const speedup = limit > 0 ? busy / limit : 0
   const done = !isLive && !trace.spans.some(spanRunning)
   // The card takes the row as drawn (a family recolours its members), so its dot matches the lane it describes.
-  const shown = (row?: FlowWaterfallRow) => row && (visible.find(item => item.id === row.id) ?? row)
+  const shown = (row?: FlowWaterfallRow) => row && drawnRow(row, visible)
   const cardRow = shown(card ? byId.get(card.target) : undefined)
   const cardAgent = cardRow && (() => {
     for (let cursor: FlowWaterfallRow | undefined = cardRow; cursor; cursor = cursor.parentId ? byId.get(cursor.parentId) : undefined) if (cursor.kind === 'pipeline') return shown(cursor)
