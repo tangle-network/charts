@@ -289,6 +289,10 @@
    agent's own hue (the rules above), so each agent stays one color. */
 .fw-root:is(.fw-fill-muted, .fw-fill-outcome) .fw-view-agents .fw-seg-model { background: var(--fw-kind-model); box-shadow: none; }
 .fw-root:is(.fw-fill-muted, .fw-fill-outcome) .fw-view-agents .fw-seg-tool { background: var(--fw-kind-tool); box-shadow: none; }
+/* Per-agent hues at full saturation (blind round 26: muted per-agent bars "blur together", "wash out on white"): kind is a darker or
+   lighter step of the agent's own saturated hue, every solid segment at least 3:1 against the card; waiting stays the only pale fill. */
+.fw-root.fw-fill-agent .fw-view-agents .fw-seg-model { background: light-dark(color-mix(in oklab, var(--tone) 78%, #000), var(--tone)); box-shadow: none; }
+.fw-root.fw-fill-agent .fw-view-agents .fw-seg-tool { background: light-dark(var(--tone), color-mix(in oklab, var(--tone) 72%, #fff)); box-shadow: none; }
 .fw-root .fw-view-agents .fw-seg-tool { container-type: inline-size; justify-content: flex-start; }
 .fw-root .fw-seg-name { padding: 0 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 11px; line-height: 16px; font-weight: 600; color: light-dark(#fff, #06222b); pointer-events: none; }
 @container (max-width: 56px) { .fw-root .fw-seg-name { display: none; } }

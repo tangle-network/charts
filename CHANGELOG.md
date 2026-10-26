@@ -2,6 +2,7 @@
 
 ## 0.21.15
 
+- Per-agent hues are saturated inside the bar: model and tool steps are a darker and a lighter step of the agent's full hue, at least 3:1 against the card; waiting stays the only pale fill (blind round 26: muted bars blurred together).
 - A family's "N failed" counts members whose recorded outcome failed (status only when there is no outcome), so it agrees with the outcome legend.
 - An agent without an outcome no longer reads a bare "done"; its second line shows only its turns and tool calls.
 - A subtitle no longer vanishes when the host's mark leads it: only the text and tool count wrap, so the text always keeps its line.
