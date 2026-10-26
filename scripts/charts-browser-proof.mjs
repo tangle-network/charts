@@ -157,13 +157,16 @@ try {
     .map(mark => mark.getBoundingClientRect().top - mark.closest('.fw-row').getBoundingClientRect().top)
     .filter(offset => Math.abs(offset - Math.round(offset / 4) * 4) > 0.5))
   assert.deepEqual(offGrid, [])
-  // In the agent view the card docks under the lanes: it never covers a row.
-  const docked = await page.evaluate(() => {
+  // The card floats beside the row it describes, just above or below it without covering it, never docked away from the pointer
+  // (Drew 10-26: "the chart hover doesn't exist either it just shows on bottom left").
+  const beside = await page.evaluate(() => {
     const card = document.querySelector('.fw-card')?.getBoundingClientRect()
-    const rows = [...document.querySelectorAll('.fw-view-agents .fw-row')].map(row => row.getBoundingClientRect())
-    return card ? rows.every(row => row.bottom <= card.top + 1) : null
+    const row = document.querySelector('.fw-view-agents .fw-row[aria-selected="true"]')?.getBoundingClientRect()
+    if (!card || !row) return null
+    const gap = card.top >= row.bottom - 2 ? card.top - row.bottom : row.top - card.bottom
+    return { gap: Math.round(gap), clear: card.top >= row.bottom - 2 || card.bottom <= row.top + 2 }
   })
-  assert.equal(docked, true)
+  assert.ok(beside && beside.clear && beside.gap < 48, `card not beside its row: ${JSON.stringify(beside)}`)
   // A pinned card highlights its row without dimming the run (peers dim only for a host selectedId); Escape clears it.
   assert.equal(await page.locator('.fw-view-agents .fw-row[aria-selected="true"]').count(), 1)
   assert.equal(await page.locator('[data-flow-waterfall][data-selection]').count(), 0)

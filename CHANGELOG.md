@@ -2,6 +2,7 @@
 
 ## 0.21.15
 
+- The browser proof checks that the agent-view card floats beside its row; it still asserted the docked card 0.21.12 removed.
 - A merged run of tool steps that share one tool names itself in the bar ("bash ×9"); a single step shows its full name with an ellipsis. Before, only single steps were named, so every wide segment on a real run, a merged one, showed nothing.
 
 ## 0.21.14
