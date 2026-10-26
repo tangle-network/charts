@@ -280,8 +280,9 @@
 /* Span card */
 .fw-root .fw-card-anchor { display: contents; }
 /* Agent view: the card docks under the lanes instead of floating over the plot (judges: "covers the data it describes"). */
-.fw-root-agents .fw-card-anchor { display: block; padding: 0 24px 12px; }
-.fw-root-agents .fw-card, .fw-root-agents .fw-card-above .fw-card { position: relative; left: auto !important; top: auto !important; transform: none; animation-name: fw-arrive; width: auto; max-width: 560px; }
+/* Two classes on the root so these win over the base .fw-root .fw-card rule that follows. */
+.fw-root.fw-root-agents .fw-card-anchor { display: block; padding: 0 24px 12px; }
+.fw-root.fw-root-agents .fw-card, .fw-root.fw-root-agents .fw-card-above .fw-card { position: relative; left: auto !important; top: auto !important; transform: none; animation-name: fw-arrive; width: auto; max-width: 560px; }
 .fw-root .fw-seg-alt { filter: brightness(.78); }
 /* Agent view: the scrubber track shows how far the run has played, so at rest it reads full, not empty. */
 .fw-root-agents .fw-slider { background: linear-gradient(90deg, color-mix(in oklab, var(--fw-accent) 45%, transparent) var(--fw-progress), var(--fw-well) var(--fw-progress)) 0 50% / 100% 4px no-repeat; }
