@@ -1,5 +1,9 @@
 # @tangle-network/charts
 
+## 0.21.2
+
+- Agent view: the Slowest badge ranks only agents with a parent; the root spans the whole run by construction and always won (hard-code audit D16).
+
 ## 0.21.1
 
 - `FlowPause.detail`: the full reason shows on hover and focus of the band's label, so the band prints only a few words.
