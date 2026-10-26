@@ -128,7 +128,9 @@ try {
   // Pinning a bar hands its span to onSelect.
   await page.locator('.fw-bar').first().click()
   assert.equal((await page.evaluate(() => window.__fwSelected ?? [])).length, 1)
-  await page.keyboard.press('Escape')
+  // A second click on the pinned bar closes its card: a re-click is never a no-op.
+  await page.locator('.fw-bar').first().click()
+  assert.equal(await page.locator('.fw-card').count(), 0)
   // In the agent view a click on an agent's name selects it too, not only its bar.
   await page.getByRole('radio', { name: 'Agents' }).click()
   // The shown view is a state, not a dead control.
