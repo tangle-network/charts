@@ -1,5 +1,9 @@
 # @tangle-network/charts
 
+## 0.20.4
+
+- `FlowSpan.costBound`: a span's cost can be a floor; spans inherit a trace's `costBound: 'lower'`, so per-agent and family costs from the same rule as the run print "≥" in end labels and cards.
+
 ## 0.20.3
 
 - The card of a member of a folded family takes the family's hue, so its dot matches the lane.

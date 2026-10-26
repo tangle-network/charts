@@ -16,6 +16,8 @@ export interface FlowSpan {
   icon?: string
   /** Recorded values only. Absent means unknown and is shown as Unknown, never as zero. */
   costUsd?: number
+  /** `lower`: `costUsd` is a floor and prints "≥". Spans inherit a trace's `costBound: 'lower'`. */
+  costBound?: 'lower' | 'upper'
   promptTokens?: number
   completionTokens?: number
   /** Short producer summaries shown in the span card. */
