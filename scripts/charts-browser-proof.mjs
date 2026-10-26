@@ -200,11 +200,15 @@ try {
   // An agent row says it failed in its subtitle; no extra alert glyph, and no event label over the rows.
   assert.equal(await page.locator('.fw-view-agents .fw-alert').count(), 0)
   assert.equal(await page.locator('.fw-view-agents ~ * .fw-marker-label, .fw-marker-label').count(), 0)
-  // The agents view's playhead block applies: its filled 6 px track (the knob rules sit beside it; a thumb's style is not readable).
+  // The agents view's playhead block applies: its thin 4 px track (the knob rules sit beside it; a thumb's style is not readable).
   const track = await page.locator('.fw-slider').evaluate(el => getComputedStyle(el).backgroundSize)
-  assert.match(track, /6px/, `playhead track ${track}`)
+  assert.match(track, /4px/, `playhead track ${track}`)
   // Names keep proportional hyphens: tabular figures are for numeric cells only.
   assert.ok(!(await page.locator('.fw-name-text').first().evaluate(el => getComputedStyle(el).fontFeatureSettings)).includes('tnum'))
+  // Every top-level agent row keeps the chevron gutter, so names start at one x whether or not the row opens.
+  const nameXs = await page.evaluate(() => [...new Set([...document.querySelectorAll('.fw-view-agents .fw-row:not(.fw-step) .fw-label')]
+    .filter(label => getComputedStyle(label).getPropertyValue('--depth').trim() === '0').map(label => Math.round(label.querySelector('.fw-names').getBoundingClientRect().left)))])
+  assert.equal(nameXs.length, 1, `agent names start at ${JSON.stringify(nameXs)}`)
   checks.hostMarks = 'PASS'
   // Every end label (duration, cost, Slowest/Costliest) stays inside its lane, on the surface, at 1100 px and on a phone.
   for (const width of [1100, 390]) {

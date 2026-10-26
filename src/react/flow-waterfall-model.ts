@@ -383,6 +383,12 @@ export function agentSummary(row: FlowWaterfallRow): string {
   return [state, turns ? `${turns} ${turns === 1 ? unit[0] : unit[1]}` : '', tools ? `${tools} tool ${tools === 1 ? 'call' : 'calls'}` : ''].filter(Boolean).join(' · ')
 }
 
+/** The summary split where it may be cut: the tool count goes first when the line does not fit, never half a word. */
+export function agentSummaryParts(row: FlowWaterfallRow): [string, string?] {
+  const tools = / · (\d+ tool calls?)$/.exec(agentSummary(row))
+  return tools ? [agentSummary(row).slice(0, tools.index), tools[1]] : [agentSummary(row)]
+}
+
 /**
  * The agent view's rows: families folded until opened, and an opened agent's own steps (its turns and tool calls, not its
  * child agents) nested beneath it with their icons, durations and costs, as a reader drills from the run into one agent.

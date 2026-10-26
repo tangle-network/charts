@@ -1,5 +1,12 @@
 # @tangle-network/charts
 
+## 0.21.9
+
+- The agents-view scrubber is a thin neutral track with its round handle; played to the end it no longer paints a full-width blue bar (blind round 23).
+- An agent's waiting time is a flat faint fill under its step segments, not long hatching.
+- Every agent row keeps the chevron gutter, so names line up whether or not a row opens.
+- A subtitle that does not fit drops its tool count whole instead of cutting it ("12 turns · 7 to…").
+
 ## 0.21.8
 
 - A pause's length label sits on the time axis over its band, not over the first row, where it covered the root's end label.
