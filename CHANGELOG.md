@@ -5,6 +5,7 @@
 - `agentFill` defaults to `agent`: each agent or family keeps its own muted hue across dot, bar and handoffs, with model and tool steps as darker and lighter shades of it. The outcome stays on the row dot, amber marks the slowest agent and red stays for failure (blind round 25: two global step hues made agents blur together). `muted` and `outcome` keep the global step colors.
 - The agent palette drops its orange for a green, so amber means only the slowest.
 - A tool step's in-bar name ends with an ellipsis rather than clipping mid-letter.
+- With per-agent hues the key shows step kind as shade (darker model call, lighter tool call), matching the bars.
 
 ## 0.21.10
 

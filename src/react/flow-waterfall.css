@@ -261,6 +261,9 @@
 .fw-root .fw-legends .fw-legend { margin: 0; }
 .fw-root .fw-kinds { margin: 0; padding: 0; justify-content: flex-start; color: var(--fw-muted); }
 .fw-root .fw-kinds .fw-swatch-model { width: 12px; height: 8px; border-radius: 2px; background: var(--fw-kind-model); }
+/* With per-agent hues the key shows kind as shade, as the bars do: darker for a model call, lighter for a tool call. */
+.fw-root.fw-fill-agent .fw-kinds .fw-swatch-model { background: color-mix(in oklab, var(--fw-text) 58%, var(--fw-surface)); }
+.fw-root.fw-fill-agent .fw-kinds .fw-swatch-tool { background: color-mix(in oklab, var(--fw-text) 24%, var(--fw-surface)); }
 .fw-root .fw-kinds .fw-swatch-tool { width: 12px; height: 8px; border-radius: 2px; background: var(--fw-kind-tool); }
 .fw-root .fw-kinds .fw-swatch-wait { width: 12px; height: 8px; border-radius: 2px; background: color-mix(in oklab, var(--fw-text) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-text) 18%, transparent); }
 .fw-root .fw-kinds .fw-swatch-handoff { width: 10px; height: 8px; border-left: 1.5px solid var(--fw-muted); border-bottom: 1.5px solid var(--fw-muted); border-bottom-left-radius: 3px; }
