@@ -1,5 +1,11 @@
 # @tangle-network/charts
 
+## 0.21.14
+
+- While searching, rows that matched by themselves are marked `data-search="match"` and their names are bold. Ancestors shown only for context are marked `"context"` and recede.
+- When the host changes `selectedId`, for example by stepping through search matches, the row scrolls into view without taking focus.
+- `criticalPath` builds each child list in place instead of copying it for every child, so a span with thousands of children no longer costs quadratic time.
+
 ## 0.21.13
 
 - `FlowWaterfall` can leave its search text, folded spans and time window to the host: `query`/`onQueryChange`, `collapsed`/`onCollapsedChange` and `zoom`/`onZoomChange`. A page can now keep that view in its URL so a link reopens it. Without these props nothing changes.

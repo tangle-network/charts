@@ -1,6 +1,6 @@
 import { type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import type { FlowMarker, FlowPause, FlowSpan } from '../flow-trace.js'
-import { type FlowWaterfallRow, spanRunning } from './flow-waterfall-model.js'
+import { type FlowWaterfallRow, searchMatchIds, spanRunning } from './flow-waterfall-model.js'
 import { type FlowLink, type FlowView, FlowRow, LinkMark, type RowEvents } from './flow-waterfall-row.js'
 import { useRowMotion } from './flow-waterfall-motion.js'
 import { clockTicks, formatClock, type ViewWindow } from './flow-waterfall-time.js'
@@ -26,6 +26,9 @@ export interface BodyProps extends RowEvents {
   costliestId?: string
   /** Steps on the chain that gates the trace's end. */
   criticalIds?: ReadonlySet<string>
+  /** The search text and the host's matcher; matched rows are marked apart from their ancestors. */
+  query: string
+  matchSpan?: (span: FlowSpan, query: string) => boolean
   activeId?: string
   pauses?: readonly FlowPause[]
   /** The model every agent shares: rows leave it out because the header names it. */
@@ -108,6 +111,7 @@ export function FlowBody(props: BodyProps) {
   if (!props.holdHeight) tallest.current = 0
   const height = tallest.current = Math.max(tallest.current, Math.min(maxHeight, Math.max(rows.length, 1) * rowHeight))
   const links = useMemo(() => linksFor(rows, props.byId, view), [rows, props.byId, view])
+  const matched = useMemo(() => searching ? searchMatchIds(rows, props.query, props.matchSpan) : undefined, [searching, rows, props.query, props.matchSpan])
   const index = useMemo(() => new Map(rows.map((row, i) => [row.id, i])), [rows])
   const motion = useRowMotion(rows)
   // The event the reader jumped to keeps its label up on the axis, so the jump says where it went.
@@ -181,13 +185,25 @@ export function FlowBody(props: BodyProps) {
   const first = Math.max(0, chunk * CHUNK - OVERSCAN)
   const last = Math.min(rows.length, chunk * CHUNK + Math.ceil(viewport / rowHeight) + CHUNK + OVERSCAN)
 
+  const scrollToRow = (i: number, element: HTMLDivElement) => {
+    const offset = (view === 'spans' ? Math.min(STICKY_LEVELS, rows[i]!.depth) : 0) * rowHeight
+    if (i * rowHeight - offset < element.scrollTop) element.scrollTop = Math.max(0, i * rowHeight - offset)
+    else if ((i + 1) * rowHeight > element.scrollTop + element.clientHeight) element.scrollTop = (i + 1) * rowHeight - element.clientHeight
+  }
+  // A selection the host makes, such as stepping through search matches, scrolls its row into view without taking focus.
+  const shownSelection = useRef<string>(undefined)
+  useEffect(() => {
+    if (!selectedId || selectedId === shownSelection.current) return
+    const i = index.get(selectedId)
+    if (i === undefined || !scroller.current) return
+    shownSelection.current = selectedId
+    scrollToRow(i, scroller.current)
+  })
   const focusRow = (id: string) => {
     const i = index.get(id)
     const element = scroller.current
     if (i === undefined || !element) return
-    const offset = (view === 'spans' ? Math.min(STICKY_LEVELS, rows[i]!.depth) : 0) * rowHeight
-    if (i * rowHeight - offset < element.scrollTop) element.scrollTop = Math.max(0, i * rowHeight - offset)
-    else if ((i + 1) * rowHeight > element.scrollTop + element.clientHeight) element.scrollTop = (i + 1) * rowHeight - element.clientHeight
+    scrollToRow(i, element)
     props.onActiveChange(id)
     requestAnimationFrame(() => element.querySelector<HTMLElement>(`.fw-canvas [data-span-id="${CSS.escape(id)}"]`)?.focus({ preventScroll: true }))
   }
@@ -285,7 +301,7 @@ export function FlowBody(props: BodyProps) {
 
   const row = (item: FlowWaterfallRow, i: number, isSticky = false) => (
     <FlowRow key={isSticky ? `sticky-${item.id}` : item.id} row={item} view={view} top={i * rowHeight}
-      collapsed={collapsed.has(item.id)} searching={searching} slowest={item.id === slowestId} costliest={item.id === props.costliestId} critical={props.criticalIds?.has(item.id)}
+      collapsed={collapsed.has(item.id)} searching={searching} slowest={item.id === slowestId} costliest={item.id === props.costliestId} critical={props.criticalIds?.has(item.id)} matched={matched?.has(item.id)}
       active={item.id === activeId} focusable={!isSticky && (item.id === activeId || (activeId === undefined || !index.has(activeId)) && i === 0)}
       selected={item.id === selectedId} sticky={isSticky} motion={isSticky ? undefined : motion.get(item.id)} clockMs={clockMs} renderIcon={props.renderIcon} fillByAgent={props.fillByAgent} sharedDetail={props.sharedDetail} expanded={props.expandedIds?.has(item.id)}
       onToggle={props.onToggle} onInspect={props.onInspect} onLeave={props.onLeave} onPin={props.onPin} onActivate={item => props.onActiveChange(item.id)} />

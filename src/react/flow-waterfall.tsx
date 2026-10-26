@@ -430,7 +430,7 @@ export function FlowWaterfall({
         </div>)}
       </dl>}
       {view === 'agents' && playback}
-      <FlowBody rows={visible} byId={byId} totalRows={rows.length} view={view} maxHeight={rowsHeight} collapsed={collapsed} searching={Boolean(query.trim())}
+      <FlowBody rows={visible} byId={byId} totalRows={rows.length} view={view} maxHeight={rowsHeight} collapsed={collapsed} searching={Boolean(query.trim())} query={query} matchSpan={matchSpan}
         pauses={trace.pauses} cursorLine={position !== null || playing} sharedDetail={sharedDetail} expandedIds={view === 'agents' ? new Set([...openFamilies, ...openSteps]) : undefined} holdHeight={isLive} slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} criticalIds={criticalPath && view === 'spans' ? critical : undefined} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
         trackPx={trackPx} showCursor={showCursor} markers={markers} fillByAgent={agentFill !== 'outcome'} zoomed={zoom !== null} renderIcon={renderIcon}
         emptyText={rows.length === 0 ? 'No spans yet. Waiting for trace events.' : `No matching steps for “${query}”.`}
