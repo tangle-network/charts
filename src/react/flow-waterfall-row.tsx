@@ -130,7 +130,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
           <span className={`fw-bar fw-k-${isAgent ? 'pipeline' : kind}${row.approx ? ' fw-approx' : ''}${marks.length ? ' fw-has-marks' : ''}${row.hasAgents ? ' fw-has-agents' : ''}`}
             data-tone={toneKey(row.tone)} style={at(span.startMs, running ? OPEN_END : span.endMs)}
             onPointerEnter={inspect} onPointerLeave={props.onLeave}
-            onClick={event => { event.stopPropagation(); props.onPin(row.id, event.currentTarget) }}>
+            onClick={event => { event.stopPropagation(); if (family) props.onToggle(row); else props.onPin(row.id, event.currentTarget) }}>
             {!isAgent && !row.ok && <span className="fw-glyph"><FailGlyph /></span>}
             {!isAgent && row.ok && row.retry && <span className="fw-glyph"><RetryGlyph /></span>}
           </span>

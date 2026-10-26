@@ -73,15 +73,28 @@ try {
     for (const [source, view, prefix, extra] of sets) {
       for (const theme of ['dark', 'light']) {
         const { page, context } = await open(`fixture=otlp:${source}&view=${view}&theme=${theme}&width=1440&height=720&label=Trace${extra}`, { width: 1512, height: 945 })
-        await page.screenshot({ path: `${out}/judge-${prefix}${theme}-rest.png` })
+        // Frames crop to the component with a 32 px margin, as the reference frames show only the trace card.
+        const shot = async name => {
+          const box = await page.locator('[data-flow-waterfall]').boundingBox()
+          await page.screenshot({ path: `${out}/judge-${prefix}${theme}-${name}.png`, clip: { x: Math.max(0, box.x - 32), y: Math.max(0, box.y - 32), width: Math.min(1512, box.width + 64), height: Math.min(945, box.height + 64) } })
+        }
+        await shot('rest')
         const bars = page.locator('.fw-row:not(.fw-sticky-row) .fw-bar')
-        const bar = bars.nth(Math.min(view === 'agents' ? 6 : 3, Math.max(0, (await bars.count()) - 1)))
+        const bar = bars.nth(Math.min(view === 'agents' ? 2 : 3, Math.max(0, (await bars.count()) - 1)))
         // Point where a reader would: the bar's centre, which may be one of its segments (each opens its own card).
         const box = await bar.boundingBox()
         await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.waitForTimeout(350)
-        await page.screenshot({ path: `${out}/judge-${prefix}${theme}-hover.png` })
-        await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2); await page.waitForTimeout(350)
-        await page.screenshot({ path: `${out}/judge-${prefix}${theme}-card.png` })
+        await shot('hover')
+        // The card state opens a family when there is one, then pins its first member, as a reader drilling in would.
+        const family = page.locator('.fw-row[data-span-id^="family:"] .fw-toggle').first()
+        if (view === 'agents' && await family.count()) {
+          await family.click(); await page.waitForFunction(() => !document.querySelector('.fw-row.fw-enter'), null, { timeout: 3000 })
+          const member = page.locator('.fw-row:not([data-span-id^="family:"]) .fw-bar').nth(1)
+          const m = await member.boundingBox()
+          await page.mouse.click(m.x + Math.min(12, m.width / 2), m.y + m.height / 2)
+        } else await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+        await page.waitForTimeout(350)
+        await shot('card')
         report.judge.push({ source, view, theme, bars: await bars.count() })
         await context.close()
       }
