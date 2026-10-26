@@ -1,5 +1,15 @@
 # @tangle-network/charts
 
+## 0.21.6
+
+- `agentFill` defaults to `outcome` when agents carry outcomes, so bars match the outcome legend; `muted` only when none do.
+- Slowest and Costliest rank agents only, never a family row (its bar is its members' extent, its cost their sum) or an opened step.
+- Agent rows drop the alert glyph: the second line says the agent failed and its bar marks the failed turn.
+- A pause band's label is its length alone and may run past a narrow band; the reason is its tooltip.
+- The agents view names events on the axis only; labels over the rows collided with end labels.
+- Families open only when every agent fits in 12 rows.
+- The playhead shows as a round knob on a filled track; the cursor line draws only while scrubbing or playing, not while following live, where it crossed running bars' labels.
+
 ## 0.21.5
 
 - `agentFill` gains `muted`, now the default: every agent bar in one quiet tone, the slowest agent in amber, failure in red and the outcome on the row dot, so color only means state (blind A/B against reference trace UIs, 10-26). `agent` keeps a hue per agent.

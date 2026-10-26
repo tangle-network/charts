@@ -117,6 +117,8 @@ export function FlowBody(props: BodyProps) {
   // Marker labels thin out where they would collide (the line stays) and flip left at the right edge.
   const markerLabels = useMemo(() => {
     const shown = new Map<FlowMarker, 'right' | 'left'>()
+    // The agents view names events on the axis (their dots, and the one jumped to); labels over the rows hit its end labels.
+    if (view === 'agents') return shown
     let freeFrom = -Infinity
     for (const marker of [...(props.markers ?? [])].sort((a, b) => a.at - b.at)) {
       const x = (marker.at - win.startMs) / msPerPx
@@ -128,7 +130,7 @@ export function FlowBody(props: BodyProps) {
       freeFrom = left + width + 8
     }
     return shown
-  }, [props.markers, win.startMs, msPerPx, trackPx])
+  }, [props.markers, win.startMs, msPerPx, trackPx, view])
 
   useEffect(() => {
     const element = scroller.current
@@ -291,9 +293,10 @@ export function FlowBody(props: BodyProps) {
         {view === 'spans' && <StickyRows scroller={scroller} rows={rows} index={index} rowHeight={rowHeight} render={row} />}
         {props.markers?.length || props.pauses?.length ? <div className="fw-marker-layer">
           {props.pauses?.map(pause => <span key={`p-${pause.startMs}`} className="fw-pause" style={{ '--s': pause.startMs, '--e': pause.endMs } as CSSProperties} title={pause.label}>
-            <span className="fw-pause-label" title={pause.detail} tabIndex={pause.detail ? 0 : undefined} aria-label={pause.detail ? `${pause.label}: ${pause.detail}` : undefined}>
-              {/* Its length leads, so a narrow band still shows how long the run stood still before the reason is cut. */}
-              <b>{duration(pause.endMs - pause.startMs)}</b> {pause.label}
+            {/* The label says how long the run stood still and may run past a narrow band; the reason is its tooltip. */}
+            <span className="fw-pause-label" title={pause.detail ? `${pause.label}: ${pause.detail}` : pause.label} tabIndex={0}
+              aria-label={`${pause.label}, ${duration(pause.endMs - pause.startMs)}${pause.detail ? `: ${pause.detail}` : ''}`}>
+              <b>{duration(pause.endMs - pause.startMs)}</b>
             </span>
           </span>)}
           {props.markers?.map(marker => <span key={`${marker.at}-${marker.label}`} className="fw-marker" data-tone={marker.tone ?? 'neutral'}

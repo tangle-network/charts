@@ -132,7 +132,8 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
           )}
         </span>
         {folded && <span className="fw-count" aria-label={`${row.descendants} hidden steps`}>+{row.descendants}</span>}
-        {!row.ok && <span className="fw-alert"><AlertGlyph label="failed" /></span>}
+        {/* An agent row already says it failed in its second line and marks the failed turn in its bar. */}
+        {!row.ok && !agentView && <span className="fw-alert"><AlertGlyph label="failed" /></span>}
       </div>
       <div role="gridcell" className="fw-lane" data-waterfall-track aria-label={`${KIND_LABEL[span.kind]}, ${label}${slowest ? `, slowest ${agentView ? 'agent' : 'step'}` : ''}${costliest ? ', costliest agent' : ''}`}>
         {invalid ? <span className="fw-invalid">—</span> : <>
