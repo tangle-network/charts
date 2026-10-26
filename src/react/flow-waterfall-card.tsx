@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import type { FlowSpan } from '../flow-trace.js'
 import { CloseGlyph, KindGlyph } from './flow-waterfall-icons.js'
-import { type FlowWaterfallRow, formatCost, formatCount, formatSpanDuration, spanRunning, toneKey } from './flow-waterfall-model.js'
+import { type FlowWaterfallRow, rowCostText, formatCount, formatSpanDuration, spanRunning, toneKey } from './flow-waterfall-model.js'
 
 
 /** Names wrap between words, never at their hyphens ("memscale-engineer-" / "2" read as two names). */
@@ -54,7 +54,7 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
     for (const fact of (subject.facts ?? []).slice(0, 3)) cells.push([fact.label, fact.value])
     cells.push(['Started', `+${formatSpanDuration(Math.max(0, subject.startMs))}`])
     if (tokenCount !== undefined) cells.push(['Tokens', count(tokenCount)])
-    if (cost !== undefined) cells.push(['Cost', formatCost(cost)])
+    if (cost !== undefined) cells.push(['Cost', rowCostText(who, cost)])
     cells.splice(6)
     const kind = span.kind === 'model' ? 'Thinking' : KIND_LABEL[span.kind]
     // A zero-length step (an instant event) has nothing to say in a step line ("Thinking Model call 0ms").
@@ -96,7 +96,7 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
         <div><dt>Duration</dt><dd>{duration}</dd></div>
         <div><dt>Started</dt><dd>+{formatSpanDuration(Math.max(0, span.startMs))}</dd></div>
         {/* A value nobody recorded is left out, not printed as unknown; the host's own facts follow. */}
-        {span.costUsd !== undefined && <div><dt>Cost</dt><dd>{formatCost(span.costUsd)}</dd></div>}
+        {span.costUsd !== undefined && <div><dt>Cost</dt><dd>{rowCostText(row, span.costUsd)}</dd></div>}
         {tokens && span.promptTokens !== undefined && <div><dt>Tokens in</dt><dd>{count(span.promptTokens)}</dd></div>}
         {tokens && span.completionTokens !== undefined && <div><dt>Tokens out</dt><dd>{count(span.completionTokens)}</dd></div>}
         {(span.facts ?? []).slice(0, 3).map(fact => <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.value}</dd></div>)}

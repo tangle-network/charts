@@ -244,7 +244,11 @@ export function FlowBody(props: BodyProps) {
         {props.markers?.map(marker => <button key={`e-${marker.at}-${marker.label}`} type="button" className="fw-event" data-tone={marker.tone ?? 'neutral'}
           style={{ '--s': marker.at } as CSSProperties} title={marker.kind ? `${marker.kind}: ${marker.label}` : marker.label}
           aria-label={`Jump to ${marker.kind ? `${marker.kind} ` : ''}${marker.label}`} aria-pressed={jumped === marker}
-          onPointerDown={event => event.stopPropagation()} onClick={() => { setJumped(marker); props.onScrub(marker.at) }} />)}
+          onPointerDown={event => event.stopPropagation()} onClick={() => {
+            // A second click on the event you are on lets go of it, so no click on the track is a no-op.
+            if (jumped === marker) { setJumped(undefined); return }
+            setJumped(marker); props.onScrub(marker.at)
+          }} />)}
         {jumped && <span className="fw-event-label" data-tone={jumped.tone ?? 'neutral'} style={{ '--s': jumped.at } as CSSProperties}>{jumped.label}</span>}
         {showCursor && <span className="fw-cursor-handle" aria-hidden />}
       </div>
@@ -281,7 +285,7 @@ export function FlowBody(props: BodyProps) {
         {view === 'spans' && <StickyRows scroller={scroller} rows={rows} index={index} rowHeight={rowHeight} render={row} />}
         {props.markers?.length || props.pauses?.length ? <div className="fw-marker-layer">
           {props.pauses?.map(pause => <span key={`p-${pause.startMs}`} className="fw-pause" style={{ '--s': pause.startMs, '--e': pause.endMs } as CSSProperties} title={pause.label}>
-            <span className="fw-pause-label">{pause.label}</span>
+            <span className="fw-pause-label" title={pause.detail} tabIndex={pause.detail ? 0 : undefined} aria-label={pause.detail ? `${pause.label}: ${pause.detail}` : undefined}>{pause.label}</span>
           </span>)}
           {props.markers?.map(marker => <span key={`${marker.at}-${marker.label}`} className="fw-marker" data-tone={marker.tone ?? 'neutral'}
             style={{ '--s': marker.at } as CSSProperties} title={marker.label}>

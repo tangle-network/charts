@@ -128,7 +128,9 @@ try {
   // Pinning a bar hands its span to onSelect.
   await page.locator('.fw-bar').first().click()
   assert.equal((await page.evaluate(() => window.__fwSelected ?? [])).length, 1)
-  await page.keyboard.press('Escape')
+  // A second click on the pinned bar closes its card: a re-click is never a no-op.
+  await page.locator('.fw-bar').first().click()
+  assert.equal(await page.locator('.fw-card').count(), 0)
   // In the agent view a click on an agent's name selects it too, not only its bar.
   await page.getByRole('radio', { name: 'Agents' }).click()
   // The shown view is a state, not a dead control.
@@ -287,6 +289,11 @@ try {
       const sample = await page.evaluate(async () => {
         const position = () => document.querySelector('input[aria-label="Playback position"]')
         const read = () => ({ at: performance.now(), position: Number(position().value), limit: Number(position().max) })
+        // Start the sample once the range input has moved: it updates on the next animation frame, which a loaded host
+        // delays, and sampling before it counted that delay as playback (a 0.5x run measured 0.87x).
+        const initial = Number(position().value)
+        const deadline = performance.now() + 3000
+        while (Number(position().value) === initial && performance.now() < deadline) await new Promise(resolve => requestAnimationFrame(resolve))
         const start = read()
         await new Promise(resolve => setTimeout(resolve, 2000))
         return { start, end: read() }

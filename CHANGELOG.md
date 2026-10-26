@@ -1,5 +1,11 @@
 # @tangle-network/charts
 
+## 0.21.1
+
+- `FlowPause.detail`: the full reason shows on hover and focus of the band's label, so the band prints only a few words.
+- Clicking the event you jumped to lets go of it, and clicking a pinned mark again closes its card, so no re-click is a no-op.
+- `FlowSpan.costBound`: a span's cost can be a floor; spans inherit a trace's `costBound: 'lower'`, so per-agent and family costs from the same rule as the run print "≥" in end labels and cards.
+
 ## 0.21.0
 
 - `Gap` (react): one reading against its target band, and an optional stretch band, on a log or linear scale. A measured value is a dot; a bound is an open arrow pointing where the true value lies. A dashed span runs to the nearest target edge, and every mark has a tooltip. For a metric's distance from its paper number, as in a bar strip.

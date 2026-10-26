@@ -36,6 +36,8 @@ export interface FlowWaterfallRow {
   own: FlowSegment[]
   /** Direct children counted from the spans, before marks merge for display (merging depends on zoom). */
   counts?: { model: number; tool: number; failed: number }
+  /** Its cost is a floor ("≥"): its own bound, its trace's, or a family with unpriced members. */
+  costFloor?: boolean
   /** The span retries a failed one; its bar carries a retry glyph. */
   retry: boolean
   /** The row delegates to child agents, so the gaps in its own work are waiting. */
@@ -129,6 +131,7 @@ export function flowWaterfallRows(trace: FlowTrace, resolutionMs?: number): Flow
         durationLabel: ordered(span) ? `${formatSpanDuration(span.endMs - span.startMs)}${span.approx ? '~' : ''}` : '—',
         approx: span.approx === true, ok: !spanFailed(span), depth: 0, hasChildren: false, span,
         tone: -1, descendants: 0, segments: [], own: [], retry: span.retryOf !== undefined, hasAgents: false,
+        ...(span.costBound === 'lower' || (span.costBound === undefined && trace.costBound === 'lower') ? { costFloor: true } : {}),
       }
     })
   const byId = new Map(rows.map(row => [row.id, row]))
@@ -333,6 +336,7 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
     const failed = members.filter(row => !row.ok).length
     out.push({
       // The family hangs off its members' parent, so the spawn elbow reaches it from the agent that started them.
+      costFloor: known.length < members.length || members.some(row => row.costFloor),
       id, parentId: members[0]!.parentId, name: `${role} ×${members.length}`, kind: 'pipeline', durationLabel: formatSpanDuration(endMs - startMs),
       approx: members.some(row => row.approx), ok: failed === 0, depth: 0, hasChildren: true, tone,
       descendants: members.length, segments: [], retry: false, hasAgents: false,
@@ -414,3 +418,6 @@ export function drawnRow(row: FlowWaterfallRow, visible: readonly FlowWaterfallR
   const family = visible.find(item => (item.span.meta?.members as string[] | undefined)?.includes(row.id))
   return family ? { ...row, tone: family.tone } : row
 }
+
+/** A row's cost as printed: "≥" when it is a floor. */
+export const rowCostText = (row: FlowWaterfallRow, cost: number): string => `${row.costFloor ? '≥' : ''}${formatCost(cost)}`

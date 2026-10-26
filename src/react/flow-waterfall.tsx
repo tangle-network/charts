@@ -299,6 +299,8 @@ export function FlowWaterfall({
   }, [card, leave])
 
   latest.current.pin = (target, element) => {
+    // Clicking the pinned mark again closes its card, so a re-click is never a no-op.
+    if (card?.pinned && card.target === target) { closeCard(); return }
     place(target, element, true)
     const row = byId.get(target)
     if (row) { onSelect?.(row.span); zoomTo(row) }

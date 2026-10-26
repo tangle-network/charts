@@ -16,6 +16,8 @@ export interface FlowSpan {
   icon?: string
   /** Recorded values only. Absent means unknown and is shown as Unknown, never as zero. */
   costUsd?: number
+  /** `lower`: `costUsd` is a floor and prints "≥". Spans inherit a trace's `costBound: 'lower'`. */
+  costBound?: 'lower' | 'upper'
   promptTokens?: number
   completionTokens?: number
   /** Short producer summaries shown in the span card. */
@@ -46,7 +48,10 @@ export interface FlowSpanMark {
 export interface FlowPause {
   startMs: number
   endMs: number
+  /** A few words on the band, such as 'Paused 4 h 40 m'. */
   label: string
+  /** The full reason, shown on hover and focus of the label rather than printed across the rows. */
+  detail?: string
 }
 
 /** A host verdict: `label` is the legend text, `tone` the status color. */

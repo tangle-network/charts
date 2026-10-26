@@ -132,6 +132,8 @@
   border-inline: 1px dashed color-mix(in oklab, var(--fw-text) 24%, transparent); }
 .fw-root .fw-pause-label { position: sticky; top: 4px; display: block; width: max-content; max-width: calc(100% - 8px); margin: 4px auto 0; padding: 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   border-radius: 4px; font-size: 12px; line-height: 20px; color: var(--fw-muted); background: var(--fw-surface); box-shadow: inset 0 0 0 1px var(--fw-border); }
+/* The label alone takes the pointer, for its reason; the band stays click-through to the rows. */
+.fw-root .fw-pause-label[title] { pointer-events: auto; cursor: help; }
 .fw-root .fw-marker-label { position: absolute; top: 2px; left: 3px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 4px; border-radius: 4px; font-size: 12px; line-height: 16px; color: var(--fw-marker); background: var(--fw-surface); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-marker) 40%, transparent); }
 .fw-root .fw-marker-label-left { left: auto; right: 3px; }
 .fw-root .fw-marker[data-tone="warn"], .fw-root .fw-event[data-tone="warn"] { --fw-marker: var(--fw-amber); }
