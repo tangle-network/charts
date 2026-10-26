@@ -29,6 +29,8 @@ export interface BodyProps extends RowEvents {
   sharedDetail?: string
   /** Live: the body keeps its full height as agents arrive, so the page below never shifts. */
   fixedHeight?: boolean
+  /** The playhead's line across the rows; without it only the dot on the axis shows. */
+  cursorLine?: boolean
   /** Agent view: family and agent rows opened in place. */
   expandedIds?: ReadonlySet<string>
   selectedId?: string
@@ -286,7 +288,7 @@ export function FlowBody(props: BodyProps) {
             {markerLabels.has(marker) && <span className={`fw-marker-label${markerLabels.get(marker) === 'left' ? ' fw-marker-label-left' : ''}`}>{marker.label}</span>}
           </span>)}
         </div> : null}
-        {showCursor && <div className="fw-cursor-layer" aria-hidden><span className="fw-cursor" /></div>}
+        {showCursor && props.cursorLine !== false && <div className="fw-cursor-layer" aria-hidden><span className="fw-cursor" /></div>}
       </div>
     </div>
   )

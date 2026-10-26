@@ -344,6 +344,8 @@ export function agentSummary(row: FlowWaterfallRow): string {
     const failed = Number(row.span.meta?.failedAgents ?? 0)
     return `${row.descendants} agents${failed ? ` · ${failed} failed` : ''}`
   }
+  // A folded run of steps already says its count in its name; its second line says how it ended.
+  if (row.id.startsWith('run:')) { const failed = row.own.filter(mark => mark.kind === 'failed').length; return failed ? `${failed} failed` : 'all done' }
   const count = (kind: FlowSegment['kind']) => row.own.reduce((sum, mark) => sum + (mark.kind === kind ? mark.count : 0), 0)
   const turns = count('model') + count('failed')
   const tools = count('tool')

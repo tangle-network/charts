@@ -78,7 +78,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   const invalid = row.durationLabel === '—'
   const isAgent = row.kind === 'pipeline'
   const kind = !row.ok ? 'failed' : row.kind
-  const marks = isAgent || row.hasChildren ? (folded && !agentView ? row.segments : row.own) : []
+  const marks = isAgent || row.hasChildren || row.id.startsWith('run:') ? (folded && !agentView ? row.segments : row.own) : []
   const label = endLabel(row, clockMs)
   const inspect = (event: { currentTarget: HTMLElement }) => props.onInspect(row.id, event.currentTarget)
   const family = agentView && row.id.startsWith('family:')
