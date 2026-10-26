@@ -347,6 +347,8 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
     const costs = members.map(row => row.span.costUsd ?? row.rollupCostUsd)
     const known = costs.filter((cost): cost is number => cost !== undefined)
     const failed = members.filter(row => !row.ok).length
+    // A family takes its members' outcome when they share one; mixed outcomes leave it without, drawn neutral.
+    const outcome = members.every(row => row.span.outcome && row.span.outcome.tone === members[0]!.span.outcome?.tone) ? members[0]!.span.outcome : undefined
     out.push({
       // The family hangs off its members' parent, so the spawn elbow reaches it from the agent that started them.
       costFloor: known.length < members.length || members.some(row => row.costFloor),
@@ -356,7 +358,7 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
       // One hue per family (round 5: mixed member hues in one lane read as "muddy"); members alternate shades of it.
       own: members.flatMap((row, i) => row.own.map(mark => ({ ...mark, tone, alt: i % 2 === 1 }))).sort((a, b) => a.startMs - b.startMs),
       ...(known.length ? { rollupCostUsd: known.reduce((sum, cost) => sum + cost, 0) } : {}),
-      span: { id, kind: 'pipeline', name: role, startMs, endMs, status: running ? 'running' : failed ? 'failed' : 'done', detail: members[0]!.span.detail, meta: { failedAgents: failed, costPartial: known.length < members.length, members: members.map(row => row.id) } },
+      span: { id, kind: 'pipeline', name: role, startMs, endMs, status: running ? 'running' : failed ? 'failed' : 'done', ...(outcome ? { outcome } : {}), detail: members[0]!.span.detail, meta: { failedAgents: failed, costPartial: known.length < members.length, members: members.map(row => row.id) } },
     })
     if (open.has(id)) out.push(...members.map((row, i) => ({ ...row, family: id, inset: 1, tone, own: row.own.map(mark => ({ ...mark, tone, alt: i % 2 === 1 })) })))
   }
