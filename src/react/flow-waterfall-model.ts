@@ -34,6 +34,8 @@ export interface FlowWaterfallRow {
   segments: FlowSegment[]
   /** Direct non-agent children: the row's own thinking and tool work, drawn over its waiting extent. */
   own: FlowSegment[]
+  /** Direct children counted from the spans, before marks merge for display (merging depends on zoom). */
+  counts?: { model: number; tool: number; failed: number }
   /** The span retries a failed one; its bar carries a retry glyph. */
   retry: boolean
   /** The row delegates to child agents, so the gaps in its own work are waiting. */
@@ -166,7 +168,13 @@ export function flowWaterfallRows(trace: FlowTrace, resolutionMs?: number): Flow
       const childCost = child.hasChildren ? child.rollupCostUsd : child.span.costUsd
       if (childCost === undefined) { if (child.kind === 'model' || child.hasChildren) costKnown = false }
       else cost += childCost
-      if (child.kind !== 'pipeline' && child.kind !== 'waiting' && ordered(child.span)) row.own.push(segmentOf(child))
+      if (child.kind !== 'pipeline' && child.kind !== 'waiting' && ordered(child.span)) {
+        row.own.push(segmentOf(child))
+        const counts = row.counts ??= { model: 0, tool: 0, failed: 0 }
+        if (!child.ok) counts.failed++
+        else if (child.kind === 'model') counts.model++
+        else counts.tool++
+      }
     }
     if (row.hasChildren && costKnown) row.rollupCostUsd = cost
     if (row.hasChildren) {
@@ -273,7 +281,7 @@ export function totalsAt(trace: FlowTrace, clockMs: number) {
     costUsd: trace.costUsd === undefined ? undefined : costs ? cost : trace.costUsd,
     tokens: counted ? tokens : trace.promptTokens + trace.completionTokens,
     modelCalls: trace.modelCalls === undefined ? undefined : models,
-    toolCalls: tools,
+    toolCalls: trace.toolCalls === undefined ? undefined : tools,
     errors,
   }
 }
@@ -346,9 +354,10 @@ export function agentSummary(row: FlowWaterfallRow): string {
   }
   // A folded run of steps already says its count in its name; its second line says how it ended.
   if (row.id.startsWith('run:')) { const failed = row.own.filter(mark => mark.kind === 'failed').length; return failed ? `${failed} failed` : 'all done' }
-  const count = (kind: FlowSegment['kind']) => row.own.reduce((sum, mark) => sum + (mark.kind === kind ? mark.count : 0), 0)
-  const turns = count('model') + count('failed')
-  const tools = count('tool')
+  // Counted from the spans, not the display marks: merging short neighbours changes with zoom (Codex review on #30).
+  const counts = row.counts ?? { model: 0, tool: 0, failed: 0 }
+  const turns = counts.model + counts.failed
+  const tools = counts.tool
   const state = row.span.outcome?.label ?? (spanRunning(row.span) ? 'running' : row.ok ? 'done' : 'failed')
   // An agent's model calls are its turns; inside one step they are model calls.
   const unit = row.kind === 'pipeline' ? ['turn', 'turns'] : ['model call', 'model calls']

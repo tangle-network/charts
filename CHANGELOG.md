@@ -2,6 +2,7 @@
 
 ## 0.20.2
 
+- Agent rows count their turns and tool calls from the spans, not the merged display marks, so the counts no longer change with zoom; a trace without `toolCalls` keeps the dash during playback (both from Codex review on #30).
 - Agent view: three or more consecutive steps of one kind and name fold into one row ("15 model calls"), each step a mark in its bar. Tool steps carry a generic identity glyph by name (terminal, file, pencil, lens, globe, branch). The playhead stays in sight at rest. End labels sit above connectors. The card's dot takes the lane's drawn hue. The Cost tile is left out when no cost source exists. Light bars carry the full hue (tool steps 62%).
 - Event track: the event a reader jumps to keeps its label up on the axis and its dot reads pressed, so the jump says where it went.
 - `FlowTrace.costBound: 'lower' | 'upper'` marks `costUsd` as a floor ("≥") or a ceiling ("≤"); it replaces 0.20.1's `costUpperBound` flag, which `otlpFlowTrace` now writes as `costBound: 'upper'`.
