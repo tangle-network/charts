@@ -6,7 +6,7 @@ import { useTraceClock } from './flow-waterfall-clock.js'
 import { FailGlyph, SearchGlyph, TraceGlyph } from './flow-waterfall-icons.js'
 import { PlaybackBar } from './flow-waterfall-playback.js'
 import {
-  agentCallouts, agentViewRows, busyMs, drawnRow, costSummary, type FlowWaterfallRow, flowWaterfallRows, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
+  agentCallouts, agentViewRows, defaultOpenFamilies, busyMs, drawnRow, costSummary, type FlowWaterfallRow, flowWaterfallRows, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
   toneKey, totalsAt, visibleFlowWaterfallRows,
 } from './flow-waterfall-model.js'
 import type { FlowView } from './flow-waterfall-row.js'
@@ -15,6 +15,8 @@ import { clampWindow, type ViewWindow, zoomWindow } from './flow-waterfall-time.
 export type { FlowView } from './flow-waterfall-row.js'
 
 const LANE_PAD = 12
+// The agents view shows this many rows before it scrolls; a run whose agents all fit lists every agent rather than folding families.
+const AGENT_ROWS = 20
 // The agents view's end labels carry a Slowest or Costliest badge after the duration, so its gutter is wider.
 const END_LABEL_GUTTER: Record<FlowView, number> = { spans: 120, agents: 176 }
 const NAME_WIDTH: Record<FlowView, number> = { spans: 320, agents: 240 }
@@ -167,12 +169,14 @@ export function FlowWaterfall({
   }, [rows])
   // When every agent runs the same model, the header says it once instead of every row repeating it.
   const sharedDetail = agents.length > 1 && agents.every(row => row.span.detail && row.span.detail === agents[0]?.span.detail) ? agents[0]?.span.detail : undefined
-  const [openFamilies, setOpenFamilies] = useState<ReadonlySet<string>>(new Set())
+  // Families the reader flipped from their default: open when every agent fits the body, folded on bigger runs.
+  const [flippedFamilies, setFlippedFamilies] = useState<ReadonlySet<string>>(new Set())
+  const openFamilies = useMemo(() => defaultOpenFamilies(agents, AGENT_ROWS, flippedFamilies), [agents, flippedFamilies])
   const [openSteps, setOpenSteps] = useState<ReadonlySet<string>>(new Set())
   const visible = useMemo(() => view === 'agents' ? agentViewRows(agents, rows, openFamilies, openSteps) : visibleFlowWaterfallRows(rows, query, collapsed), [view, agents, rows, openFamilies, openSteps, query, collapsed])
   const slowest = view === 'spans' ? slowestRow(rows, clockMs) : undefined
   const callouts = useMemo<ReturnType<typeof agentCallouts>>(() => view === 'agents' ? agentCallouts(visible, clockMs) : {}, [view, visible, clockMs])
-  const rowsHeight = maxHeight ?? (view === 'agents' ? ROW_HEIGHT.agents * 20 : 640)
+  const rowsHeight = maxHeight ?? (view === 'agents' ? ROW_HEIGHT.agents * AGENT_ROWS : 640)
 
   // The agent label column fits the longest agent name (CSS caps it at 28%) until the reader drags it.
   const resized = useRef(false)
@@ -259,7 +263,7 @@ export function FlowWaterfall({
   const toggleNow = (row: FlowWaterfallRow) => {
     // In the agent view a family opens its members and an agent opens its own steps, in place.
     const flip = (open: ReadonlySet<string>) => new Set(open.has(row.id) ? [...open].filter(id => id !== row.id) : [...open, row.id])
-    if (row.id.startsWith('family:')) { setOpenFamilies(flip); return }
+    if (row.id.startsWith('family:')) { setFlippedFamilies(flip); return }
     onSelect?.(row.span)
     if (view === 'agents') { setOpenSteps(flip); setActiveId(row.id); return }
     if (collapsed.has(row.id)) zoomTo(row)

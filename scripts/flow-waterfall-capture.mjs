@@ -98,9 +98,10 @@ try {
         await cursor(box.x + box.width / 2, box.y + box.height / 2)
         await shot('hover')
         // The card state opens a family when there is one, then pins its first member, as a reader drilling in would.
-        const family = page.locator('.fw-row[data-span-id^="family:"] .fw-toggle').first()
-        if (view === 'agents' && await family.count()) {
-          await family.click(); await page.waitForFunction(() => !document.querySelector('.fw-row.fw-enter'), null, { timeout: 3000 })
+        // Families start open when every agent fits; click only one still folded.
+        const family = page.locator('.fw-row[data-span-id^="family:"] .fw-toggle:not(.fw-open)').first()
+        if (view === 'agents') {
+          if (await family.count()) { await family.click(); await page.waitForFunction(() => !document.querySelector('.fw-row.fw-enter'), null, { timeout: 3000 }) }
           // Then the member's own steps, nested beneath it, and the first step's card: run, family, agent, step.
           const memberToggle = page.locator('.fw-row:not([data-span-id^="family:"]) .fw-toggle').nth(1)
           if (await memberToggle.count()) { await memberToggle.click(); await page.waitForFunction(() => !document.querySelector('.fw-row.fw-enter'), null, { timeout: 3000 }) }

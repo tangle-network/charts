@@ -318,6 +318,14 @@ const roleOf = (name: string) => name.replace(/[-\s]\d+$/, '')
  * Agents sharing a role fold into one family row until opened: a 17-agent run reads as its few roles, and the bar of a
  * family carries every member's work in each member's hue. Members follow their opened family, marked with `family`.
  */
+/** The families open by default: all of them when every agent fits in `rows`, so a reader sees each agent and its steps (the
+ *  blind reviews preferred agent rows to `role ×N`); none on bigger runs. `flipped` holds the families the reader toggled. */
+export function defaultOpenFamilies(agents: readonly FlowWaterfallRow[], rows: number, flipped: ReadonlySet<string>): ReadonlySet<string> {
+  const unfold = agents.length <= rows
+  const ids = agentFamilies(agents, new Set()).filter(row => row.id.startsWith('family:')).map(row => row.id)
+  return new Set(ids.filter(id => unfold !== flipped.has(id)))
+}
+
 export function agentFamilies(agents: readonly FlowWaterfallRow[], open: ReadonlySet<string>): FlowWaterfallRow[] {
   const groups = new Map<string, FlowWaterfallRow[]>()
   for (const row of agents) {
