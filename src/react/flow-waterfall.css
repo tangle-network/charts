@@ -293,6 +293,8 @@
    lighter step of the agent's own saturated hue, every solid segment at least 3:1 against the card; waiting stays the only pale fill. */
 .fw-root.fw-fill-agent .fw-view-agents .fw-seg-model { background: light-dark(color-mix(in oklab, var(--tone) 78%, #000), var(--tone)); box-shadow: none; }
 .fw-root.fw-fill-agent .fw-view-agents .fw-seg-tool { background: light-dark(var(--tone), color-mix(in oklab, var(--tone) 72%, #fff)); box-shadow: none; }
+/* A failed turn is still the agent's work: it keeps the agent's saturated hue, and the red cross on the ending turn says it failed. */
+.fw-root.fw-fill-agent .fw-view-agents .fw-seg-failed { background: light-dark(var(--tone), color-mix(in oklab, var(--tone) 72%, #fff)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-failed) 55%, transparent); }
 .fw-root .fw-view-agents .fw-seg-tool { container-type: inline-size; justify-content: flex-start; }
 .fw-root .fw-seg-name { padding: 0 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 11px; line-height: 16px; font-weight: 600; color: light-dark(#fff, #06222b); pointer-events: none; }
 @container (max-width: 56px) { .fw-root .fw-seg-name { display: none; } }
