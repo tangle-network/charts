@@ -269,6 +269,12 @@ export function FlowBody(props: BodyProps) {
             if (jumped === marker) { setJumped(undefined); return }
             setJumped(marker); props.onScrub(marker.at)
           }} />)}
+        {/* A pause's length sits on the axis over its band, where no row's end label can be under it. */}
+        {props.pauses?.filter(pause => pauseLabels.has(pause)).map(pause => <span key={`pl-${pause.startMs}`} className="fw-pause-label"
+          style={{ '--s': pause.startMs, '--e': pause.endMs } as CSSProperties} title={pause.detail ? `${pause.label}: ${pause.detail}` : pause.label} tabIndex={0}
+          aria-label={`${pause.label}, ${duration(pause.endMs - pause.startMs)}${pause.detail ? `: ${pause.detail}` : ''}`} onPointerDown={event => event.stopPropagation()}>
+          <b>{duration(pause.endMs - pause.startMs)}</b>
+        </span>)}
         {jumped && <span className="fw-event-label" data-tone={jumped.tone ?? 'neutral'} style={{ '--s': jumped.at } as CSSProperties}>{jumped.label}</span>}
         {showCursor && <span className="fw-cursor-handle" aria-hidden />}
       </div>
@@ -307,10 +313,6 @@ export function FlowBody(props: BodyProps) {
         {props.markers?.length || props.pauses?.length ? <div className="fw-marker-layer">
           {props.pauses?.map(pause => <span key={`p-${pause.startMs}`} className="fw-pause" style={{ '--s': pause.startMs, '--e': pause.endMs } as CSSProperties} title={`${pause.label}, ${duration(pause.endMs - pause.startMs)}`}>
             {/* The label says how long the run stood still and may run past a narrow band; the reason is its tooltip. */}
-            {pauseLabels.has(pause) && <span className="fw-pause-label" title={pause.detail ? `${pause.label}: ${pause.detail}` : pause.label} tabIndex={0}
-              aria-label={`${pause.label}, ${duration(pause.endMs - pause.startMs)}${pause.detail ? `: ${pause.detail}` : ''}`}>
-              <b>{duration(pause.endMs - pause.startMs)}</b>
-            </span>}
           </span>)}
           {props.markers?.map(marker => <span key={`${marker.at}-${marker.label}`} className="fw-marker" data-tone={marker.tone ?? 'neutral'}
             style={{ '--s': marker.at } as CSSProperties} title={marker.label}>

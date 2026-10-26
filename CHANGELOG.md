@@ -1,5 +1,9 @@
 # @tangle-network/charts
 
+## 0.21.8
+
+- A pause's length label sits on the time axis over its band, not over the first row, where it covered the root's end label.
+
 ## 0.21.7
 
 - Agent lanes are a tint of their color; model and tool segments and the status dot keep full saturation (blind round 22: full-length saturated slabs).
