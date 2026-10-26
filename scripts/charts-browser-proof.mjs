@@ -157,13 +157,16 @@ try {
     .map(mark => mark.getBoundingClientRect().top - mark.closest('.fw-row').getBoundingClientRect().top)
     .filter(offset => Math.abs(offset - Math.round(offset / 4) * 4) > 0.5))
   assert.deepEqual(offGrid, [])
-  // In the agent view the card docks under the lanes: it never covers a row.
-  const docked = await page.evaluate(() => {
+  // The card floats beside the row it describes, just above or below it without covering it, never docked away from the pointer
+  // (Drew 10-26: "the chart hover doesn't exist either it just shows on bottom left").
+  const beside = await page.evaluate(() => {
     const card = document.querySelector('.fw-card')?.getBoundingClientRect()
-    const rows = [...document.querySelectorAll('.fw-view-agents .fw-row')].map(row => row.getBoundingClientRect())
-    return card ? rows.every(row => row.bottom <= card.top + 1) : null
+    const row = document.querySelector('.fw-view-agents .fw-row[aria-selected="true"]')?.getBoundingClientRect()
+    if (!card || !row) return null
+    const gap = card.top >= row.bottom - 2 ? card.top - row.bottom : row.top - card.bottom
+    return { gap: Math.round(gap), clear: card.top >= row.bottom - 2 || card.bottom <= row.top + 2 }
   })
-  assert.equal(docked, true)
+  assert.ok(beside && beside.clear && beside.gap < 48, `card not beside its row: ${JSON.stringify(beside)}`)
   // A pinned card highlights its row without dimming the run (peers dim only for a host selectedId); Escape clears it.
   assert.equal(await page.locator('.fw-view-agents .fw-row[aria-selected="true"]').count(), 1)
   assert.equal(await page.locator('[data-flow-waterfall][data-selection]').count(), 0)
@@ -213,6 +216,10 @@ try {
   assert.equal(await page.locator('.fw-heading .fw-kinds').count(), 1)
   const kinds = await page.evaluate(() => ['.fw-seg-model', '.fw-seg-tool'].map(sel => document.querySelector(`.fw-view-agents ${sel}`)).filter(Boolean).map(el => getComputedStyle(el).backgroundColor))
   assert.ok(kinds.length < 2 || kinds[0] !== kinds[1], `model and tool segments share a color: ${kinds}`)
+  // A shown in-bar step name fits its segment (ellipsized), and only segments of 56 px or more show one.
+  const segNames = await page.evaluate(() => [...document.querySelectorAll('.fw-seg-name')].filter(name => getComputedStyle(name).display !== 'none')
+    .map(name => ({ seg: name.parentElement.getBoundingClientRect().width, name: name.getBoundingClientRect().width })))
+  assert.ok(segNames.every(n => n.seg >= 56 && n.name <= n.seg + 0.5), `step names overflow or show in narrow segments: ${JSON.stringify(segNames.slice(0, 5))}`)
   checks.hostMarks = 'PASS'
   // Every end label (duration, cost, Slowest/Costliest) stays inside its lane, on the surface, at 1100 px and on a phone.
   for (const width of [1100, 390]) {

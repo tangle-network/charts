@@ -1,5 +1,15 @@
 # @tangle-network/charts
 
+## 0.21.15
+
+- Per-agent hues are saturated inside the bar: model and tool steps are a darker and a lighter step of the agent's full hue, at least 3:1 against the card; waiting stays the only pale fill (blind round 26: muted bars blurred together).
+- A failed turn keeps its agent's saturated hue with a thin red edge, instead of a pale fill that made a mostly-failed run read washed out.
+- A family's "N failed" counts members whose recorded outcome failed (status only when there is no outcome), so it agrees with the outcome legend.
+- An agent without an outcome no longer reads a bare "done"; its second line shows only its turns and tool calls.
+- A subtitle no longer vanishes when the host's mark leads it: only the text and tool count wrap, so the text always keeps its line.
+- The browser proof checks that the agent-view card floats beside its row; it still asserted the docked card 0.21.12 removed.
+- A merged run of tool steps that share one tool names itself in the bar ("bash ×9"); a single step shows its full name with an ellipsis. Before, only single steps were named, so every wide segment on a real run, a merged one, showed nothing.
+
 ## 0.21.14
 
 - While searching, rows that matched by themselves are marked `data-search="match"` and their names are bold. Ancestors shown only for context are marked `"context"` and recede.
