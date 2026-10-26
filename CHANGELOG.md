@@ -7,6 +7,7 @@
 - Family rows are named by their role; the count is in their second line ("6 agents · 5 failed").
 - Event lines across the rows are faint; their dots and labels stay on the axis.
 - Row subtitles are 13 px.
+- A segment's tooltip names its step (with "+N more" when merged); a single tool step names itself inside the bar when it is wide enough.
 - The Waiting key swatch is the flat fill the bars use.
 
 ## 0.21.9

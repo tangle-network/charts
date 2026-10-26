@@ -277,6 +277,9 @@
 /* In the agent view a step's kind owns its color, strong on both themes; the agent's outcome stays on its lane tint, dot and end label. */
 .fw-root .fw-view-agents .fw-seg-model { background: var(--fw-kind-model); box-shadow: none; }
 .fw-root .fw-view-agents .fw-seg-tool { background: var(--fw-kind-tool); box-shadow: none; }
+.fw-root .fw-view-agents .fw-seg-tool { container-type: inline-size; justify-content: flex-start; }
+.fw-root .fw-seg-name { padding: 0 6px; overflow: hidden; white-space: nowrap; text-overflow: clip; font-size: 11px; line-height: 16px; font-weight: 600; color: light-dark(#fff, #06222b); pointer-events: none; }
+@container (max-width: 56px) { .fw-root .fw-seg-name { display: none; } }
 .fw-root .fw-view-agents .fw-seg-alt.fw-seg-model, .fw-root .fw-view-agents .fw-seg-alt.fw-seg-tool { filter: brightness(.88); }
 .fw-root .fw-seg-failed { background: color-mix(in oklab, var(--fw-failed) 18%, var(--fw-surface)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-failed) 70%, transparent); color: var(--fw-failed); }
 /* In the agent view a failed turn draws like any turn; the agent's own failure shows once, by its name and its end label. */
