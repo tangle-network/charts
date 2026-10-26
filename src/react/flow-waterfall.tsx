@@ -45,9 +45,9 @@ export interface FlowWaterfallProps {
   markers?: FlowMarker[]
   /** The time the reader moved to, in trace ms; `null` when following live or showing the whole trace. */
   onTimeChange?: (t: number | null) => void
-  /** What an agent bar's color means. Default: `outcome` when any agent carries one, so bars match the outcome legend, else `muted`.
-   * `muted`: every agent one quiet tone, color spent on state only (red for failure, amber for the slowest). `agent`: each agent its
-   * own hue, shared by its steps and handoffs. `outcome`: the bar takes its outcome's color. */
+  /** What an agent bar's color means. `agent` (default): each agent or family its own muted hue across dot, bar and handoffs, with
+   * model and tool steps as darker and lighter shades of it; the outcome stays on the row dot and amber marks the slowest (blind round
+   * 25: global step hues made agents blur together). `muted`: one quiet tone, color on state only. `outcome`: the bar takes its outcome. */
   agentFill?: 'muted' | 'outcome' | 'agent'
   /** One line beside the title saying what the run was for, such as its goal. */
   description?: string
@@ -141,7 +141,7 @@ export function FlowWaterfall({
 
   const observedTotal = Number.isFinite(trace.totalMs) && trace.totalMs >= 0 ? trace.totalMs : 0
   const isLive = live ?? trace.spans.some(spanRunning)
-  const agentFill = fillProp ?? (trace.spans.some(span => span.kind === 'pipeline' && span.outcome) ? 'outcome' : 'muted')
+  const agentFill = fillProp ?? 'agent'
   const dataEnd = useMemo(() => Math.max(observedTotal, ...trace.spans.map(span => Number.isFinite(span.endMs) ? span.endMs : 0)), [trace, observedTotal])
   // The end-label gutter shrinks on narrow lanes so bars keep most of the width.
   const trackPx = Math.max(40, laneWidth - LANE_PAD - Math.min(END_LABEL_GUTTER[view], laneWidth * 0.3))

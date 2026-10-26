@@ -104,8 +104,8 @@ try {
   assert.match(await page.locator('[data-slowest]').innerText(), /sandbox_run_command/)
   // An agent's outcome colors its lane and joins the legend with a count.
   assert.equal((await page.locator('.fw-legend').innerText()).replace(/\s+/g, ' ').trim(), 'Shipped 1')
-  // With outcomes present the default fill is the outcome, so the agent's bar takes the legend's color.
-  assert.equal(await page.locator('.fw-row[data-span-kind="pipeline"][data-outcome="ok"]').count(), 1)
+  // Agent fill (the default) keeps each agent's hue on its bar and puts the outcome on its dot.
+  assert.equal(await page.locator('[data-span-kind="pipeline"] .fw-agent-dot[data-outcome="ok"]').count(), 1)
   checks.outcomes = 'PASS'
   // Three markers: two collide mid-trace, so one label shows and both lines stay; the last flips left at the edge.
   assert.equal(await page.locator('.fw-marker').count(), 3)
