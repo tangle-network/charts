@@ -63,6 +63,13 @@ describe("FlowWaterfall host-owned state", () => {
     expect(rowIds(container)).toEqual(["root", "plan", "build", "compile", "link"]);
   });
 
+  it("searches with the host's matcher when given", () => {
+    const { container } = render(
+      <FlowWaterfall trace={trace} query="tag:fast" matchSpan={(span, query) => query === "tag:fast" && span.name === "link"} />,
+    );
+    expect(rowIds(container)).toEqual(["root", "build", "link"]);
+  });
+
   it("zooms from the host's window and reports each change", () => {
     const seen: (FlowWaterfallWindow | null)[] = [];
     const window = { startMs: 200, endMs: 600 };

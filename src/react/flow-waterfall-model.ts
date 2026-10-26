@@ -208,13 +208,13 @@ function segmentOf(row: FlowWaterfallRow): FlowSegment {
 }
 
 /** Search keeps ancestor context and deliberately reveals matches inside collapsed branches. */
-export function visibleFlowWaterfallRows(rows: FlowWaterfallRow[], query: string, collapsed: ReadonlySet<string>): FlowWaterfallRow[] {
+export function visibleFlowWaterfallRows(rows: FlowWaterfallRow[], query: string, collapsed: ReadonlySet<string>, matchSpan?: (span: FlowSpan, query: string) => boolean): FlowWaterfallRow[] {
   const byId = new Map(rows.map(row => [row.id, row]))
   const term = query.trim().toLowerCase()
   if (term) {
     const matching = new Set<string>()
     for (const row of rows) {
-      if (!`${row.name} ${row.span.detail ?? ''} ${row.kind} ${row.ok ? '' : 'failed'} ${row.span.status ?? ''}`.toLowerCase().includes(term)) continue
+      if (matchSpan ? !matchSpan(row.span, query.trim()) : !`${row.name} ${row.span.detail ?? ''} ${row.kind} ${row.ok ? '' : 'failed'} ${row.span.status ?? ''}`.toLowerCase().includes(term)) continue
       let cursor: FlowWaterfallRow | undefined = row
       while (cursor && !matching.has(cursor.id)) {
         matching.add(cursor.id)

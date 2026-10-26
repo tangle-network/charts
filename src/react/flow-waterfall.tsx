@@ -69,6 +69,8 @@ export interface FlowWaterfallProps {
   /** Controlled time window, `null` for the whole trace; pass with `onZoomChange`. */
   zoom?: ViewWindow | null
   onZoomChange?: (zoom: ViewWindow | null) => void
+  /** Replaces the built-in search match (name, model, kind, status), such as to search the host's attributes. */
+  matchSpan?: (span: FlowSpan, query: string) => boolean
 }
 
 /** State the host may own: its value wins when given, and every change is reported either way. */
@@ -146,7 +148,7 @@ function OutcomeLegend({ agents }: { agents: FlowWaterfallRow[] }) {
 /** Shared trace inspector: the agent timeline and the span waterfall over one clock.
  * Data remains producer-owned; playback, zoom and folding change presentation only. */
 export function FlowWaterfall({
-  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers, onTimeChange, agentFill: fillProp, selectedId, onDeselect, description, summary: showSummary = true, criticalPath = false, query: queryProp, onQueryChange, collapsed: collapsedProp, onCollapsedChange, zoom: zoomProp, onZoomChange,
+  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers, onTimeChange, agentFill: fillProp, selectedId, onDeselect, description, summary: showSummary = true, criticalPath = false, query: queryProp, onQueryChange, collapsed: collapsedProp, onCollapsedChange, zoom: zoomProp, onZoomChange, matchSpan,
 }: FlowWaterfallProps) {
   const root = useRef<HTMLElement>(null)
   const search = useRef<HTMLInputElement>(null)
@@ -205,7 +207,7 @@ export function FlowWaterfall({
   const [flippedFamilies, setFlippedFamilies] = useState<ReadonlySet<string>>(new Set())
   const openFamilies = useMemo(() => defaultOpenFamilies(agents, UNFOLD_ROWS, flippedFamilies), [agents, flippedFamilies])
   const [openSteps, setOpenSteps] = useState<ReadonlySet<string>>(new Set())
-  const visible = useMemo(() => view === 'agents' ? agentViewRows(agents, rows, openFamilies, openSteps) : visibleFlowWaterfallRows(rows, query, collapsed), [view, agents, rows, openFamilies, openSteps, query, collapsed])
+  const visible = useMemo(() => view === 'agents' ? agentViewRows(agents, rows, openFamilies, openSteps) : visibleFlowWaterfallRows(rows, query, collapsed, matchSpan), [view, agents, rows, openFamilies, openSteps, query, collapsed, matchSpan])
   const slowest = view === 'spans' ? slowestRow(rows, clockMs) : undefined
   const callouts = useMemo<ReturnType<typeof agentCallouts>>(() => view === 'agents' ? agentCallouts(visible, clockMs) : {}, [view, visible, clockMs])
   const rowsHeight = maxHeight ?? (view === 'agents' ? ROW_HEIGHT.agents * AGENT_ROWS : 640)
