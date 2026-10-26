@@ -184,6 +184,16 @@ try {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.screenshot({ path: `${output}/healthy-phone-dark.png`, fullPage: true })
   await page.setViewportSize({ width: 1100, height: 900 })
+  // A host's brand mark (renderIcon) sits on the agent row's second line, inside the row, never spilling into the next.
+  await story('host-marks')
+  await page.locator('[data-host-mark]').first().waitFor({ timeout: 10_000 })
+  const hostMarks = await page.evaluate(() => [...document.querySelectorAll('.fw-view-agents .fw-row')].flatMap(row => {
+    const box = row.getBoundingClientRect(), mark = row.querySelector('[data-host-mark]')?.getBoundingClientRect()
+    return mark ? [{ top: mark.top - box.top, bottom: box.bottom - mark.bottom }] : []
+  }))
+  assert.ok(hostMarks.length > 0 && hostMarks.every(m => m.top >= 0 && m.bottom >= 0), `host marks overflow their rows: ${JSON.stringify(hostMarks)}`)
+  await page.screenshot({ path: `${output}/host-marks.png` })
+  checks.hostMarks = 'PASS'
   await story('recorded-discovery')
   const root = page.locator('[data-flow-waterfall]')
   assert.equal(await root.locator('[data-span-id]').count(), 53)
