@@ -1,5 +1,9 @@
 # @tangle-network/charts
 
+## 0.21.15
+
+- A merged run of tool steps that share one tool names itself in the bar ("bash ×9"); a single step shows its full name with an ellipsis. Before, only single steps were named, so every wide segment on a real run, a merged one, showed nothing.
+
 ## 0.21.14
 
 - While searching, rows that matched by themselves are marked `data-search="match"` and their names are bold. Ancestors shown only for context are marked `"context"` and recede.

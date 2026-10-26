@@ -15,7 +15,11 @@ export interface FlowSegment {
   alt?: boolean
   /** The first merged span's name, e.g. a tool's: shown in the segment's tooltip, and in the bar when one step fits it. */
   name?: string
+  /** The tool every merged step shares (the name before " · "); undefined once the merged steps differ. */
+  tool?: string
 }
+
+const toolOf = (name?: string) => name?.split(' · ')[0]
 
 export interface FlowWaterfallRow {
   id: string
@@ -108,6 +112,7 @@ function mergeSegments(marks: FlowSegment[], gapMs: number, cap = 240): FlowSegm
         covered.set(last, share)
         last.endMs = Math.max(last.endMs, mark.endMs)
         last.count += mark.count
+        if (last.tool !== mark.tool) last.tool = undefined
         last.kind = share.model >= share.tool ? 'model' : 'tool'
       } else out.push({ ...mark })
     }
@@ -204,6 +209,7 @@ function segmentOf(row: FlowWaterfallRow): FlowSegment {
     count: 1,
     retry: row.retry,
     name: row.name,
+    tool: toolOf(row.name),
   }
 }
 
@@ -456,7 +462,7 @@ function stepRuns(steps: readonly FlowWaterfallRow[]): FlowWaterfallRow[] {
     out.push({
       ...first, id: `run:${first.id}`, name: `${run.length} ${noun}`, durationLabel: formatSpanDuration(endMs - startMs), ok: failed === 0,
       hasChildren: false, descendants: 0, segments: [],
-      own: run.map(step => ({ startMs: step.span.startMs, endMs: step.span.endMs, kind: step.ok ? (step.kind === 'model' ? 'model' : 'tool') : 'failed', tone: first.tone, id: step.id, count: 1, retry: step.retry, name: step.name })),
+      own: run.map(step => ({ startMs: step.span.startMs, endMs: step.span.endMs, kind: step.ok ? (step.kind === 'model' ? 'model' : 'tool') : 'failed', tone: first.tone, id: step.id, count: 1, retry: step.retry, name: step.name, tool: toolOf(step.name) })),
       ...(costs.length ? { rollupCostUsd: costs.reduce((sum, cost) => sum + cost, 0) } : {}),
       span: { ...first.span, id: `run:${first.id}`, name: `${run.length} ${noun}`, startMs, endMs, status: failed ? 'failed' : first.span.status, costUsd: undefined },
     })

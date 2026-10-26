@@ -51,13 +51,13 @@ export interface RowProps extends RowEvents {
 function Segment({ mark, events, agentView, ending }: { mark: FlowSegment; events: RowEvents; agentView: boolean; ending?: boolean }) {
   // In the agent view only the turn that ended a failed agent carries the failure glyph; a retry always shows its own.
   const glyph = mark.kind === 'failed' ? (agentView && !ending ? null : <FailGlyph />) : mark.retry ? <RetryGlyph /> : null
-  // A tool step names itself in the bar when it is one step and wide enough (a container query hides the name otherwise).
-  const named = agentView && mark.kind === 'tool' && mark.count === 1 && mark.name
+  // A tool step names itself in the bar; merged steps that share one tool read "bash ×9". A container query hides it under 56 px.
+  const named = agentView && mark.kind === 'tool' && (mark.count === 1 ? mark.name : mark.tool && `${mark.tool} ×${mark.count}`)
   return <span className={`fw-seg fw-seg-${mark.kind}${mark.alt ? ' fw-seg-alt' : ''}`} data-tone={toneKey(mark.tone)} style={at(mark.startMs, mark.endMs)}
     title={mark.name ? `${mark.name}${mark.count > 1 ? ` +${mark.count - 1} more` : ''}` : undefined}
     onPointerEnter={agentView ? event => events.onInspect(mark.id, event.currentTarget) : undefined}
     onClick={agentView ? event => { event.stopPropagation(); events.onPin(mark.id, event.currentTarget) } : undefined}>
-    {glyph ? <span className="fw-glyph">{glyph}</span> : named && <span className="fw-seg-name">{mark.name}</span>}
+    {glyph ? <span className="fw-glyph">{glyph}</span> : named && <span className="fw-seg-name">{named}</span>}
   </span>
 }
 

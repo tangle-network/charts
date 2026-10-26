@@ -213,6 +213,10 @@ try {
   assert.equal(await page.locator('.fw-heading .fw-kinds').count(), 1)
   const kinds = await page.evaluate(() => ['.fw-seg-model', '.fw-seg-tool'].map(sel => document.querySelector(`.fw-view-agents ${sel}`)).filter(Boolean).map(el => getComputedStyle(el).backgroundColor))
   assert.ok(kinds.length < 2 || kinds[0] !== kinds[1], `model and tool segments share a color: ${kinds}`)
+  // A shown in-bar step name fits its segment (ellipsized), and only segments of 56 px or more show one.
+  const segNames = await page.evaluate(() => [...document.querySelectorAll('.fw-seg-name')].filter(name => getComputedStyle(name).display !== 'none')
+    .map(name => ({ seg: name.parentElement.getBoundingClientRect().width, name: name.getBoundingClientRect().width })))
+  assert.ok(segNames.every(n => n.seg >= 56 && n.name <= n.seg + 0.5), `step names overflow or show in narrow segments: ${JSON.stringify(segNames.slice(0, 5))}`)
   checks.hostMarks = 'PASS'
   // Every end label (duration, cost, Slowest/Costliest) stays inside its lane, on the surface, at 1100 px and on a phone.
   for (const width of [1100, 390]) {
