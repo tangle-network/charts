@@ -185,7 +185,9 @@
 .fw-root .fw-view-agents .fw-label { padding-left: 16px; gap: 12px; border-right: 0; }
 .fw-root .fw-view-agents .fw-names { flex-direction: column; align-items: flex-start; gap: 0; }
 .fw-root .fw-view-agents .fw-span-name { font-weight: 600; line-height: 18px; }
-.fw-root .fw-view-agents .fw-subtitle { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fw-muted); font-size: 12px; line-height: 16px; }
+.fw-root .fw-view-agents .fw-subtitle { display: flex; align-items: center; gap: 4px; max-width: 100%; min-width: 0; color: var(--fw-muted); font-size: 12px; line-height: 16px; }
+.fw-root .fw-view-agents .fw-subtitle-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fw-root .fw-view-agents .fw-detail-icon { flex: none; width: 16px; height: 16px; align-items: center; justify-content: center; overflow: hidden; }
 .fw-root .fw-view-agents .fw-detail { font-size: 12px; line-height: 16px; }
 .fw-root .fw-agent-dot { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--line, var(--fw-muted)); }
 

@@ -1,5 +1,9 @@
 # @tangle-network/charts
 
+## 0.21.4
+
+- Agent view: a host's `renderIcon` mark leads the row's second line instead of taking a third line that overflowed the 40 px row into the next agent's name.
+
 ## 0.21.3
 
 - A live trace's body fits its rows and grows as rows arrive instead of holding the full height, so a short live run leaves no empty band under its last row. It still never shrinks while live.

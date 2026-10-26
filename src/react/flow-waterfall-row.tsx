@@ -121,8 +121,13 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
             <span className="fw-name-text">{row.name}</span>
           </span>
           {/* Two levels on every agent row: the name, then how it ended and how much it did. */}
-          {agentView && <span className="fw-subtitle">{span.detail && span.detail !== props.sharedDetail ? `${span.detail} · ${agentSummary(row)}` : agentSummary(row)}</span>}
-          {agentView && renderIcon && <span className="fw-detail-icon" aria-hidden>{renderIcon(span)}</span>}
+          {/* The host's mark leads the second line: a third line would overflow the 40 px row into the next one. */}
+          {agentView && (
+            <span className="fw-subtitle">
+              {renderIcon && <span className="fw-detail-icon" aria-hidden>{renderIcon(span)}</span>}
+              <span className="fw-subtitle-text">{span.detail && span.detail !== props.sharedDetail ? `${span.detail} · ${agentSummary(row)}` : agentSummary(row)}</span>
+            </span>
+          )}
         </span>
         {folded && <span className="fw-count" aria-label={`${row.descendants} hidden steps`}>+{row.descendants}</span>}
         {!row.ok && <span className="fw-alert"><AlertGlyph label="failed" /></span>}
