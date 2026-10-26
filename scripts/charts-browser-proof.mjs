@@ -198,6 +198,9 @@ try {
   // An agent row says it failed in its subtitle; no extra alert glyph, and no event label over the rows.
   assert.equal(await page.locator('.fw-view-agents .fw-alert').count(), 0)
   assert.equal(await page.locator('.fw-view-agents ~ * .fw-marker-label, .fw-marker-label').count(), 0)
+  // The playhead is a round knob, visible at rest.
+  const knob = await page.locator('.fw-slider').evaluate(el => { const style = getComputedStyle(el, '::-webkit-slider-thumb'); return { w: style.width, r: style.borderRadius } })
+  assert.equal(knob.w, '14px', `playhead knob ${JSON.stringify(knob)}`)
   checks.hostMarks = 'PASS'
   // Every end label (duration, cost, Slowest/Costliest) stays inside its lane, on the surface, at 1100 px and on a phone.
   for (const width of [1100, 390]) {

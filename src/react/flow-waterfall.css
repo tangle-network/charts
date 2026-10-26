@@ -304,10 +304,10 @@
 .fw-root.fw-root-agents .fw-card, .fw-root.fw-root-agents .fw-card-above .fw-card { position: relative; left: auto !important; top: auto !important; transform: none; animation-name: fw-arrive; width: auto; max-width: 560px; }
 .fw-root .fw-seg-alt { filter: brightness(.78); }
 /* Agent view: the scrubber track shows how far the run has played, so at rest it reads full, not empty. */
-.fw-root-agents .fw-slider { background: linear-gradient(90deg, var(--fw-accent) var(--fw-progress), var(--fw-well) var(--fw-progress)) 0 50% / 100% 6px no-repeat; }
+.fw-root.fw-root-agents .fw-slider { background: linear-gradient(90deg, var(--fw-accent) var(--fw-progress), var(--fw-well) var(--fw-progress)) 0 50% / 100% 6px no-repeat; }
 /* The playhead: a round knob on a filled track, visible at rest as the references show it. */
-.fw-root-agents .fw-slider::-webkit-slider-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--fw-text); box-shadow: 0 0 0 3px var(--fw-surface); }
-.fw-root-agents .fw-slider::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--fw-text); box-shadow: 0 0 0 3px var(--fw-surface); }
+.fw-root.fw-root-agents .fw-slider::-webkit-slider-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--fw-text); box-shadow: 0 0 0 3px var(--fw-surface); }
+.fw-root.fw-root-agents .fw-slider::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--fw-text); box-shadow: 0 0 0 3px var(--fw-surface); }
 .fw-root .fw-card { position: absolute; z-index: 20; width: 320px; padding: 12px; border-radius: 12px; background: var(--fw-raised); border: 1px solid var(--fw-border);
   box-shadow: 0 12px 32px -8px rgb(0 0 0 / .28), 0 2px 6px rgb(0 0 0 / .08); animation: fw-arrive 140ms var(--fw-ease); }
 /* A hover card never covers the next mark: only a pinned card (a dialog) takes the pointer. */
