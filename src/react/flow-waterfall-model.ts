@@ -292,7 +292,7 @@ export function costSummary(costUsd: number | undefined, trace: Pick<FlowTrace, 
   const upper = !partial && trace.costBound === 'upper'
   const value = `${partial || trace.costBound === 'lower' ? '≥' : upper ? '≤' : list ? '≈' : ''}${formatCost(costUsd)}${trace.billedUsd !== undefined ? ` · ${formatCost(trace.billedUsd)} billed` : ''}`
   const parts = [partial ? `${coverage.priced} of ${coverage.total} model calls priced` : coverage ? `all ${coverage.total} model calls priced` : '',
-    list ? 'at the model catalog list price; not a bill' : '', upper ? 'cached input is not split out, so it is priced as fresh input: at most this' : '', trace.billedUsd !== undefined ? `billed ${formatCost(trace.billedUsd)} (the seat charge)` : '']
+    list ? 'at the model catalog list price; not a bill' : '', upper ? 'cached input is not split out, so it is priced as fresh input: at most this' : '', trace.costBound === 'lower' ? 'a floor: the producer reports at least this' : '', trace.billedUsd !== undefined ? `billed ${formatCost(trace.billedUsd)} (the seat charge)` : '']
   return { value, title: parts.filter(Boolean).join('; '), label }
 }
 
