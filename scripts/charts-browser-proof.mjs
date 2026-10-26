@@ -201,6 +201,8 @@ try {
   // The agents view's playhead block applies: its filled 6 px track (the knob rules sit beside it; a thumb's style is not readable).
   const track = await page.locator('.fw-slider').evaluate(el => getComputedStyle(el).backgroundSize)
   assert.match(track, /6px/, `playhead track ${track}`)
+  // Names keep proportional hyphens: tabular figures are for numeric cells only.
+  assert.ok(!(await page.locator('.fw-name-text').first().evaluate(el => getComputedStyle(el).fontFeatureSettings)).includes('tnum'))
   checks.hostMarks = 'PASS'
   // Every end label (duration, cost, Slowest/Costliest) stays inside its lane, on the surface, at 1100 px and on a phone.
   for (const width of [1100, 390]) {

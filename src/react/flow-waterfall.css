@@ -47,7 +47,8 @@
   font-family: var(--font-sans, Inter, ui-sans-serif, system-ui, sans-serif);
   font-size: 14px;
   line-height: 20px;
-  font-feature-settings: "tnum" 1, "cv11" 1;
+  /* Tabular figures only on numeric cells: on names they widen hyphens ("v6 - battery", "glm - 5.3"). */
+  font-feature-settings: "cv11" 1;
   -webkit-font-smoothing: antialiased;
 }
 .fw-root-agents { --fw-bar-h: 24px; --fw-label-col: min(var(--fw-name-w), 28%); border-radius: 16px; }
@@ -81,7 +82,7 @@
 .fw-root .fw-state::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .fw-root .fw-state-live { color: var(--fw-accent); background: color-mix(in oklab, var(--fw-accent) 12%, transparent); }
 .fw-root .fw-state-live::before { animation: fw-pulse 1.6s var(--fw-ease) infinite; }
-.fw-root .fw-headline { color: var(--fw-muted); font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 8px; }
+.fw-root .fw-headline { color: var(--fw-muted); display: flex; align-items: center; gap: 8px; }
 .fw-root .fw-done-mark { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--fw-ok); color: var(--fw-ok); font-size: 12px; line-height: 1; }
 .fw-root .fw-tools { display: flex; align-items: center; gap: 8px; }
 .fw-root .fw-views { display: inline-flex; padding: 4px; border-radius: 8px; background: var(--fw-well); border: 1px solid var(--fw-border); }
@@ -235,7 +236,11 @@
 /* An agent bar with no child marks says who it is by its lane color, never a neutral grey. */
 /* In the agent view the bar's own extent between steps is waiting: hatched in the outcome tone, under the step segments. */
 .fw-root .fw-view-agents .fw-bar.fw-k-pipeline.fw-has-marks { background: repeating-linear-gradient(-45deg, color-mix(in oklab, var(--tone) 28%, transparent) 0 1px, transparent 1px 5px), color-mix(in oklab, var(--tone) 9%, transparent); }
-.fw-root .fw-view-agents .fw-bar.fw-k-pipeline:not(.fw-has-marks, .fw-has-agents) { background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); }
+/* An agent lane is a tint of its color; full saturation is kept for its model and tool segments and its status dot, so a run never
+   reads as a wall of colored slabs. */
+.fw-root .fw-view-agents .fw-bar.fw-k-pipeline:not(.fw-has-marks, .fw-has-agents) { background: color-mix(in oklab, var(--tone) 30%, var(--fw-surface)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--tone) 55%, transparent); }
+/* A family row without one shared outcome is neutral when bars mean outcomes, not a hue of its own. */
+.fw-root.fw-fill-outcome .fw-view-agents .fw-row[data-span-id^="family:"]:not([data-outcome]), .fw-root.fw-fill-outcome .fw-view-agents .fw-row[data-span-id^="family:"]:not([data-outcome]) [data-tone] { --tone: var(--fw-h0); }
 /* A host outcome re-tones the whole lane: dot, bar and marks. */
 /* Muted agents (the default): one quiet tone for every agent bar, its steps and handoffs; the slowest agent alone takes amber, and
    failure keeps its red glyph, so color only ever means state. */

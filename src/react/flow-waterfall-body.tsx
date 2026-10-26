@@ -131,6 +131,19 @@ export function FlowBody(props: BodyProps) {
     }
     return shown
   }, [props.markers, win.startMs, msPerPx, trackPx, view])
+  // Pause labels thin out the same way: one that would overlap the label before it is left to its band's tooltip.
+  const pauseLabels = useMemo(() => {
+    const shown = new Set<FlowPause>()
+    let freeFrom = -Infinity
+    for (const pause of [...(props.pauses ?? [])].sort((a, b) => a.startMs - b.startMs)) {
+      const width = duration(pause.endMs - pause.startMs).length * 7 + 24
+      const centre = ((pause.startMs + pause.endMs) / 2 - win.startMs) / msPerPx
+      if (centre - width / 2 < freeFrom) continue
+      shown.add(pause)
+      freeFrom = centre + width / 2 + 8
+    }
+    return shown
+  }, [props.pauses, win.startMs, msPerPx])
 
   useEffect(() => {
     const element = scroller.current
@@ -292,12 +305,12 @@ export function FlowBody(props: BodyProps) {
         </div>
         {view === 'spans' && <StickyRows scroller={scroller} rows={rows} index={index} rowHeight={rowHeight} render={row} />}
         {props.markers?.length || props.pauses?.length ? <div className="fw-marker-layer">
-          {props.pauses?.map(pause => <span key={`p-${pause.startMs}`} className="fw-pause" style={{ '--s': pause.startMs, '--e': pause.endMs } as CSSProperties} title={pause.label}>
+          {props.pauses?.map(pause => <span key={`p-${pause.startMs}`} className="fw-pause" style={{ '--s': pause.startMs, '--e': pause.endMs } as CSSProperties} title={`${pause.label}, ${duration(pause.endMs - pause.startMs)}`}>
             {/* The label says how long the run stood still and may run past a narrow band; the reason is its tooltip. */}
-            <span className="fw-pause-label" title={pause.detail ? `${pause.label}: ${pause.detail}` : pause.label} tabIndex={0}
+            {pauseLabels.has(pause) && <span className="fw-pause-label" title={pause.detail ? `${pause.label}: ${pause.detail}` : pause.label} tabIndex={0}
               aria-label={`${pause.label}, ${duration(pause.endMs - pause.startMs)}${pause.detail ? `: ${pause.detail}` : ''}`}>
               <b>{duration(pause.endMs - pause.startMs)}</b>
-            </span>
+            </span>}
           </span>)}
           {props.markers?.map(marker => <span key={`${marker.at}-${marker.label}`} className="fw-marker" data-tone={marker.tone ?? 'neutral'}
             style={{ '--s': marker.at } as CSSProperties} title={marker.label}>

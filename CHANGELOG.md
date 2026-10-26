@@ -1,5 +1,12 @@
 # @tangle-network/charts
 
+## 0.21.7
+
+- Agent lanes are a tint of their color; model and tool segments and the status dot keep full saturation (blind round 22: full-length saturated slabs).
+- With outcome fill, a family row takes its members' shared outcome and is neutral when they differ, never a hue of its own.
+- Pause labels thin out where they would overlap; a hidden one's length and reason stay on its band's tooltip.
+- Tabular figures apply to numeric cells only, so names keep proportional hyphens ("v6-battery", not "v6 - battery").
+
 ## 0.21.6
 
 - `agentFill` defaults to `outcome` when agents carry outcomes, so bars match the outcome legend; `muted` only when none do.
