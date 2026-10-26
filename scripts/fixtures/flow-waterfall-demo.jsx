@@ -130,7 +130,7 @@ function App({ trace }) {
   }, [])
   const shown = live && now < trace.totalMs ? reveal(trace, now) : trace
   return <main style={{ width: params.get('width') ? `${params.get('width')}px` : 'auto', maxWidth: '100%', margin: '0 auto', padding: Number(params.get('pad') ?? 24) }}>
-    <FlowWaterfall agentFill={params.get('fill') ?? 'muted'} trace={shown} live={live && now < trace.totalMs} label={params.get('label') ?? 'Trace'}
+    <FlowWaterfall agentFill={params.get('fill') ?? undefined} trace={shown} live={live && now < trace.totalMs} label={params.get('label') ?? 'Trace'}
       description={params.get('desc') ?? undefined}
       defaultView={params.get('view') ?? 'spans'}
       defaultCollapsed={params.get('collapsed') === '1'} maxHeight={Number(params.get('height') ?? 640)}
