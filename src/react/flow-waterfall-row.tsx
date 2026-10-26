@@ -2,7 +2,7 @@ import { type CSSProperties, type ReactNode, memo } from 'react'
 import type { FlowSpan } from '../flow-trace.js'
 import { KIND_LABEL } from './flow-waterfall-card.js'
 import { AlertGlyph, ChevronGlyph, FailGlyph, KindGlyph, RetryGlyph } from './flow-waterfall-icons.js'
-import { type FlowSegment, type FlowWaterfallRow, agentSummary, rowCostText, formatSpanDuration, spanRunning, toneKey } from './flow-waterfall-model.js'
+import { type FlowSegment, type FlowWaterfallRow, agentSummaryParts, rowCostText, formatSpanDuration, spanRunning, toneKey } from './flow-waterfall-model.js'
 import type { RowMotion } from './flow-waterfall-motion.js'
 
 export type FlowView = 'spans' | 'agents'
@@ -81,6 +81,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   const kind = !row.ok ? 'failed' : row.kind
   const marks = isAgent || row.hasChildren || row.id.startsWith('run:') ? (folded && !agentView ? row.segments : row.own) : []
   const label = endLabel(row, clockMs)
+  const summary = agentSummaryParts(row)
   const inspect = (event: { currentTarget: HTMLElement }) => props.onInspect(row.id, event.currentTarget)
   const family = agentView && row.id.startsWith('family:')
   const step = agentView && row.stepOf !== undefined
@@ -112,6 +113,8 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
             aria-label={`${folded ? 'Expand' : 'Collapse'} ${row.name}`} aria-expanded={!folded}
             onClick={event => { event.stopPropagation(); props.onToggle(row) }}><ChevronGlyph /></button>
           : <span className="fw-toggle-space" aria-hidden />)}
+        {/* Every agent row keeps the chevron's gutter, so names line up whether or not a row opens. */}
+        {agentView && !opens && <span className="fw-toggle-space" aria-hidden />}
         {(!agentView || step) && <span className="fw-icon-tile" aria-hidden>{renderIcon?.(span) ?? <KindGlyph kind={span.kind} name={span.name} />}</span>}
         <span className="fw-names" title={`${row.name}${span.detail ? ` · ${span.detail}` : ''} · ${KIND_LABEL[span.kind]}${running ? ' · running' : ''}${row.ok ? '' : ' · failed'}`}>
           <span className={`fw-span-name${isAgent || row.hasChildren ? ' fw-strong' : ''}`}>
@@ -127,7 +130,8 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
           {agentView && (
             <span className="fw-subtitle">
               {renderIcon && <span className="fw-detail-icon" aria-hidden>{renderIcon(span)}</span>}
-              <span className="fw-subtitle-text">{span.detail && span.detail !== props.sharedDetail ? `${span.detail} · ${agentSummary(row)}` : agentSummary(row)}</span>
+              <span className="fw-subtitle-text">{span.detail && span.detail !== props.sharedDetail ? `${span.detail} · ${summary[0]}` : summary[0]}</span>
+              {summary[1] && <span className="fw-subtitle-extra">· {summary[1]}</span>}
             </span>
           )}
         </span>
