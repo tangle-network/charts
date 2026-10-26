@@ -366,6 +366,32 @@ export function agentViewRows(agents: readonly FlowWaterfallRow[], rows: readonl
     steps.set(row.parentId, [...(steps.get(row.parentId) ?? []), row])
   }
   return base.flatMap(row => openSteps.has(row.id)
-    ? [row, ...(steps.get(row.id) ?? []).map(step => ({ ...step, stepOf: row.id, inset: (row.inset ?? 0) + 1, tone: row.tone, own: step.own.map(mark => ({ ...mark, tone: row.tone })) }))]
+    ? [row, ...stepRuns(steps.get(row.id) ?? []).map(step => ({ ...step, stepOf: row.id, inset: (row.inset ?? 0) + 1, tone: row.tone, own: step.own.map(mark => ({ ...mark, tone: row.tone })) }))]
     : [row])
+}
+
+/** Three or more consecutive steps of one kind and name read as one row ("15 model calls · 4h"), each a mark in its bar. */
+function stepRuns(steps: readonly FlowWaterfallRow[]): FlowWaterfallRow[] {
+  const out: FlowWaterfallRow[] = []
+  for (let i = 0; i < steps.length;) {
+    let j = i
+    while (j < steps.length && steps[j]!.kind === steps[i]!.kind && steps[j]!.name === steps[i]!.name) j++
+    const run = steps.slice(i, j)
+    if (run.length < 3) { out.push(...run); i = j; continue }
+    const first = run[0]!
+    const startMs = Math.min(...run.map(step => step.span.startMs))
+    const endMs = Math.max(...run.map(step => step.span.endMs))
+    const failed = run.filter(step => !step.ok).length
+    const costs = run.map(step => step.span.costUsd ?? step.rollupCostUsd).filter((cost): cost is number => cost !== undefined)
+    const noun = first.kind === 'model' ? 'model calls' : first.kind === 'tool' ? `${first.name} calls` : `${first.name} steps`
+    out.push({
+      ...first, id: `run:${first.id}`, name: `${run.length} ${noun}`, durationLabel: formatSpanDuration(endMs - startMs), ok: failed === 0,
+      hasChildren: false, descendants: 0, segments: [],
+      own: run.map(step => ({ startMs: step.span.startMs, endMs: step.span.endMs, kind: step.ok ? (step.kind === 'model' ? 'model' : 'tool') : 'failed', tone: first.tone, id: step.id, count: 1, retry: step.retry })),
+      ...(costs.length ? { rollupCostUsd: costs.reduce((sum, cost) => sum + cost, 0) } : {}),
+      span: { ...first.span, id: `run:${first.id}`, name: `${run.length} ${noun}`, startMs, endMs, status: failed ? 'failed' : first.span.status, costUsd: undefined },
+    })
+    i = j
+  }
+  return out
 }

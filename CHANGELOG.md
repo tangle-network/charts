@@ -2,6 +2,7 @@
 
 ## 0.20.2
 
+- Agent view: three or more consecutive steps of one kind and name fold into one row ("15 model calls"), each step a mark in its bar. Tool steps carry a generic identity glyph by name (terminal, file, pencil, lens, globe, branch). The playhead stays in sight at rest. End labels sit above connectors. The card's dot takes the lane's drawn hue. The Cost tile is left out when no cost source exists. Light bars carry the full hue (tool steps 62%).
 - Event track: the event a reader jumps to keeps its label up on the axis and its dot reads pressed, so the jump says where it went.
 - `FlowTrace.costBound: 'lower' | 'upper'` marks `costUsd` as a floor ("≥") or a ceiling ("≤"); it replaces 0.20.1's `costUpperBound` flag, which `otlpFlowTrace` now writes as `costBound: 'upper'`.
 - `FlowTrace.toolCalls` is optional: absent shows a dash with its reason, never "0". `summary={false}` drops the stat strip for a page with its own stat row.

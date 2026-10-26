@@ -218,9 +218,10 @@ try {
     checks.nesting = 'PASS'
     checks.collapseExpand = 'PASS'
     const terms = await root.locator('dt').allTextContents()
-    assert.deepEqual(terms, ['Duration', 'Cost', 'Tokens', 'LLM calls', 'Tool calls', 'Errors'])
-    assert.deepEqual(await root.locator('dd').allTextContents(), ['7m 11s', '—', '754.4k', '—', '35', '3'])
-    assert.equal(await root.locator('dd').nth(2).getAttribute('title'), '754,448 tokens')
+    // This trace has no cost source, so the Cost tile is left out rather than printed as a dash.
+    assert.deepEqual(terms, ['Duration', 'Tokens', 'LLM calls', 'Tool calls', 'Errors'])
+    assert.deepEqual(await root.locator('dd').allTextContents(), ['7m 11s', '754.4k', '—', '35', '3'])
+    assert.equal(await root.locator('dd').nth(1).getAttribute('title'), '754,448 tokens')
     checks.summary = 'PASS'
     // Each kind is painted distinctly: a fill colour, or a pattern (hatched waiting) in background-image.
     const kinds = await root.locator('.fw-bar').evaluateAll(elements => Object.fromEntries(elements.map(element => {

@@ -111,7 +111,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
             aria-label={`${folded ? 'Expand' : 'Collapse'} ${row.name}`} aria-expanded={!folded}
             onClick={event => { event.stopPropagation(); props.onToggle(row) }}><ChevronGlyph /></button>
           : <span className="fw-toggle-space" aria-hidden />)}
-        {(!agentView || step) && <span className="fw-icon-tile" aria-hidden>{renderIcon?.(span) ?? <KindGlyph kind={span.kind} />}</span>}
+        {(!agentView || step) && <span className="fw-icon-tile" aria-hidden>{renderIcon?.(span) ?? <KindGlyph kind={span.kind} name={span.name} />}</span>}
         <span className="fw-names" title={`${row.name}${span.detail ? ` · ${span.detail}` : ''} · ${KIND_LABEL[span.kind]}${running ? ' · running' : ''}${row.ok ? '' : ' · failed'}`}>
           <span className={`fw-span-name${isAgent || row.hasChildren ? ' fw-strong' : ''}`}>
             {/* With agent fill, the outcome rides on the agent's dot in both views. */}

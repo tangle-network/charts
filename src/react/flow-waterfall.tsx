@@ -65,7 +65,8 @@ function summaryCells(trace: FlowTrace, at: ReturnType<typeof totalsAt> | undefi
   const errors = at ? at.errors : trace.errors ?? trace.spans.filter(spanFailed).length
   const summary: [string, ReactNode, string?][] = [
     ['Duration', formatSpanDuration(durationMs)],
-    [cost.label, cost.value, cost.title],
+    // No cost source at all: the tile goes rather than print a dash beside real numbers.
+    ...(cost.value === '—' ? [] : [[cost.label, cost.value, cost.title] as [string, ReactNode, string?]]),
     ['Tokens', formatCount(tokens), `${tokens.toLocaleString()} tokens`],
     ['LLM calls', modelCalls === undefined ? '—' : modelCalls.toLocaleString(), modelCalls === undefined ? 'Model output windows do not establish the number of LLM requests' : undefined],
     ['Tool calls', (at ? at.toolCalls : trace.toolCalls)?.toLocaleString() ?? '—', (at ? at.toolCalls : trace.toolCalls) === undefined ? 'The producer did not count tool calls' : undefined],
@@ -327,12 +328,15 @@ export function FlowWaterfall({
   const busy = agents.reduce((sum, row) => sum + busyMs(row, limit), 0)
   const speedup = limit > 0 ? busy / limit : 0
   const done = !isLive && !trace.spans.some(spanRunning)
-  const cardRow = card ? byId.get(card.target) : undefined
+  // The card takes the row as drawn (a family recolours its members), so its dot matches the lane it describes.
+  const shown = (row?: FlowWaterfallRow) => row && (visible.find(item => item.id === row.id) ?? row)
+  const cardRow = shown(card ? byId.get(card.target) : undefined)
   const cardAgent = cardRow && (() => {
-    for (let cursor: FlowWaterfallRow | undefined = cardRow; cursor; cursor = cursor.parentId ? byId.get(cursor.parentId) : undefined) if (cursor.kind === 'pipeline') return cursor
+    for (let cursor: FlowWaterfallRow | undefined = cardRow; cursor; cursor = cursor.parentId ? byId.get(cursor.parentId) : undefined) if (cursor.kind === 'pipeline') return shown(cursor)
     return undefined
   })()
-  const showCursor = isLive || position !== null || playing
+  // The agent view keeps its playhead in sight at rest, at the end of the run.
+  const showCursor = isLive || position !== null || playing || view === 'agents'
   const overviewMarks = useMemo(() => rows.filter(row => !row.parentId).flatMap(row => row.hasChildren ? row.segments : row.kind === 'pipeline' ? [] : [{ startMs: row.span.startMs, endMs: row.span.endMs, kind: row.ok ? 'tool' as const : 'failed' as const, tone: row.tone, id: row.id, count: 1, retry: false }]), [rows])
 
   // The agent timeline puts play and speed above its lanes, so they stay in view on a long run.

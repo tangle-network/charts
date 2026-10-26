@@ -9,7 +9,20 @@ const svg = (children: ReactNode, label?: string) => (
 )
 
 /** Kind glyphs drawn when the host supplies no `renderIcon`. Brand marks belong to the host. */
-export function KindGlyph({ kind }: { kind: FlowSpan['kind'] }) {
+/** Generic tool identity by name: a terminal, a file, a pencil, a lens, a globe or a branch, never a vendor mark. */
+function toolGlyph(name: string | undefined) {
+  const n = (name ?? '').toLowerCase()
+  if (/bash|shell|exec|terminal|command|run/.test(n)) return svg(<><rect x="2" y="3" width="12" height="10" rx="2" /><path d="m5 7 2 1.5L5 10M8.5 10.5h2.5" /></>)
+  if (/edit|write|patch|apply/.test(n)) return svg(<path d="M3 13l1-3.5L10.5 3a1.4 1.4 0 0 1 2 2L6 11.5 3 13ZM9.5 4l2 2" />)
+  if (/grep|search|find|query/.test(n)) return svg(<><circle cx="7" cy="7" r="4.25" /><path d="m10.25 10.25 3.25 3.25" /></>)
+  if (/read|glob|list|ls|cat|file|view/.test(n)) return svg(<><path d="M4 2.5h5l3 3v8H4z" /><path d="M9 2.5v3h3M6 9h4M6 11h3" /></>)
+  if (/web|fetch|http|browser|url/.test(n)) return svg(<><circle cx="8" cy="8" r="5.5" /><path d="M2.5 8h11M8 2.5c2 2 2 9 0 11M8 2.5c-2 2-2 9 0 11" /></>)
+  if (/git|commit|branch|merge/.test(n)) return svg(<><circle cx="5" cy="4" r="1.5" /><circle cx="5" cy="12" r="1.5" /><circle cx="11" cy="6" r="1.5" /><path d="M5 5.5v5M11 7.5c0 2-3 2-6 3" /></>)
+  return undefined
+}
+
+export function KindGlyph({ kind, name }: { kind: FlowSpan['kind']; name?: string }) {
+  if (kind === 'tool') { const glyph = toolGlyph(name); if (glyph) return glyph }
   switch (kind) {
     case 'pipeline': return svg(<><circle cx="8" cy="4" r="1.75" /><circle cx="4" cy="12" r="1.75" /><circle cx="12" cy="12" r="1.75" /><path d="M8 5.75v2.5M8 8.25 4.8 10.6M8 8.25l3.2 2.35" /></>)
     case 'model': return svg(<path d="M8 2.5c.5 2.8 2.2 4.6 5 5.5-2.8.9-4.5 2.7-5 5.5-.5-2.8-2.2-4.6-5-5.5 2.8-.9 4.5-2.7 5-5.5Z" />)

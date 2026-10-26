@@ -84,7 +84,7 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
       onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); onClose() } }}>
       {owner && <div className="fw-card-agent"><span className="fw-agent-dot" aria-hidden />{owner.name}{owner.span.detail && <span className="fw-muted"> {owner.span.detail}</span>}</div>}
       <div className="fw-card-head">
-        <span className="fw-icon-tile" aria-hidden>{renderIcon?.(span) ?? <KindGlyph kind={span.kind} />}</span>
+        <span className="fw-icon-tile" aria-hidden>{renderIcon?.(span) ?? <KindGlyph kind={span.kind} name={span.name} />}</span>
         <div className="fw-card-title">
           <div className="fw-card-name">{keepWords(span.name)}</div>
           {span.detail && <div className="fw-muted">{span.detail}</div>}

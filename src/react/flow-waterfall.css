@@ -65,9 +65,9 @@
 /* Light fills carry enough of the hue to tell agents apart on white (24% and 42% both read as "pastel, washed out"); the outline is
    the full hue, which passes 3:1 against the surface, so every mark keeps its edge. */
 .fw-root [data-tone] {
-  --fill: light-dark(color-mix(in oklab, var(--tone) 88%, #fff), color-mix(in oklab, var(--tone) 94%, #000));
+  --fill: light-dark(var(--tone), color-mix(in oklab, var(--tone) 94%, #000));
   --line: light-dark(var(--tone), var(--tone));
-  --dim: light-dark(color-mix(in oklab, var(--tone) 46%, #fff), color-mix(in oklab, var(--tone) 40%, #17171d));
+  --dim: light-dark(color-mix(in oklab, var(--tone) 62%, #fff), color-mix(in oklab, var(--tone) 40%, #17171d));
   --dim-line: light-dark(color-mix(in oklab, var(--tone) 70%, #fff), color-mix(in oklab, var(--tone) 55%, #17171d));
 }
 
@@ -256,7 +256,7 @@
 .fw-root .fw-glyph { display: inline-flex; color: currentColor; }
 .fw-root .fw-glyph svg { width: 11px; height: 11px; stroke-width: 2; }
 .fw-root .fw-seg-model .fw-glyph, .fw-root .fw-k-model .fw-glyph { color: light-dark(var(--tone), #fff); }
-.fw-root .fw-end { display: inline-flex; align-items: center; gap: 8px; top: calc(50% + var(--fw-bar-shift) - var(--fw-bar-h) / 2); height: var(--fw-bar-h); left: calc(var(--x0) + max(var(--w), 3px) + 8px); white-space: nowrap; pointer-events: none; }
+.fw-root .fw-end { z-index: 2; display: inline-flex; align-items: center; gap: 8px; top: calc(50% + var(--fw-bar-shift) - var(--fw-bar-h) / 2); height: var(--fw-bar-h); left: calc(var(--x0) + max(var(--w), 3px) + 8px); white-space: nowrap; pointer-events: none; }
 .fw-root .fw-duration { font-size: 12px; color: var(--fw-muted); font-variant-numeric: tabular-nums; }
 .fw-root .fw-k-failed ~ .fw-end .fw-duration { color: var(--fw-failed); }
 .fw-root .fw-badge { height: 18px; padding: 0 8px; border-radius: 999px; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--fw-amber); background: color-mix(in oklab, var(--fw-amber) 13%, transparent); border: 1px solid color-mix(in oklab, var(--fw-amber) 28%, transparent); }

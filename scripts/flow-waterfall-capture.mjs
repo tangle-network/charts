@@ -74,16 +74,28 @@ try {
       for (const theme of ['dark', 'light']) {
         const { page, context } = await open(`fixture=otlp:${source}&view=${view}&theme=${theme}&width=1440&height=720&label=Trace${extra}`, { width: 1512, height: 945 })
         // Frames crop to the component with a 32 px margin, as the reference frames show only the trace card.
+        // A tall viewport, so opening a family never scrolls the header out of the crop.
+        await page.setViewportSize({ width: 1512, height: 1800 })
         const shot = async name => {
           const box = await page.locator('[data-flow-waterfall]').boundingBox()
-          await page.screenshot({ path: `${out}/judge-${prefix}${theme}-${name}.png`, clip: { x: Math.max(0, box.x - 32), y: Math.max(0, box.y - 32), width: Math.min(1512, box.width + 64), height: Math.min(945, box.height + 64) } })
+          await page.screenshot({ path: `${out}/judge-${prefix}${theme}-${name}.png`, clip: { x: Math.max(0, box.x - 32), y: Math.max(0, box.y - 32), width: Math.min(1512, box.width + 64), height: box.height + 64 } })
         }
+        // Headless captures draw no pointer; the reference stills do. Draw one exactly where the hover or click is.
+        const cursor = (x, y) => page.evaluate(([cx, cy]) => {
+          document.getElementById('judge-cursor')?.remove()
+          const el = document.createElement('div')
+          el.id = 'judge-cursor'
+          el.style.cssText = `position:fixed;left:${cx}px;top:${cy}px;z-index:99999;pointer-events:none;width:18px;height:26px`
+          el.innerHTML = '<svg viewBox="0 0 18 26" width="18" height="26"><path d="M1 1v20l5-5 4 9 3-1.5-4-8.5h7z" fill="#111" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>'
+          document.body.appendChild(el)
+        }, [x, y])
         await shot('rest')
         const bars = page.locator('.fw-row:not(.fw-sticky-row) .fw-bar')
         const bar = bars.nth(Math.min(view === 'agents' ? 2 : 3, Math.max(0, (await bars.count()) - 1)))
         // Point where a reader would: the bar's centre, which may be one of its segments (each opens its own card).
         const box = await bar.boundingBox()
         await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.waitForTimeout(350)
+        await cursor(box.x + box.width / 2, box.y + box.height / 2)
         await shot('hover')
         // The card state opens a family when there is one, then pins its first member, as a reader drilling in would.
         const family = page.locator('.fw-row[data-span-id^="family:"] .fw-toggle').first()
@@ -94,12 +106,12 @@ try {
           if (await memberToggle.count()) { await memberToggle.click(); await page.waitForFunction(() => !document.querySelector('.fw-row.fw-enter'), null, { timeout: 3000 }) }
           // Click the step's own row, so the card describes the step, not a tool segment inside it.
           const target = page.locator('.fw-row.fw-step .fw-name-text').first()
-          if (await target.count()) await target.click()
-          else {
-            const m = await page.locator('.fw-row:not([data-span-id^="family:"]) .fw-bar').nth(1).boundingBox()
-            await page.mouse.click(m.x + Math.min(12, m.width / 2), m.y + m.height / 2)
-          }
-        } else await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+          const m = (await target.count()) ? await target.boundingBox() : await page.locator('.fw-row:not([data-span-id^="family:"]) .fw-bar').nth(1).boundingBox()
+          const at = { x: m.x + Math.min(24, m.width / 2), y: m.y + m.height / 2 }
+          await page.mouse.click(at.x, at.y)
+          await page.waitForTimeout(350)
+          await cursor(at.x, at.y)
+        } else { await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2); await cursor(box.x + box.width / 2, box.y + box.height / 2) }
         await page.waitForTimeout(350)
         await shot('card')
         report.judge.push({ source, view, theme, bars: await bars.count() })
