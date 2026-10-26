@@ -244,7 +244,11 @@ export function FlowBody(props: BodyProps) {
         {props.markers?.map(marker => <button key={`e-${marker.at}-${marker.label}`} type="button" className="fw-event" data-tone={marker.tone ?? 'neutral'}
           style={{ '--s': marker.at } as CSSProperties} title={marker.kind ? `${marker.kind}: ${marker.label}` : marker.label}
           aria-label={`Jump to ${marker.kind ? `${marker.kind} ` : ''}${marker.label}`} aria-pressed={jumped === marker}
-          onPointerDown={event => event.stopPropagation()} onClick={() => { setJumped(marker); props.onScrub(marker.at) }} />)}
+          onPointerDown={event => event.stopPropagation()} onClick={() => {
+            // A second click on the event you are on lets go of it, so no click on the track is a no-op.
+            if (jumped === marker) { setJumped(undefined); return }
+            setJumped(marker); props.onScrub(marker.at)
+          }} />)}
         {jumped && <span className="fw-event-label" data-tone={jumped.tone ?? 'neutral'} style={{ '--s': jumped.at } as CSSProperties}>{jumped.label}</span>}
         {showCursor && <span className="fw-cursor-handle" aria-hidden />}
       </div>

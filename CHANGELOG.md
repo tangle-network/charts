@@ -2,6 +2,7 @@
 
 ## 0.20.4
 
+- Clicking the event you jumped to lets go of it, and clicking a pinned mark again closes its card, so no re-click is a no-op.
 - `FlowSpan.costBound`: a span's cost can be a floor; spans inherit a trace's `costBound: 'lower'`, so per-agent and family costs from the same rule as the run print "≥" in end labels and cards.
 
 ## 0.20.3
