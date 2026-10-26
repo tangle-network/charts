@@ -7,6 +7,7 @@
 - Agent view: agents sharing a role (a name that differs only by a trailing counter) fold into one family row, `memscale-engineer ×6`, whose bar carries every member's work in its member's hue; its chevron or a click opens the members beneath it.
 - Agent view: every agent row has a second line saying how it ended and how much it did (`failed · 3 turns · 412 tool calls`; a family: `6 agents · 4 failed`), after the model when agents differ.
 - Agent view: the turn that ended a failed agent carries the failure glyph inside the bar, and retries keep theirs.
+- Agent view: every top-level row takes the next hue slot, so no two families share a hue; dark fills carry 94% of the hue; spawn elbows rest at 60%.
 - Agent view: a family row keeps one hue, its members alternating shades of it, and its end label shows the family's duration and cost (a floor, "≥", when some members recorded none).
 - Agent view: the card docks under the lanes instead of covering the plot; the scrubber track shows its progress.
 - Cards: a zero-length step gets no step line.

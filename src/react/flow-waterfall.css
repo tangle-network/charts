@@ -65,7 +65,7 @@
 /* Light fills carry enough of the hue to tell agents apart on white (24% and 42% both read as "pastel, washed out"); the outline is
    the full hue, which passes 3:1 against the surface, so every mark keeps its edge. */
 .fw-root [data-tone] {
-  --fill: light-dark(color-mix(in oklab, var(--tone) 88%, #fff), color-mix(in oklab, var(--tone) 86%, #000));
+  --fill: light-dark(color-mix(in oklab, var(--tone) 88%, #fff), color-mix(in oklab, var(--tone) 94%, #000));
   --line: light-dark(var(--tone), var(--tone));
   --dim: light-dark(color-mix(in oklab, var(--tone) 46%, #fff), color-mix(in oklab, var(--tone) 40%, #17171d));
   --dim-line: light-dark(color-mix(in oklab, var(--tone) 70%, #fff), color-mix(in oklab, var(--tone) 55%, #17171d));
@@ -269,7 +269,7 @@
 .fw-root .fw-view-spans .fw-link { opacity: calc(clamp(0, (var(--fw-t) - var(--s)) * 1000, 1) * .7); }
 /* Agent-view connectors rest faint, one curved elbow per spawn in the agent's hue (they show who started whom), and come to
    full strength for the agent under the pointer, pinned or focused. */
-.fw-root .fw-view-agents .fw-link:not(.fw-link-hot) { opacity: calc(clamp(0, (var(--fw-t) - var(--s)) * 1000, 1) * .35); }
+.fw-root .fw-view-agents .fw-link:not(.fw-link-hot) { opacity: calc(clamp(0, (var(--fw-t) - var(--s)) * 1000, 1) * .6); }
 .fw-root .fw-link { transition: opacity 160ms var(--fw-ease); }
 .fw-root .fw-link-down { left: calc(var(--x) - 8px); border-left-width: 1.5px; border-bottom-left-radius: 12px; }
 .fw-root .fw-link-up { left: var(--x); border-right-width: 1.5px; border-bottom-right-radius: 12px; }

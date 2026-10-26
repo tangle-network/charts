@@ -306,8 +306,12 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
     groups.set(key, [...(groups.get(key) ?? []), row])
   }
   const out: FlowWaterfallRow[] = []
+  // Each top-level row takes the next hue slot, so no two families share a hue band (two cyan families read as one).
+  let next = 0
+  const hue = (row: FlowWaterfallRow) => row.tone <= 0 ? row.tone : ++next
   for (const [role, members] of groups) {
-    if (members.length < 2) { out.push(...members); continue }
+    if (members.length < 2) { out.push(...members.map(row => ({ ...row, tone: hue(row) }))); continue }
+    const tone = hue(members[0]!)
     const id = `family:${role}`
     const startMs = Math.min(...members.map(row => row.span.startMs))
     const endMs = Math.max(...members.map(row => row.span.endMs))
@@ -318,14 +322,14 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
     out.push({
       // The family hangs off its members' parent, so the spawn elbow reaches it from the agent that started them.
       id, parentId: members[0]!.parentId, name: `${role} ×${members.length}`, kind: 'pipeline', durationLabel: formatSpanDuration(endMs - startMs),
-      approx: members.some(row => row.approx), ok: failed === 0, depth: 0, hasChildren: true, tone: members[0]!.tone,
+      approx: members.some(row => row.approx), ok: failed === 0, depth: 0, hasChildren: true, tone,
       descendants: members.length, segments: [], retry: false, hasAgents: false,
       // One hue per family (round 5: mixed member hues in one lane read as "muddy"); members alternate shades of it.
-      own: members.flatMap((row, i) => row.own.map(mark => ({ ...mark, tone: members[0]!.tone, alt: i % 2 === 1 }))).sort((a, b) => a.startMs - b.startMs),
+      own: members.flatMap((row, i) => row.own.map(mark => ({ ...mark, tone, alt: i % 2 === 1 }))).sort((a, b) => a.startMs - b.startMs),
       ...(known.length ? { rollupCostUsd: known.reduce((sum, cost) => sum + cost, 0) } : {}),
       span: { id, kind: 'pipeline', name: role, startMs, endMs, status: running ? 'running' : failed ? 'failed' : 'done', detail: members[0]!.span.detail, meta: { failedAgents: failed, costPartial: known.length < members.length } },
     })
-    if (open.has(id)) out.push(...members.map(row => ({ ...row, family: id })))
+    if (open.has(id)) out.push(...members.map((row, i) => ({ ...row, family: id, tone, own: row.own.map(mark => ({ ...mark, tone, alt: i % 2 === 1 })) })))
   }
   return out
 }
