@@ -136,8 +136,10 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
           {agentView && (
             <span className="fw-subtitle">
               {renderIcon && <span className="fw-detail-icon" aria-hidden>{renderIcon(span)}</span>}
-              <span className="fw-subtitle-text">{span.detail && span.detail !== props.sharedDetail ? `${span.detail} · ${summary[0]}` : summary[0]}</span>
-              {summary[1] && <span className="fw-subtitle-extra">· {summary[1]}</span>}
+              <span className="fw-subtitle-tail">
+                <span className="fw-subtitle-text">{span.detail && span.detail !== props.sharedDetail ? `${span.detail} · ${summary[0]}` : summary[0]}</span>
+                {summary[1] && <span className="fw-subtitle-extra">· {summary[1]}</span>}
+              </span>
             </span>
           )}
         </span>

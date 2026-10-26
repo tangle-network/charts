@@ -385,7 +385,8 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
     const running = members.some(row => spanRunning(row.span))
     const costs = members.map(row => row.span.costUsd ?? row.rollupCostUsd)
     const known = costs.filter((cost): cost is number => cost !== undefined)
-    const failed = members.filter(row => !row.ok).length
+    // Failed means the outcome the host recorded when it gave one (a member can fail a step and still ship); status otherwise.
+    const failed = members.filter(row => row.span.outcome ? row.span.outcome.tone === 'failed' : !row.ok).length
     // A family takes its members' outcome when they share one; mixed outcomes leave it without, drawn neutral.
     const outcome = members.every(row => row.span.outcome && row.span.outcome.tone === members[0]!.span.outcome?.tone) ? members[0]!.span.outcome : undefined
     out.push({
@@ -416,7 +417,8 @@ export function agentSummary(row: FlowWaterfallRow): string {
   const counts = row.counts ?? { model: 0, tool: 0, failed: 0 }
   const turns = counts.model + counts.failed
   const tools = counts.tool
-  const state = row.span.outcome?.label ?? (spanRunning(row.span) ? 'running' : row.ok ? 'done' : 'failed')
+  // An agent without a recorded outcome says only that it runs or failed; a bare "done" read as a verdict the host never gave.
+  const state = row.span.outcome?.label ?? (spanRunning(row.span) ? 'running' : !row.ok ? 'failed' : row.kind === 'pipeline' ? '' : 'done')
   // An agent's model calls are its turns; inside one step they are model calls.
   const unit = row.kind === 'pipeline' ? ['turn', 'turns'] : ['model call', 'model calls']
   return [state, turns ? `${turns} ${turns === 1 ? unit[0] : unit[1]}` : '', tools ? `${tools} tool ${tools === 1 ? 'call' : 'calls'}` : ''].filter(Boolean).join(' · ')

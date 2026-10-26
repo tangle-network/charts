@@ -196,8 +196,10 @@
 .fw-root .fw-view-agents .fw-names { flex-direction: column; align-items: flex-start; gap: 0; }
 .fw-root .fw-view-agents .fw-span-name { font-weight: 600; line-height: 18px; }
 /* One 16 px line that wraps its last part out of sight: when the line is full the tool count drops whole, never "7 to…". */
-.fw-root .fw-view-agents .fw-subtitle { display: flex; flex-wrap: wrap; align-items: center; column-gap: 4px; height: 16px; overflow: hidden; max-width: 100%; min-width: 0; color: var(--fw-muted); font-size: 13px; line-height: 16px; }
+.fw-root .fw-view-agents .fw-subtitle { display: flex; align-items: center; column-gap: 4px; height: 16px; overflow: hidden; max-width: 100%; min-width: 0; color: var(--fw-muted); font-size: 13px; line-height: 16px; }
 .fw-root .fw-view-agents .fw-subtitle-extra { flex: none; white-space: nowrap; }
+/* Only the tail wraps, so the text is always first on its line and shrinks with an ellipsis; the tool count wraps out of sight. */
+.fw-root .fw-view-agents .fw-subtitle-tail { display: flex; flex-wrap: wrap; column-gap: 4px; height: 16px; overflow: hidden; min-width: 0; flex: 0 1 auto; }
 .fw-root .fw-view-agents .fw-subtitle-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fw-root .fw-view-agents .fw-detail-icon { flex: none; width: 16px; height: 16px; align-items: center; justify-content: center; overflow: hidden; }
 .fw-root .fw-view-agents .fw-detail { font-size: 12px; line-height: 16px; }
