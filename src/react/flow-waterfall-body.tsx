@@ -20,10 +20,12 @@ export interface BodyProps extends RowEvents {
   totalRows: number
   view: FlowView
   maxHeight: number
-  collapsed: Set<string>
+  collapsed: ReadonlySet<string>
   searching: boolean
   slowestId?: string
   costliestId?: string
+  /** Steps on the chain that gates the trace's end. */
+  criticalIds?: ReadonlySet<string>
   activeId?: string
   pauses?: readonly FlowPause[]
   /** The model every agent shares: rows leave it out because the header names it. */
@@ -283,7 +285,7 @@ export function FlowBody(props: BodyProps) {
 
   const row = (item: FlowWaterfallRow, i: number, isSticky = false) => (
     <FlowRow key={isSticky ? `sticky-${item.id}` : item.id} row={item} view={view} top={i * rowHeight}
-      collapsed={collapsed.has(item.id)} searching={searching} slowest={item.id === slowestId} costliest={item.id === props.costliestId}
+      collapsed={collapsed.has(item.id)} searching={searching} slowest={item.id === slowestId} costliest={item.id === props.costliestId} critical={props.criticalIds?.has(item.id)}
       active={item.id === activeId} focusable={!isSticky && (item.id === activeId || (activeId === undefined || !index.has(activeId)) && i === 0)}
       selected={item.id === selectedId} sticky={isSticky} motion={isSticky ? undefined : motion.get(item.id)} clockMs={clockMs} renderIcon={props.renderIcon} fillByAgent={props.fillByAgent} sharedDetail={props.sharedDetail} expanded={props.expandedIds?.has(item.id)}
       onToggle={props.onToggle} onInspect={props.onInspect} onLeave={props.onLeave} onPin={props.onPin} onActivate={item => props.onActiveChange(item.id)} />

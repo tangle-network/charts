@@ -41,3 +41,4 @@ export type { Figure, Refusal } from "../types.js";
 
 export { FlowWaterfall } from "./flow-waterfall.js";
 export type { FlowWaterfallProps } from "./flow-waterfall.js";
+export type { ViewWindow as FlowWaterfallWindow } from "./flow-waterfall-time.js";

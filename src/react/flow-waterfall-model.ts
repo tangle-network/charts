@@ -208,13 +208,13 @@ function segmentOf(row: FlowWaterfallRow): FlowSegment {
 }
 
 /** Search keeps ancestor context and deliberately reveals matches inside collapsed branches. */
-export function visibleFlowWaterfallRows(rows: FlowWaterfallRow[], query: string, collapsed: Set<string>): FlowWaterfallRow[] {
+export function visibleFlowWaterfallRows(rows: FlowWaterfallRow[], query: string, collapsed: ReadonlySet<string>, matchSpan?: (span: FlowSpan, query: string) => boolean): FlowWaterfallRow[] {
   const byId = new Map(rows.map(row => [row.id, row]))
   const term = query.trim().toLowerCase()
   if (term) {
     const matching = new Set<string>()
     for (const row of rows) {
-      if (!`${row.name} ${row.span.detail ?? ''} ${row.kind} ${row.ok ? '' : 'failed'} ${row.span.status ?? ''}`.toLowerCase().includes(term)) continue
+      if (matchSpan ? !matchSpan(row.span, query.trim()) : !`${row.name} ${row.span.detail ?? ''} ${row.kind} ${row.ok ? '' : 'failed'} ${row.span.status ?? ''}`.toLowerCase().includes(term)) continue
       let cursor: FlowWaterfallRow | undefined = row
       while (cursor && !matching.has(cursor.id)) {
         matching.add(cursor.id)
@@ -242,6 +242,26 @@ export function slowestRow(rows: FlowWaterfallRow[], clockMs: number): FlowWater
     if (ms > bestMs) { best = row; bestMs = ms }
   }
   return best
+}
+
+/** The chain of steps that gates the trace's end: from each root, descend into the latest-ending child until a leaf; the root whose
+ * chain ends last wins. Cutting latency anywhere else leaves the trace's end unchanged. */
+export function criticalPathIds(rows: readonly FlowWaterfallRow[]): ReadonlySet<string> {
+  const children = new Map<string, FlowWaterfallRow[]>()
+  for (const row of rows) if (row.parentId) children.set(row.parentId, [...children.get(row.parentId) ?? [], row])
+  let best: { end: number; chain: string[] } | undefined
+  for (const root of rows) {
+    if (root.parentId) continue
+    const chain: string[] = []
+    let end = root.span.endMs
+    for (let cursor: FlowWaterfallRow | undefined = root; cursor;) {
+      chain.push(cursor.id)
+      end = Math.max(end, cursor.span.endMs)
+      cursor = children.get(cursor.id)?.reduce<FlowWaterfallRow | undefined>((latest, child) => !latest || child.span.endMs > latest.span.endMs ? child : latest, undefined)
+    }
+    if (!best || end > best.end) best = { end, chain }
+  }
+  return new Set(best?.chain)
 }
 
 /** The agents a reader should look at first: the longest one by the clock, and the costliest when two or more are priced. */

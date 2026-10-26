@@ -30,6 +30,7 @@ export interface RowProps extends RowEvents {
   searching: boolean
   slowest: boolean
   costliest?: boolean
+  critical?: boolean
   active: boolean
   focusable: boolean
   selected: boolean
@@ -74,7 +75,7 @@ function endLabel(row: FlowWaterfallRow, clockMs: number): string {
 
 /** One trace row. Geometry comes from CSS variables, so a row re-renders only when its own state changes. */
 export const FlowRow = memo(function FlowRow(props: RowProps) {
-  const { row, view, top, collapsed, searching, slowest, costliest, active, focusable, selected, sticky, clockMs, renderIcon, fillByAgent, motion } = props
+  const { row, view, top, collapsed, searching, slowest, costliest, critical, active, focusable, selected, sticky, clockMs, renderIcon, fillByAgent, motion } = props
   const span = row.span
   const running = spanRunning(span)
   const agentView = view === 'agents'
@@ -93,7 +94,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   const ending = agentView && !row.ok ? marks.map(mark => mark.kind).lastIndexOf('failed') : -1
 
   return (
-    <div role="row" data-span-id={row.id} data-span-kind={kind} data-slowest={slowest || undefined} data-running={running || undefined}
+    <div role="row" data-span-id={row.id} data-span-kind={kind} data-slowest={slowest || undefined} data-critical={critical || undefined} data-running={running || undefined}
       aria-level={agentView ? undefined : row.depth + 1} aria-expanded={row.hasChildren && !agentView ? !folded : undefined}
       aria-selected={selected} tabIndex={focusable ? 0 : -1} data-tone={toneKey(row.tone)} data-outcome={fillByAgent ? undefined : span.outcome?.tone}
       className={`fw-row${active ? ' fw-active' : ''}${sticky ? ' fw-sticky-row' : ''}${isAgent ? ' fw-agent-row' : ''}${step ? ' fw-step' : ''}${motion?.enter !== undefined ? ' fw-enter' : ''}${motion?.settle ? ' fw-settle' : ''}`}
@@ -142,7 +143,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
         {/* An agent row already says it failed in its second line and marks the failed turn in its bar. */}
         {!row.ok && !agentView && <span className="fw-alert"><AlertGlyph label="failed" /></span>}
       </div>
-      <div role="gridcell" className="fw-lane" data-waterfall-track aria-label={`${KIND_LABEL[span.kind]}, ${label}${slowest ? `, slowest ${agentView ? 'agent' : 'step'}` : ''}${costliest ? ', costliest agent' : ''}`}>
+      <div role="gridcell" className="fw-lane" data-waterfall-track aria-label={`${KIND_LABEL[span.kind]}, ${label}${slowest ? `, slowest ${agentView ? 'agent' : 'step'}` : ''}${costliest ? ', costliest agent' : ''}${critical ? ', critical path' : ''}`}>
         {invalid ? <span className="fw-invalid">—</span> : <>
           {span.marks?.map(mark => <span key={`m-${mark.at}-${mark.label}`} className="fw-mark" data-mark={mark.kind} style={at(mark.at, mark.at)} title={mark.label} aria-label={mark.label} role="img" />)}
           <span className={`fw-bar fw-k-${isAgent ? 'pipeline' : kind}${row.approx ? ' fw-approx' : ''}${marks.length ? ' fw-has-marks' : ''}${row.hasAgents ? ' fw-has-agents' : ''}`}
@@ -164,7 +165,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
     </div>
   )
 }, (a, b) => a.row === b.row && a.view === b.view && a.top === b.top && a.collapsed === b.collapsed && a.searching === b.searching &&
-  a.slowest === b.slowest && a.costliest === b.costliest && a.active === b.active && a.focusable === b.focusable && a.selected === b.selected &&
+  a.slowest === b.slowest && a.costliest === b.costliest && a.critical === b.critical && a.active === b.active && a.focusable === b.focusable && a.selected === b.selected &&
   a.sticky === b.sticky && a.motion === b.motion && a.renderIcon === b.renderIcon && a.fillByAgent === b.fillByAgent && a.sharedDetail === b.sharedDetail && a.expanded === b.expanded && (a.clockMs === b.clockMs || !open(a.row, a.clockMs) && !open(b.row, b.clockMs)))
 
 export interface FlowLink { id: string; from: number; to: number; atMs: number; tone: number; dir: 'down' | 'up' }

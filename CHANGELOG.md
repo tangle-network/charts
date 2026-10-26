@@ -1,5 +1,12 @@
 # @tangle-network/charts
 
+## 0.21.13
+
+- `FlowWaterfall` can leave its search text, folded spans and time window to the host: `query`/`onQueryChange`, `collapsed`/`onCollapsedChange` and `zoom`/`onZoomChange`. A page can now keep that view in its URL so a link reopens it. Without these props nothing changes.
+- `criticalPath` marks the chain of steps that decides when the trace ends: from each root, follow the latest-ending child down to a leaf, and take the root whose chain ends last. Each step on it gets `data-critical`, an accent edge under its bar and "critical path" in its accessible label.
+- `matchSpan` replaces the built-in search match, such as so a host can search span attributes.
+- `FlowWaterfallWindow` is exported for typing `zoom`.
+
 ## 0.21.11
 
 - `agentFill` defaults to `agent`: each agent or family keeps its own muted hue across dot, bar and handoffs, with model and tool steps as darker and lighter shades of it. The outcome stays on the row dot, amber marks the slowest agent and red stays for failure (blind round 25: two global step hues made agents blur together). `muted` and `outcome` keep the global step colors.

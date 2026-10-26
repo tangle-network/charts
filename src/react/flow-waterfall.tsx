@@ -6,7 +6,7 @@ import { useTraceClock } from './flow-waterfall-clock.js'
 import { FailGlyph, SearchGlyph, TraceGlyph } from './flow-waterfall-icons.js'
 import { PlaybackBar } from './flow-waterfall-playback.js'
 import {
-  agentCallouts, agentViewRows, defaultOpenFamilies, busyMs, drawnRow, costSummary, type FlowWaterfallRow, flowWaterfallRows, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
+  agentCallouts, agentViewRows, criticalPathIds, defaultOpenFamilies, busyMs, drawnRow, costSummary, type FlowWaterfallRow, flowWaterfallRows, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
   toneKey, totalsAt, visibleFlowWaterfallRows,
 } from './flow-waterfall-model.js'
 import type { FlowView } from './flow-waterfall-row.js'
@@ -58,6 +58,37 @@ export interface FlowWaterfallProps {
   onDeselect?: () => void
   /** Show the stat strip (default); a page with its own stat row passes false. */
   summary?: boolean
+  /** Mark the steps on the chain that gates the trace's end. */
+  criticalPath?: boolean
+  /** Controlled search text; pass with `onQueryChange` to keep it in the host's state, such as the URL. */
+  query?: string
+  onQueryChange?: (query: string) => void
+  /** Controlled folded span ids; pass with `onCollapsedChange`. Overrides `defaultCollapsed`. */
+  collapsed?: ReadonlySet<string>
+  onCollapsedChange?: (collapsed: ReadonlySet<string>) => void
+  /** Controlled time window, `null` for the whole trace; pass with `onZoomChange`. */
+  zoom?: ViewWindow | null
+  onZoomChange?: (zoom: ViewWindow | null) => void
+  /** Replaces the built-in search match (name, model, kind, status), such as to search the host's attributes. */
+  matchSpan?: (span: FlowSpan, query: string) => boolean
+}
+
+/** State the host may own: its value wins when given, and every change is reported either way. */
+function useHostable<T>(value: T | undefined, onChange: ((next: T) => void) | undefined, initial: T | (() => T)) {
+  const [own, setOwn] = useState(initial)
+  const current = value === undefined ? own : value
+  const latest = useRef(current)
+  latest.current = current
+  const report = useRef(onChange)
+  report.current = onChange
+  const controlled = value !== undefined
+  const set = useCallback((next: T | ((previous: T) => T)) => {
+    const resolved = typeof next === 'function' ? (next as (previous: T) => T)(latest.current) : next
+    latest.current = resolved
+    if (!controlled) setOwn(resolved)
+    report.current?.(resolved)
+  }, [controlled])
+  return [current, set] as const
 }
 
 interface CardState { target: string; pinned: boolean; left: number; top: number; above: boolean }
@@ -117,7 +148,7 @@ function OutcomeLegend({ agents }: { agents: FlowWaterfallRow[] }) {
 /** Shared trace inspector: the agent timeline and the span waterfall over one clock.
  * Data remains producer-owned; playback, zoom and folding change presentation only. */
 export function FlowWaterfall({
-  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers, onTimeChange, agentFill: fillProp, selectedId, onDeselect, description, summary: showSummary = true,
+  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers, onTimeChange, agentFill: fillProp, selectedId, onDeselect, description, summary: showSummary = true, criticalPath = false, query: queryProp, onQueryChange, collapsed: collapsedProp, onCollapsedChange, zoom: zoomProp, onZoomChange, matchSpan,
 }: FlowWaterfallProps) {
   const root = useRef<HTMLElement>(null)
   const search = useRef<HTMLInputElement>(null)
@@ -127,12 +158,12 @@ export function FlowWaterfall({
   const searchId = useId()
   const cardId = useId()
   const [view, setView] = useState<FlowView>(defaultView)
-  const [query, setQuery] = useState('')
-  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set(defaultCollapsed ? trace.spans.flatMap(span => span.parentId ? [span.parentId] : []) : []))
+  const [query, setQuery] = useHostable(queryProp, onQueryChange, '')
+  const [collapsed, setCollapsed] = useHostable<ReadonlySet<string>>(collapsedProp, onCollapsedChange, () => new Set(defaultCollapsed ? trace.spans.flatMap(span => span.parentId ? [span.parentId] : []) : []))
   const [speed, setSpeed] = useState(1)
   const [playing, setPlaying] = useState(false)
   const [position, setPosition] = useState<number | null>(null)
-  const [zoom, setZoom] = useState<ViewWindow | null>(null)
+  const [zoom, setZoom] = useHostable<ViewWindow | null>(zoomProp, onZoomChange, null)
   const [nameWidth, setNameWidth] = useState(NAME_WIDTH[defaultView])
   const [laneWidth, setLaneWidth] = useState(0)
   const [card, setCard] = useState<CardState | null>(null)
@@ -166,6 +197,7 @@ export function FlowWaterfall({
   const resolution = 2 ** Math.round(Math.log2(Math.max(1, (win.endMs - win.startMs) / Math.max(200, trackPx) * 1.5)))
   const rows = useMemo(() => flowWaterfallRows({ ...trace, totalMs: dataEnd }, resolution), [trace, dataEnd, resolution])
   const byId = useMemo(() => new Map(rows.map(row => [row.id, row])), [rows])
+  const critical = useMemo(() => criticalPathIds(rows), [rows])
   const agents = useMemo(() => {
     const pipelines = rows.filter(row => row.kind === 'pipeline')
     return pipelines.length ? pipelines : rows.filter(row => !row.parentId)
@@ -175,7 +207,7 @@ export function FlowWaterfall({
   const [flippedFamilies, setFlippedFamilies] = useState<ReadonlySet<string>>(new Set())
   const openFamilies = useMemo(() => defaultOpenFamilies(agents, UNFOLD_ROWS, flippedFamilies), [agents, flippedFamilies])
   const [openSteps, setOpenSteps] = useState<ReadonlySet<string>>(new Set())
-  const visible = useMemo(() => view === 'agents' ? agentViewRows(agents, rows, openFamilies, openSteps) : visibleFlowWaterfallRows(rows, query, collapsed), [view, agents, rows, openFamilies, openSteps, query, collapsed])
+  const visible = useMemo(() => view === 'agents' ? agentViewRows(agents, rows, openFamilies, openSteps) : visibleFlowWaterfallRows(rows, query, collapsed, matchSpan), [view, agents, rows, openFamilies, openSteps, query, collapsed, matchSpan])
   const slowest = view === 'spans' ? slowestRow(rows, clockMs) : undefined
   const callouts = useMemo<ReturnType<typeof agentCallouts>>(() => view === 'agents' ? agentCallouts(visible, clockMs) : {}, [view, visible, clockMs])
   const rowsHeight = maxHeight ?? (view === 'agents' ? ROW_HEIGHT.agents * AGENT_ROWS : 640)
@@ -399,7 +431,7 @@ export function FlowWaterfall({
       </dl>}
       {view === 'agents' && playback}
       <FlowBody rows={visible} byId={byId} totalRows={rows.length} view={view} maxHeight={rowsHeight} collapsed={collapsed} searching={Boolean(query.trim())}
-        pauses={trace.pauses} cursorLine={position !== null || playing} sharedDetail={sharedDetail} expandedIds={view === 'agents' ? new Set([...openFamilies, ...openSteps]) : undefined} holdHeight={isLive} slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
+        pauses={trace.pauses} cursorLine={position !== null || playing} sharedDetail={sharedDetail} expandedIds={view === 'agents' ? new Set([...openFamilies, ...openSteps]) : undefined} holdHeight={isLive} slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} criticalIds={criticalPath && view === 'spans' ? critical : undefined} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
         trackPx={trackPx} showCursor={showCursor} markers={markers} fillByAgent={agentFill !== 'outcome'} zoomed={zoom !== null} renderIcon={renderIcon}
         emptyText={rows.length === 0 ? 'No spans yet. Waiting for trace events.' : `No matching steps for “${query}”.`}
         onToggle={toggle} onInspect={inspect} onLeave={leave} onPin={pin} onActivate={row => setActiveId(row.id)}
