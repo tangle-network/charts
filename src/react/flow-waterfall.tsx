@@ -15,8 +15,10 @@ import { clampWindow, type ViewWindow, zoomWindow } from './flow-waterfall-time.
 export type { FlowView } from './flow-waterfall-row.js'
 
 const LANE_PAD = 12
-// The agents view shows this many rows before it scrolls; a run whose agents all fit lists every agent rather than folding families.
+// The agents view shows this many rows before it scrolls.
 const AGENT_ROWS = 20
+// A run with at most this many agents lists each one rather than folding families, keeping the page near its length budget.
+const UNFOLD_ROWS = 12
 // The agents view's end labels carry a Slowest or Costliest badge after the duration, so its gutter is wider.
 const END_LABEL_GUTTER: Record<FlowView, number> = { spans: 120, agents: 176 }
 const NAME_WIDTH: Record<FlowView, number> = { spans: 320, agents: 240 }
@@ -43,9 +45,9 @@ export interface FlowWaterfallProps {
   markers?: FlowMarker[]
   /** The time the reader moved to, in trace ms; `null` when following live or showing the whole trace. */
   onTimeChange?: (t: number | null) => void
-  /** What an agent bar's color means. `muted` (default): every agent one quiet tone, with color spent on state only: the outcome on
-   * the row dot, red for failure, amber for the slowest. `agent`: each agent its own hue, shared by its steps and handoffs. `outcome`: the
-   * bar takes its outcome's color. */
+  /** What an agent bar's color means. Default: `outcome` when any agent carries one, so bars match the outcome legend, else `muted`.
+   * `muted`: every agent one quiet tone, color spent on state only (red for failure, amber for the slowest). `agent`: each agent its
+   * own hue, shared by its steps and handoffs. `outcome`: the bar takes its outcome's color. */
   agentFill?: 'muted' | 'outcome' | 'agent'
   /** One line beside the title saying what the run was for, such as its goal. */
   description?: string
@@ -115,7 +117,7 @@ function OutcomeLegend({ agents }: { agents: FlowWaterfallRow[] }) {
 /** Shared trace inspector: the agent timeline and the span waterfall over one clock.
  * Data remains producer-owned; playback, zoom and folding change presentation only. */
 export function FlowWaterfall({
-  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers, onTimeChange, agentFill = 'muted', selectedId, onDeselect, description, summary: showSummary = true,
+  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', renderIcon, maxHeight, onSelect, markers, onTimeChange, agentFill: fillProp, selectedId, onDeselect, description, summary: showSummary = true,
 }: FlowWaterfallProps) {
   const root = useRef<HTMLElement>(null)
   const search = useRef<HTMLInputElement>(null)
@@ -139,6 +141,7 @@ export function FlowWaterfall({
 
   const observedTotal = Number.isFinite(trace.totalMs) && trace.totalMs >= 0 ? trace.totalMs : 0
   const isLive = live ?? trace.spans.some(spanRunning)
+  const agentFill = fillProp ?? (trace.spans.some(span => span.kind === 'pipeline' && span.outcome) ? 'outcome' : 'muted')
   const dataEnd = useMemo(() => Math.max(observedTotal, ...trace.spans.map(span => Number.isFinite(span.endMs) ? span.endMs : 0)), [trace, observedTotal])
   // The end-label gutter shrinks on narrow lanes so bars keep most of the width.
   const trackPx = Math.max(40, laneWidth - LANE_PAD - Math.min(END_LABEL_GUTTER[view], laneWidth * 0.3))
@@ -169,9 +172,8 @@ export function FlowWaterfall({
   }, [rows])
   // When every agent runs the same model, the header says it once instead of every row repeating it.
   const sharedDetail = agents.length > 1 && agents.every(row => row.span.detail && row.span.detail === agents[0]?.span.detail) ? agents[0]?.span.detail : undefined
-  // Families the reader flipped from their default: open when every agent fits the body, folded on bigger runs.
   const [flippedFamilies, setFlippedFamilies] = useState<ReadonlySet<string>>(new Set())
-  const openFamilies = useMemo(() => defaultOpenFamilies(agents, AGENT_ROWS, flippedFamilies), [agents, flippedFamilies])
+  const openFamilies = useMemo(() => defaultOpenFamilies(agents, UNFOLD_ROWS, flippedFamilies), [agents, flippedFamilies])
   const [openSteps, setOpenSteps] = useState<ReadonlySet<string>>(new Set())
   const visible = useMemo(() => view === 'agents' ? agentViewRows(agents, rows, openFamilies, openSteps) : visibleFlowWaterfallRows(rows, query, collapsed), [view, agents, rows, openFamilies, openSteps, query, collapsed])
   const slowest = view === 'spans' ? slowestRow(rows, clockMs) : undefined
@@ -398,7 +400,7 @@ export function FlowWaterfall({
       {/* The key sits right above the lanes it explains (round 2: a key at the foot went unseen by 2 of 3 judges). */}
       {view === 'agents' && <KindLegend rows={rows} />}
       <FlowBody rows={visible} byId={byId} totalRows={rows.length} view={view} maxHeight={rowsHeight} collapsed={collapsed} searching={Boolean(query.trim())}
-        pauses={trace.pauses} cursorLine={moving} sharedDetail={sharedDetail} expandedIds={view === 'agents' ? new Set([...openFamilies, ...openSteps]) : undefined} holdHeight={isLive} slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
+        pauses={trace.pauses} cursorLine={position !== null || playing} sharedDetail={sharedDetail} expandedIds={view === 'agents' ? new Set([...openFamilies, ...openSteps]) : undefined} holdHeight={isLive} slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
         trackPx={trackPx} showCursor={showCursor} markers={markers} fillByAgent={agentFill !== 'outcome'} zoomed={zoom !== null} renderIcon={renderIcon}
         emptyText={rows.length === 0 ? 'No spans yet. Waiting for trace events.' : `No matching steps for “${query}”.`}
         onToggle={toggle} onInspect={inspect} onLeave={leave} onPin={pin} onActivate={row => setActiveId(row.id)}

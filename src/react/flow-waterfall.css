@@ -135,7 +135,8 @@
   background: repeating-linear-gradient(-45deg, color-mix(in oklab, var(--fw-text) 9%, transparent) 0 1px, transparent 1px 6px), color-mix(in oklab, var(--fw-text) 4%, transparent);
   border-inline: 1px dashed color-mix(in oklab, var(--fw-text) 24%, transparent); }
 .fw-root .fw-pause-label b { font-weight: 600; color: var(--fw-text); }
-.fw-root .fw-pause-label { position: sticky; top: 4px; display: block; width: max-content; max-width: calc(100% - 8px); margin: 4px auto 0; padding: 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+.fw-root .fw-pause { overflow: visible; }
+.fw-root .fw-pause-label { position: sticky; top: 4px; display: block; width: max-content; margin: 4px 0 0 50%; translate: -50% 0; padding: 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   border-radius: 4px; font-size: 12px; line-height: 20px; color: var(--fw-muted); background: var(--fw-surface); box-shadow: inset 0 0 0 1px var(--fw-border); }
 /* The label alone takes the pointer, for its reason; the band stays click-through to the rows. */
 .fw-root .fw-pause-label[title] { pointer-events: auto; cursor: help; }
@@ -265,7 +266,6 @@
 .fw-root .fw-seg-failed { background: color-mix(in oklab, var(--fw-failed) 18%, var(--fw-surface)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-failed) 70%, transparent); color: var(--fw-failed); }
 /* In the agent view a failed turn draws like any turn; the agent's own failure shows once, by its name and its end label. */
 .fw-root .fw-view-agents .fw-seg-failed { background: var(--dim); box-shadow: inset 0 0 0 1px var(--dim-line); }
-.fw-root .fw-view-agents .fw-alert { color: var(--fw-muted); }
 .fw-root .fw-glyph { display: inline-flex; color: currentColor; }
 .fw-root .fw-glyph svg { width: 11px; height: 11px; stroke-width: 2; }
 .fw-root .fw-seg-model .fw-glyph, .fw-root .fw-k-model .fw-glyph { color: light-dark(var(--tone), #fff); }
@@ -304,7 +304,10 @@
 .fw-root.fw-root-agents .fw-card, .fw-root.fw-root-agents .fw-card-above .fw-card { position: relative; left: auto !important; top: auto !important; transform: none; animation-name: fw-arrive; width: auto; max-width: 560px; }
 .fw-root .fw-seg-alt { filter: brightness(.78); }
 /* Agent view: the scrubber track shows how far the run has played, so at rest it reads full, not empty. */
-.fw-root-agents .fw-slider { background: linear-gradient(90deg, color-mix(in oklab, var(--fw-accent) 45%, transparent) var(--fw-progress), var(--fw-well) var(--fw-progress)) 0 50% / 100% 4px no-repeat; }
+.fw-root-agents .fw-slider { background: linear-gradient(90deg, var(--fw-accent) var(--fw-progress), var(--fw-well) var(--fw-progress)) 0 50% / 100% 6px no-repeat; }
+/* The playhead: a round knob on a filled track, visible at rest as the references show it. */
+.fw-root-agents .fw-slider::-webkit-slider-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--fw-text); box-shadow: 0 0 0 3px var(--fw-surface); }
+.fw-root-agents .fw-slider::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--fw-text); box-shadow: 0 0 0 3px var(--fw-surface); }
 .fw-root .fw-card { position: absolute; z-index: 20; width: 320px; padding: 12px; border-radius: 12px; background: var(--fw-raised); border: 1px solid var(--fw-border);
   box-shadow: 0 12px 32px -8px rgb(0 0 0 / .28), 0 2px 6px rgb(0 0 0 / .08); animation: fw-arrive 140ms var(--fw-ease); }
 /* A hover card never covers the next mark: only a pinned card (a dialog) takes the pointer. */

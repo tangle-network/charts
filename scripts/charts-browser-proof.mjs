@@ -121,8 +121,9 @@ try {
   checks.markers = 'PASS'
   // A pause is a labelled band across the rows; a restart is a notch on its bar, not the bar's state.
   assert.equal(await page.locator('.fw-pause').count(), 1)
-  // The band's length leads its label, so a narrow band keeps the number when the reason is cut.
-  assert.match((await page.locator('.fw-pause-label').innerText()).trim(), /^\d+(\.\d)? (s|min|h) Paused: host guard$/)
+  // The band's label is its length, never truncated; the reason is its tooltip.
+  assert.match((await page.locator('.fw-pause-label').innerText()).trim(), /^\d+(\.\d)? (s|min|h)$/)
+  assert.equal(await page.locator('.fw-pause-label').getAttribute('title'), 'Paused: host guard')
   assert.ok((await page.locator('.fw-pause').evaluate(el => el.getBoundingClientRect().width)) > 8)
   assert.equal(await page.locator('.fw-mark[data-mark="restart"]').count(), 1)
   checks.pauseAndRestart = 'PASS'
@@ -194,6 +195,9 @@ try {
   }))
   assert.ok(hostMarks.length > 0 && hostMarks.every(m => m.top >= 0 && m.bottom >= 0), `host marks overflow their rows: ${JSON.stringify(hostMarks)}`)
   await page.screenshot({ path: `${output}/host-marks.png` })
+  // An agent row says it failed in its subtitle; no extra alert glyph, and no event label over the rows.
+  assert.equal(await page.locator('.fw-view-agents .fw-alert').count(), 0)
+  assert.equal(await page.locator('.fw-view-agents ~ * .fw-marker-label, .fw-marker-label').count(), 0)
   checks.hostMarks = 'PASS'
   // Every end label (duration, cost, Slowest/Costliest) stays inside its lane, on the surface, at 1100 px and on a phone.
   for (const width of [1100, 390]) {
