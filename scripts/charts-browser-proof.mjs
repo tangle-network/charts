@@ -289,6 +289,11 @@ try {
       const sample = await page.evaluate(async () => {
         const position = () => document.querySelector('input[aria-label="Playback position"]')
         const read = () => ({ at: performance.now(), position: Number(position().value), limit: Number(position().max) })
+        // Start the sample once the range input has moved: it updates on the next animation frame, which a loaded host
+        // delays, and sampling before it counted that delay as playback (a 0.5x run measured 0.87x).
+        const initial = Number(position().value)
+        const deadline = performance.now() + 3000
+        while (Number(position().value) === initial && performance.now() < deadline) await new Promise(resolve => requestAnimationFrame(resolve))
         const start = read()
         await new Promise(resolve => setTimeout(resolve, 2000))
         return { start, end: read() }
