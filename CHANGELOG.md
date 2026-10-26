@@ -2,6 +2,7 @@
 
 ## 0.20.2
 
+- `FlowTrace.costBound: 'lower' | 'upper'` marks `costUsd` as a floor ("≥") or a ceiling ("≤"); it replaces 0.20.1's `costUpperBound` flag, which `otlpFlowTrace` now writes as `costBound: 'upper'`.
 - `FlowTrace.toolCalls` is optional: absent shows a dash with its reason, never "0". `summary={false}` drops the stat strip for a page with its own stat row.
 - Agent view: one faint curved elbow per spawn at rest, in the agent's hue, at full strength for the agent under the pointer, pinned or focused.
 - Agent view: the kind key sits directly above the lanes.

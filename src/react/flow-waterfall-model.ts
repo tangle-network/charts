@@ -279,7 +279,7 @@ export function totalsAt(trace: FlowTrace, clockMs: number) {
 }
 
 /** The cost a reader can rely on: a lower bound when some calls are unpriced, a dash only when nothing is priced. */
-export function costSummary(costUsd: number | undefined, trace: Pick<FlowTrace, 'costBasis' | 'costCoverage' | 'billedUsd' | 'costUpperBound'>): { value: string; title: string; label: string } {
+export function costSummary(costUsd: number | undefined, trace: Pick<FlowTrace, 'costBasis' | 'costCoverage' | 'billedUsd' | 'costBound'>): { value: string; title: string; label: string } {
   const list = trace.costBasis === 'list'
   const label = list ? 'Cost · list price' : 'Cost'
   if (costUsd === undefined) {
@@ -289,8 +289,8 @@ export function costSummary(costUsd: number | undefined, trace: Pick<FlowTrace, 
   }
   const coverage = trace.costCoverage
   const partial = coverage !== undefined && coverage.priced < coverage.total
-  const upper = !partial && trace.costUpperBound === true
-  const value = `${partial ? '≥' : upper ? '≤' : list ? '≈' : ''}${formatCost(costUsd)}${trace.billedUsd !== undefined ? ` · ${formatCost(trace.billedUsd)} billed` : ''}`
+  const upper = !partial && trace.costBound === 'upper'
+  const value = `${partial || trace.costBound === 'lower' ? '≥' : upper ? '≤' : list ? '≈' : ''}${formatCost(costUsd)}${trace.billedUsd !== undefined ? ` · ${formatCost(trace.billedUsd)} billed` : ''}`
   const parts = [partial ? `${coverage.priced} of ${coverage.total} model calls priced` : coverage ? `all ${coverage.total} model calls priced` : '',
     list ? 'at the model catalog list price; not a bill' : '', upper ? 'cached input is not split out, so it is priced as fresh input: at most this' : '', trace.billedUsd !== undefined ? `billed ${formatCost(trace.billedUsd)} (the seat charge)` : '']
   return { value, title: parts.filter(Boolean).join('; '), label }
