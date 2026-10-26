@@ -124,6 +124,8 @@ try {
   // The band's label is its length, never truncated; the reason is its tooltip.
   assert.match((await page.locator('.fw-pause-label').innerText()).trim(), /^\d+(\.\d)? (s|min|h)$/)
   assert.equal(await page.locator('.fw-pause-label').getAttribute('title'), 'Paused: host guard')
+  // It sits on the axis, so no row's end label can be under it.
+  assert.equal(await page.locator('.fw-axis-track .fw-pause-label').count(), 1)
   assert.ok((await page.locator('.fw-pause').evaluate(el => el.getBoundingClientRect().width)) > 8)
   assert.equal(await page.locator('.fw-mark[data-mark="restart"]').count(), 1)
   checks.pauseAndRestart = 'PASS'

@@ -136,10 +136,9 @@
   background: repeating-linear-gradient(-45deg, color-mix(in oklab, var(--fw-text) 9%, transparent) 0 1px, transparent 1px 6px), color-mix(in oklab, var(--fw-text) 4%, transparent);
   border-inline: 1px dashed color-mix(in oklab, var(--fw-text) 24%, transparent); }
 .fw-root .fw-pause-label b { font-weight: 600; color: var(--fw-text); }
-.fw-root .fw-pause { overflow: visible; }
-.fw-root .fw-pause-label { position: sticky; top: 4px; display: block; width: max-content; margin: 4px 0 0 50%; translate: -50% 0; padding: 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+.fw-root .fw-pause-label { position: absolute; z-index: 2; top: 50%; left: calc(var(--fw-pad) + ((var(--s) + var(--e)) / 2 - var(--fw-v0)) * var(--fw-k) * 1px); translate: -50% -50%; width: max-content; padding: 0 8px; white-space: nowrap;
   border-radius: 4px; font-size: 12px; line-height: 20px; color: var(--fw-muted); background: var(--fw-surface); box-shadow: inset 0 0 0 1px var(--fw-border); }
-/* The label alone takes the pointer, for its reason; the band stays click-through to the rows. */
+/* The label takes the pointer, for its reason; the band stays click-through to the rows. */
 .fw-root .fw-pause-label[title] { pointer-events: auto; cursor: help; }
 .fw-root .fw-marker-label { position: absolute; top: 2px; left: 3px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 4px; border-radius: 4px; font-size: 12px; line-height: 16px; color: var(--fw-marker); background: var(--fw-surface); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-marker) 40%, transparent); }
 .fw-root .fw-marker-label-left { left: auto; right: 3px; }
