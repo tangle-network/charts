@@ -352,7 +352,7 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
     out.push({
       // The family hangs off its members' parent, so the spawn elbow reaches it from the agent that started them.
       costFloor: known.length < members.length || members.some(row => row.costFloor),
-      id, parentId: members[0]!.parentId, name: `${role} ×${members.length}`, kind: 'pipeline', durationLabel: formatSpanDuration(endMs - startMs),
+      id, parentId: members[0]!.parentId, name: role, kind: 'pipeline', durationLabel: formatSpanDuration(endMs - startMs),
       approx: members.some(row => row.approx), ok: failed === 0, depth: 0, hasChildren: true, tone,
       descendants: members.length, segments: [], retry: false, hasAgents: false,
       // One hue per family (round 5: mixed member hues in one lane read as "muddy"); members alternate shades of it.

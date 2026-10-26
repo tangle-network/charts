@@ -1,5 +1,14 @@
 # @tangle-network/charts
 
+## 0.21.10
+
+- Agent view: a step's kind owns its color inside the bar (model indigo, tool cyan, strong in light and dark); the agent's outcome stays on its lane tint, dot and end label (blind round 24: green and grey bars looked alike).
+- The bar-type key joins the outcome legend in the header row, so one band leads the chart instead of three.
+- Family rows are named by their role; the count is in their second line ("6 agents · 5 failed").
+- Event lines across the rows are faint; their dots and labels stay on the axis.
+- Row subtitles are 13 px.
+- The Waiting key swatch is the flat fill the bars use.
+
 ## 0.21.9
 
 - The agents-view scrubber is a thin neutral track with its round handle; played to the end it no longer paints a full-width blue bar (blind round 23).

@@ -373,7 +373,8 @@ export function FlowWaterfall({
             {done && <span className="fw-done-mark" aria-label="done">✓</span>}
             {agents.length} {agents.length === 1 ? 'agent' : 'agents'}{sharedDetail ? ` · ${sharedDetail}` : ''}{done && speedup >= 1.05 ? ` · ${speedup.toFixed(1)}x parallel` : ''}
           </p>}
-          <OutcomeLegend agents={agents} />
+          {/* One legend row: outcomes, then the bar-type key (round 24: stacked key bands read as clutter above the rows). */}
+          <div className="fw-legends"><OutcomeLegend agents={agents} />{view === 'agents' && <KindLegend rows={rows} />}</div>
         </div>
         <div className="fw-tools">
           <div className="fw-views" role="radiogroup" aria-label="Trace view">
@@ -397,8 +398,6 @@ export function FlowWaterfall({
         </div>)}
       </dl>}
       {view === 'agents' && playback}
-      {/* The key sits right above the lanes it explains (round 2: a key at the foot went unseen by 2 of 3 judges). */}
-      {view === 'agents' && <KindLegend rows={rows} />}
       <FlowBody rows={visible} byId={byId} totalRows={rows.length} view={view} maxHeight={rowsHeight} collapsed={collapsed} searching={Boolean(query.trim())}
         pauses={trace.pauses} cursorLine={position !== null || playing} sharedDetail={sharedDetail} expandedIds={view === 'agents' ? new Set([...openFamilies, ...openSteps]) : undefined} holdHeight={isLive} slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
         trackPx={trackPx} showCursor={showCursor} markers={markers} fillByAgent={agentFill !== 'outcome'} zoomed={zoom !== null} renderIcon={renderIcon}

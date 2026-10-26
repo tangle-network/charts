@@ -22,6 +22,9 @@
   --fw-failed: light-dark(#d4304a, #ff5c74);
   --fw-ok: var(--status-running, light-dark(#0d8a5f, #34c48c));
   --fw-amber: light-dark(#a35d00, #f2b14c);
+  /* Step kinds inside an agent bar: two hues far from each other and from the outcome greens and reds. */
+  --fw-kind-model: light-dark(#4f46e5, #8f91f7);
+  --fw-kind-tool: light-dark(#0e8fb0, #4cc9e6);
   --fw-neutral-bar: color-mix(in oklab, var(--fw-text) 15%, var(--fw-surface));
   --fw-hatch: color-mix(in oklab, var(--fw-text) 22%, transparent);
   /* Root agent neutral, then five agent hues. Each passes 3:1 against both surfaces as a mark. */
@@ -126,7 +129,7 @@
 .fw-root .fw-marker-layer { position: absolute; top: 0; bottom: 0; left: var(--fw-label-col); right: 0; overflow: hidden; pointer-events: none; z-index: 2; }
 /* An event's line is drawn behind the rows, with the gridlines, so bars and labels cover it; its label stays on top. */
 .fw-root .fw-marker { --fw-marker: var(--fw-muted); position: absolute; top: 0; bottom: 0; width: 0; left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); }
-.fw-root .fw-marker-line { --fw-marker: var(--fw-muted); position: absolute; top: 0; bottom: 0; border-left: 1px dashed var(--fw-marker); left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); }
+.fw-root .fw-marker-line { --fw-marker: var(--fw-muted); opacity: .4; position: absolute; top: 0; bottom: 0; border-left: 1px dashed var(--fw-marker); left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); }
 .fw-root .fw-marker-line[data-tone="ok"] { --fw-marker: var(--fw-ok); }
 .fw-root .fw-marker-line[data-tone="failed"] { --fw-marker: var(--fw-failed); }
 .fw-root .fw-marker[data-tone="ok"] { --fw-marker: var(--fw-ok); }
@@ -192,7 +195,7 @@
 .fw-root .fw-view-agents .fw-names { flex-direction: column; align-items: flex-start; gap: 0; }
 .fw-root .fw-view-agents .fw-span-name { font-weight: 600; line-height: 18px; }
 /* One 16 px line that wraps its last part out of sight: when the line is full the tool count drops whole, never "7 to…". */
-.fw-root .fw-view-agents .fw-subtitle { display: flex; flex-wrap: wrap; align-items: center; column-gap: 4px; height: 16px; overflow: hidden; max-width: 100%; min-width: 0; color: var(--fw-muted); font-size: 12px; line-height: 16px; }
+.fw-root .fw-view-agents .fw-subtitle { display: flex; flex-wrap: wrap; align-items: center; column-gap: 4px; height: 16px; overflow: hidden; max-width: 100%; min-width: 0; color: var(--fw-muted); font-size: 13px; line-height: 16px; }
 .fw-root .fw-view-agents .fw-subtitle-extra { flex: none; white-space: nowrap; }
 .fw-root .fw-view-agents .fw-subtitle-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fw-root .fw-view-agents .fw-detail-icon { flex: none; width: 16px; height: 16px; align-items: center; justify-content: center; overflow: hidden; }
@@ -253,10 +256,12 @@
 .fw-root [data-outcome="neutral"], .fw-root [data-outcome="neutral"] [data-tone] { --tone: var(--fw-muted); }
 .fw-root .fw-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; padding: 0; list-style: none; color: var(--fw-muted); font-size: 12px; line-height: 16px; }
 .fw-root .fw-legend li { display: inline-flex; align-items: center; gap: 8px; }
-.fw-root .fw-kinds { margin: 0; padding: 4px 24px 8px; justify-content: flex-start; color: var(--fw-text); }
-.fw-root .fw-kinds .fw-swatch-model { width: 12px; height: 8px; border-radius: 2px; background: color-mix(in oklab, var(--fw-text) 40%, var(--fw-surface)); }
-.fw-root .fw-kinds .fw-swatch-tool { width: 12px; height: 8px; border-radius: 2px; background: color-mix(in oklab, var(--fw-text) 16%, var(--fw-surface)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-text) 30%, transparent); }
-.fw-root .fw-kinds .fw-swatch-wait { width: 12px; height: 8px; border-radius: 2px; background: repeating-linear-gradient(-45deg, var(--fw-hatch) 0 1px, transparent 1px 4px); box-shadow: inset 0 0 0 1px var(--fw-hatch); }
+.fw-root .fw-legends { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 24px; margin-top: 8px; }
+.fw-root .fw-legends .fw-legend { margin: 0; }
+.fw-root .fw-kinds { margin: 0; padding: 0; justify-content: flex-start; color: var(--fw-muted); }
+.fw-root .fw-kinds .fw-swatch-model { width: 12px; height: 8px; border-radius: 2px; background: var(--fw-kind-model); }
+.fw-root .fw-kinds .fw-swatch-tool { width: 12px; height: 8px; border-radius: 2px; background: var(--fw-kind-tool); }
+.fw-root .fw-kinds .fw-swatch-wait { width: 12px; height: 8px; border-radius: 2px; background: color-mix(in oklab, var(--fw-text) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-text) 18%, transparent); }
 .fw-root .fw-kinds .fw-swatch-handoff { width: 10px; height: 8px; border-left: 1.5px solid var(--fw-muted); border-bottom: 1.5px solid var(--fw-muted); border-bottom-left-radius: 3px; }
 .fw-root .fw-kinds .fw-swatch-failed { width: 12px; height: 8px; border-radius: 2px; box-shadow: inset 0 0 0 1px var(--fw-failed); }
 .fw-root .fw-description { margin: 0; color: var(--fw-muted); font-size: 14px; line-height: 20px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -269,6 +274,10 @@
 .fw-root .fw-view-agents .fw-seg { pointer-events: auto; }
 .fw-root .fw-seg-model { background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); }
 .fw-root .fw-seg-tool { background: var(--dim); box-shadow: inset 0 0 0 1px var(--dim-line); }
+/* In the agent view a step's kind owns its color, strong on both themes; the agent's outcome stays on its lane tint, dot and end label. */
+.fw-root .fw-view-agents .fw-seg-model { background: var(--fw-kind-model); box-shadow: none; }
+.fw-root .fw-view-agents .fw-seg-tool { background: var(--fw-kind-tool); box-shadow: none; }
+.fw-root .fw-view-agents .fw-seg-alt.fw-seg-model, .fw-root .fw-view-agents .fw-seg-alt.fw-seg-tool { filter: brightness(.88); }
 .fw-root .fw-seg-failed { background: color-mix(in oklab, var(--fw-failed) 18%, var(--fw-surface)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-failed) 70%, transparent); color: var(--fw-failed); }
 /* In the agent view a failed turn draws like any turn; the agent's own failure shows once, by its name and its end label. */
 .fw-root .fw-view-agents .fw-seg-failed { background: var(--dim); box-shadow: inset 0 0 0 1px var(--dim-line); }

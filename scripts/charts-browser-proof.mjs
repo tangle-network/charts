@@ -209,6 +209,10 @@ try {
   const nameXs = await page.evaluate(() => [...new Set([...document.querySelectorAll('.fw-view-agents .fw-row:not(.fw-step) .fw-label')]
     .filter(label => getComputedStyle(label).getPropertyValue('--depth').trim() === '0').map(label => Math.round(label.querySelector('.fw-names').getBoundingClientRect().left)))])
   assert.equal(nameXs.length, 1, `agent names start at ${JSON.stringify(nameXs)}`)
+  // One header band: the bar-type key shares the legend row in the header; model and tool segments differ in color.
+  assert.equal(await page.locator('.fw-heading .fw-kinds').count(), 1)
+  const kinds = await page.evaluate(() => ['.fw-seg-model', '.fw-seg-tool'].map(sel => document.querySelector(`.fw-view-agents ${sel}`)).filter(Boolean).map(el => getComputedStyle(el).backgroundColor))
+  assert.ok(kinds.length < 2 || kinds[0] !== kinds[1], `model and tool segments share a color: ${kinds}`)
   checks.hostMarks = 'PASS'
   // Every end label (duration, cost, Slowest/Costliest) stays inside its lane, on the surface, at 1100 px and on a phone.
   for (const width of [1100, 390]) {
