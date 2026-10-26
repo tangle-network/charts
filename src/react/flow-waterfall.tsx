@@ -91,7 +91,10 @@ function useHostable<T>(value: T | undefined, onChange: ((next: T) => void) | un
   return [current, set] as const
 }
 
-interface CardState { target: string; pinned: boolean; left: number; top: number; above: boolean }
+/** A card's anchor: the mark's top and bottom in the root, the side it opens on, and whether that side was checked against the viewport. */
+interface CardState { target: string; pinned: boolean; left: number; anchorTop: number; anchorBottom: number; above: boolean; fitted?: boolean }
+// The card's width; on a narrower root it takes the root less an 8 px margin each side.
+const CARD_WIDTH = 320
 
 /** The summary strip: as of the playhead while scrubbing, the producer's totals otherwise. */
 function summaryCells(trace: FlowTrace, at: ReturnType<typeof totalsAt> | undefined, durationMs: number) {
@@ -202,8 +205,9 @@ export function FlowWaterfall({
     const pipelines = rows.filter(row => row.kind === 'pipeline')
     return pipelines.length ? pipelines : rows.filter(row => !row.parentId)
   }, [rows])
-  // When every agent runs the same model, the header says it once instead of every row repeating it.
-  const sharedDetail = agents.length > 1 && agents.every(row => row.span.detail && row.span.detail === agents[0]?.span.detail) ? agents[0]?.span.detail : undefined
+  // When every agent that names a model names the same one, the header says it once instead of every row repeating it.
+  const details = new Set(agents.flatMap(row => row.span.detail ? [row.span.detail] : []))
+  const sharedDetail = agents.length > 1 && details.size === 1 ? [...details][0] : undefined
   const [flippedFamilies, setFlippedFamilies] = useState<ReadonlySet<string>>(new Set())
   const openFamilies = useMemo(() => defaultOpenFamilies(agents, UNFOLD_ROWS, flippedFamilies), [agents, flippedFamilies])
   const [openSteps, setOpenSteps] = useState<ReadonlySet<string>>(new Set())
@@ -293,7 +297,7 @@ export function FlowWaterfall({
   const pan = (deltaMs: number) => setZoom(previous => previous && clampWindow({ startMs: previous.startMs + deltaMs, endMs: previous.endMs + deltaMs }, limit))
 
   // Rows are memoized without their handlers, so handlers stay stable and read the latest state through a ref.
-  const latest = useRef({ toggle: (_row: FlowWaterfallRow) => {}, pin: (_target: string, _element: HTMLElement) => {}, inspect: (_target: string, _element: HTMLElement) => {} })
+  const latest = useRef({ toggle: (_row: FlowWaterfallRow) => {}, pin: (_target: string, _element: HTMLElement, _x?: number) => {}, inspect: (_target: string, _element: HTMLElement, _x?: number) => {} })
   const toggleNow = (row: FlowWaterfallRow) => {
     // In the agent view a family opens its members and an agent opens its own steps, in place.
     const flip = (open: ReadonlySet<string>) => new Set(open.has(row.id) ? [...open].filter(id => id !== row.id) : [...open, row.id])
@@ -311,18 +315,29 @@ export function FlowWaterfall({
   latest.current.toggle = toggleNow
   const toggle = useCallback((row: FlowWaterfallRow) => latest.current.toggle(row), [])
 
-  const place = (target: string, element: HTMLElement, pinned: boolean) => {
+  // The card opens at the pointer (a keyboard pin opens at the mark's start): above the mark in the agent timeline, below it in the
+  // span tree, and on the other side when its table would leave the viewport (checked once it has a height, below).
+  const place = (target: string, element: HTMLElement, pinned: boolean, x?: number) => {
     const host = root.current?.getBoundingClientRect()
     if (!host) return
     const rect = element.getBoundingClientRect()
-    // The agent timeline's compact card opens above its mark, clear of the rows below; the span card below unless cramped.
-    const above = view === 'agents' ? rect.top - host.top > 150 : globalThis.innerHeight - rect.bottom < 260 && rect.top - host.top > 260
-    const left = Math.max(8, Math.min(rect.left - host.left, host.width - 328))
+    const width = Math.min(CARD_WIDTH, host.width - 16)
+    const left = Math.max(8, Math.min((x ?? rect.left + 24) - host.left - 24, host.width - width - 8))
     clearTimeout(hideTimer.current)
-    setCard({ target, pinned, left, top: above ? rect.top - host.top - 8 : rect.bottom - host.top + 8, above })
+    setCard({ target, pinned, left, anchorTop: rect.top - host.top, anchorBottom: rect.bottom - host.top, above: view === 'agents' })
   }
-  latest.current.inspect = (target, element) => { if (!card?.pinned) place(target, element, false) }
-  const inspect = useCallback((target: string, element: HTMLElement) => latest.current.inspect(target, element), [])
+  useLayoutEffect(() => {
+    if (!card || card.fitted || !root.current) return
+    const box = document.getElementById(cardId)?.getBoundingClientRect()
+    if (!box) return
+    const hostTop = root.current.getBoundingClientRect().top
+    const room = { above: hostTop + card.anchorTop - 16, below: globalThis.innerHeight - (hostTop + card.anchorBottom) - 16 }
+    const preferred = card.above ? room.above : room.below
+    const other = card.above ? room.below : room.above
+    setCard({ ...card, fitted: true, above: box.height <= preferred || (box.height > other && preferred >= other) ? card.above : !card.above })
+  }, [card, cardId])
+  latest.current.inspect = (target, element, x) => { if (!card?.pinned) place(target, element, false, x) }
+  const inspect = useCallback((target: string, element: HTMLElement, x?: number) => latest.current.inspect(target, element, x), [])
   const leave = useCallback(() => {
     clearTimeout(hideTimer.current)
     hideTimer.current = setTimeout(() => setCard(previous => previous?.pinned ? previous : null), 140)
@@ -337,14 +352,14 @@ export function FlowWaterfall({
     return () => document.removeEventListener('pointermove', move)
   }, [card, leave])
 
-  latest.current.pin = (target, element) => {
+  latest.current.pin = (target, element, x) => {
     // Clicking the pinned mark again closes its card, so a re-click is never a no-op.
     if (card?.pinned && card.target === target) { closeCard(); return }
-    place(target, element, true)
+    place(target, element, true, x)
     const row = byId.get(target)
     if (row) { onSelect?.(row.span); zoomTo(row) }
   }
-  const pin = useCallback((target: string, element: HTMLElement) => latest.current.pin(target, element), [])
+  const pin = useCallback((target: string, element: HTMLElement, x?: number) => latest.current.pin(target, element, x), [])
   const selection = selectedId ?? (card?.pinned ? card.target : undefined)
   const closeCard = () => {
     const target = card?.target
@@ -441,7 +456,7 @@ export function FlowWaterfall({
         onCollapseAll={() => setCollapsed(new Set(rows.filter(row => row.hasChildren).map(row => row.id)))} />
       {card && cardRow && <div className={`fw-card-anchor${card.above ? ' fw-card-above' : ''}`}
         onPointerEnter={() => clearTimeout(hideTimer.current)} onPointerLeave={card.pinned ? undefined : leave}>
-        <SpanCard id={cardId} row={cardRow} agent={cardAgent} clockMs={clockMs} left={card.left} top={card.top} pinned={card.pinned} onClose={closeCard} renderIcon={renderIcon} compact={view === 'agents'} />
+        <SpanCard id={cardId} row={cardRow} agent={cardAgent} clockMs={clockMs} left={card.left} top={card.above ? card.anchorTop - 8 : card.anchorBottom + 8} pinned={card.pinned} onClose={closeCard} renderIcon={renderIcon} compact={view === 'agents'} />
       </div>}
       {view === 'spans' && playback}
     </section>

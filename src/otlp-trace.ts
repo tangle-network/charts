@@ -25,7 +25,8 @@ export interface OtlpTraceOptions {
 
 
 /** Attributes that carry cached input apart from fresh input (OpenTelemetry GenAI and Anthropic-style names). */
-const CACHE_KEYS = ['gen_ai.usage.cache_read_input_tokens', 'gen_ai.usage.cache_creation_input_tokens', 'gen_ai.usage.input_tokens.cached', 'tangle.llm.cache_read_tokens']
+const CACHE_READ_KEYS = ['gen_ai.usage.cache_read_input_tokens', 'gen_ai.usage.input_tokens.cached', 'tangle.llm.cache_read_tokens']
+const CACHE_KEYS = [...CACHE_READ_KEYS, 'gen_ai.usage.cache_creation_input_tokens']
 
 /** Price model calls from an OpenAI-compatible model catalog (`data[].pricing.prompt|completion`, USD per token), such as
  * the Router's `/v1/models`. Read the catalog at runtime; never copy its numbers. */
@@ -189,6 +190,7 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
     const model = pick(a, MODEL_KEYS)
     const prompt = num(a['gen_ai.usage.input_tokens'])
     const completion = num(a['gen_ai.usage.output_tokens'])
+    const cached = CACHE_READ_KEYS.map(key => num(a[key])).find(n => n !== undefined)
     let kind: FlowSpan['kind'] = span.kind === 'LLM' ? 'model' : span.kind === 'TOOL' ? 'tool' : 'pipeline'
     if (kind === 'tool' && (a['traces.agent.spawn'] === true || spawnTarget.has(span.span_id) || handoffTo.has(span.span_id))) kind = 'handoff'
     let name = str(a['gen_ai.tool.name']) ?? span.name
@@ -217,6 +219,7 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
       ...(listPrice !== undefined ? { costUsd: listPrice } : {}),
       ...(prompt !== undefined ? { promptTokens: prompt } : {}),
       ...(completion !== undefined ? { completionTokens: completion } : {}),
+      ...(cached !== undefined ? { cachedTokens: cached } : {}),
       ...(span.status?.message ? { output: span.status.message } : {}),
       ...(spawnTarget.has(span.span_id) ? { handoffTo: spawnTarget.get(span.span_id) } : handoffTo.has(span.span_id) ? { handoffTo: handoffTo.get(span.span_id) } : {}),
     })

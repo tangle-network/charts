@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { readFileSync } from "node:fs";
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import type { FlowTrace } from "../flow-trace.js";
@@ -25,6 +26,13 @@ const trace: FlowTrace = {
 
 const rowIds = (container: HTMLElement) =>
   [...container.querySelectorAll<HTMLElement>('[role="treegrid"] [role="row"][data-span-id]:not(.fw-sticky-row)')].map((row) => row.dataset.spanId);
+
+describe("FlowWaterfall stylesheet", () => {
+  it("paints only Brand roles: no color of its own", () => {
+    const css = readFileSync("src/react/flow-waterfall.css", "utf8");
+    expect(css.match(/#[0-9a-f]{3,8}\b|rgba?\(|hsla?\((?!var\()/gi) ?? []).toEqual([]);
+  });
+});
 
 describe("FlowWaterfall host-owned state", () => {
   it("marks the chain that gates the trace's end when asked", () => {
