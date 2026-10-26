@@ -137,19 +137,6 @@ export function FlowBody(props: BodyProps) {
     }
     return shown
   }, [props.markers, win.startMs, msPerPx, trackPx, view])
-  // Pause labels thin out the same way: one that would overlap the label before it is left to its band's tooltip.
-  const pauseLabels = useMemo(() => {
-    const shown = new Set<FlowPause>()
-    let freeFrom = -Infinity
-    for (const pause of [...(props.pauses ?? [])].sort((a, b) => a.startMs - b.startMs)) {
-      const width = duration(pause.endMs - pause.startMs).length * 7 + 24
-      const centre = ((pause.startMs + pause.endMs) / 2 - win.startMs) / msPerPx
-      if (centre - width / 2 < freeFrom) continue
-      shown.add(pause)
-      freeFrom = centre + width / 2 + 8
-    }
-    return shown
-  }, [props.pauses, win.startMs, msPerPx])
 
   useEffect(() => {
     const element = scroller.current
@@ -287,12 +274,12 @@ export function FlowBody(props: BodyProps) {
             if (jumped === marker) { setJumped(undefined); return }
             setJumped(marker); props.onScrub(marker.at)
           }} />)}
-        {/* A pause's length sits on the axis over its band, where no row's end label can be under it. */}
-        {props.pauses?.filter(pause => pauseLabels.has(pause)).map(pause => <span key={`pl-${pause.startMs}`} className="fw-pause-label"
-          style={{ '--s': pause.startMs, '--e': pause.endMs } as CSSProperties} title={pause.detail ? `${pause.label}: ${pause.detail}` : pause.label} tabIndex={0}
-          aria-label={`${pause.label}, ${duration(pause.endMs - pause.startMs)}${pause.detail ? `: ${pause.detail}` : ''}`} onPointerDown={event => event.stopPropagation()}>
-          <b>{duration(pause.endMs - pause.startMs)}</b>
-        </span>)}
+        {/* A pause is a strip under the ticks; its length and reason are its tooltip, so no chip covers the hour it sits on. */}
+        {props.pauses?.map(pause => {
+          const said = `${pause.label} ${duration(pause.endMs - pause.startMs)}${pause.detail ? `: ${pause.detail}` : ''}`
+          return <span key={`pm-${pause.startMs}`} className="fw-pause-mark" style={{ '--s': pause.startMs, '--e': pause.endMs } as CSSProperties}
+            title={said} aria-label={said} role="img" tabIndex={0} onPointerDown={event => event.stopPropagation()} />
+        })}
         {jumped && <span className="fw-event-label" data-tone={jumped.tone ?? 'neutral'} style={{ '--s': jumped.at } as CSSProperties}>{jumped.label}</span>}
         {showCursor && <span className="fw-cursor-handle" aria-hidden />}
       </div>
@@ -312,6 +299,7 @@ export function FlowBody(props: BodyProps) {
       {axis}
       <div className="fw-viewport">
         <div className="fw-gridlayer" aria-hidden>
+          {props.pauses?.map(pause => <span key={`p-${pause.startMs}`} className="fw-pause" style={{ '--s': pause.startMs, '--e': pause.endMs } as CSSProperties} />)}
           {ticks.map(tick => <span key={tick} className="fw-gridline" style={{ '--s': tick } as CSSProperties} />)}
           {props.markers?.map(marker => <span key={`l-${marker.at}-${marker.label}`} className="fw-marker-line" data-tone={marker.tone ?? 'neutral'} style={{ '--s': marker.at } as CSSProperties} />)}
         </div>
@@ -328,11 +316,8 @@ export function FlowBody(props: BodyProps) {
           {rows.length === 0 && <p role="status" className="fw-empty">{props.emptyText}</p>}
         </div>
         {view === 'spans' && <StickyRows scroller={scroller} rows={rows} index={index} rowHeight={rowHeight} render={row} />}
-        {props.markers?.length || props.pauses?.length ? <div className="fw-marker-layer">
-          {props.pauses?.map(pause => <span key={`p-${pause.startMs}`} className="fw-pause" style={{ '--s': pause.startMs, '--e': pause.endMs } as CSSProperties} title={`${pause.label}, ${duration(pause.endMs - pause.startMs)}`}>
-            {/* The label says how long the run stood still and may run past a narrow band; the reason is its tooltip. */}
-          </span>)}
-          {props.markers?.map(marker => <span key={`${marker.at}-${marker.label}`} className="fw-marker" data-tone={marker.tone ?? 'neutral'}
+        {props.markers?.length ? <div className="fw-marker-layer">
+          {props.markers.map(marker => <span key={`${marker.at}-${marker.label}`} className="fw-marker" data-tone={marker.tone ?? 'neutral'}
             style={{ '--s': marker.at } as CSSProperties} title={marker.label}>
             {markerLabels.has(marker) && <span className={`fw-marker-label${markerLabels.get(marker) === 'left' ? ' fw-marker-label-left' : ''}`}>{marker.label}</span>}
           </span>)}

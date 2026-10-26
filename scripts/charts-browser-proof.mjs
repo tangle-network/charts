@@ -119,14 +119,12 @@ try {
   assert.ok(marker.height > 100 && marker.label > 40)
   assert.equal(await page.locator('.fw-marker-label').first().innerText(), 'Release v2')
   checks.markers = 'PASS'
-  // A pause is a labelled band across the rows; a restart is a notch on its bar, not the bar's state.
-  assert.equal(await page.locator('.fw-pause').count(), 1)
-  // The band's label is its length, never truncated; the reason is its tooltip.
-  assert.match((await page.locator('.fw-pause-label').innerText()).trim(), /^\d+(\.\d)? (s|min|h)$/)
-  assert.equal(await page.locator('.fw-pause-label').getAttribute('title'), 'Paused: host guard')
-  // It sits on the axis, so no row's end label can be under it.
-  assert.equal(await page.locator('.fw-axis-track .fw-pause-label').count(), 1)
+  // A pause is a band behind the rows and a strip on the axis that says its length and reason; a restart is a notch on its bar.
+  assert.equal(await page.locator('.fw-gridlayer .fw-pause').count(), 1)
+  assert.match(await page.locator('.fw-axis-track .fw-pause-mark').getAttribute('title'), /^Paused: host guard \d+(\.\d)? (s|min|h)$/)
   assert.ok((await page.locator('.fw-pause').evaluate(el => el.getBoundingClientRect().width)) > 8)
+  // No pause text sits on the axis, so every hour tick stays readable.
+  assert.equal(await page.locator('.fw-axis-track .fw-pause-label').count(), 0)
   assert.equal(await page.locator('.fw-mark[data-mark="restart"]').count(), 1)
   checks.pauseAndRestart = 'PASS'
   // Pinning a bar hands its span to onSelect.
@@ -233,6 +231,51 @@ try {
   }
   await page.setViewportSize({ width: 1100, height: 900 })
   checks.endLabelsFit = 'PASS'
+  // The card tables what the agent recorded, each value with its unit, and opens at the pointer beside the row.
+  for (const theme of ['agent-light', 'agent-dark']) {
+    await story('agent-metrics', theme)
+    await page.waitForFunction(() => !document.querySelector('.fw-row.fw-enter'), null, { timeout: 3000 })
+    const segment = await page.locator('[data-span-id="builder"] .fw-seg').nth(4).boundingBox()
+    const pointer = { x: segment.x + segment.width / 2, y: segment.y + segment.height / 2 }
+    await page.mouse.move(pointer.x, pointer.y)
+    await page.locator('.fw-card-table').waitFor()
+    const table = await page.locator('.fw-card-table > div').evaluateAll(rows => Object.fromEntries(rows.map(row => [row.querySelector('dt').textContent, row.querySelector('dd').textContent])))
+    assert.deepEqual(Object.keys(table), ['Model', 'Duration', 'Tokens', 'LLM latency', 'Cost', 'LLM calls', 'Tool calls', 'Failures', 'Retries'], JSON.stringify(table))
+    assert.match(table.Tokens, /^[\d.]+k in[\d.]+k out[\d.]+k cached$/)
+    assert.match(table['LLM latency'], /^[\d.]+s median[\d.]+s p95$/)
+    assert.match(table.Cost, /^\$\d+\.\d\d$/)
+    assert.equal(table['Tool calls'], '13bash5edit4read4')
+    assert.equal(table.Failures, '1 failed step')
+    assert.equal(table.Retries, '1 step retried · 1 restart')
+    const placed = await page.evaluate(() => {
+      const card = document.querySelector('.fw-card').getBoundingClientRect(), row = document.querySelector('[data-span-id="builder"]').getBoundingClientRect()
+      return { left: card.left, top: card.top, bottom: card.bottom, clear: card.top >= row.bottom - 2 || card.bottom <= row.top + 2, inView: card.top >= 0 && card.bottom <= innerHeight }
+    })
+    assert.ok(Math.abs(placed.left - (pointer.x - 24)) < 2 && placed.clear && placed.inView, `card not at the pointer beside its row: ${JSON.stringify({ pointer, placed })}`)
+    // The host's selection recedes its peers' marks, never their names: they keep the muted ink at full opacity.
+    const peer = await page.locator('[data-span-id="planner"]').evaluate(row => ({ name: getComputedStyle(row.querySelector('.fw-label')).opacity, bar: Number(getComputedStyle(row.querySelector('.fw-bar')).opacity) }))
+    assert.ok(peer.name === '1' && peer.bar < 0.5, `peer row ${JSON.stringify(peer)}`)
+    await page.screenshot({ path: `${output}/agent-metrics-card-${theme}.png` })
+    await page.mouse.move(1, 1)
+  }
+  checks.metricsCard = 'PASS'
+  // On a phone each agent is a name strip over its bar: name, duration and bars never overlap, and nothing leaves the page.
+  await page.setViewportSize({ width: 390, height: 844 })
+  for (const theme of ['agent-light', 'agent-dark']) {
+    await story('agent-metrics', theme)
+    await page.waitForFunction(() => !document.querySelector('.fw-row.fw-enter'), null, { timeout: 3000 })
+    const clashes = await page.evaluate(() => [...document.querySelectorAll('.fw-view-agents .fw-row:not(.fw-sticky-row)')].flatMap(row => {
+      const hit = (a, b) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5
+      const name = row.querySelector('.fw-names').getBoundingClientRect(), end = row.querySelector('.fw-end').getBoundingClientRect()
+      const marks = [...row.querySelectorAll('.fw-bar, .fw-seg')].map(mark => mark.getBoundingClientRect()).filter(box => box.width > 0)
+      return [...(hit(name, end) ? ['name x end'] : []), ...(marks.some(mark => hit(mark, name)) ? ['name x bar'] : []), ...(marks.some(mark => hit(mark, end)) ? ['end x bar'] : [])].map(clash => `${row.dataset.spanId}: ${clash}`)
+    }))
+    assert.deepEqual(clashes, [])
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+    await page.screenshot({ path: `${output}/agent-metrics-phone-${theme}.png`, fullPage: true })
+  }
+  await page.setViewportSize({ width: 1100, height: 900 })
+  checks.phoneLanes = 'PASS'
   await story('recorded-discovery')
   const root = page.locator('[data-flow-waterfall]')
   assert.equal(await root.locator('[data-span-id]').count(), 53)

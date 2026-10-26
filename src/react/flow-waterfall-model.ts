@@ -21,6 +21,12 @@ export interface FlowSegment {
 
 const toolOf = (name?: string) => name?.split(' · ')[0]
 
+/** A row's direct steps: model and tool calls (failed ones included), the failed and retrying ones, and tool calls by tool. */
+export interface StepCounts { model: number; tool: number; failed: number; retried: number; tools: Record<string, number> }
+
+/** Tokens in, out and cached; a field nobody recorded stays undefined. */
+export interface TokenCounts { prompt?: number; completion?: number; cached?: number }
+
 export interface FlowWaterfallRow {
   id: string
   parentId?: string
@@ -40,8 +46,12 @@ export interface FlowWaterfallRow {
   segments: FlowSegment[]
   /** Direct non-agent children: the row's own thinking and tool work, drawn over its waiting extent. */
   own: FlowSegment[]
-  /** Direct children counted from the spans, before marks merge for display (merging depends on zoom). */
-  counts?: { model: number; tool: number; failed: number }
+  /** Direct steps counted from the spans, before marks merge for display (merging depends on zoom). */
+  counts?: StepCounts
+  /** Durations of its finished direct model calls, ascending: the card's latency. */
+  modelMs?: number[]
+  /** The span's own tokens, else the sum of its children's, as its cost rolls up. */
+  tokens?: TokenCounts
   /** Its cost is a floor ("≥"): its own bound, its trace's, or a family with unpriced members. */
   costFloor?: boolean
   /** The span retries a failed one; its bar carries a retry glyph. */
@@ -169,6 +179,7 @@ export function flowWaterfallRows(trace: FlowTrace, resolutionMs?: number): Flow
     row.hasChildren = kids.length > 0
     ordered_.push(row)
     const marks: FlowSegment[] = []
+    const own = row.span.promptTokens !== undefined || row.span.completionTokens !== undefined || row.span.cachedTokens !== undefined
     let cost = row.span.costUsd ?? 0
     let costKnown = row.span.kind !== 'model' || row.span.costUsd !== undefined
     for (const child of kids) {
@@ -178,14 +189,11 @@ export function flowWaterfallRows(trace: FlowTrace, resolutionMs?: number): Flow
       const childCost = child.hasChildren ? child.rollupCostUsd : child.span.costUsd
       if (childCost === undefined) { if (child.kind === 'model' || child.hasChildren) costKnown = false }
       else cost += childCost
-      if (child.kind !== 'pipeline' && child.kind !== 'waiting' && ordered(child.span)) {
-        row.own.push(segmentOf(child))
-        const counts = row.counts ??= { model: 0, tool: 0, failed: 0 }
-        if (!child.ok) counts.failed++
-        else if (child.kind === 'model') counts.model++
-        else counts.tool++
-      }
+      if (child.kind !== 'pipeline' && child.kind !== 'waiting' && ordered(child.span)) row.own.push(segmentOf(child))
     }
+    Object.assign(row, stepStats(kids))
+    const tokens = own ? { prompt: row.span.promptTokens, completion: row.span.completionTokens, cached: row.span.cachedTokens } : sumTokens(kids)
+    if (tokens) row.tokens = tokens
     if (row.hasChildren && costKnown) row.rollupCostUsd = cost
     if (row.hasChildren) {
       row.segments = mergeSegments(marks.map(mark => ({ ...mark })), gap)
@@ -197,6 +205,49 @@ export function flowWaterfallRows(trace: FlowTrace, resolutionMs?: number): Flow
   }
   for (const row of rows) if (!row.parentId) visit(row, 0, -1)
   return ordered_
+}
+
+/** What a row's direct steps add up to; nothing when it has none. */
+function stepStats(steps: readonly FlowWaterfallRow[]): Pick<FlowWaterfallRow, 'counts' | 'modelMs'> {
+  let counts: StepCounts | undefined
+  const modelMs: number[] = []
+  for (const step of steps) {
+    if (step.kind === 'pipeline' || step.kind === 'waiting' || !ordered(step.span)) continue
+    counts ??= { model: 0, tool: 0, failed: 0, retried: 0, tools: {} }
+    if (!step.ok) counts.failed++
+    if (step.retry) counts.retried++
+    if (step.kind === 'model') {
+      counts.model++
+      if (!spanRunning(step.span)) modelMs.push(step.span.endMs - step.span.startMs)
+    } else {
+      counts.tool++
+      const tool = toolOf(step.name) || step.kind
+      counts.tools[tool] = (counts.tools[tool] ?? 0) + 1
+    }
+  }
+  return counts ? { counts, modelMs: modelMs.sort((a, b) => a - b) } : {}
+}
+
+/** Several rows' steps as one: a family's members or a folded run. */
+function mergeStats(rows: readonly FlowWaterfallRow[]): Pick<FlowWaterfallRow, 'counts' | 'modelMs' | 'tokens'> {
+  let counts: StepCounts | undefined
+  for (const row of rows) {
+    if (!row.counts) continue
+    counts ??= { model: 0, tool: 0, failed: 0, retried: 0, tools: {} }
+    counts.model += row.counts.model; counts.tool += row.counts.tool; counts.failed += row.counts.failed; counts.retried += row.counts.retried
+    for (const [tool, n] of Object.entries(row.counts.tools)) counts.tools[tool] = (counts.tools[tool] ?? 0) + n
+  }
+  const tokens = sumTokens(rows)
+  return { ...(counts ? { counts, modelMs: rows.flatMap(row => row.modelMs ?? []).sort((a, b) => a - b) } : {}), ...(tokens ? { tokens } : {}) }
+}
+
+function sumTokens(rows: readonly FlowWaterfallRow[]): TokenCounts | undefined {
+  let out: TokenCounts | undefined
+  for (const row of rows) for (const key of ['prompt', 'completion', 'cached'] as const) {
+    const n = row.tokens?.[key]
+    if (n !== undefined) (out ??= {})[key] = (out[key] ?? 0) + n
+  }
+  return out
 }
 
 function segmentOf(row: FlowWaterfallRow): FlowSegment {
@@ -398,6 +449,7 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
       // One hue per family (round 5: mixed member hues in one lane read as "muddy"); members alternate shades of it.
       own: members.flatMap((row, i) => row.own.map(mark => ({ ...mark, tone, alt: i % 2 === 1 }))).sort((a, b) => a.startMs - b.startMs),
       ...(known.length ? { rollupCostUsd: known.reduce((sum, cost) => sum + cost, 0) } : {}),
+      ...mergeStats(members),
       span: { id, kind: 'pipeline', name: role, startMs, endMs, status: running ? 'running' : failed ? 'failed' : 'done', ...(outcome ? { outcome } : {}), detail: members[0]!.span.detail, meta: { failedAgents: failed, costPartial: known.length < members.length, members: members.map(row => row.id) } },
     })
     if (open.has(id)) out.push(...members.map((row, i) => ({ ...row, family: id, inset: 1, tone, own: row.own.map(mark => ({ ...mark, tone, alt: i % 2 === 1 })) })))
@@ -405,29 +457,22 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
   return out
 }
 
-/** The second line of an agent row: how it ended and how much it did ("failed · 3 turns · 412 tool calls", "6 agents · 4 failed"). */
-export function agentSummary(row: FlowWaterfallRow): string {
+/** The second line of an agent row in parts: how it ended and how much it did (failed, 3 LLM calls, 412 tool calls; 6 agents, 4 failed).
+ * The row shows the parts in order and drops the last ones whole when the line is full, never half a word. */
+export function agentSummary(row: FlowWaterfallRow): string[] {
   if (row.id.startsWith('family:')) {
     const failed = Number(row.span.meta?.failedAgents ?? 0)
-    return `${row.descendants} agents${failed ? ` · ${failed} failed` : ''}`
+    return [`${row.descendants} agents`, ...(failed ? [`${failed} failed`] : [])]
   }
   // A folded run of steps already says its count in its name; its second line says how it ended.
-  if (row.id.startsWith('run:')) { const failed = row.own.filter(mark => mark.kind === 'failed').length; return failed ? `${failed} failed` : 'all done' }
+  if (row.id.startsWith('run:')) { const failed = row.own.filter(mark => mark.kind === 'failed').length; return [failed ? `${failed} failed` : 'all done'] }
   // Counted from the spans, not the display marks: merging short neighbours changes with zoom (Codex review on #30).
-  const counts = row.counts ?? { model: 0, tool: 0, failed: 0 }
-  const turns = counts.model + counts.failed
-  const tools = counts.tool
+  const calls = row.counts?.model ?? 0
+  const tools = row.counts?.tool ?? 0
   // An agent without a recorded outcome says only that it runs or failed; a bare "done" read as a verdict the host never gave.
   const state = row.span.outcome?.label ?? (spanRunning(row.span) ? 'running' : !row.ok ? 'failed' : row.kind === 'pipeline' ? '' : 'done')
-  // An agent's model calls are its turns; inside one step they are model calls.
-  const unit = row.kind === 'pipeline' ? ['turn', 'turns'] : ['model call', 'model calls']
-  return [state, turns ? `${turns} ${turns === 1 ? unit[0] : unit[1]}` : '', tools ? `${tools} tool ${tools === 1 ? 'call' : 'calls'}` : ''].filter(Boolean).join(' · ')
-}
-
-/** The summary split where it may be cut: the tool count goes first when the line does not fit, never half a word. */
-export function agentSummaryParts(row: FlowWaterfallRow): [string, string?] {
-  const tools = / · (\d+ tool calls?)$/.exec(agentSummary(row))
-  return tools ? [agentSummary(row).slice(0, tools.index), tools[1]] : [agentSummary(row)]
+  // LLM calls, as the summary strip and the card name them; a host's own "turns" can mean harness turns, a different count.
+  return [state, calls ? `${calls} LLM ${calls === 1 ? 'call' : 'calls'}` : '', tools ? `${tools} tool ${tools === 1 ? 'call' : 'calls'}` : ''].filter(Boolean)
 }
 
 /**
@@ -463,7 +508,7 @@ function stepRuns(steps: readonly FlowWaterfallRow[]): FlowWaterfallRow[] {
     const noun = first.kind === 'model' ? 'model calls' : first.kind === 'tool' ? `${first.name} calls` : `${first.name} steps`
     out.push({
       ...first, id: `run:${first.id}`, name: `${run.length} ${noun}`, durationLabel: formatSpanDuration(endMs - startMs), ok: failed === 0,
-      hasChildren: false, descendants: 0, segments: [],
+      hasChildren: false, descendants: 0, segments: [], ...stepStats(run), tokens: sumTokens(run),
       own: run.map(step => ({ startMs: step.span.startMs, endMs: step.span.endMs, kind: step.ok ? (step.kind === 'model' ? 'model' : 'tool') : 'failed', tone: first.tone, id: step.id, count: 1, retry: step.retry, name: step.name, tool: toolOf(step.name) })),
       ...(costs.length ? { rollupCostUsd: costs.reduce((sum, cost) => sum + cost, 0) } : {}),
       span: { ...first.span, id: `run:${first.id}`, name: `${run.length} ${noun}`, startMs, endMs, status: failed ? 'failed' : first.span.status, costUsd: undefined },

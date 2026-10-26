@@ -1,5 +1,17 @@
 # @tangle-network/charts
 
+## 0.21.16
+
+- The trace paints Brand roles only: text, card, hairline (`--hsl-border`), in-card well, chart grid and rule, the status inks, and Brand's categorical tones for agent hues (blue, teal, pink, violet, lime; the root is the chart's muted grey). Its own hex palettes and their fallbacks are gone, and radii and shadows are Brand's. A host loads Brand's `tokens.css` or `legacy-light.css`; agent-app and Discovery already do.
+- The hover card is a table of what the row recorded, each value with its unit: model, duration, tokens in, out and cached, LLM latency (median, and p95 from ten calls), cost, LLM calls, tool calls by tool, failed steps, and retries and restarts. It shows every host fact, not the first three, and skips one the table already states. `FlowSpan.cachedTokens` is new; `otlpFlowTrace` fills it from the GenAI cache-read attributes.
+- The card opens at the pointer instead of the mark's start, and on the side of its row that fits the viewport; a tall card no longer runs off the top of the page.
+- Phone (below 900 px): each agent is a name strip over its bar. The duration and badges sit at the strip's right end, never on the bar or across a connector, and the strip hides the gridlines, pause bands and elbows behind it. Below 480 px the strip holds only the name and duration.
+- A selection recedes its peers' bars only. Their names keep the muted ink at full opacity; fading whole cells dropped them to 2.2:1 and let pause bands and connectors show through the text.
+- A pause is a faint band behind the rows and a hatched strip on the axis that names its length and reason on hover and focus. The length chips covered the hour ticks.
+- An agent's second line says "LLM calls", as the summary strip and card do, so a host's own "Turns" fact no longer contradicts it, and its parts drop whole when the line is full ("48 …" no longer shows). Failed calls count as calls of their kind.
+- A row's hover and selected tint is one variable, so its end label and stacked name paint the same plane instead of a white chip on the selected band.
+- "Thinking thinking · 50ms" reads "Thinking · 50ms".
+
 ## 0.21.15
 
 - Per-agent hues are saturated inside the bar: model and tool steps are a darker and a lighter step of the agent's full hue, at least 3:1 against the card; waiting stays the only pale fill (blind round 26: muted bars blurred together).

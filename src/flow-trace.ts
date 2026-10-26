@@ -20,6 +20,9 @@ export interface FlowSpan {
   costBound?: 'lower' | 'upper'
   promptTokens?: number
   completionTokens?: number
+  /** Input tokens the provider served from its cache, as the producer recorded them. A span without its own token fields shows
+   * the sum of its descendants' in the card. */
+  cachedTokens?: number
   /** Short producer summaries shown in the span card. */
   input?: string
   output?: string
@@ -29,7 +32,7 @@ export interface FlowSpan {
   handoffTo?: string
   /** The host's verdict on an agent span, such as shipped or crashed: colors its lane and joins the legend. */
   outcome?: FlowOutcome
-  /** Up to three host facts shown as extra key/value cells in the span card, such as releases or commits. */
+  /** Host facts shown as extra rows of the card's table, such as releases or commits; a label the table already has is skipped. */
   facts?: readonly { label: string; value: string }[]
   /** Moments on this span's own bar, such as a restart: a notch at `at`, the state stays the span's. */
   marks?: readonly FlowSpanMark[]

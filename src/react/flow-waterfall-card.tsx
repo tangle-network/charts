@@ -5,7 +5,7 @@ import { type FlowWaterfallRow, rowCostText, formatCount, formatSpanDuration, sp
 
 
 /** Names wrap between words, never at their hyphens ("memscale-engineer-" / "2" read as two names). */
-const keepWords = (name: string) => name.replace(/-/g, '\u2011')
+const keepWords = (name: string) => name.replace(/-/g, '‑')
 
 export const KIND_LABEL: Record<FlowSpan['kind'], string> = {
   pipeline: 'Agent', model: 'LLM call', tool: 'Tool call', waiting: 'Waiting', handoff: 'Handoff',
@@ -23,85 +23,101 @@ export interface SpanCardProps {
   pinned: boolean
   onClose: () => void
   renderIcon?: (span: FlowSpan) => ReactNode
-  /** The agent timeline's card: the result first, then kind, time and tokens, then the message it handed back. */
+  /** The agent timeline's card: the agent and its outcome, its table, then the step under the pointer. */
   compact?: boolean
 }
 
-const unknown = <span className="fw-unknown" title="Not recorded by the harness">—</span>
-const count = (n: number | undefined) => n === undefined ? unknown : <span title={n.toLocaleString()}>{formatCount(n)}</span>
+const count = (n: number, unit: string) => <span title={`${n.toLocaleString()} ${unit}`}>{formatCount(n)} {unit}</span>
+const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString()} ${n === 1 ? one : many}`
+/** Nearest-rank percentile of ascending values. */
+const percentile = (sorted: readonly number[], p: number) => sorted[Math.min(sorted.length - 1, Math.ceil(p * sorted.length) - 1)]!
+const TOOLS_SHOWN = 4
 
-/** The span card: what ran, for how long, at what recorded cost, on what input. */
+/** The card's table: what the row recorded, every value with its unit. A value nobody recorded is left out, never printed as zero. */
+function metrics(row: FlowWaterfallRow, clockMs: number, full: boolean): [string, ReactNode][] {
+  const span = row.span
+  const out: [string, ReactNode][] = []
+  if (span.detail) out.push([span.kind === 'tool' ? 'Provider' : 'Model', span.detail])
+  const stop = spanRunning(span) ? Math.max(span.endMs, clockMs) : span.endMs
+  out.push(['Duration', Number.isFinite(stop - span.startMs) && stop >= span.startMs ? formatSpanDuration(stop - span.startMs) : '—'])
+  if (full) out.push(['Started', `+${formatSpanDuration(Math.max(0, span.startMs))}`])
+  const tokens = row.tokens
+  if (tokens) {
+    const parts = ([['prompt', 'in'], ['completion', 'out'], ['cached', 'cached']] as const).flatMap(([key, unit]) => tokens[key] === undefined ? [] : [count(tokens[key], unit)])
+    out.push(['Tokens', <span className="fw-card-parts">{parts.map((part, i) => <span key={i}>{part}</span>)}</span>])
+  }
+  const latency = row.modelMs
+  if (latency?.length) out.push(['LLM latency', <span className="fw-card-parts"><span>{formatSpanDuration(percentile(latency, 0.5))} median</span>{latency.length >= 10 && <span>{formatSpanDuration(percentile(latency, 0.95))} p95</span>}</span>])
+  const cost = span.costUsd ?? row.rollupCostUsd
+  if (cost !== undefined) out.push(['Cost', rowCostText(row, cost)])
+  const counts = row.counts
+  if (counts?.model) out.push(['LLM calls', counts.model.toLocaleString()])
+  if (counts?.tool) {
+    const tools = Object.entries(counts.tools).sort(([a, x], [b, y]) => y - x || a.localeCompare(b))
+    const rest = tools.length - TOOLS_SHOWN
+    // By tool, most used first, as a small table under the total; a long tool name truncates, its count never does.
+    out.push(['Tool calls', <>{counts.tool.toLocaleString()}<span className="fw-card-tools" title={tools.map(([tool, n]) => `${tool} ${n}`).join(', ')}>
+      {tools.slice(0, rest > 1 ? TOOLS_SHOWN : tools.length).map(([tool, n]) => <span key={tool}><span>{tool}</span><span>{n.toLocaleString()}</span></span>)}
+      {rest > 1 && <span><span>{rest} more tools</span><span>{tools.slice(TOOLS_SHOWN).reduce((sum, [, n]) => sum + n, 0).toLocaleString()}</span></span>}</span></>])
+  }
+  if (counts?.failed) out.push(['Failures', plural(counts.failed, 'failed step')])
+  const restarts = span.marks?.filter(mark => mark.kind === 'restart').length ?? 0
+  if (counts?.retried || restarts) out.push(['Retries', [counts?.retried ? plural(counts.retried, 'step retried', 'steps retried') : '', restarts ? plural(restarts, 'restart') : ''].filter(Boolean).join(' · ')])
+  if (full && row.hasChildren) out.push(['Steps', row.descendants.toLocaleString()])
+  // The host's facts follow; one the table already states is not repeated.
+  for (const fact of span.facts ?? []) if (!out.some(([label]) => label.toLowerCase() === fact.label.toLowerCase())) out.push([fact.label, fact.value])
+  return out
+}
+
+function Table({ rows }: { rows: [string, ReactNode][] }) {
+  return <dl className="fw-card-table">{rows.map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl>
+}
+
+/** The span card: what ran, for how long, on what tokens and at what recorded cost, then its input and output. */
 export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, renderIcon, compact }: SpanCardProps) {
   const span = row.span
-  const running = spanRunning(span)
-  const status = running ? 'Running' : row.ok ? 'Done' : 'Failed'
-  const tokens = span.kind === 'model' || span.kind === 'pipeline' || span.promptTokens !== undefined
+  const status = spanRunning(span) ? 'Running' : row.ok ? 'Done' : 'Failed'
   const owner = agent && agent.id !== row.id ? agent : undefined
-  const lasted = (s: FlowSpan) => {
-    const stop = spanRunning(s) ? Math.max(s.endMs, clockMs) : s.endMs
-    return Number.isFinite(stop - s.startMs) && stop >= s.startMs ? formatSpanDuration(stop - s.startMs) : '—'
+  const frame = {
+    id, role: pinned ? 'dialog' : 'tooltip', 'aria-label': pinned ? `${span.name} details` : undefined, style: { left, top },
+    onKeyDown: (event: { key: string; stopPropagation: () => void }) => { if (event.key === 'Escape') { event.stopPropagation(); onClose() } },
   }
-  const duration = lasted(span)
+  const close = pinned && <button type="button" className="fw-icon-button fw-card-close" aria-label="Close details" onClick={onClose} autoFocus><CloseGlyph /></button>
   if (compact) {
-    // The reference tooltip: who and the outcome, harness and model, two to four recorded values, one sentence.
-    // A segment inside an agent bar keeps the agent's facts; the segment itself is one line under them.
+    // A segment inside an agent bar keeps the agent's table; the segment itself is one line under it.
     const who = owner ?? row
-    const subject = who.span
-    const outcome = subject.outcome
-    const tokenCount = subject.promptTokens !== undefined || subject.completionTokens !== undefined ? (subject.promptTokens ?? 0) + (subject.completionTokens ?? 0) : undefined
-    const cost = subject.costUsd ?? who.rollupCostUsd
-    const cells: [string, ReactNode][] = [[subject.kind === 'model' ? 'Thinking' : KIND_LABEL[subject.kind], lasted(subject)]]
-    for (const fact of (subject.facts ?? []).slice(0, 3)) cells.push([fact.label, fact.value])
-    cells.push(['Started', `+${formatSpanDuration(Math.max(0, subject.startMs))}`])
-    if (tokenCount !== undefined) cells.push(['Tokens', count(tokenCount)])
-    if (cost !== undefined) cells.push(['Cost', rowCostText(who, cost)])
-    cells.splice(6)
+    const outcome = who.span.outcome
     const kind = span.kind === 'model' ? 'Thinking' : KIND_LABEL[span.kind]
     // A zero-length step (an instant event) has nothing to say in a step line ("Thinking Model call 0ms").
-    const step = owner && span.endMs > span.startMs ? `${kind}${span.name && span.name !== kind && span.name.toLowerCase() !== span.kind ? ` ${span.name}` : ''} · ${duration}${row.ok ? '' : ' · failed'}` : undefined
+    const named = span.name && span.name.toLowerCase() !== kind.toLowerCase() && span.name.toLowerCase() !== span.kind ? ` ${span.name}` : ''
+    const stop = spanRunning(span) ? Math.max(span.endMs, clockMs) : span.endMs
+    const step = owner && span.endMs > span.startMs ? `${kind}${named} · ${formatSpanDuration(stop - span.startMs)}${row.ok ? '' : ' · failed'}` : undefined
     // The sentence is what the agent did; a name repeated from the title says nothing.
     const sentence = !owner && span.output && span.output !== who.name ? span.output : undefined
     return (
-      <div id={id} role={pinned ? 'dialog' : 'tooltip'} aria-label={pinned ? `${span.name} details` : undefined}
-        className="fw-card fw-card-compact" data-tone={toneKey(who.tone)} data-outcome={outcome?.tone} style={{ left, top }}
-        onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); onClose() } }}>
+      <div {...frame} className="fw-card fw-card-compact" data-tone={toneKey(who.tone)} data-outcome={outcome?.tone}>
         <div className="fw-card-agent"><span className="fw-agent-dot" aria-hidden /><span className="fw-card-who">{keepWords(who.name)}</span>
           {outcome
             ? <span className="fw-pill fw-pill-outcome" data-tone="0" data-outcome={outcome.tone}>{outcome.label}</span>
             : <span className={`fw-pill fw-pill-${status.toLowerCase()}`}>{status}</span>}
-          {pinned && <button type="button" className="fw-icon-button" style={{ width: 20, height: 20 }} aria-label="Close details" onClick={onClose} autoFocus><CloseGlyph /></button>}
+          {close}
         </div>
-        {who.span.detail && <p className="fw-card-detail">{who.span.detail}</p>}
-        <dl className="fw-card-cells">{cells.map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl>
+        <Table rows={metrics(who, clockMs, false)} />
         {step && <p className="fw-card-step">{step}</p>}
         {sentence && <p className="fw-card-result">{sentence}</p>}
       </div>
     )
   }
   return (
-    <div id={id} role={pinned ? 'dialog' : 'tooltip'} aria-label={pinned ? `${span.name} details` : undefined}
-      className="fw-card" data-tone={toneKey(row.tone)} style={{ left, top }}
-      onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); onClose() } }}>
-      {owner && <div className="fw-card-agent"><span className="fw-agent-dot" aria-hidden />{owner.name}{owner.span.detail && <span className="fw-muted"> {owner.span.detail}</span>}</div>}
+    <div {...frame} className="fw-card" data-tone={toneKey(row.tone)}>
+      {owner && <div className="fw-card-agent"><span className="fw-agent-dot" aria-hidden />{owner.name}</div>}
       <div className="fw-card-head">
         <span className="fw-icon-tile" aria-hidden>{renderIcon?.(span) ?? <KindGlyph kind={span.kind} name={span.name} />}</span>
-        <div className="fw-card-title">
-          <div className="fw-card-name">{keepWords(span.name)}</div>
-          {span.detail && <div className="fw-muted">{span.detail}</div>}
-        </div>
+        <div className="fw-card-name">{keepWords(span.name)}</div>
         <span className={`fw-pill fw-pill-${status.toLowerCase()}`}>{status}</span>
-        {pinned && <button type="button" className="fw-icon-button" aria-label="Close details" onClick={onClose} autoFocus><CloseGlyph /></button>}
+        {close}
       </div>
-      <dl className="fw-card-stats">
-        <div><dt>Duration</dt><dd>{duration}</dd></div>
-        <div><dt>Started</dt><dd>+{formatSpanDuration(Math.max(0, span.startMs))}</dd></div>
-        {/* A value nobody recorded is left out, not printed as unknown; the host's own facts follow. */}
-        {span.costUsd !== undefined && <div><dt>Cost</dt><dd>{rowCostText(row, span.costUsd)}</dd></div>}
-        {tokens && span.promptTokens !== undefined && <div><dt>Tokens in</dt><dd>{count(span.promptTokens)}</dd></div>}
-        {tokens && span.completionTokens !== undefined && <div><dt>Tokens out</dt><dd>{count(span.completionTokens)}</dd></div>}
-        {(span.facts ?? []).slice(0, 3).map(fact => <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.value}</dd></div>)}
-        {row.hasChildren && <div><dt>Steps</dt><dd>{row.descendants}</dd></div>}
-      </dl>
+      <Table rows={metrics(row, clockMs, true)} />
       {span.input && <div className="fw-card-text"><div className="fw-card-label">Input</div><p>{span.input}</p></div>}
       {span.output && <div className="fw-card-text"><div className="fw-card-label">{row.ok ? 'Output' : 'Error'}</div><p>{span.output}</p></div>}
     </div>

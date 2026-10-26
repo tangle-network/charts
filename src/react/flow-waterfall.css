@@ -1,40 +1,39 @@
-/* Standalone surface: consumes Brand tokens; no Tailwind build required.
+/* Standalone surface: no Tailwind build required. Every color, radius and shadow is a Brand role from
+ * @tangle-network/brand tokens.css, which the host loads with its theme (data-theme or the light/dark class, which also
+ * set color-scheme for the light-dark() mixes below); nothing here is a color of its own, so a named theme carries in.
  * Geometry reads three variables the clock writes every frame: --fw-t (clock ms), --fw-v0 (window start ms)
  * and --fw-k (px per ms). A mark carries --s and --e (its start and end ms), so growth, playback and zoom
  * move marks without a React render.
- * Type uses the 12/14/18 px scale; spacing sits on a 4 px grid. */
-/* light-dark() follows the host's Brand theme (data-theme or the light/dark class), not the OS: a light page
-   on a dark OS otherwise resolves the dark fallbacks and muted text drops to 2.4:1. */
-:is(:root[data-theme="light"], .light) .fw-root { color-scheme: light; }
-:is(:root[data-theme="dark"], .dark) .fw-root { color-scheme: dark; }
+ * Type uses the 12/14 px scale; spacing sits on a 4 px grid. */
 .fw-root {
-  --fw-text: var(--text-primary, light-dark(#23232b, #ececf1));
-  --fw-muted: var(--text-muted, light-dark(#5d5d68, #a4a4b0));
-  --fw-faint: color-mix(in oklab, var(--fw-muted) 70%, transparent);
-  --fw-surface: var(--bg-card, light-dark(#ffffff, #17171d));
-  --fw-raised: var(--bg-elevated, light-dark(#ffffff, #1f1f27));
-  --fw-border: var(--border-subtle, light-dark(rgb(0 0 0 / .09), rgb(255 255 255 / .09)));
-  --fw-grid: color-mix(in oklab, var(--fw-text) 6%, transparent);
-  --fw-guide: color-mix(in oklab, var(--fw-text) 13%, transparent);
-  --fw-well: color-mix(in oklab, var(--fw-text) 4.5%, var(--fw-surface));
-  --fw-hover: color-mix(in oklab, var(--fw-text) 4%, transparent);
-  --fw-accent: var(--accent-text, light-dark(#4f46e5, #a5b4fc));
-  --fw-failed: light-dark(#d4304a, #ff5c74);
-  --fw-ok: var(--status-running, light-dark(#0d8a5f, #34c48c));
-  --fw-amber: light-dark(#a35d00, #f2b14c);
-  /* Step kinds inside an agent bar: two hues far from each other and from the outcome greens and reds. */
-  --fw-kind-model: light-dark(#4f46e5, #8f91f7);
-  --fw-kind-tool: light-dark(#0e8fb0, #4cc9e6);
+  --fw-text: var(--text-primary);
+  --fw-muted: var(--text-muted);
+  --fw-surface: var(--bg-card);
+  --fw-raised: var(--bg-elevated);
+  /* One hairline for the card edge and every rule inside it; the plot grid is the chart grid. */
+  --fw-border: hsl(var(--hsl-border));
+  --fw-grid: var(--chart-grid);
+  --fw-guide: var(--chart-rule);
+  /* The trace is a card, so its wells are the in-card well. */
+  --fw-well: var(--well-card);
+  --fw-hover: var(--bg-hover);
+  --fw-accent: var(--accent-text);
+  --fw-failed: var(--surface-danger-text);
+  --fw-ok: var(--surface-success-text);
+  --fw-amber: var(--surface-warning-text);
+  /* Step kinds inside an agent bar: the chart accent and a categorical hue, far from the outcome greens and reds. */
+  --fw-kind-model: var(--chart-accent);
+  --fw-kind-tool: var(--tone-cyan-icon);
   --fw-neutral-bar: color-mix(in oklab, var(--fw-text) 15%, var(--fw-surface));
   --fw-hatch: color-mix(in oklab, var(--fw-text) 22%, transparent);
-  /* Root agent neutral, then five agent hues. Each passes 3:1 against both surfaces as a mark. */
-  --fw-h0: light-dark(#6c6f84, #a3a6bb);
-  --fw-h1: light-dark(#4b55d6, #8f96ff);
-  /* No warm hue among the agents: amber is kept for the slowest and red for failure. */
-  --fw-h2: light-dark(#3d8a52, #6fcb8a);
-  --fw-h3: light-dark(#0b87a0, #35c2db);
-  --fw-h4: light-dark(#b0418a, #dc72bb);
-  --fw-h5: light-dark(#6d44c7, #ab8cf7);
+  /* Root agent neutral, then five of Brand's categorical hues, each 3:1 or more against the card in both modes. No warm hue
+     among the agents (amber is kept for the slowest and red for failure), and neighbours alternate cool and warm-leaning. */
+  --fw-h0: var(--chart-muted);
+  --fw-h1: var(--tone-blue-icon);
+  --fw-h2: var(--tone-teal-icon);
+  --fw-h3: var(--tone-pink-icon);
+  --fw-h4: var(--tone-violet-icon);
+  --fw-h5: var(--tone-lime-icon);
   --fw-ease: cubic-bezier(.2, .8, .2, 1);
   /* Bar height = row height - 16, so a centered bar sits 8 px from the row edge: 20 px in a 36 px step row. */
   --fw-bar-h: 20px;
@@ -47,15 +46,15 @@
   color: var(--fw-text);
   background: var(--fw-surface);
   border: 1px solid var(--fw-border);
-  border-radius: 12px;
-  font-family: var(--font-sans, Inter, ui-sans-serif, system-ui, sans-serif);
+  border-radius: var(--radius-xl);
+  font-family: var(--font-sans);
   font-size: 14px;
   line-height: 20px;
   /* Tabular figures only on numeric cells: on names they widen hyphens ("v6 - battery", "glm - 5.3"). */
   font-feature-settings: "cv11" 1;
   -webkit-font-smoothing: antialiased;
 }
-.fw-root-agents { --fw-bar-h: 24px; --fw-label-col: min(var(--fw-name-w), 28%); border-radius: 16px; }
+.fw-root-agents { --fw-bar-h: 24px; --fw-label-col: min(var(--fw-name-w), 28%); }
 .fw-root *, .fw-root *::before, .fw-root *::after { box-sizing: border-box; }
 .fw-root :is(p, dl, dd, h3, ul) { margin: 0; padding: 0; }
 .fw-root :is(button, input, select) { font: inherit; color: inherit; }
@@ -67,13 +66,14 @@
 .fw-root [data-tone="3"] { --tone: var(--fw-h3); }
 .fw-root [data-tone="4"] { --tone: var(--fw-h4); }
 .fw-root [data-tone="5"] { --tone: var(--fw-h5); }
-/* Light fills carry enough of the hue to tell agents apart on white (24% and 42% both read as "pastel, washed out"); the outline is
-   the full hue, which passes 3:1 against the surface, so every mark keeps its edge. */
+/* The outline is the full hue, which passes 3:1 against the card, so every mark keeps its edge; on a dark card the fill sits a
+   step toward the canvas, so a bar reads apart from a handoff pill in the full hue. The dim shade (tool calls) mixes the hue
+   toward the card, more of it on a dark card. */
 .fw-root [data-tone] {
-  --fill: light-dark(var(--tone), color-mix(in oklab, var(--tone) 94%, #000));
-  --line: light-dark(var(--tone), var(--tone));
-  --dim: light-dark(color-mix(in oklab, var(--tone) 62%, #fff), color-mix(in oklab, var(--tone) 40%, #17171d));
-  --dim-line: light-dark(color-mix(in oklab, var(--tone) 70%, #fff), color-mix(in oklab, var(--tone) 55%, #17171d));
+  --fill: light-dark(var(--tone), color-mix(in oklab, var(--tone) 94%, hsl(var(--hsl-background))));
+  --line: var(--tone);
+  --dim: light-dark(color-mix(in oklab, var(--tone) 62%, var(--fw-surface)), color-mix(in oklab, var(--tone) 40%, var(--fw-surface)));
+  --dim-line: light-dark(color-mix(in oklab, var(--tone) 70%, var(--fw-surface)), color-mix(in oklab, var(--tone) 55%, var(--fw-surface)));
 }
 
 /* Header */
@@ -82,20 +82,20 @@
 .fw-root .fw-title-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .fw-root .fw-title-glyph { display: inline-flex; color: var(--fw-accent); }
 .fw-root .fw-title { font-size: 14px; line-height: 20px; font-weight: 600; letter-spacing: -.005em; white-space: nowrap; }
-.fw-root .fw-state { display: inline-flex; align-items: center; gap: 8px; height: 20px; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--fw-muted); background: var(--fw-well); flex-shrink: 0; }
+.fw-root .fw-state { display: inline-flex; align-items: center; gap: 8px; height: 20px; padding: 0 8px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; color: var(--fw-muted); background: var(--fw-well); flex-shrink: 0; }
 .fw-root .fw-state::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .fw-root .fw-state-live { color: var(--fw-accent); background: color-mix(in oklab, var(--fw-accent) 12%, transparent); }
 .fw-root .fw-state-live::before { animation: fw-pulse 1.6s var(--fw-ease) infinite; }
 .fw-root .fw-headline { color: var(--fw-muted); display: flex; align-items: center; gap: 8px; }
 .fw-root .fw-done-mark { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--fw-ok); color: var(--fw-ok); font-size: 12px; line-height: 1; }
 .fw-root .fw-tools { display: flex; align-items: center; gap: 8px; }
-.fw-root .fw-views { display: inline-flex; padding: 4px; border-radius: 8px; background: var(--fw-well); border: 1px solid var(--fw-border); }
-.fw-root .fw-view-button { appearance: none; border: 0; background: transparent; height: 24px; padding: 0 12px; border-radius: 6px; font-size: 14px; color: var(--fw-muted); cursor: pointer; transition: background-color 120ms var(--fw-ease), color 120ms var(--fw-ease); }
+.fw-root .fw-views { display: inline-flex; padding: 4px; border-radius: var(--radius-md); background: var(--fw-well); border: 1px solid var(--fw-border); }
+.fw-root .fw-view-button { appearance: none; border: 0; background: transparent; height: 24px; padding: 0 12px; border-radius: var(--radius-sm); font-size: 14px; color: var(--fw-muted); cursor: pointer; transition: background-color 120ms var(--fw-ease), color 120ms var(--fw-ease); }
 /* The shown view is a state, not a control: no click target, no pointer. */
-.fw-root .fw-view-button[aria-checked="true"] { opacity: 1; cursor: default; background: var(--fw-surface); color: var(--fw-text); box-shadow: 0 1px 2px rgb(0 0 0 / .12), 0 0 0 1px var(--fw-border); }
+.fw-root .fw-view-button[aria-checked="true"] { opacity: 1; cursor: default; background: var(--fw-surface); color: var(--fw-text); box-shadow: var(--shadow-card), 0 0 0 1px var(--fw-border); }
 .fw-root .fw-search { position: relative; display: flex; align-items: center; }
 .fw-root .fw-search-glyph { position: absolute; left: 8px; display: inline-flex; color: var(--fw-muted); pointer-events: none; }
-.fw-root .fw-search-input { appearance: none; width: 200px; height: 32px; padding: 0 12px 0 28px; border: 1px solid var(--fw-border); border-radius: 8px; background: var(--fw-well); font-size: 14px; }
+.fw-root .fw-search-input { appearance: none; width: 200px; height: 32px; padding: 0 12px 0 28px; border: 1px solid var(--fw-border); border-radius: var(--radius-md); background: var(--fw-well); font-size: 14px; }
 .fw-root .fw-search-input::placeholder { color: var(--fw-muted); }
 .fw-root .fw-search-input::-webkit-search-cancel-button { display: none; }
 
@@ -112,7 +112,7 @@
 .fw-root .fw-axis-top { border-bottom: 1px solid var(--fw-border); }
 .fw-root .fw-axis-label { position: relative; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 16px; border-right: 1px solid var(--fw-border); min-width: 0; }
 .fw-root .fw-branch-controls { margin-left: auto; display: flex; gap: 4px; }
-.fw-root .fw-text-button { appearance: none; border: 0; background: transparent; height: 24px; padding: 0 8px; border-radius: 6px; font-size: 12px; color: var(--fw-muted); cursor: pointer; white-space: nowrap; }
+.fw-root .fw-text-button { appearance: none; border: 0; background: transparent; height: 24px; padding: 0 8px; border-radius: var(--radius-sm); font-size: 12px; color: var(--fw-muted); cursor: pointer; white-space: nowrap; }
 .fw-root .fw-text-button:hover { background: var(--fw-hover); color: var(--fw-text); }
 .fw-root .fw-resize { position: absolute; top: 0; right: -4px; width: 8px; height: 100%; cursor: col-resize; z-index: 2; }
 .fw-root .fw-resize:hover, .fw-root .fw-resize:focus-visible { background: linear-gradient(90deg, transparent 3px, var(--fw-accent) 3px 5px, transparent 5px); outline: 0; }
@@ -135,48 +135,49 @@
 .fw-root .fw-marker-line[data-tone="failed"] { --fw-marker: var(--fw-failed); }
 .fw-root .fw-marker[data-tone="ok"] { --fw-marker: var(--fw-ok); }
 .fw-root .fw-marker[data-tone="failed"] { --fw-marker: var(--fw-failed); }
-/* A pause: the run stood still. A hatched band across every row with its reason on top, never blank space. */
-.fw-root .fw-pause { position: absolute; top: 0; bottom: 0; left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); width: calc(max(0, var(--e) - var(--s)) * var(--fw-k) * 1px);
-  background: repeating-linear-gradient(-45deg, color-mix(in oklab, var(--fw-text) 9%, transparent) 0 1px, transparent 1px 6px), color-mix(in oklab, var(--fw-text) 4%, transparent);
-  border-inline: 1px dashed color-mix(in oklab, var(--fw-text) 24%, transparent); }
-.fw-root .fw-pause-label b { font-weight: 600; color: var(--fw-text); }
-.fw-root .fw-pause-label { position: absolute; z-index: 2; top: 50%; left: calc(var(--fw-pad) + ((var(--s) + var(--e)) / 2 - var(--fw-v0)) * var(--fw-k) * 1px); translate: -50% -50%; width: max-content; padding: 0 8px; white-space: nowrap;
-  border-radius: 4px; font-size: 12px; line-height: 20px; color: var(--fw-muted); background: var(--fw-surface); box-shadow: inset 0 0 0 1px var(--fw-border); }
-/* The label takes the pointer, for its reason; the band stays click-through to the rows. */
-.fw-root .fw-pause-label[title] { pointer-events: auto; cursor: help; }
-.fw-root .fw-marker-label { position: absolute; top: 2px; left: 3px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 4px; border-radius: 4px; font-size: 12px; line-height: 16px; color: var(--fw-marker); background: var(--fw-surface); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-marker) 40%, transparent); }
+/* A pause: the run stood still. A faint band behind the rows (they stay readable over it), and on the axis a hatched strip under
+   the ticks that names its length and reason on hover and focus; a chip over the axis hid the hour ticks. */
+.fw-root :is(.fw-pause, .fw-pause-mark) { position: absolute; left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); width: calc(max(0, var(--e) - var(--s)) * var(--fw-k) * 1px); }
+.fw-root .fw-pause { top: 0; bottom: 0; background: color-mix(in oklab, var(--fw-text) 4%, transparent); border-inline: 1px dashed color-mix(in oklab, var(--fw-text) 18%, transparent); }
+.fw-root .fw-pause-mark { bottom: 3px; height: 6px; border-radius: 2px; cursor: help;
+  background: repeating-linear-gradient(-45deg, var(--fw-hatch) 0 1px, transparent 1px 4px); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-text) 18%, transparent); }
+.fw-root .fw-marker-label { position: absolute; top: 2px; left: 3px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 4px; border-radius: var(--radius-tag); font-size: 12px; line-height: 16px; color: var(--fw-marker); background: var(--fw-surface); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-marker) 40%, transparent); }
 .fw-root .fw-marker-label-left { left: auto; right: 3px; }
 .fw-root .fw-marker[data-tone="warn"], .fw-root .fw-event[data-tone="warn"] { --fw-marker: var(--fw-amber); }
 /* The event track: one dot per marker on the axis; click or N/P moves the cursor there. */
 .fw-root .fw-event { --fw-marker: var(--fw-muted); position: absolute; bottom: 2px; width: 8px; height: 8px; margin-left: -4px; padding: 0; border: 0; border-radius: 50%; background: var(--fw-marker); box-shadow: 0 0 0 2px var(--fw-surface); cursor: pointer; z-index: 4; left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); }
 .fw-root .fw-event[data-tone="ok"] { --fw-marker: var(--fw-ok); }
 .fw-root .fw-event[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--fw-surface), 0 0 0 4px var(--fw-marker); }
-.fw-root .fw-event-label { position: absolute; bottom: 14px; z-index: 5; transform: translateX(-50%); left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); padding: 0 8px; border-radius: 4px; background: var(--fw-surface); box-shadow: inset 0 0 0 1px var(--fw-border); color: var(--fw-text); font-size: 12px; line-height: 20px; white-space: nowrap; pointer-events: none; }
+.fw-root .fw-event-label { position: absolute; bottom: 14px; z-index: 5; transform: translateX(-50%); left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); padding: 0 8px; border-radius: var(--radius-tag); background: var(--fw-surface); box-shadow: inset 0 0 0 1px var(--fw-border); color: var(--fw-text); font-size: 12px; line-height: 20px; white-space: nowrap; pointer-events: none; }
 .fw-root .fw-event[data-tone="failed"] { --fw-marker: var(--fw-failed); }
 .fw-root .fw-event:hover, .fw-root .fw-event:focus-visible { transform: scale(1.4); outline: 0; }
 .fw-root .fw-cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: color-mix(in oklab, var(--fw-text) 70%, transparent); left: calc(var(--fw-pad) + (var(--fw-t) - var(--fw-v0)) * var(--fw-k) * 1px); }
 .fw-root .fw-empty { padding: 40px 16px; text-align: center; color: var(--fw-muted); }
-.fw-root .fw-sticky { position: absolute; top: 0; left: 0; right: 0; z-index: 2; background: var(--fw-surface); box-shadow: 0 1px 0 var(--fw-border), 0 6px 12px -8px rgb(0 0 0 / .35); }
+.fw-root .fw-sticky { position: absolute; top: 0; left: 0; right: 0; z-index: 2; background: var(--fw-surface); box-shadow: 0 1px 0 var(--fw-border), var(--shadow-card); }
 
 /* Rows */
 .fw-root .fw-row { position: absolute; top: 0; left: 0; right: 0; transform: translateY(var(--row-y)); height: var(--fw-row-h); display: grid; grid-template-columns: var(--fw-label-col) minmax(0, 1fr); outline: 0; contain: layout style; }
-.fw-root .fw-row:hover { background: var(--fw-hover); }
-.fw-root .fw-row.fw-active { background: color-mix(in oklab, var(--fw-accent) 7%, transparent); }
-.fw-root .fw-row[aria-selected="true"] { background: color-mix(in oklab, var(--fw-accent) 11%, transparent); }
-/* A selected agent lifts: an accent edge on its row, and its peers recede so the reader sees what the panels below follow. */
+/* A row's tint is one variable, so the chips on it (an end label, a stacked name) paint the same plane as the row. */
+.fw-root .fw-row { background: var(--fw-tint, transparent); }
+.fw-root .fw-row:hover { --fw-tint: var(--fw-hover); }
+.fw-root .fw-row.fw-active { --fw-tint: color-mix(in oklab, var(--fw-accent) 7%, transparent); }
+.fw-root .fw-row[aria-selected="true"] { --fw-tint: var(--ix-sel-bg); }
+/* A selected agent lifts: an accent edge on its row, and its peers' marks recede; their names and labels keep the muted ink, which
+   reads at 4.5:1, where fading whole cells dropped them to 2.2:1 and let connectors and pause bands show through the text. */
 .fw-root-agents[data-selection] .fw-row[aria-selected="true"] { box-shadow: inset 3px 0 0 var(--fw-accent); }
-.fw-root-agents[data-selection] .fw-row:not([aria-selected="true"]) > [role="gridcell"] { opacity: .45; transition: opacity 160ms var(--fw-ease); }
-.fw-root-agents[data-selection] .fw-row:not([aria-selected="true"]):hover > [role="gridcell"] { opacity: .8; }
+.fw-root-agents[data-selection] .fw-row:not([aria-selected="true"]) { --fw-recede: .4; }
+.fw-root-agents[data-selection] .fw-row:not([aria-selected="true"]):hover { --fw-recede: .8; }
+.fw-root-agents[data-selection] .fw-row:not([aria-selected="true"]) .fw-span-name { color: var(--fw-muted); }
 .fw-root .fw-row:focus-visible { box-shadow: inset 2px 0 0 var(--fw-accent); }
 .fw-root .fw-sticky-row { background: var(--fw-surface); }
 .fw-root .fw-label { position: relative; display: flex; align-items: center; gap: 8px; min-width: 0; padding: 0 12px 0 calc(12px + var(--depth) * 16px); border-right: 1px solid var(--fw-border); }
 .fw-root .fw-guides { position: absolute; top: 0; bottom: 0; left: 20px; width: calc(var(--depth) * 16px); background: repeating-linear-gradient(90deg, var(--fw-guide) 0 1px, transparent 1px 16px); }
 .fw-root .fw-toggle, .fw-root .fw-toggle-space { flex: 0 0 16px; width: 16px; height: 16px; }
-.fw-root .fw-toggle { appearance: none; display: grid; place-items: center; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--fw-muted); cursor: pointer; }
+.fw-root .fw-toggle { appearance: none; display: grid; place-items: center; padding: 0; border: 0; border-radius: var(--radius-tag); background: transparent; color: var(--fw-muted); cursor: pointer; }
 .fw-root .fw-toggle svg { width: 12px; height: 12px; transition: transform 160ms var(--fw-ease); }
 .fw-root .fw-toggle.fw-open svg { transform: rotate(90deg); }
 .fw-root .fw-toggle:hover { background: var(--fw-hover); color: var(--fw-text); }
-.fw-root .fw-icon-tile { flex: 0 0 20px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 6px; border: 1px solid var(--fw-border); background: var(--fw-surface); color: var(--line, var(--fw-muted)); }
+.fw-root .fw-icon-tile { flex: 0 0 20px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: var(--radius-sm); border: 1px solid var(--fw-border); background: var(--fw-surface); color: var(--line, var(--fw-muted)); }
 .fw-root .fw-icon-tile :is(svg, img) { width: 13px; height: 13px; }
 .fw-root .fw-row .fw-names { font-size: 14px; }
 .fw-root .fw-names { display: flex; align-items: baseline; gap: 8px; min-width: 0; overflow: hidden; white-space: nowrap; }
@@ -186,7 +187,7 @@
 .fw-root .fw-detail { color: var(--fw-muted); overflow: hidden; min-width: 0; display: inline-flex; align-items: center; gap: 4px; max-width: 100%; }
 .fw-root .fw-detail-icon { display: inline-flex; }
 .fw-root .fw-detail-icon :is(svg, img) { width: 12px; height: 12px; }
-.fw-root .fw-count { flex-shrink: 0; height: 18px; padding: 0 8px; border-radius: 999px; background: var(--fw-well); border: 1px solid var(--fw-border); color: var(--fw-muted); font-size: 12px; line-height: 16px; font-variant-numeric: tabular-nums; }
+.fw-root .fw-count { flex-shrink: 0; height: 18px; padding: 0 8px; border-radius: var(--radius-pill); background: var(--fw-well); border: 1px solid var(--fw-border); color: var(--fw-muted); font-size: 12px; line-height: 16px; font-variant-numeric: tabular-nums; }
 .fw-root .fw-alert { display: inline-flex; color: var(--fw-failed); flex-shrink: 0; }
 .fw-root .fw-alert svg { width: 13px; height: 13px; }
 .fw-root .fw-spinner { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid color-mix(in oklab, var(--fw-accent) 30%, transparent); border-top-color: var(--fw-accent); animation: fw-spin .8s linear infinite; flex-shrink: 0; }
@@ -195,10 +196,10 @@
 .fw-root .fw-view-agents .fw-label { padding-left: 16px; gap: 12px; border-right: 0; }
 .fw-root .fw-view-agents .fw-names { flex-direction: column; align-items: flex-start; gap: 0; }
 .fw-root .fw-view-agents .fw-span-name { font-weight: 600; line-height: 18px; }
-/* One 16 px line that wraps its last part out of sight: when the line is full the tool count drops whole, never "7 to…". */
-.fw-root .fw-view-agents .fw-subtitle { display: flex; align-items: center; column-gap: 4px; height: 16px; overflow: hidden; max-width: 100%; min-width: 0; color: var(--fw-muted); font-size: 13px; line-height: 16px; }
+/* One 16 px line that wraps its last parts out of sight: when the line is full a count drops whole, never "48 …". */
+.fw-root .fw-view-agents .fw-subtitle { display: flex; align-items: center; column-gap: 4px; height: 16px; overflow: hidden; max-width: 100%; min-width: 0; color: var(--fw-muted); font-size: 12px; line-height: 16px; }
 .fw-root .fw-view-agents .fw-subtitle-extra { flex: none; white-space: nowrap; }
-/* Only the tail wraps, so the text is always first on its line and shrinks with an ellipsis; the tool count wraps out of sight. */
+/* Only the tail wraps, so the first part is always on its line and shrinks with an ellipsis; later parts wrap out of sight. */
 .fw-root .fw-view-agents .fw-subtitle-tail { display: flex; flex-wrap: wrap; column-gap: 4px; height: 16px; overflow: hidden; min-width: 0; flex: 0 1 auto; }
 .fw-root .fw-view-agents .fw-subtitle-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fw-root .fw-view-agents .fw-detail-icon { flex: none; width: 16px; height: 16px; align-items: center; justify-content: center; overflow: hidden; }
@@ -217,6 +218,7 @@
   left: var(--x0);
   opacity: var(--on);
 }
+.fw-root :is(.fw-bar, .fw-seg, .fw-mark) { opacity: calc(var(--on) * var(--fw-recede, 1)); transition: opacity 160ms var(--fw-ease); }
 .fw-root .fw-enter > [role="gridcell"] { animation: fw-unfold 220ms var(--fw-ease) var(--fw-enter-delay) both; }
 .fw-root .fw-enter :is(.fw-bar, .fw-seg) { animation: fw-grow 420ms var(--fw-ease) var(--fw-enter-delay) both; }
 .fw-root .fw-enter .fw-end { animation: fw-land 220ms var(--fw-ease) calc(var(--fw-enter-delay) + 300ms) both; }
@@ -231,9 +233,9 @@
 .fw-root .fw-row[data-search="match"] .fw-name-text { font-weight: 600; }
 /* A restart: an amber notch through the bar at that moment; the bar keeps its own state. */
 .fw-root .fw-mark { position: absolute; z-index: 2; left: calc(var(--x0) - 1px); width: 2px; top: calc(50% + var(--fw-bar-shift) - var(--fw-bar-h) / 2 - 4px); height: calc(var(--fw-bar-h) + 8px);
-  border-radius: 2px; background: var(--fw-amber); box-shadow: 0 0 0 1px var(--fw-surface); opacity: var(--on); pointer-events: auto; }
+  border-radius: 2px; background: var(--fw-amber); box-shadow: 0 0 0 1px var(--fw-surface); pointer-events: auto; }
 /* Centered by top, not a negative margin, so measured spacing stays on the grid. */
-.fw-root :is(.fw-bar, .fw-seg) { top: calc(50% + var(--fw-bar-shift) - var(--fw-bar-h) / 2); height: var(--fw-bar-h); width: max(var(--w), calc(var(--on) * 3px)); border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.fw-root :is(.fw-bar, .fw-seg) { top: calc(50% + var(--fw-bar-shift) - var(--fw-bar-h) / 2); height: var(--fw-bar-h); width: max(var(--w), calc(var(--on) * 3px)); border-radius: var(--radius-tag); cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .fw-root .fw-bar { background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); }
 /* The mark under the pointer lifts: a brighter fill and a ring in its own tone. */
 .fw-root :is(.fw-bar, .fw-seg):hover { filter: brightness(1.18); box-shadow: inset 0 0 0 1px var(--line), 0 0 0 2px color-mix(in oklab, var(--line) 55%, transparent); z-index: 1; }
@@ -274,13 +276,12 @@
 .fw-root .fw-kinds .fw-swatch-tool { width: 12px; height: 8px; border-radius: 2px; background: var(--fw-kind-tool); }
 .fw-root .fw-kinds .fw-swatch-wait { width: 12px; height: 8px; border-radius: 2px; background: color-mix(in oklab, var(--fw-text) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-text) 18%, transparent); }
 .fw-root .fw-kinds .fw-swatch-handoff { width: 10px; height: 8px; border-left: 1.5px solid var(--fw-muted); border-bottom: 1.5px solid var(--fw-muted); border-bottom-left-radius: 3px; }
-.fw-root .fw-kinds .fw-swatch-failed { width: 12px; height: 8px; border-radius: 2px; box-shadow: inset 0 0 0 1px var(--fw-failed); }
 .fw-root .fw-description { margin: 0; color: var(--fw-muted); font-size: 14px; line-height: 20px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fw-root .fw-legend .fw-swatch { width: 12px; height: 8px; border-radius: 2px; background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); }
 .fw-root .fw-legend b { color: var(--fw-text); font-weight: 600; font-variant-numeric: tabular-nums; }
 .fw-root .fw-legend .fw-swatch-step { display: inline-grid; place-items: center; width: 12px; height: 12px; border-radius: 3px; background: var(--fw-well); color: var(--fw-failed); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-failed) 50%, transparent); }
 .fw-root .fw-legend .fw-swatch-step svg { width: 8px; height: 8px; }
-.fw-root .fw-bar.fw-approx { opacity: calc(var(--on) * .7); }
+.fw-root .fw-bar.fw-approx { opacity: calc(var(--on) * .7 * var(--fw-recede, 1)); }
 .fw-root .fw-seg { width: max(calc(var(--w) - 2px), calc(var(--on) * 3px)); pointer-events: none; }
 .fw-root .fw-view-agents .fw-seg { pointer-events: auto; }
 .fw-root .fw-seg-model { background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); }
@@ -291,12 +292,12 @@
 .fw-root:is(.fw-fill-muted, .fw-fill-outcome) .fw-view-agents .fw-seg-tool { background: var(--fw-kind-tool); box-shadow: none; }
 /* Per-agent hues at full saturation (blind round 26: muted per-agent bars "blur together", "wash out on white"): kind is a darker or
    lighter step of the agent's own saturated hue, every solid segment at least 3:1 against the card; waiting stays the only pale fill. */
-.fw-root.fw-fill-agent .fw-view-agents .fw-seg-model { background: light-dark(color-mix(in oklab, var(--tone) 78%, #000), var(--tone)); box-shadow: none; }
-.fw-root.fw-fill-agent .fw-view-agents .fw-seg-tool { background: light-dark(var(--tone), color-mix(in oklab, var(--tone) 72%, #fff)); box-shadow: none; }
+.fw-root.fw-fill-agent .fw-view-agents .fw-seg-model { background: light-dark(color-mix(in oklab, var(--tone) 75%, var(--fw-text)), var(--tone)); box-shadow: none; }
+.fw-root.fw-fill-agent .fw-view-agents .fw-seg-tool { background: light-dark(var(--tone), color-mix(in oklab, var(--tone) 72%, var(--fw-text))); box-shadow: none; }
 /* A failed turn is still the agent's work: it keeps the agent's saturated hue, and the red cross on the ending turn says it failed. */
-.fw-root.fw-fill-agent .fw-view-agents .fw-seg-failed { background: light-dark(var(--tone), color-mix(in oklab, var(--tone) 72%, #fff)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-failed) 55%, transparent); }
+.fw-root.fw-fill-agent .fw-view-agents .fw-seg-failed { background: light-dark(var(--tone), color-mix(in oklab, var(--tone) 72%, var(--fw-text))); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-failed) 55%, transparent); }
 .fw-root .fw-view-agents .fw-seg-tool { container-type: inline-size; justify-content: flex-start; }
-.fw-root .fw-seg-name { padding: 0 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 11px; line-height: 16px; font-weight: 600; color: light-dark(#fff, #06222b); pointer-events: none; }
+.fw-root .fw-seg-name { padding: 0 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12px; line-height: 16px; font-weight: 600; color: light-dark(var(--fw-surface), hsl(var(--hsl-background))); pointer-events: none; }
 @container (max-width: 56px) { .fw-root .fw-seg-name { display: none; } }
 .fw-root:is(.fw-fill-muted, .fw-fill-outcome) .fw-view-agents :is(.fw-seg-alt.fw-seg-model, .fw-seg-alt.fw-seg-tool) { filter: brightness(.88); }
 .fw-root .fw-seg-failed { background: color-mix(in oklab, var(--fw-failed) 18%, var(--fw-surface)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-failed) 70%, transparent); color: var(--fw-failed); }
@@ -304,14 +305,15 @@
 .fw-root .fw-view-agents .fw-seg-failed { background: var(--dim); box-shadow: inset 0 0 0 1px var(--dim-line); }
 .fw-root .fw-glyph { display: inline-flex; color: currentColor; }
 .fw-root .fw-glyph svg { width: 11px; height: 11px; stroke-width: 2; }
-.fw-root .fw-seg-model .fw-glyph, .fw-root .fw-k-model .fw-glyph { color: light-dark(var(--tone), #fff); }
+.fw-root .fw-seg-model .fw-glyph, .fw-root .fw-k-model .fw-glyph { color: light-dark(var(--tone), var(--fw-text)); }
 /* End labels sit on the surface, so connectors and event lines stop at them, and never run past the lane: a label that would
    be cut at the right edge slides back over its bar's tail instead. */
 .fw-root .fw-end { z-index: 2; display: inline-flex; align-items: center; gap: 8px; top: calc(50% + var(--fw-bar-shift) - var(--fw-bar-h) / 2); height: var(--fw-bar-h);
-  left: min(calc(var(--x0) + max(var(--w), 3px) + 4px), calc(100% - var(--fw-end-w, 0px) - 4px)); padding: 0 4px; border-radius: 4px; background: var(--fw-surface); white-space: nowrap; pointer-events: none; }
+  left: min(calc(var(--x0) + max(var(--w), 3px) + 4px), calc(100% - var(--fw-end-w, 0px) - 4px)); padding: 0 4px; border-radius: var(--radius-tag);
+  background: linear-gradient(var(--fw-tint, transparent) 0 0), var(--fw-surface); white-space: nowrap; pointer-events: none; }
 .fw-root .fw-duration { font-size: 12px; color: var(--fw-muted); font-variant-numeric: tabular-nums; }
 .fw-root .fw-k-failed ~ .fw-end .fw-duration { color: var(--fw-failed); }
-.fw-root .fw-badge { height: 18px; padding: 0 8px; border-radius: 999px; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--fw-amber); background: color-mix(in oklab, var(--fw-amber) 13%, transparent); border: 1px solid color-mix(in oklab, var(--fw-amber) 28%, transparent); }
+.fw-root .fw-badge { height: 18px; padding: 0 8px; border-radius: var(--radius-pill); font-size: 12px; line-height: 16px; font-weight: 600; color: var(--fw-amber); background: color-mix(in oklab, var(--fw-amber) 13%, transparent); border: 1px solid color-mix(in oklab, var(--fw-amber) 28%, transparent); }
 
 /* Handoff elbows: 1.5 px stroke, 6 px radius, a 5 px dot where the handoff leaves its sender. */
 /* Under the rows (which follow it), so end labels and badges always sit above the connectors. */
@@ -340,39 +342,41 @@
 /* The playhead: a round knob on a thin neutral track, visible at rest without outweighing the chart. */
 .fw-root.fw-root-agents .fw-slider::-webkit-slider-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--fw-text); box-shadow: 0 0 0 3px var(--fw-surface); }
 .fw-root.fw-root-agents .fw-slider::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--fw-text); box-shadow: 0 0 0 3px var(--fw-surface); }
-.fw-root .fw-card { position: absolute; z-index: 20; width: 320px; padding: 12px; border-radius: 12px; background: var(--fw-raised); border: 1px solid var(--fw-border);
-  box-shadow: 0 12px 32px -8px rgb(0 0 0 / .28), 0 2px 6px rgb(0 0 0 / .08); animation: fw-arrive 140ms var(--fw-ease); }
+.fw-root .fw-card { position: absolute; z-index: 20; width: min(320px, calc(100% - 16px)); padding: 12px; border-radius: var(--radius-xl); background: var(--fw-raised); border: 1px solid var(--fw-border);
+  box-shadow: var(--shadow-dropdown); animation: fw-arrive 140ms var(--fw-ease); }
 /* A hover card never covers the next mark: only a pinned card (a dialog) takes the pointer. */
 .fw-root .fw-card[role="tooltip"] { pointer-events: none; }
 .fw-root .fw-card-above .fw-card { transform: translateY(-100%); animation-name: fw-arrive-above; }
 .fw-root .fw-card-agent { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; font-weight: 600; }
 .fw-root .fw-card-agent .fw-agent-dot { align-self: center; }
-.fw-root .fw-card-head { display: flex; align-items: flex-start; gap: 8px; }
-.fw-root .fw-card-head .fw-icon-tile { flex-basis: 28px; width: 28px; height: 28px; border-radius: 8px; }
+.fw-root .fw-card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.fw-root .fw-card-head .fw-icon-tile { flex-basis: 28px; width: 28px; height: 28px; border-radius: var(--radius-md); }
 .fw-root .fw-card-head .fw-icon-tile :is(svg, img) { width: 16px; height: 16px; }
-.fw-root .fw-card-title { flex: 1; min-width: 0; }
-.fw-root .fw-card-name { font-size: 14px; line-height: 20px; font-weight: 600; overflow-wrap: anywhere; }
-.fw-root .fw-muted { color: var(--fw-muted); }
-.fw-root .fw-pill { flex-shrink: 0; height: 20px; padding: 0 8px; border-radius: 999px; font-size: 12px; line-height: 20px; font-weight: 600; }
+.fw-root .fw-card-name { flex: 1; min-width: 0; font-size: 14px; line-height: 20px; font-weight: 600; overflow-wrap: anywhere; }
+.fw-root .fw-pill { flex-shrink: 0; height: 20px; padding: 0 8px; border-radius: var(--radius-pill); font-size: 12px; line-height: 20px; font-weight: 600; }
 .fw-root .fw-pill-done { color: var(--fw-ok); background: color-mix(in oklab, var(--fw-ok) 13%, transparent); }
 .fw-root .fw-pill-running { color: var(--fw-accent); background: color-mix(in oklab, var(--fw-accent) 13%, transparent); }
 .fw-root .fw-pill-failed { color: var(--fw-failed); background: color-mix(in oklab, var(--fw-failed) 13%, transparent); }
-.fw-root .fw-icon-button { appearance: none; display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--fw-muted); cursor: pointer; flex-shrink: 0; }
+.fw-root .fw-icon-button { appearance: none; display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--fw-muted); cursor: pointer; flex-shrink: 0; }
 .fw-root .fw-icon-button:hover:not(:disabled) { background: var(--fw-hover); color: var(--fw-text); }
-.fw-root .fw-card-head .fw-icon-button { width: 20px; height: 20px; margin: 0 -4px 0 -4px; }
-.fw-root .fw-card-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 8px; margin-top: 12px; padding: 12px; border-radius: 8px; background: var(--fw-well); }
-.fw-root .fw-card-stats dt, .fw-root .fw-card-label { font-size: 12px; line-height: 16px; color: var(--fw-muted); }
-.fw-root .fw-card-stats dd { font-size: 14px; line-height: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.fw-root .fw-unknown { color: var(--fw-muted); font-weight: 400; }
+.fw-root .fw-card-close { width: 20px; height: 20px; margin-right: -4px; }
+/* The card's table: label and value on one line each, every value with its unit; a tool breakdown sits under its total. */
+.fw-root .fw-card-table { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; padding-top: 8px; border-top: 1px solid var(--fw-border); font-size: 12px; line-height: 16px; }
+.fw-root .fw-card-table > div { display: contents; }
+.fw-root .fw-card-table dt, .fw-root .fw-card-label { font-size: 12px; line-height: 16px; color: var(--fw-muted); }
+.fw-root .fw-card-table dd { min-width: 0; font-weight: 500; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+/* A value of several parts wraps between parts, never inside one ("4.0M" / "cached"). */
+.fw-root .fw-card-parts { display: flex; flex-wrap: wrap; column-gap: 4px; }
+.fw-root .fw-card-parts > * { white-space: nowrap; }
+.fw-root .fw-card-parts > * + *::before { content: "· "; color: var(--fw-muted); }
+.fw-root .fw-card-tools { display: grid; grid-template-columns: minmax(0, max-content) max-content; justify-content: start; column-gap: 16px; margin-top: 4px; color: var(--fw-muted); font-weight: 400; }
+.fw-root .fw-card-tools > span { display: contents; }
+.fw-root .fw-card-tools > span > :first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fw-root .fw-card-tools > span > :last-child { text-align: right; }
 .fw-root .fw-card-text { margin-top: 12px; }
-.fw-root .fw-card-compact { width: 280px; padding: 12px; }
-.fw-root .fw-card-compact .fw-card-agent { margin-bottom: 8px; font-size: 14px; line-height: 20px; }
+.fw-root .fw-card-compact .fw-card-agent { font-size: 14px; line-height: 20px; }
 .fw-root .fw-card-who { min-width: 0; flex: 1; overflow: hidden; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.fw-root .fw-card-detail { margin: -4px 0 8px 16px; color: var(--fw-muted); font-size: 12px; line-height: 16px; overflow-wrap: anywhere; }
 .fw-root .fw-pill-outcome { color: var(--line); background: color-mix(in oklab, var(--tone) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--tone) 35%, transparent); }
-.fw-root .fw-card-cells { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 8px; padding: 8px 12px; border-radius: 8px; background: var(--fw-well); }
-.fw-root .fw-card-cells dt { font-size: 12px; line-height: 16px; color: var(--fw-muted); }
-.fw-root .fw-card-cells dd { font-size: 14px; line-height: 20px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .fw-root .fw-card-step { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--fw-border); color: var(--fw-muted); font-size: 12px; line-height: 16px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .fw-root .fw-card-result { margin-top: 8px; font-size: 14px; line-height: 20px; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .fw-root .fw-card-text p { margin-top: 4px; color: var(--fw-text); overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
@@ -382,9 +386,11 @@
 .fw-root .fw-round-button { appearance: none; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border-radius: 50%; border: 1px solid var(--fw-border); background: var(--fw-well); color: var(--fw-text); cursor: pointer; transition: background-color 120ms var(--fw-ease), transform 120ms var(--fw-ease); }
 .fw-root .fw-round-button:hover:not(:disabled) { background: var(--fw-hover); }
 .fw-root .fw-round-button:active:not(:disabled) { transform: scale(.94); }
-.fw-root .fw-speed select { appearance: none; height: 28px; padding: 0 24px 0 12px; border-radius: 8px; border: 1px solid var(--fw-border); background: var(--fw-well) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='m2 3.5 3 3 3-3' fill='none' stroke='%23888' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 8px center; font-size: 14px; font-variant-numeric: tabular-nums; cursor: pointer; }
+.fw-root .fw-speed { position: relative; display: inline-flex; }
+.fw-root .fw-speed::after { content: ""; position: absolute; top: 50%; right: 11px; width: 5px; height: 5px; border: solid var(--fw-muted); border-width: 0 1.5px 1.5px 0; transform: translateY(-70%) rotate(45deg); pointer-events: none; }
+.fw-root .fw-speed select { appearance: none; height: 28px; padding: 0 28px 0 12px; border-radius: var(--radius-md); border: 1px solid var(--fw-border); background: var(--fw-well); font-size: 14px; font-variant-numeric: tabular-nums; cursor: pointer; }
 .fw-root .fw-overview { position: relative; flex: 1 1 160px; min-width: 120px; height: 28px; }
-.fw-root .fw-overview-marks { position: absolute; left: 0; right: 0; top: 8px; height: 12px; border-radius: 4px; background: var(--fw-well); overflow: hidden; box-shadow: inset 0 0 0 1px var(--fw-border); }
+.fw-root .fw-overview-marks { position: absolute; left: 0; right: 0; top: 8px; height: 12px; border-radius: var(--radius-tag); background: var(--fw-well); overflow: hidden; box-shadow: inset 0 0 0 1px var(--fw-border); }
 .fw-root .fw-ov { position: absolute; top: 2px; bottom: 2px; border-radius: 1px; }
 .fw-root .fw-ov.fw-seg-model, .fw-root .fw-ov.fw-seg-tool { background: var(--line); opacity: .75; }
 .fw-root .fw-ov.fw-seg-tool { opacity: .45; }
@@ -442,9 +448,9 @@
 /* The agent view keeps scrubbing on a hairline track; the lanes above already show the activity. */
 .fw-root-agents .fw-overview-marks { top: 13px; height: 2px; box-shadow: none; }
 .fw-root-agents .fw-overview-marks > * { display: none; }
-.fw-root .fw-segmented { display: inline-flex; padding: 4px; border-radius: 10px; background: var(--fw-well); border: 1px solid var(--fw-border); }
-.fw-root .fw-segmented button { appearance: none; border: 0; background: transparent; height: 26px; min-width: 36px; padding: 0 12px; border-radius: 8px; font-size: 14px; color: var(--fw-muted); cursor: pointer; font-variant-numeric: tabular-nums; transition: background-color 120ms var(--fw-ease), color 120ms var(--fw-ease); }
-.fw-root .fw-segmented button[aria-checked="true"] { background: var(--fw-surface); color: var(--fw-text); box-shadow: 0 1px 2px rgb(0 0 0 / .14), 0 0 0 1px var(--fw-border); }
+.fw-root .fw-segmented { display: inline-flex; padding: 4px; border-radius: var(--radius-md); background: var(--fw-well); border: 1px solid var(--fw-border); }
+.fw-root .fw-segmented button { appearance: none; border: 0; background: transparent; height: 26px; min-width: 36px; padding: 0 12px; border-radius: var(--radius-sm); font-size: 14px; color: var(--fw-muted); cursor: pointer; font-variant-numeric: tabular-nums; transition: background-color 120ms var(--fw-ease), color 120ms var(--fw-ease); }
+.fw-root .fw-segmented button[aria-checked="true"] { background: var(--fw-surface); color: var(--fw-text); box-shadow: var(--shadow-card), 0 0 0 1px var(--fw-border); }
 
 /* Below 900 px the agent's name takes its own line above a full-width lane: nothing truncates and the bar keeps the width.
    (At 768 px a 28% column cut 15 of 17 names on a real 17-agent run.) */
@@ -458,5 +464,14 @@
   /* Elbows pass behind the name, not through its letters. A transform or layout containment would make each row
      its own stacking context and trap the name under the connector layer, so stacked rows place by top instead. */
   .fw-root-agents .fw-view-agents .fw-row { transform: none; top: var(--row-y); contain: style; }
-  .fw-root-agents .fw-view-agents .fw-label { position: absolute; z-index: 3; top: 0; left: 0; height: 20px; max-width: calc(100% - var(--fw-pad)); padding: 0 8px 0 var(--fw-pad); gap: 8px; align-items: center; pointer-events: none; overflow: hidden; border-radius: 0 4px 4px 0; background: var(--fw-surface); }
+  /* The name row is a strip across the lane on the row's own plane, so gridlines, pauses and connectors show only in the bar row. */
+  .fw-root-agents .fw-view-agents .fw-label { position: absolute; z-index: 3; top: 0; left: 0; right: 0; height: 20px; padding: 0 calc(var(--fw-end-w, 0px) + 12px) 0 var(--fw-pad); gap: 8px; align-items: center; pointer-events: none; overflow: hidden;
+    background: linear-gradient(var(--fw-tint, transparent) 0 0), var(--fw-surface); }
+  /* The duration and its badges take the strip's right end, past the name, so they never sit on a bar or across a connector. */
+  .fw-root-agents .fw-view-agents .fw-end { z-index: 4; top: 0; height: 20px; left: auto; right: 4px; }
+  .fw-root-agents .fw-view-agents .fw-mark { top: calc(50% + var(--fw-bar-shift) - var(--fw-bar-h) / 2 - 2px); height: calc(var(--fw-bar-h) + 4px); }
+}
+/* On a phone the name row holds the name and the duration; the outcome is the dot's color and the counts are the card's. */
+@container (max-width: 479px) {
+  .fw-root-agents .fw-view-agents .fw-subtitle { display: none; }
 }

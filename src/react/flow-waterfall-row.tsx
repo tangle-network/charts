@@ -2,7 +2,7 @@ import { type CSSProperties, type ReactNode, memo } from 'react'
 import type { FlowSpan } from '../flow-trace.js'
 import { KIND_LABEL } from './flow-waterfall-card.js'
 import { AlertGlyph, ChevronGlyph, FailGlyph, KindGlyph, RetryGlyph } from './flow-waterfall-icons.js'
-import { type FlowSegment, type FlowWaterfallRow, agentSummaryParts, rowCostText, formatSpanDuration, spanRunning, toneKey } from './flow-waterfall-model.js'
+import { type FlowSegment, type FlowWaterfallRow, agentSummary, rowCostText, formatSpanDuration, spanRunning, toneKey } from './flow-waterfall-model.js'
 import type { RowMotion } from './flow-waterfall-motion.js'
 
 export type FlowView = 'spans' | 'agents'
@@ -10,15 +10,16 @@ export type FlowView = 'spans' | 'agents'
 /** Running ends are drawn to the clock; CSS clips with min(), so a far-future end stands in for "still open". */
 export const OPEN_END = 1e13
 const at = (startMs: number, endMs: number): CSSProperties => ({ '--s': startMs, '--e': Number.isFinite(endMs) ? endMs : OPEN_END } as CSSProperties)
-// 12 px tabular text runs about 7 px a character; each badge adds its gap, padding and word.
-const endLabelWidth = (label: string, slowest?: boolean, costliest?: boolean) => label.length * 7 + 8 + (slowest ? 74 : 0) + (costliest ? 84 : 0)
+// 12 px tabular text runs about 7 px a character; each badge adds its gap, padding and word. A little over, never under: a stacked
+// name stops this far from the lane's end.
+const endLabelWidth = (label: string, slowest?: boolean, costliest?: boolean) => label.length * 7 + 8 + (slowest ? 80 : 0) + (costliest ? 90 : 0)
 
 export interface RowEvents {
   onToggle: (row: FlowWaterfallRow) => void
-  /** Hover or focus of a mark: the card shows `target` (a span id) anchored to `element`. */
-  onInspect: (target: string, element: HTMLElement) => void
+  /** Hover of a mark: the card shows `target` (a span id) anchored to `element`, at the pointer's `x`. */
+  onInspect: (target: string, element: HTMLElement, x?: number) => void
   onLeave: () => void
-  onPin: (target: string, element: HTMLElement) => void
+  onPin: (target: string, element: HTMLElement, x?: number) => void
   onActivate: (row: FlowWaterfallRow) => void
 }
 
@@ -55,8 +56,8 @@ function Segment({ mark, events, agentView, ending }: { mark: FlowSegment; event
   const named = agentView && mark.kind === 'tool' && (mark.count === 1 ? mark.name : mark.tool && `${mark.tool} ×${mark.count}`)
   return <span className={`fw-seg fw-seg-${mark.kind}${mark.alt ? ' fw-seg-alt' : ''}`} data-tone={toneKey(mark.tone)} style={at(mark.startMs, mark.endMs)}
     title={mark.name ? `${mark.name}${mark.count > 1 ? ` +${mark.count - 1} more` : ''}` : undefined}
-    onPointerEnter={agentView ? event => events.onInspect(mark.id, event.currentTarget) : undefined}
-    onClick={agentView ? event => { event.stopPropagation(); events.onPin(mark.id, event.currentTarget) } : undefined}>
+    onPointerEnter={agentView ? event => events.onInspect(mark.id, event.currentTarget, event.clientX) : undefined}
+    onClick={agentView ? event => { event.stopPropagation(); events.onPin(mark.id, event.currentTarget, event.clientX) } : undefined}>
     {glyph ? <span className="fw-glyph">{glyph}</span> : named && <span className="fw-seg-name">{named}</span>}
   </span>
 }
@@ -87,8 +88,9 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   const kind = !row.ok ? 'failed' : row.kind
   const marks = isAgent || row.hasChildren || row.id.startsWith('run:') ? (folded && !agentView ? row.segments : row.own) : []
   const label = endLabel(row, clockMs)
-  const summary = agentSummaryParts(row)
-  const inspect = (event: { currentTarget: HTMLElement }) => props.onInspect(row.id, event.currentTarget)
+  // The model leads the second line unless the header names it for every agent.
+  const summary = [...(span.detail && span.detail !== props.sharedDetail ? [span.detail] : []), ...agentSummary(row)]
+  const inspect = (event: { currentTarget: HTMLElement; clientX: number }) => props.onInspect(row.id, event.currentTarget, event.clientX)
   const family = agentView && row.id.startsWith('family:')
   const step = agentView && row.stepOf !== undefined
   // An agent with its own steps opens them in place; a family opens its members.
@@ -100,14 +102,15 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
       aria-level={agentView ? undefined : row.depth + 1} aria-expanded={row.hasChildren && !agentView ? !folded : undefined}
       aria-selected={selected} tabIndex={focusable ? 0 : -1} data-tone={toneKey(row.tone)} data-outcome={fillByAgent ? undefined : span.outcome?.tone}
       className={`fw-row${active ? ' fw-active' : ''}${sticky ? ' fw-sticky-row' : ''}${isAgent ? ' fw-agent-row' : ''}${step ? ' fw-step' : ''}${motion?.enter !== undefined ? ' fw-enter' : ''}${motion?.settle ? ' fw-settle' : ''}`}
-      style={{ '--row-y': `${top}px`, '--fw-enter-delay': `${motion?.enter ?? 0}ms` } as CSSProperties}
+      // The end label's width rides on the row: a label that would run past the lane slides back over its bar's tail, and a stacked name stops short of it.
+      style={{ '--row-y': `${top}px`, '--fw-enter-delay': `${motion?.enter ?? 0}ms`, '--fw-end-w': `${endLabelWidth(label, slowest, costliest)}px` } as CSSProperties}
       onFocus={event => { if (event.target === event.currentTarget) props.onActivate(row) }}
       onClick={event => {
         props.onActivate(row)
         if (family) { props.onToggle(row); return }
         // In the agent view a click anywhere on the row opens the agent, as its bar does; readers click the name first.
         const bar = agentView ? event.currentTarget.querySelector<HTMLElement>('.fw-bar') : null
-        if (bar) props.onPin(row.id, bar)
+        if (bar) props.onPin(row.id, bar, event.target instanceof Element && event.target.closest('.fw-lane') ? event.clientX : undefined)
       }}>
       <div role="gridcell" className="fw-label" style={{ '--depth': agentView ? (row.inset ?? 0) : row.depth } as CSSProperties}>
         {opens && <button type="button" tabIndex={-1} className={`fw-toggle${props.expanded ? ' fw-open' : ''}`}
@@ -137,8 +140,8 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
             <span className="fw-subtitle">
               {renderIcon && <span className="fw-detail-icon" aria-hidden>{renderIcon(span)}</span>}
               <span className="fw-subtitle-tail">
-                <span className="fw-subtitle-text">{span.detail && span.detail !== props.sharedDetail ? `${span.detail} · ${summary[0]}` : summary[0]}</span>
-                {summary[1] && <span className="fw-subtitle-extra">· {summary[1]}</span>}
+                <span className="fw-subtitle-text">{summary[0]}</span>
+                {summary.slice(1).map(part => <span key={part} className="fw-subtitle-extra">· {part}</span>)}
               </span>
             </span>
           )}
@@ -153,13 +156,12 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
           <span className={`fw-bar fw-k-${isAgent ? 'pipeline' : kind}${row.approx ? ' fw-approx' : ''}${marks.length ? ' fw-has-marks' : ''}${row.hasAgents ? ' fw-has-agents' : ''}`}
             data-tone={toneKey(row.tone)} style={at(span.startMs, running ? OPEN_END : span.endMs)}
             onPointerEnter={inspect} onPointerLeave={props.onLeave}
-            onClick={event => { event.stopPropagation(); if (family) props.onToggle(row); else props.onPin(row.id, event.currentTarget) }}>
+            onClick={event => { event.stopPropagation(); if (family) props.onToggle(row); else props.onPin(row.id, event.currentTarget, event.clientX) }}>
             {!isAgent && !row.ok && <span className="fw-glyph"><FailGlyph /></span>}
             {!isAgent && row.ok && row.retry && <span className="fw-glyph"><RetryGlyph /></span>}
           </span>
           {marks.map((mark, i) => <Segment key={`${mark.id}-${i}`} mark={mark} events={props} agentView={agentView} ending={i === ending} />)}
-          {/* Its width rides along so a label that would run past the lane's right edge slides back over the bar's tail. */}
-          <span className="fw-end" style={{ ...at(span.startMs, running ? OPEN_END : span.endMs), '--fw-end-w': `${endLabelWidth(label, slowest, costliest)}px` } as CSSProperties}>
+          <span className="fw-end" style={at(span.startMs, running ? OPEN_END : span.endMs)}>
             <span className="fw-duration">{label}</span>
             {slowest && <span className="fw-badge">Slowest</span>}
             {costliest && <span className="fw-badge">Costliest</span>}
