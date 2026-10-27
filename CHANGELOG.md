@@ -5,6 +5,7 @@
 - Bars carry identity, dots carry outcome. The agent hues are an identity ring at one lightness and a moderate chroma (OKLCH L 0.55 light, 0.70 dark, C 0.11): blue, violet, pink, cyan and slate after the neutral root. Brand's icon-strength teal and lime are gone from the lanes, so no lane outshouts another or reads as a status. Blind round 29 judges said the saturated teal, pink and violet "compete" and lime and pink long bars read olive and maroon.
 - An agent's dot shows its outcome only; an agent without a recorded outcome gets a hollow ring instead of its lane hue. The outcome key's entries are 8px circles that match the dots.
 - A merged step's count chip shows only beside the tool name it counts, and the folded family's `+N` badge is gone: the family's second line already says how many agents it holds.
+- Dark theme: model and tool steps become light pastels at OKLCH L 0.82 and 0.64, up from 0.72 and 0.46, with dark ink. Round 27's pastel dark fills scored 39/252; round 29's judges read the darker 0.46 tool step as muddy.
 - Browser proof: every filled agent dot's colour must appear in the outcome key.
 
 ## 0.21.20
