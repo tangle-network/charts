@@ -1,5 +1,11 @@
 # @tangle-network/charts
 
+## 0.21.22
+
+- In the agent timeline, the whole connectors between agents draw only for the agent under the pointer, pinned or focused. At rest, a spawn is a short elbow into its child, and a return is not drawn. On a 55-agent run, root's spawns no longer draw dozens of full-height lines through every lane (Drew 10-26: "lines inconsistent"; the 10-27 judges: "the main source of clutter").
+- A card above its mark stays inside the chart. It is placed by its measured height, so it no longer rises over the page's header and tabs.
+- Nothing in the waterfall or the live charts (`live.css`: legends, keys, tooltips, notes) reads below 14px. Agent subtitles, axis ticks, end durations, badges, the legend and the card's table were 12px.
+
 ## 0.21.21
 
 - Bars carry identity, dots carry outcome. The agent hues are an identity ring at one lightness and a moderate chroma (OKLCH L 0.55 light, 0.70 dark, C 0.11): blue, violet, pink, cyan and slate after the neutral root. Brand's icon-strength teal and lime are gone from the lanes, so no lane outshouts another or reads as a status. Blind round 29 judges said the saturated teal, pink and violet "compete" and lime and pink long bars read olive and maroon.

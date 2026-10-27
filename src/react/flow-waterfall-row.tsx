@@ -192,8 +192,9 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
 export interface FlowLink { id: string; from: number; to: number; atMs: number; tone: number; dir: 'down' | 'up' }
 
 /** An elbow connector between two rows at one moment, drawn in the row's tone; appears when the clock reaches it. */
-export function LinkMark({ link, rowHeight, hot }: { link: FlowLink; rowHeight: number; hot?: boolean }) {
-  const upper = Math.min(link.from, link.to), lower = Math.max(link.from, link.to)
+/** `short`: only the last row of the connector, an elbow into the row it reaches. */
+export function LinkMark({ link, rowHeight, hot, short }: { link: FlowLink; rowHeight: number; hot?: boolean; short?: boolean }) {
+  const lower = Math.max(link.from, link.to), upper = short ? Math.max(Math.min(link.from, link.to), lower - 1) : Math.min(link.from, link.to)
   const style = {
     ...at(link.atMs, link.atMs),
     top: upper * rowHeight + rowHeight / 2 + 5,
