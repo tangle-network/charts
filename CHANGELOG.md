@@ -1,5 +1,9 @@
 # @tangle-network/charts
 
+## 0.21.17
+
+- `@tangle-network/charts/react` exports `flowWaterfallRows`, `criticalPathIds` and the `FlowWaterfallRow` type, so a host that summarizes a trace beside FlowWaterfall (slowest step, costliest subtree, the critical path) reads the same rows and roll-ups the chart draws instead of keeping a second tree.
+
 ## 0.21.16
 
 - The trace paints Brand roles only: text, card, hairline (`--hsl-border`), in-card well, chart grid and rule, the status inks, and Brand's categorical tones for agent hues (blue, teal, pink, violet, lime; the root is the chart's muted grey). Its own hex palettes and their fallbacks are gone, and radii and shadows are Brand's. A host loads Brand's `tokens.css` or `legacy-light.css`; agent-app and Discovery already do.
