@@ -2,7 +2,7 @@ import { type CSSProperties, type ReactNode, memo } from 'react'
 import type { FlowSpan } from '../flow-trace.js'
 import { KIND_LABEL } from './flow-waterfall-card.js'
 import { AlertGlyph, ChevronGlyph, FailGlyph, KindGlyph, RetryGlyph } from './flow-waterfall-icons.js'
-import { type FlowSegment, type FlowWaterfallRow, agentSummary, rowCostText, formatSpanDuration, spanRunning, toneKey } from './flow-waterfall-model.js'
+import { type FlowSegment, type FlowWaterfallRow, agentSummary, formatCost, rowCostText, formatSpanDuration, spanRunning, toneKey } from './flow-waterfall-model.js'
 import type { RowMotion } from './flow-waterfall-motion.js'
 
 export type FlowView = 'spans' | 'agents'
@@ -45,20 +45,30 @@ export interface RowProps extends RowEvents {
   renderIcon?: (span: FlowSpan) => ReactNode
   fillByAgent?: boolean
   sharedDetail?: string
+  /** The outcome most agents share: the outcome key names it, so only the rows that differ say theirs. */
+  sharedOutcome?: string
   /** Agent view: a family or agent opened in place, its members or steps shown below it. */
   expanded?: boolean
 }
 
 function Segment({ mark, events, agentView, ending }: { mark: FlowSegment; events: RowEvents; agentView: boolean; ending?: boolean }) {
   // In the agent view only the turn that ended a failed agent carries the failure glyph; a retry always shows its own.
-  const glyph = mark.kind === 'failed' ? (agentView && !ending ? null : <FailGlyph />) : mark.retry ? <RetryGlyph /> : null
-  // A tool step names itself in the bar; merged steps that share one tool read "bash ×9". A container query hides it under 56 px.
-  const named = agentView && mark.kind === 'tool' && (mark.count === 1 ? mark.name : mark.tool && `${mark.tool} ×${mark.count}`)
+  const glyph = mark.kind === 'failed' ? (agentView && !ending ? null : 'fail') : mark.retry ? 'retry' : null
+  // Every agent-view step labels itself as the trace references do: its tool's icon and name, a count chip when merged steps share a
+  // tool ("bash" ×9), then duration and cost. Container queries drop the meta, then the name, then the icon as the step narrows.
+  const name = mark.count === 1 ? mark.name : mark.tool
+  const meta = [Number.isFinite(mark.endMs) ? formatSpanDuration(mark.endMs - mark.startMs) : '', mark.costUsd ? formatCost(mark.costUsd) : ''].filter(Boolean).join(' · ')
   return <span className={`fw-seg fw-seg-${mark.kind}${mark.alt ? ' fw-seg-alt' : ''}`} data-tone={toneKey(mark.tone)} style={at(mark.startMs, mark.endMs)}
-    title={mark.name ? `${mark.name}${mark.count > 1 ? ` +${mark.count - 1} more` : ''}` : undefined}
+    title={mark.name ? `${mark.name}${mark.count > 1 ? ` +${mark.count - 1} more` : ''}${meta ? ` · ${meta}` : ''}` : undefined}
     onPointerEnter={agentView ? event => events.onInspect(mark.id, event.currentTarget, event.clientX) : undefined}
     onClick={agentView ? event => { event.stopPropagation(); events.onPin(mark.id, event.currentTarget, event.clientX) } : undefined}>
-    {glyph ? <span className="fw-glyph">{glyph}</span> : named && <span className="fw-seg-name">{named}</span>}
+    {glyph && <span className="fw-glyph" data-glyph={glyph}>{glyph === 'fail' ? <FailGlyph /> : <RetryGlyph />}</span>}
+    {agentView && <>
+      <span className="fw-seg-icon" aria-hidden><KindGlyph kind={mark.kind === 'model' ? 'model' : 'tool'} name={mark.tool ?? mark.name} /></span>
+      {mark.kind !== 'model' && name && <span className="fw-seg-name">{name}</span>}
+      {mark.count > 1 && <span className="fw-seg-chip">×{mark.count}</span>}
+      {meta && <span className="fw-seg-meta">{meta}</span>}
+    </>}
   </span>
 }
 
@@ -89,7 +99,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   const marks = isAgent || row.hasChildren || row.id.startsWith('run:') ? (folded && !agentView ? row.segments : row.own) : []
   const label = endLabel(row, clockMs)
   // The model leads the second line unless the header names it for every agent.
-  const summary = [...(span.detail && span.detail !== props.sharedDetail ? [span.detail] : []), ...agentSummary(row)]
+  const summary = [...(span.detail && span.detail !== props.sharedDetail ? [span.detail] : []), ...agentSummary(row).filter(part => part !== props.sharedOutcome)]
   const inspect = (event: { currentTarget: HTMLElement; clientX: number }) => props.onInspect(row.id, event.currentTarget, event.clientX)
   const family = agentView && row.id.startsWith('family:')
   const step = agentView && row.stepOf !== undefined
@@ -147,6 +157,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
           )}
         </span>
         {folded && <span className="fw-count" aria-label={`${row.descendants} hidden steps`}>+{row.descendants}</span>}
+        {family && !props.expanded && <span className="fw-count" aria-label={`${row.descendants} agents folded`}>+{row.descendants}</span>}
         {/* An agent row already says it failed in its second line and marks the failed turn in its bar. */}
         {!row.ok && !agentView && <span className="fw-alert"><AlertGlyph label="failed" /></span>}
       </div>
@@ -172,7 +183,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   )
 }, (a, b) => a.row === b.row && a.view === b.view && a.top === b.top && a.collapsed === b.collapsed && a.searching === b.searching &&
   a.slowest === b.slowest && a.costliest === b.costliest && a.critical === b.critical && a.matched === b.matched && a.active === b.active && a.focusable === b.focusable && a.selected === b.selected &&
-  a.sticky === b.sticky && a.motion === b.motion && a.renderIcon === b.renderIcon && a.fillByAgent === b.fillByAgent && a.sharedDetail === b.sharedDetail && a.expanded === b.expanded && (a.clockMs === b.clockMs || !open(a.row, a.clockMs) && !open(b.row, b.clockMs)))
+  a.sticky === b.sticky && a.motion === b.motion && a.renderIcon === b.renderIcon && a.fillByAgent === b.fillByAgent && a.sharedDetail === b.sharedDetail && a.sharedOutcome === b.sharedOutcome && a.expanded === b.expanded && (a.clockMs === b.clockMs || !open(a.row, a.clockMs) && !open(b.row, b.clockMs)))
 
 export interface FlowLink { id: string; from: number; to: number; atMs: number; tone: number; dir: 'down' | 'up' }
 

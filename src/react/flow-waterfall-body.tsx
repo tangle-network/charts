@@ -33,6 +33,7 @@ export interface BodyProps extends RowEvents {
   pauses?: readonly FlowPause[]
   /** The model every agent shares: rows leave it out because the header names it. */
   sharedDetail?: string
+  sharedOutcome?: string
   /** Live: the body keeps its full height as agents arrive, so the page below never shifts. */
   holdHeight?: boolean
   /** The playhead's line across the rows; without it only the dot on the axis shows. */
@@ -290,7 +291,7 @@ export function FlowBody(props: BodyProps) {
     <FlowRow key={isSticky ? `sticky-${item.id}` : item.id} row={item} view={view} top={i * rowHeight}
       collapsed={collapsed.has(item.id)} searching={searching} slowest={item.id === slowestId} costliest={item.id === props.costliestId} critical={props.criticalIds?.has(item.id)} matched={matched?.has(item.id)}
       active={item.id === activeId} focusable={!isSticky && (item.id === activeId || (activeId === undefined || !index.has(activeId)) && i === 0)}
-      selected={item.id === selectedId} sticky={isSticky} motion={isSticky ? undefined : motion.get(item.id)} clockMs={clockMs} renderIcon={props.renderIcon} fillByAgent={props.fillByAgent} sharedDetail={props.sharedDetail} expanded={props.expandedIds?.has(item.id)}
+      selected={item.id === selectedId} sticky={isSticky} motion={isSticky ? undefined : motion.get(item.id)} clockMs={clockMs} renderIcon={props.renderIcon} fillByAgent={props.fillByAgent} sharedDetail={props.sharedDetail} sharedOutcome={props.sharedOutcome} expanded={props.expandedIds?.has(item.id)}
       onToggle={props.onToggle} onInspect={props.onInspect} onLeave={props.onLeave} onPin={props.onPin} onActivate={item => props.onActiveChange(item.id)} />
   )
 
