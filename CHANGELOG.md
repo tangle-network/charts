@@ -1,5 +1,10 @@
 # @tangle-network/charts
 
+## 0.21.19
+
+- In-bar step labels show each part (icon, tool name, count chip, duration, cost) whole or not at all: a part that does not fit wraps out of the one-line label box, so a label never reads "b…" and never paints past its step (blind round 28). The label sits 6px in from both ends.
+- Label ink holds 4.5:1 on its fill: light text on the darker model step and a near-black of the agent's hue on the lighter tool step in light theme. The browser proof measures every shown label's contrast and fails under 4.5:1.
+
 ## 0.21.18
 
 - Agent view: every step labels itself inside its bar, as trace viewers do: its tool's icon and name, a count chip when merged steps share a tool (`bash` ×9), then its duration and cost. A narrowing step drops its cost, then its duration, then its name and chip, then its icon. A failed model turn keeps the model icon and no tool name. `FlowSegment.costUsd` carries the merged steps' cost.
