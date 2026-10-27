@@ -293,9 +293,10 @@
 .fw-root:is(.fw-fill-muted, .fw-fill-outcome) .fw-view-agents .fw-seg-tool { background: var(--fw-kind-tool); box-shadow: none; }
 /* Per-agent hues: a step's kind is a fixed lightness on its agent's hue, the same for every hue, so kind reads by lightness
    against the surface and never contradicts the key (critique P0 #4: dark tool steps were lighter than model steps, and the
-   step varied with hue). Model is the stronger step on either surface; chroma 0.10 keeps every hue the same weight. */
-.fw-root.fw-fill-agent .fw-view-agents .fw-seg-model { background: light-dark(oklch(from var(--tone) 0.50 0.10 h), oklch(from var(--tone) 0.72 0.10 h)); box-shadow: none; }
-.fw-root.fw-fill-agent .fw-view-agents :is(.fw-seg-tool, .fw-seg-failed) { background: light-dark(oklch(from var(--tone) 0.80 0.10 h), oklch(from var(--tone) 0.46 0.10 h)); box-shadow: none; }
+   step varied with hue). Model is the stronger step on either surface; chroma is capped at 0.10, never raised, so a neutral (the root's grey) stays
+   neutral instead of taking a red cast from its undefined hue. */
+.fw-root.fw-fill-agent .fw-view-agents .fw-seg-model { background: light-dark(oklch(from var(--tone) 0.50 min(c, 0.10) h), oklch(from var(--tone) 0.72 min(c, 0.10) h)); box-shadow: none; }
+.fw-root.fw-fill-agent .fw-view-agents :is(.fw-seg-tool, .fw-seg-failed) { background: light-dark(oklch(from var(--tone) 0.80 min(c, 0.10) h), oklch(from var(--tone) 0.46 min(c, 0.10) h)); box-shadow: none; }
 /* A failed turn is still the agent's work: it keeps the agent's hue, and the red cross on the ending turn says it failed. */
 .fw-root.fw-fill-agent .fw-view-agents .fw-seg-failed { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-failed) 55%, transparent); }
 .fw-root .fw-view-agents .fw-seg { container-type: inline-size; justify-content: flex-start; font-size: 12px; line-height: 16px; white-space: nowrap; color: var(--fw-seg-ink); }
