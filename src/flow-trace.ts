@@ -62,6 +62,8 @@ export interface FlowOutcome {
   /** `live` is a running agent: the one running hue the host uses for every live mark. */
   tone: 'ok' | 'live' | 'neutral' | 'failed' | 'warn'
   label: string
+  /** A hollow ring in the tone instead of a filled dot: a second outcome on the same tone (Done beside Shipped, Stopped beside a plain end). */
+  ring?: boolean
 }
 
 /** A labelled instant on the trace clock, such as a release or an alert; drawn as a line across the rows. */

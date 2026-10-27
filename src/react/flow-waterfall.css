@@ -210,6 +210,8 @@
 .fw-root .fw-agent-dot { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--line, var(--fw-muted)); }
 /* The dot is outcome only (critique P0 #3): an agent with no recorded outcome gets a hollow ring, never its lane hue. */
 .fw-root .fw-row:not([data-outcome]) .fw-agent-dot:not([data-outcome]) { background: transparent; box-shadow: inset 0 0 0 1.5px var(--fw-muted); }
+.fw-root :is(.fw-agent-dot, .fw-legend .fw-swatch)[data-ring] { background: transparent; box-shadow: inset 0 0 0 2px var(--line, var(--fw-muted)); }
+.fw-root :is(.fw-agent-dot, .fw-legend .fw-swatch)[data-outcome="live"]:not([data-ring]) { box-shadow: 0 0 0 3px color-mix(in oklab, var(--fw-live) 22%, transparent); }
 
 /* Lanes and marks */
 .fw-root .fw-lane { position: relative; overflow: hidden; min-width: 0; }

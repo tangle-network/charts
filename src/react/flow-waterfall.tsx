@@ -145,11 +145,11 @@ function MarkerLegend({ markers }: { markers?: FlowMarker[] }) {
 }
 
 function OutcomeLegend({ agents }: { agents: FlowWaterfallRow[] }) {
-  const items = new Map<string, { tone: string; count: number }>()
+  const items = new Map<string, { tone: string; ring?: boolean; count: number }>()
   for (const row of agents) {
     const outcome = row.span.outcome
     if (!outcome) continue
-    const item = items.get(outcome.label) ?? { tone: outcome.tone, count: 0 }
+    const item = items.get(outcome.label) ?? { tone: outcome.tone, ring: outcome.ring, count: 0 }
     item.count += 1
     items.set(outcome.label, item)
   }
@@ -157,7 +157,7 @@ function OutcomeLegend({ agents }: { agents: FlowWaterfallRow[] }) {
   // A failed step inside a finished agent is a different fact from a failed agent, so it gets its own key.
   const failedSteps = agents.reduce((sum, row) => sum + row.own.reduce((n, mark) => n + (mark.kind === 'failed' ? mark.count : 0), 0), 0)
   return <ul className="fw-legend" aria-label="Outcomes">
-    {[...items].sort(([a, x], [b, y]) => TONE_ORDER.indexOf(x.tone) - TONE_ORDER.indexOf(y.tone) || a.localeCompare(b)).map(([label, item]) => <li key={label}><span className="fw-swatch" data-tone="0" data-outcome={item.tone} aria-hidden />{label} <b>{item.count}</b></li>)}
+    {[...items].sort(([a, x], [b, y]) => TONE_ORDER.indexOf(x.tone) - TONE_ORDER.indexOf(y.tone) || a.localeCompare(b)).map(([label, item]) => <li key={label}><span className="fw-swatch" data-tone="0" data-outcome={item.tone} data-ring={item.ring || undefined} aria-hidden />{label} <b>{item.count}</b></li>)}
     {failedSteps > 0 && <li><span className="fw-swatch-step" aria-hidden><FailGlyph /></span>Failed step <b>{failedSteps}</b></li>}
   </ul>
 }

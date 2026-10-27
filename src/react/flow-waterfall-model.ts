@@ -446,7 +446,7 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
     // Failed means the outcome the host recorded when it gave one (a member can fail a step and still ship); status otherwise.
     const failed = members.filter(row => row.span.outcome ? row.span.outcome.tone === 'failed' : !row.ok).length
     // A family takes its members' outcome when they share one; mixed outcomes leave it without, drawn neutral.
-    const outcome = members.every(row => row.span.outcome && row.span.outcome.tone === members[0]!.span.outcome?.tone) ? members[0]!.span.outcome : undefined
+    const outcome = members.every(row => row.span.outcome && row.span.outcome.tone === members[0]!.span.outcome?.tone && !row.span.outcome.ring === !members[0]!.span.outcome?.ring) ? members[0]!.span.outcome : undefined
     out.push({
       // The family hangs off its members' parent, so the spawn elbow reaches it from the agent that started them.
       costFloor: known.length < members.length || members.some(row => row.costFloor),
