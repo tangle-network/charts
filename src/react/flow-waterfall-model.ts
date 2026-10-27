@@ -17,6 +17,10 @@ export interface FlowSegment {
   name?: string
   /** The tool every merged step shares (the name before " · "); undefined once the merged steps differ. */
   tool?: string
+  /** What the merged steps cost, when any of them recorded a cost. */
+  costUsd?: number
+  /** A failed mark that was a model call, so it draws the model's icon and no tool name. */
+  modelCall?: boolean
 }
 
 const toolOf = (name?: string) => name?.split(' · ')[0]
@@ -123,6 +127,7 @@ function mergeSegments(marks: FlowSegment[], gapMs: number, cap = 240): FlowSegm
         last.endMs = Math.max(last.endMs, mark.endMs)
         last.count += mark.count
         if (last.tool !== mark.tool) last.tool = undefined
+        if (mark.costUsd !== undefined) last.costUsd = (last.costUsd ?? 0) + mark.costUsd
         last.kind = share.model >= share.tool ? 'model' : 'tool'
       } else out.push({ ...mark })
     }
@@ -261,6 +266,8 @@ function segmentOf(row: FlowWaterfallRow): FlowSegment {
     retry: row.retry,
     name: row.name,
     tool: toolOf(row.name),
+    ...(row.span.costUsd === undefined ? {} : { costUsd: row.span.costUsd }),
+    ...(!row.ok && row.kind === 'model' ? { modelCall: true } : {}),
   }
 }
 

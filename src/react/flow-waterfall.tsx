@@ -95,6 +95,13 @@ function useHostable<T>(value: T | undefined, onChange: ((next: T) => void) | un
 interface CardState { target: string; pinned: boolean; left: number; anchorTop: number; anchorBottom: number; above: boolean; fitted?: boolean }
 // The card's width; on a narrower root it takes the root less an 8 px margin each side.
 const CARD_WIDTH = 320
+/** The value at least half of several agents share, if one does. */
+function usual(values: readonly (string | undefined)[]): string | undefined {
+  const counts = new Map<string, number>()
+  for (const value of values) if (value) counts.set(value, (counts.get(value) ?? 0) + 1)
+  const [top, n] = [...counts].sort((a, b) => b[1] - a[1])[0] ?? []
+  return values.length > 1 && n !== undefined && n >= 2 && n * 2 >= values.length ? top : undefined
+}
 
 /** The summary strip: as of the playhead while scrubbing, the producer's totals otherwise. */
 function summaryCells(trace: FlowTrace, at: ReturnType<typeof totalsAt> | undefined, durationMs: number) {
@@ -205,9 +212,9 @@ export function FlowWaterfall({
     const pipelines = rows.filter(row => row.kind === 'pipeline')
     return pipelines.length ? pipelines : rows.filter(row => !row.parentId)
   }, [rows])
-  // When every agent that names a model names the same one, the header says it once instead of every row repeating it.
-  const details = new Set(agents.flatMap(row => row.span.detail ? [row.span.detail] : []))
-  const sharedDetail = agents.length > 1 && details.size === 1 ? [...details][0] : undefined
+  // The model and outcome most agents share are said once, by the header and outcome key (round 27: repeated per row read as noise).
+  const sharedDetail = usual(agents.map(row => row.span.detail))
+  const sharedOutcome = usual(agents.map(row => row.span.outcome?.label))
   const [flippedFamilies, setFlippedFamilies] = useState<ReadonlySet<string>>(new Set())
   const openFamilies = useMemo(() => defaultOpenFamilies(agents, UNFOLD_ROWS, flippedFamilies), [agents, flippedFamilies])
   const [openSteps, setOpenSteps] = useState<ReadonlySet<string>>(new Set())
@@ -418,7 +425,7 @@ export function FlowWaterfall({
           {view === 'agents' && <p className="fw-headline" aria-live="polite">
             {/* Duration, cost and tokens live in the stat strip below; the headline says only what the strip cannot. */}
             {done && <span className="fw-done-mark" aria-label="done">✓</span>}
-            {agents.length} {agents.length === 1 ? 'agent' : 'agents'}{sharedDetail ? ` · ${sharedDetail}` : ''}{done && speedup >= 1.05 ? ` · ${speedup.toFixed(1)}x parallel` : ''}
+            {agents.length} {agents.length === 1 ? 'agent' : 'agents'}{sharedDetail ? ` · ${agents.every(row => row.span.detail === sharedDetail) ? '' : 'mostly '}${sharedDetail}` : ''}{done && speedup >= 1.05 ? ` · ${speedup.toFixed(1)}x parallel` : ''}
           </p>}
           {/* One legend row: outcomes, then the bar-type key (round 24: stacked key bands read as clutter above the rows). */}
           <div className="fw-legends"><OutcomeLegend agents={agents} />{view === 'agents' && <KindLegend rows={rows} />}</div>
@@ -446,7 +453,7 @@ export function FlowWaterfall({
       </dl>}
       {view === 'agents' && playback}
       <FlowBody rows={visible} byId={byId} totalRows={rows.length} view={view} maxHeight={rowsHeight} collapsed={collapsed} searching={Boolean(query.trim())} query={query} matchSpan={matchSpan}
-        pauses={trace.pauses} cursorLine={position !== null || playing} sharedDetail={sharedDetail} expandedIds={view === 'agents' ? new Set([...openFamilies, ...openSteps]) : undefined} holdHeight={isLive} slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} criticalIds={criticalPath && view === 'spans' ? critical : undefined} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
+        pauses={trace.pauses} cursorLine={position !== null || playing} sharedDetail={sharedDetail} sharedOutcome={sharedOutcome} expandedIds={view === 'agents' ? new Set([...openFamilies, ...openSteps]) : undefined} holdHeight={isLive} slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} criticalIds={criticalPath && view === 'spans' ? critical : undefined} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
         trackPx={trackPx} showCursor={showCursor} markers={markers} fillByAgent={agentFill !== 'outcome'} zoomed={zoom !== null} renderIcon={renderIcon}
         emptyText={rows.length === 0 ? 'No spans yet. Waiting for trace events.' : `No matching steps for “${query}”.`}
         onToggle={toggle} onInspect={inspect} onLeave={leave} onPin={pin} onActivate={row => setActiveId(row.id)}

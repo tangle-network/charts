@@ -1,5 +1,12 @@
 # @tangle-network/charts
 
+## 0.21.18
+
+- Agent view: every step labels itself inside its bar, as trace viewers do: its tool's icon and name, a count chip when merged steps share a tool (`bash` ×9), then its duration and cost. A narrowing step drops its cost, then its duration, then its name and chip, then its icon. A failed model turn keeps the model icon and no tool name. `FlowSegment.costUsd` carries the merged steps' cost.
+- Fail and retry marks inside a bar are filled red and amber chips. A folded family shows a `+N` chip beside its name. Spawn elbows rest at 80% strength with a wider curve.
+- The model and the outcome that at least half the agents share are said once, by the header ("mostly glm-5.3" when not all) and the outcome key; a row names its own only when it differs.
+- Light theme: solid step segments sit one step softer. With per-agent hues the slowest agent keeps its own hue and carries the amber Slowest pill instead of an amber-brown bar.
+
 ## 0.21.17
 
 - `@tangle-network/charts/react` exports `flowWaterfallRows`, `criticalPathIds` and the `FlowWaterfallRow` type, so a host that summarizes a trace beside FlowWaterfall (slowest step, costliest subtree, the critical path) reads the same rows and roll-ups the chart draws instead of keeping a second tree.
