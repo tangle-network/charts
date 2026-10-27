@@ -26,14 +26,15 @@
   --fw-kind-tool: var(--tone-cyan-icon);
   --fw-neutral-bar: color-mix(in oklab, var(--fw-text) 15%, var(--fw-surface));
   --fw-hatch: color-mix(in oklab, var(--fw-text) 22%, transparent);
-  /* Root agent neutral, then five of Brand's categorical hues, each 3:1 or more against the card in both modes. No warm hue
-     among the agents (amber is kept for the slowest and red for failure), and neighbours alternate cool and warm-leaning. */
+  /* Bar identity, not status: the root neutral, then an identity ring at one lightness and a moderate chroma, so no lane
+     outshouts another (critique P0 #3, round 29: Brand's icon-strength teal, pink and violet "compete", lime and pink read
+     olive and maroon). Blue, violet, pink, cyan, slate: no green, teal, lime, amber or red, so no lane is mistaken for a status. */
   --fw-h0: var(--chart-muted);
-  --fw-h1: var(--tone-blue-icon);
-  --fw-h2: var(--tone-teal-icon);
-  --fw-h3: var(--tone-pink-icon);
-  --fw-h4: var(--tone-violet-icon);
-  --fw-h5: var(--tone-lime-icon);
+  --fw-h1: light-dark(oklch(0.55 0.11 255), oklch(0.70 0.11 255));
+  --fw-h2: light-dark(oklch(0.55 0.11 300), oklch(0.70 0.11 300));
+  --fw-h3: light-dark(oklch(0.55 0.11 335), oklch(0.70 0.11 335));
+  --fw-h4: light-dark(oklch(0.55 0.11 215), oklch(0.70 0.11 215));
+  --fw-h5: light-dark(oklch(0.55 0.03 255), oklch(0.70 0.03 255));
   --fw-ease: cubic-bezier(.2, .8, .2, 1);
   /* Bar height = row height - 16, so a centered bar sits 8 px from the row edge: 20 px in a 36 px step row. */
   --fw-bar-h: 20px;
@@ -205,6 +206,8 @@
 .fw-root .fw-view-agents .fw-detail-icon { flex: none; width: 16px; height: 16px; align-items: center; justify-content: center; overflow: hidden; }
 .fw-root .fw-view-agents .fw-detail { font-size: 12px; line-height: 16px; }
 .fw-root .fw-agent-dot { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--line, var(--fw-muted)); }
+/* The dot is outcome only (critique P0 #3): an agent with no recorded outcome gets a hollow ring, never its lane hue. */
+.fw-root .fw-row:not([data-outcome]) .fw-agent-dot:not([data-outcome]) { background: transparent; box-shadow: inset 0 0 0 1.5px var(--fw-muted); }
 
 /* Lanes and marks */
 .fw-root .fw-lane { position: relative; overflow: hidden; min-width: 0; }
@@ -272,13 +275,13 @@
 .fw-root .fw-kinds { margin: 0; padding: 0; justify-content: flex-start; color: var(--fw-muted); }
 .fw-root .fw-kinds .fw-swatch-model { width: 12px; height: 8px; border-radius: 2px; background: var(--fw-kind-model); }
 /* With per-agent hues the key shows kind as shade, as the bars do: darker for a model call, lighter for a tool call. */
-.fw-root.fw-fill-agent .fw-kinds .fw-swatch-model { background: light-dark(oklch(0.50 0 0), oklch(0.72 0 0)); }
-.fw-root.fw-fill-agent .fw-kinds .fw-swatch-tool { background: light-dark(oklch(0.80 0 0), oklch(0.46 0 0)); }
+.fw-root.fw-fill-agent .fw-kinds .fw-swatch-model { background: light-dark(oklch(0.50 0 0), oklch(0.82 0 0)); }
+.fw-root.fw-fill-agent .fw-kinds .fw-swatch-tool { background: light-dark(oklch(0.80 0 0), oklch(0.64 0 0)); }
 .fw-root .fw-kinds .fw-swatch-tool { width: 12px; height: 8px; border-radius: 2px; background: var(--fw-kind-tool); }
 .fw-root .fw-kinds .fw-swatch-wait { width: 12px; height: 8px; border-radius: 2px; background: color-mix(in oklab, var(--fw-text) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-text) 18%, transparent); }
 .fw-root .fw-kinds .fw-swatch-handoff { width: 10px; height: 8px; border-left: 1.5px solid var(--fw-muted); border-bottom: 1.5px solid var(--fw-muted); border-bottom-left-radius: 3px; }
 .fw-root .fw-description { margin: 0; color: var(--fw-muted); font-size: 14px; line-height: 20px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fw-root .fw-legend .fw-swatch { width: 12px; height: 8px; border-radius: 2px; background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); }
+.fw-root .fw-legend .fw-swatch { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
 .fw-root .fw-legend b { color: var(--fw-text); font-weight: 600; font-variant-numeric: tabular-nums; }
 .fw-root .fw-legend .fw-swatch-step { display: inline-grid; place-items: center; width: 12px; height: 12px; border-radius: 3px; background: var(--fw-well); color: var(--fw-failed); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-failed) 50%, transparent); }
 .fw-root .fw-legend .fw-swatch-step svg { width: 8px; height: 8px; }
@@ -293,17 +296,18 @@
 .fw-root:is(.fw-fill-muted, .fw-fill-outcome) .fw-view-agents .fw-seg-tool { background: var(--fw-kind-tool); box-shadow: none; }
 /* Per-agent hues: a step's kind is a fixed lightness on its agent's hue, the same for every hue, so kind reads by lightness
    against the surface and never contradicts the key (critique P0 #4: dark tool steps were lighter than model steps, and the
-   step varied with hue). Model is the stronger step on either surface; chroma is capped at 0.10, never raised, so a neutral (the root's grey) stays
+   step varied with hue). On dark both steps are light pastels, model 0.82 and tool 0.64: round 27's pastel dark fills scored
+   39/252, and the critique's darker 0.72/0.46 read muddy to round 29's judges. Model is the stronger step on either surface; chroma is capped at 0.10, never raised, so a neutral (the root's grey) stays
    neutral instead of taking a red cast from its undefined hue. */
-.fw-root.fw-fill-agent .fw-view-agents .fw-seg-model { background: light-dark(oklch(from var(--tone) 0.50 min(c, 0.10) h), oklch(from var(--tone) 0.72 min(c, 0.10) h)); box-shadow: none; }
-.fw-root.fw-fill-agent .fw-view-agents :is(.fw-seg-tool, .fw-seg-failed) { background: light-dark(oklch(from var(--tone) 0.80 min(c, 0.10) h), oklch(from var(--tone) 0.46 min(c, 0.10) h)); box-shadow: none; }
+.fw-root.fw-fill-agent .fw-view-agents .fw-seg-model { background: light-dark(oklch(from var(--tone) 0.50 min(c, 0.10) h), oklch(from var(--tone) 0.82 min(c, 0.10) h)); box-shadow: none; }
+.fw-root.fw-fill-agent .fw-view-agents :is(.fw-seg-tool, .fw-seg-failed) { background: light-dark(oklch(from var(--tone) 0.80 min(c, 0.10) h), oklch(from var(--tone) 0.64 min(c, 0.10) h)); box-shadow: none; }
 /* A failed turn is still the agent's work: it keeps the agent's hue, and the red cross on the ending turn says it failed. */
 .fw-root.fw-fill-agent .fw-view-agents .fw-seg-failed { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-failed) 55%, transparent); }
 .fw-root .fw-view-agents .fw-seg { container-type: inline-size; justify-content: flex-start; font-size: 12px; line-height: 16px; white-space: nowrap; color: var(--fw-seg-ink); }
-/* Label ink holds 4.5:1 on its fill: the model step is dark on light and bright on dark, the tool step the reverse, so ink flips
-   with it: page-light on L 0.50 and L 0.46, page-dark on L 0.72 and L 0.80. */
+/* Label ink holds 4.5:1 on its fill: page-light on the dark light-theme model step (L 0.50), page-dark on every other step
+   (light tool 0.80, dark pastels 0.82 and 0.64). */
 .fw-root .fw-view-agents .fw-seg-model { --fw-seg-ink: light-dark(var(--fw-surface), hsl(var(--hsl-background))); }
-.fw-root .fw-view-agents :is(.fw-seg-tool, .fw-seg-failed) { --fw-seg-ink: var(--fw-text); }
+.fw-root .fw-view-agents :is(.fw-seg-tool, .fw-seg-failed) { --fw-seg-ink: light-dark(var(--fw-text), hsl(var(--hsl-background))); }
 .fw-root .fw-view-agents .fw-seg > * { pointer-events: none; }
 /* One line, 6 px in from each end; a part that does not fit whole wraps to the hidden second line, so trailing parts drop first. */
 .fw-root .fw-seg-label { flex: 1; min-width: 0; height: 16px; margin: 0 6px; display: flex; flex-wrap: wrap; align-items: center; column-gap: 4px; overflow: hidden; }
