@@ -242,6 +242,28 @@ try {
   assert.deepEqual(labels.cut, [], `step label parts cut or past their step: ${JSON.stringify(labels.cut.slice(0, 5))}`)
   assert.equal(labels.ellipsis, 0, 'a step label part ellipsizes')
   assert.deepEqual(labels.low, [], `step label ink under 4.5:1: ${JSON.stringify(labels.low.slice(0, 5))}`)
+  // Kind reads by lightness for every hue: model and tool steps of one agent differ by >= 0.18 OKLab L, and model is the step
+  // further from the surface (critique P0 #4).
+  const kindSteps = await page.evaluate(() => {
+    const canvas = document.createElement('canvas').getContext('2d', { willReadFrequently: true })
+    const L = css => {
+      canvas.clearRect(0, 0, 1, 1); canvas.fillStyle = css; canvas.fillRect(0, 0, 1, 1)
+      const [r, g, b] = [...canvas.getImageData(0, 0, 1, 1).data.slice(0, 3)].map(v => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4 })
+      const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b), m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b), s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)
+      return 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s
+    }
+    const root = document.querySelector('.fw-root.fw-fill-agent')
+    if (!root) return []
+    const surface = L(getComputedStyle(root).getPropertyValue('--fw-surface') || getComputedStyle(root).backgroundColor)
+    const byTone = new Map()
+    for (const seg of root.querySelectorAll('.fw-view-agents :is(.fw-seg-model, .fw-seg-tool)')) {
+      const tone = seg.dataset.tone, kind = seg.classList.contains('fw-seg-model') ? 'model' : 'tool'
+      byTone.set(tone, { ...byTone.get(tone), [kind]: L(getComputedStyle(seg).backgroundColor) })
+    }
+    return [...byTone].filter(([, k]) => k.model !== undefined && k.tool !== undefined)
+      .map(([tone, k]) => ({ tone, dL: Math.abs(k.model - k.tool), modelStronger: Math.abs(k.model - surface) > Math.abs(k.tool - surface) }))
+  })
+  assert.ok(kindSteps.length > 0 && kindSteps.every(k => k.dL >= 0.18 && k.modelStronger), `kind lightness step: ${JSON.stringify(kindSteps)}`)
   checks.hostMarks = 'PASS'
   // Every end label (duration, cost, Slowest/Costliest) stays inside its lane, on the surface, at 1100 px and on a phone.
   for (const width of [1100, 390]) {
