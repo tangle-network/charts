@@ -114,7 +114,7 @@ function summaryCells(trace: FlowTrace, at: ReturnType<typeof totalsAt> | undefi
     // No cost source at all: the tile goes rather than print a dash beside real numbers.
     ...(cost.value === '—' ? [] : [[cost.label, cost.value, cost.title] as [string, ReactNode, string?]]),
     ['Tokens', formatCount(tokens), `${tokens.toLocaleString()} tokens`],
-    ['LLM calls', modelCalls === undefined ? '—' : modelCalls.toLocaleString(), modelCalls === undefined ? 'Model output windows do not establish the number of LLM requests' : undefined],
+    ['Model calls', modelCalls === undefined ? '—' : modelCalls.toLocaleString(), modelCalls === undefined ? 'Model output windows do not establish the number of model requests' : undefined],
     ['Tool calls', (at ? at.toolCalls : trace.toolCalls)?.toLocaleString() ?? '—', (at ? at.toolCalls : trace.toolCalls) === undefined ? 'The producer did not count tool calls' : undefined],
     ['Errors', errors.toLocaleString()],
   ]
@@ -123,7 +123,7 @@ function summaryCells(trace: FlowTrace, at: ReturnType<typeof totalsAt> | undefi
 
 /** One legend item per outcome label the agents carry, with its count; nothing when no agent has an outcome. */
 // Outcome keys keep one order on every page: good news first, then what needs a look, then what produced nothing.
-const TONE_ORDER = ['ok', 'warn', 'failed', 'neutral']
+const TONE_ORDER = ['live', 'ok', 'warn', 'failed', 'neutral']
 
 /** What each mark means, as the agent view draws it; a key only for kinds the run has. */
 function KindLegend({ rows }: { rows: FlowWaterfallRow[] }) {
@@ -134,6 +134,14 @@ function KindLegend({ rows }: { rows: FlowWaterfallRow[] }) {
   return <ul className="fw-legend fw-kinds" aria-label="Key">
     {shown.map(([kind, name]) => <li key={kind}><span className={`fw-swatch-${kind === 'waiting' ? 'wait' : kind}`} aria-hidden />{name}</li>)}
   </ul>
+}
+
+/** The axis dots and the dashed lines they drop: one key naming what they mark (a release, or the kinds the host gave). */
+function MarkerLegend({ markers }: { markers?: FlowMarker[] }) {
+  if (!markers?.length) return null
+  const kinds = [...new Set(markers.map(marker => marker.kind ?? 'event'))]
+  const name = kinds.length === 1 ? `${kinds[0]![0]!.toUpperCase()}${kinds[0]!.slice(1)}` : 'Event'
+  return <ul className="fw-legend fw-kinds" aria-label="Markers"><li><span className="fw-swatch-event" aria-hidden />{name} <b>{markers.length}</b></li></ul>
 }
 
 function OutcomeLegend({ agents }: { agents: FlowWaterfallRow[] }) {
@@ -343,7 +351,10 @@ export function FlowWaterfall({
     const preferred = card.above ? room.above : room.below
     const other = card.above ? room.below : room.above
     const above = box.height <= preferred || (box.height > other && preferred >= other) ? card.above : !card.above
-    setCard({ ...card, fitted: true, above, top: above ? Math.max(8, card.anchorTop - 8 - box.height) : card.anchorBottom + 8 })
+    // Neither side holds it whole: it shifts up until its last row is in view, but never above the chart or the viewport.
+    const floor = globalThis.innerHeight - hostTop - 8 - box.height
+    const top = Math.max(Math.min(above ? card.anchorTop - 8 - box.height : card.anchorBottom + 8, floor), Math.max(8, 8 - hostTop))
+    setCard({ ...card, fitted: true, above, top })
   }, [card, cardId])
   latest.current.inspect = (target, element, x) => { if (!card?.pinned) place(target, element, false, x) }
   const inspect = useCallback((target: string, element: HTMLElement, x?: number) => latest.current.inspect(target, element, x), [])
@@ -422,15 +433,14 @@ export function FlowWaterfall({
             <span className="fw-title-glyph" aria-hidden><TraceGlyph /></span>
             <h3 className="fw-title">{label}</h3>
             {description && <p className="fw-description" title={description}>{description}</p>}
+            {/* The headline shares the title's line (one row less above the lanes); it says only what the stat strip cannot. */}
+            {view === 'agents' && <p className="fw-headline" aria-live="polite">
+              {agents.length} {agents.length === 1 ? 'agent' : 'agents'}{sharedDetail ? ` · ${agents.every(row => row.span.detail === sharedDetail) ? '' : 'mostly '}${sharedDetail}` : ''}{done && speedup >= 1.05 ? ` · ${speedup.toFixed(1)}x parallel` : ''}
+            </p>}
             {isLive && <span className="fw-state fw-state-live">Live</span>}
           </div>
-          {view === 'agents' && <p className="fw-headline" aria-live="polite">
-            {/* Duration, cost and tokens live in the stat strip below; the headline says only what the strip cannot. */}
-            {done && <span className="fw-done-mark" aria-label="done">✓</span>}
-            {agents.length} {agents.length === 1 ? 'agent' : 'agents'}{sharedDetail ? ` · ${agents.every(row => row.span.detail === sharedDetail) ? '' : 'mostly '}${sharedDetail}` : ''}{done && speedup >= 1.05 ? ` · ${speedup.toFixed(1)}x parallel` : ''}
-          </p>}
           {/* One legend row: outcomes, then the bar-type key (round 24: stacked key bands read as clutter above the rows). */}
-          <div className="fw-legends"><OutcomeLegend agents={agents} />{view === 'agents' && <KindLegend rows={rows} />}</div>
+          <div className="fw-legends"><OutcomeLegend agents={agents} />{view === 'agents' && <KindLegend rows={rows} />}<MarkerLegend markers={markers} /></div>
         </div>
         <div className="fw-tools">
           <div className="fw-views" role="radiogroup" aria-label="Trace view">

@@ -21,6 +21,8 @@
   --fw-failed: var(--surface-danger-text);
   --fw-ok: var(--surface-success-text);
   --fw-amber: var(--surface-warning-text);
+  /* The running hue: a live agent's dot, outcome and pill. The host sets it to the one running ink its other pages use. */
+  --fw-live: var(--fw-accent);
   /* Step kinds inside an agent bar: the chart accent and a categorical hue, far from the outcome greens and reds. */
   --fw-kind-model: var(--chart-accent);
   --fw-kind-tool: var(--tone-cyan-icon);
@@ -85,10 +87,10 @@
 .fw-root .fw-title { font-size: 14px; line-height: 20px; font-weight: 600; letter-spacing: -.005em; white-space: nowrap; }
 .fw-root .fw-state { display: inline-flex; align-items: center; gap: 8px; height: 20px; padding: 0 8px; border-radius: var(--radius-pill); font-size: 14px; font-weight: 600; color: var(--fw-muted); background: var(--fw-well); flex-shrink: 0; }
 .fw-root .fw-state::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.fw-root .fw-state-live { color: var(--fw-accent); background: color-mix(in oklab, var(--fw-accent) 12%, transparent); }
+.fw-root .fw-state-live { color: var(--fw-live); background: color-mix(in oklab, var(--fw-live) 12%, transparent); }
 .fw-root .fw-state-live::before { animation: fw-pulse 1.6s var(--fw-ease) infinite; }
-.fw-root .fw-headline { color: var(--fw-muted); display: flex; align-items: center; gap: 8px; }
-.fw-root .fw-done-mark { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--fw-ok); color: var(--fw-ok); font-size: 12px; line-height: 1; }
+.fw-root .fw-headline { color: var(--fw-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.fw-root .fw-headline::before { content: "·"; margin-right: 8px; }
 .fw-root .fw-tools { display: flex; align-items: center; gap: 8px; }
 .fw-root .fw-views { display: inline-flex; padding: 4px; border-radius: var(--radius-md); background: var(--fw-well); border: 1px solid var(--fw-border); }
 .fw-root .fw-view-button { appearance: none; border: 0; background: transparent; height: 24px; padding: 0 12px; border-radius: var(--radius-sm); font-size: 14px; color: var(--fw-muted); cursor: pointer; transition: background-color 120ms var(--fw-ease), color 120ms var(--fw-ease); }
@@ -234,9 +236,9 @@
 /* While searching, ancestors shown only for context recede and the matching names stand out. */
 .fw-root .fw-row[data-search="context"] .fw-label { opacity: 0.55; }
 .fw-root .fw-row[data-search="match"] .fw-name-text { font-weight: 600; }
-/* A restart: an amber notch through the bar at that moment; the bar keeps its own state. */
+/* A restart: a notch in the failure ink through the bar at that moment (the run overview's ✕); the bar keeps its own state. */
 .fw-root .fw-mark { position: absolute; z-index: 2; left: calc(var(--x0) - 1px); width: 2px; top: calc(50% + var(--fw-bar-shift) - var(--fw-bar-h) / 2 - 4px); height: calc(var(--fw-bar-h) + 8px);
-  border-radius: 2px; background: var(--fw-amber); box-shadow: 0 0 0 1px var(--fw-surface); pointer-events: auto; }
+  border-radius: 2px; background: var(--fw-failed); box-shadow: 0 0 0 1px var(--fw-surface); pointer-events: auto; }
 /* Centered by top, not a negative margin, so measured spacing stays on the grid. */
 .fw-root :is(.fw-bar, .fw-seg) { top: calc(50% + var(--fw-bar-shift) - var(--fw-bar-h) / 2); height: var(--fw-bar-h); width: max(var(--w), calc(var(--on) * 3px)); border-radius: var(--radius-tag); cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .fw-root .fw-bar { background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); }
@@ -263,10 +265,10 @@
    failure keeps its red glyph, so color only ever means state. */
 .fw-root.fw-fill-muted .fw-view-agents [data-tone] { --tone: var(--fw-h0); }
 /* With per-agent hues the slowest agent keeps its own hue and says so with the amber pill (round 27: an amber-brown bar read "muddy"). */
-.fw-root.fw-fill-muted .fw-view-agents .fw-row[data-slowest], .fw-root.fw-fill-muted .fw-view-agents .fw-row[data-slowest] [data-tone] { --tone: var(--fw-amber); }
 .fw-root [data-outcome="ok"], .fw-root [data-outcome="ok"] [data-tone] { --tone: var(--fw-ok); }
 .fw-root [data-outcome="failed"], .fw-root [data-outcome="failed"] [data-tone] { --tone: var(--fw-failed); }
 .fw-root [data-outcome="warn"], .fw-root [data-outcome="warn"] [data-tone] { --tone: var(--fw-amber); }
+.fw-root [data-outcome="live"], .fw-root [data-outcome="live"] [data-tone] { --tone: var(--fw-live); }
 .fw-root [data-outcome="neutral"], .fw-root [data-outcome="neutral"] [data-tone] { --tone: var(--fw-muted); }
 .fw-root .fw-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; padding: 0; list-style: none; color: var(--fw-muted); font-size: 14px; line-height: 18px; }
 .fw-root .fw-legend li { display: inline-flex; align-items: center; gap: 8px; }
@@ -279,6 +281,7 @@
 .fw-root.fw-fill-agent .fw-kinds .fw-swatch-tool { background: light-dark(oklch(0.80 0 0), oklch(0.64 0 0)); }
 .fw-root .fw-kinds .fw-swatch-tool { width: 12px; height: 8px; border-radius: 2px; background: var(--fw-kind-tool); }
 .fw-root .fw-kinds .fw-swatch-wait { width: 12px; height: 8px; border-radius: 2px; background: color-mix(in oklab, var(--fw-text) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-text) 18%, transparent); }
+.fw-root .fw-kinds .fw-swatch-event { width: 8px; height: 8px; border-radius: 50%; background: var(--fw-muted); box-shadow: 0 0 0 2px var(--fw-surface); }
 .fw-root .fw-kinds .fw-swatch-handoff { width: 10px; height: 8px; border-left: 1.5px solid var(--fw-muted); border-bottom: 1.5px solid var(--fw-muted); border-bottom-left-radius: 3px; }
 .fw-root .fw-description { margin: 0; color: var(--fw-muted); font-size: 14px; line-height: 20px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fw-root .fw-legend .fw-swatch { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
@@ -317,9 +320,9 @@
 .fw-root .fw-seg-chip { padding: 0 4px; border-radius: var(--radius-pill); background: color-mix(in oklab, currentColor 18%, transparent); font-weight: 600; font-variant-numeric: tabular-nums; }
 .fw-root .fw-seg-meta { font-variant-numeric: tabular-nums; }
 @container (max-width: 24px) { .fw-root :is(.fw-seg-label, .fw-view-agents .fw-seg .fw-glyph) { display: none; } }
-/* Fail and retry read as filled chips inside the bar, red and amber, as the references draw them. */
+/* Fail and retry read as filled chips inside the bar: red, and a quiet grey for a retry that recovered. */
 .fw-root .fw-view-agents .fw-seg .fw-glyph { flex: none; margin-left: 6px; display: grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; background: var(--fw-failed); color: light-dark(var(--fw-surface), hsl(var(--hsl-background))); }
-.fw-root .fw-view-agents .fw-seg .fw-glyph[data-glyph="retry"] { background: var(--fw-amber); }
+.fw-root .fw-view-agents .fw-seg .fw-glyph[data-glyph="retry"] { background: var(--fw-muted); }
 .fw-root .fw-view-agents .fw-seg .fw-glyph svg { width: 9px; height: 9px; stroke-width: 2.5; }
 .fw-root:is(.fw-fill-muted, .fw-fill-outcome) .fw-view-agents :is(.fw-seg-alt.fw-seg-model, .fw-seg-alt.fw-seg-tool) { filter: brightness(.88); }
 .fw-root .fw-seg-failed { background: color-mix(in oklab, var(--fw-failed) 18%, var(--fw-surface)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-failed) 70%, transparent); color: var(--fw-failed); }
@@ -335,7 +338,7 @@
   background: linear-gradient(var(--fw-tint, transparent) 0 0), var(--fw-surface); white-space: nowrap; pointer-events: none; }
 .fw-root .fw-duration { font-size: 14px; color: var(--fw-muted); font-variant-numeric: tabular-nums; }
 .fw-root .fw-k-failed ~ .fw-end .fw-duration { color: var(--fw-failed); }
-.fw-root .fw-badge { height: 18px; padding: 0 8px; border-radius: var(--radius-pill); font-size: 14px; line-height: 18px; font-weight: 600; color: var(--fw-amber); background: color-mix(in oklab, var(--fw-amber) 13%, transparent); border: 1px solid color-mix(in oklab, var(--fw-amber) 28%, transparent); }
+.fw-root .fw-badge { height: 20px; padding: 0 8px; border-radius: var(--radius-pill); font-size: 14px; line-height: 20px; font-weight: 500; color: var(--fw-muted); background: transparent; box-shadow: inset 0 0 0 1px var(--fw-border); }
 
 /* Handoff elbows: 1.5 px stroke, 6 px radius, a 5 px dot where the handoff leaves its sender. */
 /* Under the rows (which follow it), so end labels and badges always sit above the connectors. */
@@ -364,7 +367,7 @@
 /* The playhead: a round knob on a thin neutral track, visible at rest without outweighing the chart. */
 .fw-root.fw-root-agents .fw-slider::-webkit-slider-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--fw-text); box-shadow: 0 0 0 3px var(--fw-surface); }
 .fw-root.fw-root-agents .fw-slider::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--fw-text); box-shadow: 0 0 0 3px var(--fw-surface); }
-.fw-root .fw-card { position: absolute; z-index: 20; width: min(320px, calc(100% - 16px)); padding: 12px; border-radius: var(--radius-xl); background: var(--fw-raised); border: 1px solid var(--fw-border);
+.fw-root .fw-card { position: absolute; z-index: 20; width: min(320px, calc(100% - 16px)); max-height: min(60vh, 560px); overflow-y: auto; overscroll-behavior: contain; padding: 12px; border-radius: var(--radius-xl); background: var(--fw-raised); border: 1px solid var(--fw-border);
   box-shadow: var(--shadow-dropdown); animation: fw-arrive 140ms var(--fw-ease); }
 /* A hover card never covers the next mark: only a pinned card (a dialog) takes the pointer. */
 .fw-root .fw-card[role="tooltip"] { pointer-events: none; }
@@ -377,7 +380,7 @@
 .fw-root .fw-card-name { flex: 1; min-width: 0; font-size: 14px; line-height: 20px; font-weight: 600; overflow-wrap: anywhere; }
 .fw-root .fw-pill { flex-shrink: 0; height: 20px; padding: 0 8px; border-radius: var(--radius-pill); font-size: 14px; line-height: 20px; font-weight: 600; }
 .fw-root .fw-pill-done { color: var(--fw-ok); background: color-mix(in oklab, var(--fw-ok) 13%, transparent); }
-.fw-root .fw-pill-running { color: var(--fw-accent); background: color-mix(in oklab, var(--fw-accent) 13%, transparent); }
+.fw-root .fw-pill-running { color: var(--fw-live); background: color-mix(in oklab, var(--fw-live) 13%, transparent); }
 .fw-root .fw-pill-failed { color: var(--fw-failed); background: color-mix(in oklab, var(--fw-failed) 13%, transparent); }
 .fw-root .fw-icon-button { appearance: none; display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--fw-muted); cursor: pointer; flex-shrink: 0; }
 .fw-root .fw-icon-button:hover:not(:disabled) { background: var(--fw-hover); color: var(--fw-text); }
@@ -390,7 +393,8 @@
 /* A value of several parts wraps between parts, never inside one ("4.0M" / "cached"). */
 .fw-root .fw-card-parts { display: flex; flex-wrap: wrap; column-gap: 4px; }
 .fw-root .fw-card-parts > * { white-space: nowrap; }
-.fw-root .fw-card-parts > * + *::before { content: "· "; color: var(--fw-muted); }
+.fw-root .fw-card-parts:not(.fw-card-stack) > * + *::before { content: "· "; color: var(--fw-muted); }
+.fw-root .fw-card-stack { flex-direction: column; }
 .fw-root .fw-card-tools { display: grid; grid-template-columns: minmax(0, max-content) max-content; justify-content: start; column-gap: 16px; margin-top: 4px; color: var(--fw-muted); font-weight: 400; }
 .fw-root .fw-card-tools > span { display: contents; }
 .fw-root .fw-card-tools > span > :first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

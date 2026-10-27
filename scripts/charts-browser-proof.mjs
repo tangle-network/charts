@@ -294,9 +294,9 @@ try {
     await page.mouse.move(pointer.x, pointer.y)
     await page.locator('.fw-card-table').waitFor()
     const table = await page.locator('.fw-card-table > div').evaluateAll(rows => Object.fromEntries(rows.map(row => [row.querySelector('dt').textContent, row.querySelector('dd').textContent])))
-    assert.deepEqual(Object.keys(table), ['Model', 'Duration', 'Tokens', 'LLM latency', 'Cost', 'LLM calls', 'Tool calls', 'Failures', 'Retries'], JSON.stringify(table))
-    assert.match(table.Tokens, /^[\d.]+k in[\d.]+k out[\d.]+k cached$/)
-    assert.match(table['LLM latency'], /^[\d.]+s median[\d.]+s p95$/)
+    assert.deepEqual(Object.keys(table), ['Model', 'Duration', 'Tokens', 'Model latency', 'Cost', 'Model calls', 'Tool calls', 'Failures', 'Retries'], JSON.stringify(table))
+    assert.match(table.Tokens, /^[\d.]+K in[\d.]+K out[\d.]+K cached$/)
+    assert.match(table['Model latency'], /^[\d.]+s median[\d.]+s p95$/)
     assert.match(table.Cost, /^\$\d+\.\d\d$/)
     assert.equal(table['Tool calls'], '13bash5edit4read4')
     assert.equal(table.Failures, '1 failed step')
@@ -367,7 +367,7 @@ try {
     checks.collapseExpand = 'PASS'
     const terms = await root.locator('dt').allTextContents()
     // This trace has no cost source, so the Cost tile is left out rather than printed as a dash.
-    assert.deepEqual(terms, ['Duration', 'Tokens', 'LLM calls', 'Tool calls', 'Errors'])
+    assert.deepEqual(terms, ['Duration', 'Tokens', 'Model calls', 'Tool calls', 'Errors'])
     assert.deepEqual(await root.locator('dd').allTextContents(), ['7m 11s', '754.4k', '—', '35', '3'])
     assert.equal(await root.locator('dd').nth(1).getAttribute('title'), '754,448 tokens')
     checks.summary = 'PASS'
