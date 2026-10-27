@@ -214,13 +214,34 @@ try {
   assert.equal(await page.locator('.fw-heading .fw-kinds').count(), 1)
   const kinds = await page.evaluate(() => ['.fw-seg-model', '.fw-seg-tool'].map(sel => document.querySelector(`.fw-view-agents ${sel}`)).filter(Boolean).map(el => getComputedStyle(el).backgroundColor))
   assert.ok(kinds.length < 2 || kinds[0] !== kinds[1], `model and tool segments share a color: ${kinds}`)
-  // A shown in-bar step name fits its segment (ellipsized), and only segments of 56 px or more show one.
-  const segNames = await page.evaluate(() => [...document.querySelectorAll('.fw-seg-name')].filter(name => getComputedStyle(name).display !== 'none')
-    .map(name => ({ seg: name.parentElement.getBoundingClientRect().width, name: name.getBoundingClientRect().width })))
-  assert.ok(segNames.every(n => n.seg >= 56 && n.name <= n.seg + 0.5), `step names overflow or show in narrow segments: ${JSON.stringify(segNames.slice(0, 5))}`)
-  // A step's label (icon, name, count chip, duration and cost) never runs past its segment: parts drop as it narrows.
-  const cut = await page.evaluate(() => [...document.querySelectorAll('.fw-view-agents .fw-seg')].filter(seg => seg.scrollWidth > seg.clientWidth + 1).map(seg => seg.innerText))
-  assert.equal(cut.length, 0, `step labels cut: ${JSON.stringify(cut.slice(0, 5))}`)
+  // In-bar step labels show each part whole or not at all (round 28: "b…" and labels painting past bar ends), and hold 4.5:1 ink.
+  const labels = await page.evaluate(() => {
+    const canvas = document.createElement('canvas').getContext('2d', { willReadFrequently: true })
+    const rgb = css => { canvas.clearRect(0, 0, 1, 1); canvas.fillStyle = css; canvas.fillRect(0, 0, 1, 1); return [...canvas.getImageData(0, 0, 1, 1).data.slice(0, 3)] }
+    const lum = c => { const [r, g, b] = c.map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4 }); return 0.2126 * r + 0.7152 * g + 0.0722 * b }
+    const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05) }
+    const out = { cut: [], ellipsis: 0, low: [], shown: 0 }
+    for (const label of document.querySelectorAll('.fw-view-agents .fw-seg-label')) {
+      if (getComputedStyle(label).display === 'none') continue
+      const box = label.getBoundingClientRect(), seg = label.closest('.fw-seg')
+      const visible = [...label.children].filter(part => part.getBoundingClientRect().top < box.top + 8)
+      for (const part of visible) {
+        const r = part.getBoundingClientRect()
+        if (r.right > box.right + 0.5 || r.right > seg.getBoundingClientRect().right) out.cut.push(`${seg.innerText.slice(0, 30)} ${Math.round(r.right - box.right)}px`)
+        if (getComputedStyle(part).textOverflow === 'ellipsis') out.ellipsis++
+      }
+      if (visible.some(part => part.textContent)) {
+        out.shown++
+        const contrast = ratio(rgb(getComputedStyle(label).color), rgb(getComputedStyle(seg).backgroundColor))
+        if (contrast < 4.5) out.low.push(`${label.innerText.slice(0, 20)} ${contrast.toFixed(2)}`)
+      }
+    }
+    return out
+  })
+  assert.ok(labels.shown > 0, 'no in-bar step label shows')
+  assert.deepEqual(labels.cut, [], `step label parts cut or past their step: ${JSON.stringify(labels.cut.slice(0, 5))}`)
+  assert.equal(labels.ellipsis, 0, 'a step label part ellipsizes')
+  assert.deepEqual(labels.low, [], `step label ink under 4.5:1: ${JSON.stringify(labels.low.slice(0, 5))}`)
   checks.hostMarks = 'PASS'
   // Every end label (duration, cost, Slowest/Costliest) stays inside its lane, on the surface, at 1100 px and on a phone.
   for (const width of [1100, 390]) {

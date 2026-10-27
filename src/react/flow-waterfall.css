@@ -298,22 +298,22 @@
 .fw-root.fw-fill-agent .fw-view-agents .fw-seg-tool { background: light-dark(color-mix(in oklab, var(--tone) 84%, var(--fw-surface)), color-mix(in oklab, var(--tone) 72%, var(--fw-text))); box-shadow: none; }
 /* A failed turn is still the agent's work: it keeps the agent's saturated hue, and the red cross on the ending turn says it failed. */
 .fw-root.fw-fill-agent .fw-view-agents .fw-seg-failed { background: light-dark(color-mix(in oklab, var(--tone) 84%, var(--fw-surface)), color-mix(in oklab, var(--tone) 72%, var(--fw-text))); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-failed) 55%, transparent); }
-.fw-root .fw-view-agents .fw-seg { container-type: inline-size; justify-content: flex-start; gap: 4px; white-space: nowrap; font-size: 12px; line-height: 16px; color: light-dark(var(--fw-surface), hsl(var(--hsl-background))); }
+.fw-root .fw-view-agents .fw-seg { container-type: inline-size; justify-content: flex-start; font-size: 12px; line-height: 16px; white-space: nowrap; color: var(--fw-seg-ink); }
+/* Label ink holds 4.5:1 on its fill: light text on the darker model step, a near-black of the agent's hue on the lighter tool step
+   (round 28: white on the pale light-theme fills failed); on dark the steps are bright, so ink is the page's dark. */
+.fw-root .fw-view-agents .fw-seg-model { --fw-seg-ink: light-dark(var(--fw-surface), hsl(var(--hsl-background))); }
+.fw-root .fw-view-agents :is(.fw-seg-tool, .fw-seg-failed) { --fw-seg-ink: light-dark(color-mix(in oklab, var(--tone) 18%, black), hsl(var(--hsl-background))); }
 .fw-root .fw-view-agents .fw-seg > * { pointer-events: none; }
-/* The inset is the first part's margin, not the segment's padding, so a short step keeps its true width (padding set a 12 px floor). */
-.fw-root .fw-view-agents .fw-seg > :first-child { margin-left: 6px; }
-.fw-root .fw-seg-icon { display: inline-flex; flex: none; }
+/* One line, 6 px in from each end; a part that does not fit whole wraps to the hidden second line, so trailing parts drop first. */
+.fw-root .fw-seg-label { flex: 1; min-width: 0; height: 16px; margin: 0 6px; display: flex; flex-wrap: wrap; align-items: center; column-gap: 4px; overflow: hidden; }
+.fw-root .fw-seg-label > * { flex: none; height: 16px; display: inline-flex; align-items: center; }
 .fw-root .fw-seg-icon svg { width: 12px; height: 12px; stroke-width: 1.75; }
-.fw-root .fw-seg-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
-.fw-root .fw-seg-chip { flex: none; padding: 0 4px; border-radius: var(--radius-pill); background: color-mix(in oklab, currentColor 24%, transparent); font-weight: 600; font-variant-numeric: tabular-nums; }
-.fw-root .fw-seg-meta { flex: none; opacity: .85; font-variant-numeric: tabular-nums; }
-/* A narrowing step drops its cost first, then its duration, then its name and count, then its icon. */
-@container (max-width: 180px) { .fw-root .fw-seg-cost { display: none; } }
-@container (max-width: 96px) { .fw-root .fw-seg-meta { display: none; } }
-@container (max-width: 56px) { .fw-root :is(.fw-seg-name, .fw-seg-chip) { display: none; } }
-@container (max-width: 24px) { .fw-root :is(.fw-seg-icon, .fw-view-agents .fw-seg .fw-glyph) { display: none; } }
+.fw-root .fw-seg-name { font-weight: 600; }
+.fw-root .fw-seg-chip { padding: 0 4px; border-radius: var(--radius-pill); background: color-mix(in oklab, currentColor 18%, transparent); font-weight: 600; font-variant-numeric: tabular-nums; }
+.fw-root .fw-seg-meta { font-variant-numeric: tabular-nums; }
+@container (max-width: 24px) { .fw-root :is(.fw-seg-label, .fw-view-agents .fw-seg .fw-glyph) { display: none; } }
 /* Fail and retry read as filled chips inside the bar, red and amber, as the references draw them. */
-.fw-root .fw-view-agents .fw-seg .fw-glyph { flex: none; display: grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; background: var(--fw-failed); color: light-dark(var(--fw-surface), hsl(var(--hsl-background))); }
+.fw-root .fw-view-agents .fw-seg .fw-glyph { flex: none; margin-left: 6px; display: grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; background: var(--fw-failed); color: light-dark(var(--fw-surface), hsl(var(--hsl-background))); }
 .fw-root .fw-view-agents .fw-seg .fw-glyph[data-glyph="retry"] { background: var(--fw-amber); }
 .fw-root .fw-view-agents .fw-seg .fw-glyph svg { width: 9px; height: 9px; stroke-width: 2.5; }
 .fw-root:is(.fw-fill-muted, .fw-fill-outcome) .fw-view-agents :is(.fw-seg-alt.fw-seg-model, .fw-seg-alt.fw-seg-tool) { filter: brightness(.88); }
