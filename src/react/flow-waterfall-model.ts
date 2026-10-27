@@ -103,7 +103,7 @@ export function formatCost(usd: number): string {
 /** 9.8k, 754.4k, 1.2M with the exact count left to a title. */
 export function formatCount(n: number): string {
   if (n < 1000) return String(n)
-  if (n < 1_000_000) return `${(n / 1000).toFixed(1)}k`
+  if (n < 1_000_000) return `${(n / 1000).toFixed(1)}K`
   return `${(n / 1_000_000).toFixed(1)}M`
 }
 
@@ -446,7 +446,7 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
     // Failed means the outcome the host recorded when it gave one (a member can fail a step and still ship); status otherwise.
     const failed = members.filter(row => row.span.outcome ? row.span.outcome.tone === 'failed' : !row.ok).length
     // A family takes its members' outcome when they share one; mixed outcomes leave it without, drawn neutral.
-    const outcome = members.every(row => row.span.outcome && row.span.outcome.tone === members[0]!.span.outcome?.tone) ? members[0]!.span.outcome : undefined
+    const outcome = members.every(row => row.span.outcome && row.span.outcome.tone === members[0]!.span.outcome?.tone && !row.span.outcome.ring === !members[0]!.span.outcome?.ring) ? members[0]!.span.outcome : undefined
     out.push({
       // The family hangs off its members' parent, so the spawn elbow reaches it from the agent that started them.
       costFloor: known.length < members.length || members.some(row => row.costFloor),
@@ -464,7 +464,7 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
   return out
 }
 
-/** The second line of an agent row in parts: how it ended and how much it did (failed, 3 LLM calls, 412 tool calls; 6 agents, 4 failed).
+/** The second line of an agent row in parts: how it ended and how much it did (failed, 3 model calls, 412 tool calls; 6 agents, 4 failed).
  * The row shows the parts in order and drops the last ones whole when the line is full, never half a word. */
 export function agentSummary(row: FlowWaterfallRow): string[] {
   if (row.id.startsWith('family:')) {
@@ -478,8 +478,8 @@ export function agentSummary(row: FlowWaterfallRow): string[] {
   const tools = row.counts?.tool ?? 0
   // An agent without a recorded outcome says only that it runs or failed; a bare "done" read as a verdict the host never gave.
   const state = row.span.outcome?.label ?? (spanRunning(row.span) ? 'running' : !row.ok ? 'failed' : row.kind === 'pipeline' ? '' : 'done')
-  // LLM calls, as the summary strip and the card name them; a host's own "turns" can mean harness turns, a different count.
-  return [state, calls ? `${calls} LLM ${calls === 1 ? 'call' : 'calls'}` : '', tools ? `${tools} tool ${tools === 1 ? 'call' : 'calls'}` : ''].filter(Boolean)
+  // Model calls, as the summary strip and the card name them; a host's own "turns" can mean harness turns, a different count.
+  return [state, calls ? `${calls} model ${calls === 1 ? 'call' : 'calls'}` : '', tools ? `${tools} tool ${tools === 1 ? 'call' : 'calls'}` : ''].filter(Boolean)
 }
 
 /**

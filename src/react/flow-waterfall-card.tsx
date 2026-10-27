@@ -8,7 +8,7 @@ import { type FlowWaterfallRow, rowCostText, formatCount, formatSpanDuration, sp
 const keepWords = (name: string) => name.replace(/-/g, '‑')
 
 export const KIND_LABEL: Record<FlowSpan['kind'], string> = {
-  pipeline: 'Agent', model: 'LLM call', tool: 'Tool call', waiting: 'Waiting', handoff: 'Handoff',
+  pipeline: 'Agent', model: 'Model call', tool: 'Tool call', waiting: 'Waiting', handoff: 'Handoff',
 }
 
 export interface SpanCardProps {
@@ -44,14 +44,14 @@ function metrics(row: FlowWaterfallRow, clockMs: number, full: boolean): [string
   const tokens = row.tokens
   if (tokens) {
     const parts = ([['prompt', 'in'], ['completion', 'out'], ['cached', 'cached']] as const).flatMap(([key, unit]) => tokens[key] === undefined ? [] : [count(tokens[key], unit)])
-    out.push(['Tokens', <span className="fw-card-parts">{parts.map((part, i) => <span key={i}>{part}</span>)}</span>])
+    out.push(['Tokens', <span className={`fw-card-parts${parts.length > 2 ? ' fw-card-stack' : ''}`}>{parts.map((part, i) => <span key={i}>{part}</span>)}</span>])
   }
   const latency = row.modelMs
-  if (latency?.length) out.push(['LLM latency', <span className="fw-card-parts"><span>{formatSpanDuration(percentile(latency, 0.5))} median</span>{latency.length >= 10 && <span>{formatSpanDuration(percentile(latency, 0.95))} p95</span>}</span>])
+  if (latency?.length) out.push(['Model latency', <span className="fw-card-parts"><span>{formatSpanDuration(percentile(latency, 0.5))} median</span>{latency.length >= 10 && <span>{formatSpanDuration(percentile(latency, 0.95))} p95</span>}</span>])
   const cost = span.costUsd ?? row.rollupCostUsd
   if (cost !== undefined) out.push(['Cost', rowCostText(row, cost)])
   const counts = row.counts
-  if (counts?.model) out.push(['LLM calls', counts.model.toLocaleString()])
+  if (counts?.model) out.push(['Model calls', counts.model.toLocaleString()])
   if (counts?.tool) {
     const tools = Object.entries(counts.tools).sort(([a, x], [b, y]) => y - x || a.localeCompare(b))
     const rest = tools.length - TOOLS_SHOWN
@@ -96,7 +96,7 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
     const sentence = !owner && span.output && span.output !== who.name ? span.output : undefined
     return (
       <div {...frame} className="fw-card fw-card-compact" data-tone={toneKey(who.tone)} data-outcome={outcome?.tone}>
-        <div className="fw-card-agent"><span className="fw-agent-dot" aria-hidden /><span className="fw-card-who">{keepWords(who.name)}</span>
+        <div className="fw-card-agent"><span className="fw-agent-dot" data-ring={outcome?.ring || undefined} aria-hidden /><span className="fw-card-who">{keepWords(who.name)}</span>
           {outcome
             ? <span className="fw-pill fw-pill-outcome" data-tone="0" data-outcome={outcome.tone}>{outcome.label}</span>
             : <span className={`fw-pill fw-pill-${status.toLowerCase()}`}>{status}</span>}

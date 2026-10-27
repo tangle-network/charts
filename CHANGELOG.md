@@ -1,5 +1,16 @@
 # @tangle-network/charts
 
+## 0.21.23
+
+- The hover card never leaves the viewport. It is capped at 60% of the viewport's height (a pinned card scrolls inside), and when neither side of its mark holds it whole it shifts up until its last row is in view. On the served 25b Timeline the card ran past the bottom edge and cut its last row (10-27 judges).
+- One running hue. A new outcome tone, `live`, draws a running agent's dot, lane and key in `--fw-live` (the accent unless the host sets it), the same ink as the Live and Running pills. A host no longer has to borrow `warn` (amber) for a running agent, so amber stays for what needs attention.
+- An outcome can be a ring (`FlowOutcome.ring`): the dot, the key and the card draw a hollow ring in the tone, so two outcomes on one tone read apart (Done beside Shipped). A running agent with an outcome dot no longer also shows a spinner, which on 22a sat beside a green Shipped dot and contradicted it.
+- Amber is for attention only. Slowest and Costliest badges are neutral outlined pills, the muted fill no longer retones the slowest lane amber, a restart notch is the failure ink (the run overview's ✕), and a retried step's chip is grey.
+- One vocabulary: "Model call", "Model calls" and "Model latency" everywhere (the key already said Model call; the card, the agent subtitles and the stat strip said LLM). Thousands print as K, as every host prints them ("41.6K out", not "41.6k").
+- The card's tokens stack one value a line (in, out, cached), so no line starts on a separator ("· 3.8M cached").
+- The axis dots and their dashed lines get a key: "Release 4" (the markers' kind, or Event when they mix).
+- The agent count and parallel speedup share the title's line, and the green check beside them is gone, so the lanes start one row higher.
+
 ## 0.21.22
 
 - In the agent timeline, the whole connectors between agents draw only for the agent under the pointer, pinned or focused. At rest, a spawn is a short elbow into its child, and a return is not drawn. On a 55-agent run, root's spawns no longer draw dozens of full-height lines through every lane (Drew 10-26: "lines inconsistent"; the 10-27 judges: "the main source of clutter").

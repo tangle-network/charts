@@ -144,9 +144,10 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
           <span className={`fw-span-name${isAgent || row.hasChildren ? ' fw-strong' : ''}`}>
             {/* With agent fill, the outcome rides on the agent's dot in both views. */}
             {fillByAgent && isAgent && span.outcome
-              ? <span className="fw-agent-dot" data-tone="0" data-outcome={span.outcome.tone} title={span.outcome.label} aria-hidden />
+              ? <span className="fw-agent-dot" data-tone="0" data-outcome={span.outcome.tone} data-ring={span.outcome.ring || undefined} title={span.outcome.label} aria-hidden />
               : agentView && !step && <span className="fw-agent-dot" aria-hidden />}
-            {running && <span className="fw-spinner" role="status" aria-label="running" />}
+            {/* A live outcome dot already says it runs; a spinner beside it was a second, contradicting mark. */}
+            {running && !(fillByAgent && isAgent && span.outcome) && <span className="fw-spinner" role="status" aria-label="running" />}
             <span className="fw-name-text">{row.name}</span>
           </span>
           {/* Two levels on every agent row: the name, then how it ended and how much it did. */}
