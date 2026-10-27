@@ -1,5 +1,10 @@
 # @tangle-network/charts
 
+## 0.21.20
+
+- With per-agent hues, a step's kind is a fixed lightness on its agent's hue, the same for every hue: model OKLCH L 0.50 on light and 0.72 on dark, tool 0.80 and 0.46, chroma 0.10. Model is always the stronger step against the surface, so dark tool steps no longer read lighter than model steps against the key. The key's swatches use the same lightnesses. Label ink flips with the fill and holds 4.5:1.
+- The browser proof fails when one agent's model and tool steps differ by less than 0.18 OKLab L, or when the tool step is the stronger one.
+
 ## 0.21.19
 
 - In-bar step labels show each part (icon, tool name, count chip, duration, cost) whole or not at all: a part that does not fit wraps out of the one-line label box, so a label never reads "b…" and never paints past its step (blind round 28). The label sits 6px in from both ends.
