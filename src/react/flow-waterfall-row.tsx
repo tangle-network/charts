@@ -69,7 +69,8 @@ function Segment({ mark, events, agentView, ending }: { mark: FlowSegment; event
     {agentView && <span className="fw-seg-label">
       <span className="fw-seg-icon" aria-hidden><KindGlyph kind={model ? 'model' : 'tool'} name={mark.tool ?? mark.name} /></span>
       {name && <span className="fw-seg-name">{name}</span>}
-      {mark.count > 1 && <span className="fw-seg-chip">×{mark.count}</span>}
+      {/* A count reads only beside the tool it counts (round 29: a bare "×4" needed decoding). */}
+      {mark.count > 1 && name && <span className="fw-seg-chip">×{mark.count}</span>}
       {duration && <span className="fw-seg-meta">{duration}</span>}
       {mark.costUsd ? <span className="fw-seg-meta">{formatCost(mark.costUsd)}</span> : null}
     </span>}
@@ -161,7 +162,6 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
           )}
         </span>
         {folded && <span className="fw-count" aria-label={`${row.descendants} hidden steps`}>+{row.descendants}</span>}
-        {family && !props.expanded && <span className="fw-count" aria-label={`${row.descendants} agents folded`}>+{row.descendants}</span>}
         {/* An agent row already says it failed in its second line and marks the failed turn in its bar. */}
         {!row.ok && !agentView && <span className="fw-alert"><AlertGlyph label="failed" /></span>}
       </div>

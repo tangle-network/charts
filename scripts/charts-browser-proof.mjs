@@ -264,6 +264,14 @@ try {
       .map(([tone, k]) => ({ tone, dL: Math.abs(k.model - k.tool), modelStronger: Math.abs(k.model - surface) > Math.abs(k.tool - surface) }))
   })
   assert.ok(kindSteps.length > 0 && kindSteps.every(k => k.dL >= 0.18 && k.modelStronger), `kind lightness step: ${JSON.stringify(kindSteps)}`)
+  // Every filled agent dot is an outcome the legend shows (critique gate A2): the set of drawn dot colours is within the legend's.
+  const dots = await page.evaluate(() => {
+    const fill = el => getComputedStyle(el).backgroundColor
+    const legend = new Set([...document.querySelectorAll('.fw-legend .fw-swatch')].map(fill))
+    const drawn = [...document.querySelectorAll('.fw-view-agents .fw-agent-dot')].map(fill).filter(c => c !== 'rgba(0, 0, 0, 0)')
+    return { legend: [...legend], stray: [...new Set(drawn.filter(c => !legend.has(c)))] }
+  })
+  assert.deepEqual(dots.stray, [], `agent dots in colours the legend lacks: ${JSON.stringify(dots)}`)
   checks.hostMarks = 'PASS'
   // Every end label (duration, cost, Slowest/Costliest) stays inside its lane, on the surface, at 1100 px and on a phone.
   for (const width of [1100, 390]) {
