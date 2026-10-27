@@ -310,7 +310,13 @@ export function FlowBody(props: BodyProps) {
           <div className="fw-canvas" style={{ height: rows.length * rowHeight }}>
             <div className="fw-links" aria-hidden>
               {links.filter(link => Math.max(link.from, link.to) >= first && Math.min(link.from, link.to) <= last)
-                .map(link => <LinkMark key={link.id} link={link} rowHeight={rowHeight} hot={props.focusId !== undefined && (rows[link.from]?.id === props.focusId || rows[link.to]?.id === props.focusId)} />)}
+                .map(link => {
+                  const hot = props.focusId !== undefined && (rows[link.from]?.id === props.focusId || rows[link.to]?.id === props.focusId)
+                  // The agent view draws whole connectors only for the agent in focus. At rest a spawn is a short elbow into its
+                  // child and a return is not drawn, so 55 agents never stripe every lane with full-height lines.
+                  if (view === 'agents' && !hot && link.id.startsWith('r-')) return null
+                  return <LinkMark key={link.id} link={link} rowHeight={rowHeight} hot={hot} short={view === 'agents' && !hot} />
+                })}
             </div>
             {rows.slice(first, last).map((item, offset) => row(item, first + offset))}
           </div>

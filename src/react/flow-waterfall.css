@@ -83,7 +83,7 @@
 .fw-root .fw-title-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .fw-root .fw-title-glyph { display: inline-flex; color: var(--fw-accent); }
 .fw-root .fw-title { font-size: 14px; line-height: 20px; font-weight: 600; letter-spacing: -.005em; white-space: nowrap; }
-.fw-root .fw-state { display: inline-flex; align-items: center; gap: 8px; height: 20px; padding: 0 8px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; color: var(--fw-muted); background: var(--fw-well); flex-shrink: 0; }
+.fw-root .fw-state { display: inline-flex; align-items: center; gap: 8px; height: 20px; padding: 0 8px; border-radius: var(--radius-pill); font-size: 14px; font-weight: 600; color: var(--fw-muted); background: var(--fw-well); flex-shrink: 0; }
 .fw-root .fw-state::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .fw-root .fw-state-live { color: var(--fw-accent); background: color-mix(in oklab, var(--fw-accent) 12%, transparent); }
 .fw-root .fw-state-live::before { animation: fw-pulse 1.6s var(--fw-ease) infinite; }
@@ -104,16 +104,16 @@
 .fw-root .fw-summary { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); border-bottom: 1px solid var(--fw-border); }
 .fw-root .fw-summary > div { padding: 12px 16px; min-width: 0; }
 .fw-root .fw-summary > div + div { border-left: 1px solid var(--fw-border); }
-.fw-root .fw-summary dt { font-size: 12px; line-height: 16px; color: var(--fw-muted); }
+.fw-root .fw-summary dt { font-size: 14px; line-height: 18px; color: var(--fw-muted); }
 .fw-root .fw-value { margin-top: 4px; font-size: 18px; line-height: 24px; font-weight: 600; letter-spacing: -.01em; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fw-root .fw-has-errors .fw-value { color: var(--fw-failed); }
 
 /* Axis */
-.fw-root .fw-axis { display: grid; grid-template-columns: var(--fw-label-col) minmax(0, 1fr); height: 32px; color: var(--fw-muted); font-size: 12px; }
+.fw-root .fw-axis { display: grid; grid-template-columns: var(--fw-label-col) minmax(0, 1fr); height: 32px; color: var(--fw-muted); font-size: 14px; }
 .fw-root .fw-axis-top { border-bottom: 1px solid var(--fw-border); }
 .fw-root .fw-axis-label { position: relative; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 16px; border-right: 1px solid var(--fw-border); min-width: 0; }
 .fw-root .fw-branch-controls { margin-left: auto; display: flex; gap: 4px; }
-.fw-root .fw-text-button { appearance: none; border: 0; background: transparent; height: 24px; padding: 0 8px; border-radius: var(--radius-sm); font-size: 12px; color: var(--fw-muted); cursor: pointer; white-space: nowrap; }
+.fw-root .fw-text-button { appearance: none; border: 0; background: transparent; height: 24px; padding: 0 8px; border-radius: var(--radius-sm); font-size: 14px; color: var(--fw-muted); cursor: pointer; white-space: nowrap; }
 .fw-root .fw-text-button:hover { background: var(--fw-hover); color: var(--fw-text); }
 .fw-root .fw-resize { position: absolute; top: 0; right: -4px; width: 8px; height: 100%; cursor: col-resize; z-index: 2; }
 .fw-root .fw-resize:hover, .fw-root .fw-resize:focus-visible { background: linear-gradient(90deg, transparent 3px, var(--fw-accent) 3px 5px, transparent 5px); outline: 0; }
@@ -142,14 +142,14 @@
 .fw-root .fw-pause { top: 0; bottom: 0; background: color-mix(in oklab, var(--fw-text) 4%, transparent); border-inline: 1px dashed color-mix(in oklab, var(--fw-text) 18%, transparent); }
 .fw-root .fw-pause-mark { bottom: 3px; height: 6px; border-radius: 2px; cursor: help;
   background: repeating-linear-gradient(-45deg, var(--fw-hatch) 0 1px, transparent 1px 4px); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-text) 18%, transparent); }
-.fw-root .fw-marker-label { position: absolute; top: 2px; left: 3px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 4px; border-radius: var(--radius-tag); font-size: 12px; line-height: 16px; color: var(--fw-marker); background: var(--fw-surface); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-marker) 40%, transparent); }
+.fw-root .fw-marker-label { position: absolute; top: 2px; left: 3px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 4px; border-radius: var(--radius-tag); font-size: 14px; line-height: 18px; color: var(--fw-marker); background: var(--fw-surface); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-marker) 40%, transparent); }
 .fw-root .fw-marker-label-left { left: auto; right: 3px; }
 .fw-root .fw-marker[data-tone="warn"], .fw-root .fw-event[data-tone="warn"] { --fw-marker: var(--fw-amber); }
 /* The event track: one dot per marker on the axis; click or N/P moves the cursor there. */
 .fw-root .fw-event { --fw-marker: var(--fw-muted); position: absolute; bottom: 2px; width: 8px; height: 8px; margin-left: -4px; padding: 0; border: 0; border-radius: 50%; background: var(--fw-marker); box-shadow: 0 0 0 2px var(--fw-surface); cursor: pointer; z-index: 4; left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); }
 .fw-root .fw-event[data-tone="ok"] { --fw-marker: var(--fw-ok); }
 .fw-root .fw-event[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--fw-surface), 0 0 0 4px var(--fw-marker); }
-.fw-root .fw-event-label { position: absolute; bottom: 14px; z-index: 5; transform: translateX(-50%); left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); padding: 0 8px; border-radius: var(--radius-tag); background: var(--fw-surface); box-shadow: inset 0 0 0 1px var(--fw-border); color: var(--fw-text); font-size: 12px; line-height: 20px; white-space: nowrap; pointer-events: none; }
+.fw-root .fw-event-label { position: absolute; bottom: 14px; z-index: 5; transform: translateX(-50%); left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); padding: 0 8px; border-radius: var(--radius-tag); background: var(--fw-surface); box-shadow: inset 0 0 0 1px var(--fw-border); color: var(--fw-text); font-size: 14px; line-height: 20px; white-space: nowrap; pointer-events: none; }
 .fw-root .fw-event[data-tone="failed"] { --fw-marker: var(--fw-failed); }
 .fw-root .fw-event:hover, .fw-root .fw-event:focus-visible { transform: scale(1.4); outline: 0; }
 .fw-root .fw-cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: color-mix(in oklab, var(--fw-text) 70%, transparent); left: calc(var(--fw-pad) + (var(--fw-t) - var(--fw-v0)) * var(--fw-k) * 1px); }
@@ -188,7 +188,7 @@
 .fw-root .fw-detail { color: var(--fw-muted); overflow: hidden; min-width: 0; display: inline-flex; align-items: center; gap: 4px; max-width: 100%; }
 .fw-root .fw-detail-icon { display: inline-flex; }
 .fw-root .fw-detail-icon :is(svg, img) { width: 12px; height: 12px; }
-.fw-root .fw-count { flex-shrink: 0; height: 18px; padding: 0 8px; border-radius: var(--radius-pill); background: var(--fw-well); border: 1px solid var(--fw-border); color: var(--fw-muted); font-size: 12px; line-height: 16px; font-variant-numeric: tabular-nums; }
+.fw-root .fw-count { flex-shrink: 0; height: 18px; padding: 0 8px; border-radius: var(--radius-pill); background: var(--fw-well); border: 1px solid var(--fw-border); color: var(--fw-muted); font-size: 14px; line-height: 18px; font-variant-numeric: tabular-nums; }
 .fw-root .fw-alert { display: inline-flex; color: var(--fw-failed); flex-shrink: 0; }
 .fw-root .fw-alert svg { width: 13px; height: 13px; }
 .fw-root .fw-spinner { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid color-mix(in oklab, var(--fw-accent) 30%, transparent); border-top-color: var(--fw-accent); animation: fw-spin .8s linear infinite; flex-shrink: 0; }
@@ -198,13 +198,13 @@
 .fw-root .fw-view-agents .fw-names { flex-direction: column; align-items: flex-start; gap: 0; }
 .fw-root .fw-view-agents .fw-span-name { font-weight: 600; line-height: 18px; }
 /* One 16 px line that wraps its last parts out of sight: when the line is full a count drops whole, never "48 …". */
-.fw-root .fw-view-agents .fw-subtitle { display: flex; align-items: center; column-gap: 4px; height: 16px; overflow: hidden; max-width: 100%; min-width: 0; color: var(--fw-muted); font-size: 12px; line-height: 16px; }
+.fw-root .fw-view-agents .fw-subtitle { display: flex; align-items: center; column-gap: 4px; height: 18px; overflow: hidden; max-width: 100%; min-width: 0; color: var(--fw-muted); font-size: 14px; line-height: 18px; }
 .fw-root .fw-view-agents .fw-subtitle-extra { flex: none; white-space: nowrap; }
 /* Only the tail wraps, so the first part is always on its line and shrinks with an ellipsis; later parts wrap out of sight. */
-.fw-root .fw-view-agents .fw-subtitle-tail { display: flex; flex-wrap: wrap; column-gap: 4px; height: 16px; overflow: hidden; min-width: 0; flex: 0 1 auto; }
+.fw-root .fw-view-agents .fw-subtitle-tail { display: flex; flex-wrap: wrap; column-gap: 4px; height: 18px; overflow: hidden; min-width: 0; flex: 0 1 auto; }
 .fw-root .fw-view-agents .fw-subtitle-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fw-root .fw-view-agents .fw-detail-icon { flex: none; width: 16px; height: 16px; align-items: center; justify-content: center; overflow: hidden; }
-.fw-root .fw-view-agents .fw-detail { font-size: 12px; line-height: 16px; }
+.fw-root .fw-view-agents .fw-detail { font-size: 14px; line-height: 18px; }
 .fw-root .fw-agent-dot { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--line, var(--fw-muted)); }
 /* The dot is outcome only (critique P0 #3): an agent with no recorded outcome gets a hollow ring, never its lane hue. */
 .fw-root .fw-row:not([data-outcome]) .fw-agent-dot:not([data-outcome]) { background: transparent; box-shadow: inset 0 0 0 1.5px var(--fw-muted); }
@@ -268,7 +268,7 @@
 .fw-root [data-outcome="failed"], .fw-root [data-outcome="failed"] [data-tone] { --tone: var(--fw-failed); }
 .fw-root [data-outcome="warn"], .fw-root [data-outcome="warn"] [data-tone] { --tone: var(--fw-amber); }
 .fw-root [data-outcome="neutral"], .fw-root [data-outcome="neutral"] [data-tone] { --tone: var(--fw-muted); }
-.fw-root .fw-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; padding: 0; list-style: none; color: var(--fw-muted); font-size: 12px; line-height: 16px; }
+.fw-root .fw-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; padding: 0; list-style: none; color: var(--fw-muted); font-size: 14px; line-height: 18px; }
 .fw-root .fw-legend li { display: inline-flex; align-items: center; gap: 8px; }
 .fw-root .fw-legends { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 24px; margin-top: 8px; }
 .fw-root .fw-legends .fw-legend { margin: 0; }
@@ -303,7 +303,7 @@
 .fw-root.fw-fill-agent .fw-view-agents :is(.fw-seg-tool, .fw-seg-failed) { background: light-dark(oklch(from var(--tone) 0.80 min(c, 0.10) h), oklch(from var(--tone) 0.64 min(c, 0.10) h)); box-shadow: none; }
 /* A failed turn is still the agent's work: it keeps the agent's hue, and the red cross on the ending turn says it failed. */
 .fw-root.fw-fill-agent .fw-view-agents .fw-seg-failed { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-failed) 55%, transparent); }
-.fw-root .fw-view-agents .fw-seg { container-type: inline-size; justify-content: flex-start; font-size: 12px; line-height: 16px; white-space: nowrap; color: var(--fw-seg-ink); }
+.fw-root .fw-view-agents .fw-seg { container-type: inline-size; justify-content: flex-start; font-size: 14px; line-height: 18px; white-space: nowrap; color: var(--fw-seg-ink); }
 /* Label ink holds 4.5:1 on its fill: page-light on the dark light-theme model step (L 0.50), page-dark on every other step
    (light tool 0.80, dark pastels 0.82 and 0.64). */
 .fw-root .fw-view-agents .fw-seg-model { --fw-seg-ink: light-dark(var(--fw-surface), hsl(var(--hsl-background))); }
@@ -333,9 +333,9 @@
 .fw-root .fw-end { z-index: 2; display: inline-flex; align-items: center; gap: 8px; top: calc(50% + var(--fw-bar-shift) - var(--fw-bar-h) / 2); height: var(--fw-bar-h);
   left: min(calc(var(--x0) + max(var(--w), 3px) + 4px), calc(100% - var(--fw-end-w, 0px) - 4px)); padding: 0 4px; border-radius: var(--radius-tag);
   background: linear-gradient(var(--fw-tint, transparent) 0 0), var(--fw-surface); white-space: nowrap; pointer-events: none; }
-.fw-root .fw-duration { font-size: 12px; color: var(--fw-muted); font-variant-numeric: tabular-nums; }
+.fw-root .fw-duration { font-size: 14px; color: var(--fw-muted); font-variant-numeric: tabular-nums; }
 .fw-root .fw-k-failed ~ .fw-end .fw-duration { color: var(--fw-failed); }
-.fw-root .fw-badge { height: 18px; padding: 0 8px; border-radius: var(--radius-pill); font-size: 12px; line-height: 16px; font-weight: 600; color: var(--fw-amber); background: color-mix(in oklab, var(--fw-amber) 13%, transparent); border: 1px solid color-mix(in oklab, var(--fw-amber) 28%, transparent); }
+.fw-root .fw-badge { height: 18px; padding: 0 8px; border-radius: var(--radius-pill); font-size: 14px; line-height: 18px; font-weight: 600; color: var(--fw-amber); background: color-mix(in oklab, var(--fw-amber) 13%, transparent); border: 1px solid color-mix(in oklab, var(--fw-amber) 28%, transparent); }
 
 /* Handoff elbows: 1.5 px stroke, 6 px radius, a 5 px dot where the handoff leaves its sender. */
 /* Under the rows (which follow it), so end labels and badges always sit above the connectors. */
@@ -369,13 +369,13 @@
 /* A hover card never covers the next mark: only a pinned card (a dialog) takes the pointer. */
 .fw-root .fw-card[role="tooltip"] { pointer-events: none; }
 .fw-root .fw-card-above .fw-card { transform: translateY(-100%); animation-name: fw-arrive-above; }
-.fw-root .fw-card-agent { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; font-weight: 600; }
+.fw-root .fw-card-agent { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 14px; font-weight: 600; }
 .fw-root .fw-card-agent .fw-agent-dot { align-self: center; }
 .fw-root .fw-card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .fw-root .fw-card-head .fw-icon-tile { flex-basis: 28px; width: 28px; height: 28px; border-radius: var(--radius-md); }
 .fw-root .fw-card-head .fw-icon-tile :is(svg, img) { width: 16px; height: 16px; }
 .fw-root .fw-card-name { flex: 1; min-width: 0; font-size: 14px; line-height: 20px; font-weight: 600; overflow-wrap: anywhere; }
-.fw-root .fw-pill { flex-shrink: 0; height: 20px; padding: 0 8px; border-radius: var(--radius-pill); font-size: 12px; line-height: 20px; font-weight: 600; }
+.fw-root .fw-pill { flex-shrink: 0; height: 20px; padding: 0 8px; border-radius: var(--radius-pill); font-size: 14px; line-height: 20px; font-weight: 600; }
 .fw-root .fw-pill-done { color: var(--fw-ok); background: color-mix(in oklab, var(--fw-ok) 13%, transparent); }
 .fw-root .fw-pill-running { color: var(--fw-accent); background: color-mix(in oklab, var(--fw-accent) 13%, transparent); }
 .fw-root .fw-pill-failed { color: var(--fw-failed); background: color-mix(in oklab, var(--fw-failed) 13%, transparent); }
@@ -383,9 +383,9 @@
 .fw-root .fw-icon-button:hover:not(:disabled) { background: var(--fw-hover); color: var(--fw-text); }
 .fw-root .fw-card-close { width: 20px; height: 20px; margin-right: -4px; }
 /* The card's table: label and value on one line each, every value with its unit; a tool breakdown sits under its total. */
-.fw-root .fw-card-table { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; padding-top: 8px; border-top: 1px solid var(--fw-border); font-size: 12px; line-height: 16px; }
+.fw-root .fw-card-table { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; padding-top: 8px; border-top: 1px solid var(--fw-border); font-size: 14px; line-height: 18px; }
 .fw-root .fw-card-table > div { display: contents; }
-.fw-root .fw-card-table dt, .fw-root .fw-card-label { font-size: 12px; line-height: 16px; color: var(--fw-muted); }
+.fw-root .fw-card-table dt, .fw-root .fw-card-label { font-size: 14px; line-height: 18px; color: var(--fw-muted); }
 .fw-root .fw-card-table dd { min-width: 0; font-weight: 500; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 /* A value of several parts wraps between parts, never inside one ("4.0M" / "cached"). */
 .fw-root .fw-card-parts { display: flex; flex-wrap: wrap; column-gap: 4px; }
@@ -399,7 +399,7 @@
 .fw-root .fw-card-compact .fw-card-agent { font-size: 14px; line-height: 20px; }
 .fw-root .fw-card-who { min-width: 0; flex: 1; overflow: hidden; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .fw-root .fw-pill-outcome { color: var(--line); background: color-mix(in oklab, var(--tone) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--tone) 35%, transparent); }
-.fw-root .fw-card-step { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--fw-border); color: var(--fw-muted); font-size: 12px; line-height: 16px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.fw-root .fw-card-step { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--fw-border); color: var(--fw-muted); font-size: 14px; line-height: 18px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .fw-root .fw-card-result { margin-top: 8px; font-size: 14px; line-height: 20px; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .fw-root .fw-card-text p { margin-top: 4px; color: var(--fw-text); overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 

@@ -92,7 +92,7 @@ function useHostable<T>(value: T | undefined, onChange: ((next: T) => void) | un
 }
 
 /** A card's anchor: the mark's top and bottom in the root, the side it opens on, and whether that side was checked against the viewport. */
-interface CardState { target: string; pinned: boolean; left: number; anchorTop: number; anchorBottom: number; above: boolean; fitted?: boolean }
+interface CardState { target: string; pinned: boolean; left: number; anchorTop: number; anchorBottom: number; above: boolean; fitted?: boolean; top?: number }
 // The card's width; on a narrower root it takes the root less an 8 px margin each side.
 const CARD_WIDTH = 320
 /** The value at least half of several agents share, if one does. */
@@ -338,10 +338,12 @@ export function FlowWaterfall({
     const box = document.getElementById(cardId)?.getBoundingClientRect()
     if (!box) return
     const hostTop = root.current.getBoundingClientRect().top
-    const room = { above: hostTop + card.anchorTop - 16, below: globalThis.innerHeight - (hostTop + card.anchorBottom) - 16 }
+    // Above its mark the card stays inside the chart: rising past the chart's top covered the page's header and tabs.
+    const room = { above: card.anchorTop - 16, below: globalThis.innerHeight - (hostTop + card.anchorBottom) - 16 }
     const preferred = card.above ? room.above : room.below
     const other = card.above ? room.below : room.above
-    setCard({ ...card, fitted: true, above: box.height <= preferred || (box.height > other && preferred >= other) ? card.above : !card.above })
+    const above = box.height <= preferred || (box.height > other && preferred >= other) ? card.above : !card.above
+    setCard({ ...card, fitted: true, above, top: above ? Math.max(8, card.anchorTop - 8 - box.height) : card.anchorBottom + 8 })
   }, [card, cardId])
   latest.current.inspect = (target, element, x) => { if (!card?.pinned) place(target, element, false, x) }
   const inspect = useCallback((target: string, element: HTMLElement, x?: number) => latest.current.inspect(target, element, x), [])
@@ -461,9 +463,9 @@ export function FlowWaterfall({
         nameWidth={nameWidth} onNameWidth={px => { resized.current = true; setNameWidth(Math.max(140, Math.min(560, px))) }} onTrack={setLaneElement}
         onExpandAll={rows.some(row => row.hasChildren) ? () => setCollapsed(new Set()) : undefined}
         onCollapseAll={() => setCollapsed(new Set(rows.filter(row => row.hasChildren).map(row => row.id)))} />
-      {card && cardRow && <div className={`fw-card-anchor${card.above ? ' fw-card-above' : ''}`}
+      {card && cardRow && <div className={`fw-card-anchor${card.above && card.top === undefined ? ' fw-card-above' : ''}`}
         onPointerEnter={() => clearTimeout(hideTimer.current)} onPointerLeave={card.pinned ? undefined : leave}>
-        <SpanCard id={cardId} row={cardRow} agent={cardAgent} clockMs={clockMs} left={card.left} top={card.above ? card.anchorTop - 8 : card.anchorBottom + 8} pinned={card.pinned} onClose={closeCard} renderIcon={renderIcon} compact={view === 'agents'} />
+        <SpanCard id={cardId} row={cardRow} agent={cardAgent} clockMs={clockMs} left={card.left} top={card.top ?? (card.above ? card.anchorTop - 8 : card.anchorBottom + 8)} pinned={card.pinned} onClose={closeCard} renderIcon={renderIcon} compact={view === 'agents'} />
       </div>}
       {view === 'spans' && playback}
     </section>
