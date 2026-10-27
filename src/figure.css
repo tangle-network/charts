@@ -26,7 +26,7 @@
 
 .tgc-noteref {
   margin-left: 2px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 400;
   color: var(--chart-ink-muted);
   text-decoration: none;
@@ -71,15 +71,15 @@
 
 .tgc-read {
   margin: 8px 0 0;
-  font-size: 12px;
-  line-height: 16px;
+  font-size: 14px;
+  line-height: 20px;
   color: var(--chart-ink-muted);
 }
 
 .tgc-data {
   margin: 8px 0 0;
-  font-size: 12px;
-  line-height: 16px;
+  font-size: 14px;
+  line-height: 20px;
 }
 .tgc-data > summary {
   cursor: pointer;
@@ -104,8 +104,8 @@
 .tgc-table {
   border-collapse: collapse;
   min-width: 100%;
-  font-size: 12px;
-  line-height: 16px;
+  font-size: 14px;
+  line-height: 20px;
   color: var(--chart-ink);
   /* A host page's table rules must not restyle the figure's table. */
   border: 0;
@@ -158,8 +158,8 @@
 .tgc-notes {
   margin: 16px 0 0;
   padding-left: 20px;
-  font-size: 12px;
-  line-height: 16px;
+  font-size: 14px;
+  line-height: 20px;
   color: var(--chart-ink-muted);
 }
 .tgc-notes li {

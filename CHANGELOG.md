@@ -1,5 +1,9 @@
 # @tangle-network/charts
 
+## 0.21.24
+
+- Nothing in the static figures or the live charts reads below 14px. The figure's note references, reading line, data table, data summary and notes were 12px (`figure.css`). The live charts' axis labels, bar values and meter text were 12px monospace (`live.css`); they are now 14px in the host's sans with tabular digits, as the design bar asks ("mono is for ids"). The dot-map tooltip was 12px. The 10-27 judges found `.tgc-table` and `.tgc-notes` at 12px in the served Discovery stylesheet, and the Fleet page's bar values and meter text use `live.css`.
+
 ## 0.21.23
 
 - The hover card never leaves the viewport. It is capped at 60% of the viewport's height (a pinned card scrolls inside), and when neither side of its mark holds it whole it shifts up until its last row is in view. On the served 25b Timeline the card ran past the bottom edge and cut its last row (10-27 judges).
