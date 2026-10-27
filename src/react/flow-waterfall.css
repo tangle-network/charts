@@ -305,8 +305,9 @@
 .fw-root .fw-seg-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
 .fw-root .fw-seg-chip { flex: none; padding: 0 4px; border-radius: var(--radius-pill); background: color-mix(in oklab, currentColor 24%, transparent); font-weight: 600; font-variant-numeric: tabular-nums; }
 .fw-root .fw-seg-meta { flex: none; opacity: .85; font-variant-numeric: tabular-nums; }
-/* A narrowing step drops its duration and cost first, then its name and count, then its icon. */
-@container (max-width: 160px) { .fw-root .fw-seg-meta { display: none; } }
+/* A narrowing step drops its cost first, then its duration, then its name and count, then its icon. */
+@container (max-width: 180px) { .fw-root .fw-seg-cost { display: none; } }
+@container (max-width: 96px) { .fw-root .fw-seg-meta { display: none; } }
 @container (max-width: 56px) { .fw-root :is(.fw-seg-name, .fw-seg-chip) { display: none; } }
 @container (max-width: 16px) { .fw-root .fw-seg-icon { display: none; } }
 /* Fail and retry read as filled chips inside the bar, red and amber, as the references draw them. */

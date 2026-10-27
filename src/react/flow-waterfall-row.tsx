@@ -56,18 +56,21 @@ function Segment({ mark, events, agentView, ending }: { mark: FlowSegment; event
   const glyph = mark.kind === 'failed' ? (agentView && !ending ? null : 'fail') : mark.retry ? 'retry' : null
   // Every agent-view step labels itself as the trace references do: its tool's icon and name, a count chip when merged steps share a
   // tool ("bash" ×9), then duration and cost. Container queries drop the meta, then the name, then the icon as the step narrows.
-  const name = mark.count === 1 ? mark.name : mark.tool
-  const meta = [Number.isFinite(mark.endMs) ? formatSpanDuration(mark.endMs - mark.startMs) : '', mark.costUsd ? formatCost(mark.costUsd) : ''].filter(Boolean).join(' · ')
+  const model = mark.kind === 'model' || mark.modelCall
+  const name = model ? undefined : mark.count === 1 ? mark.name : mark.tool
+  const duration = Number.isFinite(mark.endMs) ? formatSpanDuration(mark.endMs - mark.startMs) : ''
+  const meta = [duration, mark.costUsd ? formatCost(mark.costUsd) : ''].filter(Boolean).join(' · ')
   return <span className={`fw-seg fw-seg-${mark.kind}${mark.alt ? ' fw-seg-alt' : ''}`} data-tone={toneKey(mark.tone)} style={at(mark.startMs, mark.endMs)}
     title={mark.name ? `${mark.name}${mark.count > 1 ? ` +${mark.count - 1} more` : ''}${meta ? ` · ${meta}` : ''}` : undefined}
     onPointerEnter={agentView ? event => events.onInspect(mark.id, event.currentTarget, event.clientX) : undefined}
     onClick={agentView ? event => { event.stopPropagation(); events.onPin(mark.id, event.currentTarget, event.clientX) } : undefined}>
     {glyph && <span className="fw-glyph" data-glyph={glyph}>{glyph === 'fail' ? <FailGlyph /> : <RetryGlyph />}</span>}
     {agentView && <>
-      <span className="fw-seg-icon" aria-hidden><KindGlyph kind={mark.kind === 'model' ? 'model' : 'tool'} name={mark.tool ?? mark.name} /></span>
-      {mark.kind !== 'model' && name && <span className="fw-seg-name">{name}</span>}
+      <span className="fw-seg-icon" aria-hidden><KindGlyph kind={model ? 'model' : 'tool'} name={mark.tool ?? mark.name} /></span>
+      {name && <span className="fw-seg-name">{name}</span>}
       {mark.count > 1 && <span className="fw-seg-chip">×{mark.count}</span>}
-      {meta && <span className="fw-seg-meta">{meta}</span>}
+      {duration && <span className="fw-seg-meta">{duration}</span>}
+      {mark.costUsd ? <span className="fw-seg-meta fw-seg-cost">{formatCost(mark.costUsd)}</span> : null}
     </>}
   </span>
 }

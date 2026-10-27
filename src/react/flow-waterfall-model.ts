@@ -19,6 +19,8 @@ export interface FlowSegment {
   tool?: string
   /** What the merged steps cost, when any of them recorded a cost. */
   costUsd?: number
+  /** A failed mark that was a model call, so it draws the model's icon and no tool name. */
+  modelCall?: boolean
 }
 
 const toolOf = (name?: string) => name?.split(' · ')[0]
@@ -265,6 +267,7 @@ function segmentOf(row: FlowWaterfallRow): FlowSegment {
     name: row.name,
     tool: toolOf(row.name),
     ...(row.span.costUsd === undefined ? {} : { costUsd: row.span.costUsd }),
+    ...(!row.ok && row.kind === 'model' ? { modelCall: true } : {}),
   }
 }
 
