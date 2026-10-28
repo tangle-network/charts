@@ -12,7 +12,7 @@ export const OPEN_END = 1e13
 const at = (startMs: number, endMs: number): CSSProperties => ({ '--s': startMs, '--e': Number.isFinite(endMs) ? endMs : OPEN_END } as CSSProperties)
 // 12 px tabular text runs about 7 px a character; each badge adds its gap, padding and word. A little over, never under: a stacked
 // name stops this far from the lane's end.
-const endLabelWidth = (label: string, slowest?: boolean, costliest?: boolean) => label.length * 7 + 8 + (slowest ? 80 : 0) + (costliest ? 90 : 0)
+const endLabelWidth = (label: string) => label.length * 7 + 8
 
 export interface RowEvents {
   onToggle: (row: FlowWaterfallRow) => void
@@ -51,8 +51,7 @@ export interface RowProps extends RowEvents {
   expanded?: boolean
 }
 
-function Segment({ mark, events, agentView, ending }: { mark: FlowSegment; events: RowEvents; agentView: boolean; ending?: boolean }) {
-  // In the agent view only the turn that ended a failed agent carries the failure glyph; a retry always shows its own.
+function Segment({ mark, events, agentView }: { mark: FlowSegment; events: RowEvents; agentView: boolean }) {
   const glyph = mark.kind === 'failed' ? 'fail' : mark.retry ? 'retry' : null
   // Every agent-view step labels itself as the trace references do: its tool's icon and name, a count chip when merged steps share a
   // tool ("bash" ×9), then duration and cost. Each part shows whole or not at all: parts that do not fit wrap out of the one-line box,
@@ -111,7 +110,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   const step = agentView && row.stepOf !== undefined
   // An agent with its own steps opens them in place; a family opens its members.
   const opens = family || (agentView && isAgent && row.own.length > 0)
-  const ending = agentView && !row.ok ? marks.map(mark => mark.kind).lastIndexOf('failed') : -1
+  const outcomes = row.outcomes ?? (span.outcome ? [span.outcome] : [])
 
   return (
     <div role="row" data-span-id={row.id} data-span-kind={kind} data-slowest={slowest || undefined} data-critical={critical || undefined} data-search={searching ? (matched ? 'match' : 'context') : undefined} data-running={running || undefined} data-activity={activity.quiet ? "quiet" : undefined}
@@ -119,7 +118,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
       aria-selected={selected} tabIndex={focusable ? 0 : -1} data-tone={toneKey(row.tone)} data-outcome={fillByAgent ? undefined : span.outcome?.tone}
       className={`fw-row${active ? ' fw-active' : ''}${sticky ? ' fw-sticky-row' : ''}${isAgent ? ' fw-agent-row' : ''}${step ? ' fw-step' : ''}${motion?.enter !== undefined ? ' fw-enter' : ''}${motion?.settle ? ' fw-settle' : ''}`}
       // The end label's width rides on the row: a label that would run past the lane slides back over its bar's tail, and a stacked name stops short of it.
-      style={{ '--row-y': `${top}px`, '--fw-enter-delay': `${motion?.enter ?? 0}ms`, '--fw-end-w': `${endLabelWidth(label)}px` } as CSSProperties}
+      style={{ '--row-y': `${top}px`, '--fw-enter-delay': `${motion?.enter ?? 0}ms`, '--fw-end-w': `${endLabelWidth(label)}px`, '--fw-badge-w': `${(slowest ? 80 : 0) + (costliest ? 90 : 0)}px` } as CSSProperties}
       onFocus={event => { if (event.target === event.currentTarget) props.onActivate(row) }}
       onClick={event => {
         props.onActivate(row)
@@ -144,11 +143,11 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
         <span className="fw-names" title={`${row.name}${span.detail ? ` · ${span.detail}` : ''} · ${KIND_LABEL[span.kind]}${running ? ' · running' : ''}${row.ok ? '' : ' · failed'}`}>
           <span className={`fw-span-name${isAgent || row.hasChildren ? ' fw-strong' : ''}`}>
             {/* With agent fill, the outcome rides on the agent's dot in both views. */}
-            {fillByAgent && isAgent && span.outcome
-              ? <span className="fw-agent-dot" data-tone="0" data-outcome={span.outcome.tone} data-ring={span.outcome.ring || undefined} data-motion={span.outcome.tone === "live" && !activity.quiet ? "essential" : undefined} title={span.outcome.label} aria-hidden />
+            {(isAgent || agentView && !step) && outcomes.length
+              ? outcomes.map(outcome => <span key={`${outcome.label}:${outcome.tone}:${outcome.ring}`} className="fw-agent-dot" data-tone="0" data-outcome={outcome.tone} data-ring={outcome.ring || undefined} data-motion={outcome.tone === "live" && !activity.quiet ? "essential" : undefined} title={outcome.label} aria-hidden />)
               : agentView && !step && <span className="fw-agent-dot" aria-hidden />}
             {/* A live outcome dot already says it runs; a spinner beside it was a second, contradicting mark. */}
-            {running && !(fillByAgent && isAgent && span.outcome) && <span className="fw-spinner" data-motion={activity.quiet ? undefined : "essential"} role="status" aria-label="running" />}
+            {running && !((isAgent || agentView && !step) && outcomes.length) && <span className="fw-spinner" data-motion={activity.quiet ? undefined : "essential"} role="status" aria-label="running" />}
             <span className="fw-name-text">{row.name}</span>
             {activity.quiet && <span className="fw-quiet">Quiet {formatSpanDuration(activity.quietMs)}</span>}
           </span>
@@ -179,7 +178,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
             {!isAgent && row.ok && row.retry && <span className="fw-glyph"><RetryGlyph /></span>}
           </span>
           {activity.quiet && <span className="fw-quiet-tail" style={at(activity.last, OPEN_END)} aria-label={`Quiet ${formatSpanDuration(activity.quietMs)}`} />}
-          {marks.map((mark, i) => <Segment key={`${mark.id}-${i}`} mark={mark} events={props} agentView={agentView} ending={i === ending} />)}
+          {marks.map((mark, i) => <Segment key={`${mark.id}-${i}`} mark={mark} events={props} agentView={agentView} />)}
           <span className="fw-end" style={at(span.startMs, running ? OPEN_END : span.endMs)}>
             <span className="fw-duration">{label}</span>
             {slowest && <span className="fw-badge">Slowest</span>}
