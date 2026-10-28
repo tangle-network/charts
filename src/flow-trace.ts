@@ -61,7 +61,7 @@ export interface FlowPause {
   detail?: string
 }
 
-/** A host verdict: `label` is the legend text, `tone` the status color. */
+/** An optional host outcome; absent outcomes use the canonical lifecycle status. */
 export interface FlowOutcome {
   /** `live` is a running agent: the one running hue the host uses for every live mark. */
   tone: 'ok' | 'live' | 'neutral' | 'failed' | 'warn'
