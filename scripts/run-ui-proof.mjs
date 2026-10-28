@@ -3,6 +3,7 @@ import { build } from 'esbuild'
 import { createServer } from 'node:http'
 import { mkdirSync, renameSync, writeFileSync } from 'node:fs'
 import { chromium } from 'playwright'
+import { paletteAudit } from './run-ui-color.mjs'
 
 const out = process.env.PROOF_OUT ?? '/tmp/charts-run-ui-proof'
 mkdirSync(out, { recursive: true })
@@ -49,6 +50,9 @@ try {
       check(`${theme}/${width} 44px rows`,await page.locator('.fw-agent-row').first().evaluate(el=>el.getBoundingClientRect().height),44)
       await page.locator('.fw-key summary').click()
     }
+    const palette=await page.evaluate(paletteAudit)
+    console.log('PALETTE',theme,palette)
+    check(`${theme}/${width} identity/status distance`,palette.min>=20,true)
     const firstRow=page.locator('[data-span-id="agent-0"]')
     await firstRow.locator('.fw-bar').hover()
     await page.locator('.fw-card .fw-agent-dot').waitFor()
