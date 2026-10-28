@@ -107,7 +107,7 @@ function summaryCells(trace: FlowTrace, at: ReturnType<typeof totalsAt> | undefi
     ['Duration', formatSpanDuration(durationMs)],
     [cost.label, cost.value, cost.title],
     ['Tokens', tokens === undefined ? '—' : formatCount(tokens), tokens === undefined ? 'Tokens not reported' : `${tokens.toLocaleString()} tokens`],
-    ['Model calls', modelCalls === undefined ? '—' : modelCalls.toLocaleString(), modelCalls === undefined ? 'Model calls not reported; output windows do not establish request counts' : at ? 'Reported trace total' : undefined],
+    ['Model calls', modelCalls === undefined ? '—' : modelCalls.toLocaleString(), modelCalls === undefined ? 'Model calls not reported' : at ? 'Reported trace total' : undefined],
     ['Tool calls', toolCalls?.toLocaleString() ?? '—', toolCalls === undefined ? 'Tool calls not reported' : at ? 'Reported trace total' : undefined],
     ['Errors', errors?.toLocaleString() ?? '—', errors === undefined ? 'Errors not reported' : at ? 'Reported trace total' : undefined],
   ]

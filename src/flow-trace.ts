@@ -113,7 +113,7 @@ export interface FlowTrace {
 export const finiteNumber = (value: unknown): number | undefined =>
   typeof value === 'number' && Number.isFinite(value) ? value : undefined
 export const reportedCount = (value: unknown): number | undefined =>
-  finiteNumber(value) !== undefined && Number.isSafeInteger(value) && Number(value) >= 0 ? Number(value) : undefined
+  typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : undefined
 
 export function sumReportedCounts(values: readonly (number | undefined)[]): number | undefined {
   if (!values.length || values.some(value => reportedCount(value) === undefined)) return undefined

@@ -151,7 +151,7 @@ try {
       let cells=await read()
       check(`${theme}/${width}/${totals} token total`,cells.Tokens.value,expected)
       if(expected==='—')check(`${theme}/${width}/${totals} unknown title`,/not reported/i.test(cells.Tokens.title),true)
-      if(totals.startsWith('otlp-'))check(`${theme}/${width}/${totals} priced only from reported usage`,cells['Cost · list price'].value.includes(totals==='otlp-positive'?'$0.13':totals==='otlp-zero'?'$0.00':'—'),true)
+      if(totals.startsWith('otlp-'))check(`${theme}/${width}/${totals} priced only from reported usage`,(cells['Cost · list price']?.value ?? cells.Cost?.value ?? '').includes(totals==='otlp-positive'?'$0.13':totals==='otlp-zero'?'$0.00':'—'),true)
       if(totals==='invalid'||totals==='zero')for(const key of ['Model calls','Tool calls'])check(`${theme}/${width}/${totals} ${key}`,cells[key].value,totals==='zero'?'0':'—')
       await page.getByRole('button',{name:'Restart',exact:true}).click()
       cells=await read()
