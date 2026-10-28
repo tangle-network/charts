@@ -1,6 +1,6 @@
 import { type CSSProperties, type ReactNode, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { statusMeta } from '@tangle-network/ui/run'
-import type { FlowMarker, FlowSpan, FlowTrace } from '../flow-trace.js'
+import { type FlowMarker, type FlowSpan, type FlowTrace, reportedCount, sumReportedCounts } from '../flow-trace.js'
 import { FlowBody, ROW_HEIGHT } from './flow-waterfall-body.js'
 import { SpanCard } from './flow-waterfall-card.js'
 import { useTraceClock } from './flow-waterfall-clock.js'
@@ -98,16 +98,18 @@ function usual(values: readonly (string | undefined)[]): string | undefined {
 /** The summary strip: as of the playhead while scrubbing, the producer's totals otherwise. */
 function summaryCells(trace: FlowTrace, at: ReturnType<typeof totalsAt> | undefined, durationMs: number) {
   const cost = costSummary(at ? at.costUsd : trace.costUsd, trace)
-  const tokens = at ? at.tokens : trace.promptTokens + trace.completionTokens
-  const modelCalls = at ? at.modelCalls : trace.modelCalls
-  const errors = at ? at.errors : trace.errors ?? (trace.spans.filter(span => spanFailed(span) && span.kind !== 'pipeline').length || trace.spans.filter(spanFailed).length)
+  const tokens = at ? at.tokens : sumReportedCounts([trace.promptTokens, trace.completionTokens])
+  const modelCalls = reportedCount(at ? at.modelCalls : trace.modelCalls)
+  const toolCalls = reportedCount(at ? at.toolCalls : trace.toolCalls)
+  const observedErrors = trace.spans.filter(span => spanFailed(span) && span.kind !== 'pipeline').length || trace.spans.filter(spanFailed).length
+  const errors = at ? at.errors : trace.errors === undefined ? observedErrors || undefined : reportedCount(trace.errors)
   const summary: [string, ReactNode, string?][] = [
     ['Duration', formatSpanDuration(durationMs)],
     ...(cost.value === '—' ? [] : [[cost.label, cost.value, cost.title] as [string, ReactNode, string?]]),
-    ['Tokens', formatCount(tokens), `${tokens.toLocaleString()} tokens`],
+    ['Tokens', tokens === undefined ? '—' : formatCount(tokens), tokens === undefined ? 'Tokens not reported' : `${tokens.toLocaleString()} tokens`],
     ['Model calls', modelCalls === undefined ? '—' : modelCalls.toLocaleString(), modelCalls === undefined ? 'Model output windows do not establish the number of model requests' : undefined],
-    ['Tool calls', (at ? at.toolCalls : trace.toolCalls)?.toLocaleString() ?? '—', (at ? at.toolCalls : trace.toolCalls) === undefined ? 'The producer did not count tool calls' : undefined],
-    ['Errors', errors.toLocaleString()],
+    ['Tool calls', toolCalls?.toLocaleString() ?? '—', toolCalls === undefined ? 'Tool calls not reported' : undefined],
+    ['Errors', errors?.toLocaleString() ?? '—', errors === undefined ? 'Errors not reported' : undefined],
   ]
   return { cost, tokens, errors, summary }
 }
@@ -373,7 +375,7 @@ export function FlowWaterfall({
   const quietAgents = agents.filter(row => quietActivity(row, clockMs).quiet).length
   const recordedErrors = trace.spans.filter(span => spanFailed(span) && span.kind !== 'pipeline')
   const errorSpans = recordedErrors.length ? recordedErrors : trace.spans.filter(spanFailed)
-  const errorTimes = Array.from({ length: errors }, (_, index) => errorSpans[index]?.endMs)
+  const errorTimes = Array.from({ length: errors ?? 0 }, (_, index) => errorSpans[index]?.endMs)
   const done = !isLive && !trace.spans.some(spanRunning)
   const shown = (row?: FlowWaterfallRow) => row && drawnRow(row, visible)
   const cardRow = shown(card ? byId.get(card.target) : undefined)
@@ -426,7 +428,7 @@ export function FlowWaterfall({
         </div>
       </header>
       {showSummary && <dl className="fw-summary">
-        {summary.map(([name, value, title]) => <div key={name} className={name === 'Errors' && errors > 0 ? 'fw-has-errors' : undefined}>
+        {summary.map(([name, value, title]) => <div key={name} className={name === 'Errors' && errors !== undefined && errors > 0 ? 'fw-has-errors' : undefined}>
           <dt>{name}</dt>
           <dd className="fw-value" title={title}>{name === 'Errors' ? <button type="button" aria-pressed={filter === '__errors'} onClick={() => applyFilter('__errors')}>{value}</button> : value}</dd>
         </div>)}

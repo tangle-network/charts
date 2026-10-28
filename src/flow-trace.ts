@@ -86,8 +86,9 @@ export interface FlowMarker {
 export interface FlowTrace {
   spans: FlowSpan[]
   totalMs: number
-  promptTokens: number
-  completionTokens: number
+  /** Recorded totals only; absent or invalid values remain unknown, including during playback. */
+  promptTokens?: number
+  completionTokens?: number
   /** Computed when per-token pricing is supplied. */
   costUsd?: number
   /** `list`: priced from a model catalog's list prices, not a bill; the summary says so. */
@@ -106,4 +107,13 @@ export interface FlowTrace {
   errors?: number
   /** Intervals when nothing ran, drawn as labelled bands. */
   pauses?: readonly FlowPause[]
+}
+
+/** Internal quantity boundary shared by trace construction, aggregation and presentation. */
+export const reportedCount = (value: unknown): number | undefined =>
+  typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : undefined
+
+export function sumReportedCounts(values: readonly (number | undefined)[]): number | undefined {
+  if (!values.length || values.some(value => reportedCount(value) === undefined)) return undefined
+  return reportedCount(values.reduce<number>((sum, value) => sum + value!, 0))
 }
