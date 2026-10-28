@@ -12,18 +12,12 @@ import {
 } from './flow-waterfall-model.js'
 import type { FlowView } from './flow-waterfall-row.js'
 import { clampWindow, type ViewWindow, zoomWindow } from './flow-waterfall-time.js'
-
 export type { FlowView } from './flow-waterfall-row.js'
-
 const LANE_PAD = 12
-
 const AGENT_ROWS = 20
-
 const UNFOLD_ROWS = 12
-
 const END_LABEL_GUTTER: Record<FlowView, number> = { spans: 120, agents: 176 }
 const NAME_WIDTH: Record<FlowView, number> = { spans: 320, agents: 240 }
-
 export interface FlowWaterfallProps {
   trace: FlowTrace
   /** Extend running spans between incoming snapshots. Inferred from span status by default. */
@@ -73,7 +67,6 @@ export interface FlowWaterfallProps {
   /** Replaces the built-in search match (name, model, kind, status), such as to search the host's attributes. */
   matchSpan?: (span: FlowSpan, query: string) => boolean
 }
-
 /** State the host may own: its value wins when given, and every change is reported either way. */
 function useHostable<T>(value: T | undefined, onChange: ((next: T) => void) | undefined, initial: T | (() => T)) {
   const [own, setOwn] = useState(initial)
@@ -91,10 +84,8 @@ function useHostable<T>(value: T | undefined, onChange: ((next: T) => void) | un
   }, [controlled])
   return [current, set] as const
 }
-
 /** A card's anchor: the mark's top and bottom in the root, the side it opens on, and whether that side was checked against the viewport. */
 interface CardState { target: string; pinned: boolean; left: number; anchorTop: number; anchorBottom: number; above: boolean; fitted?: boolean; top?: number }
-
 const CARD_WIDTH = 320
 /** The value at least half of several agents share, if one does. */
 function usual(values: readonly (string | undefined)[]): string | undefined {
@@ -103,7 +94,6 @@ function usual(values: readonly (string | undefined)[]): string | undefined {
   const [top, n] = [...counts].sort((a, b) => b[1] - a[1])[0] ?? []
   return values.length > 1 && n !== undefined && n >= 2 && n * 2 >= values.length ? top : undefined
 }
-
 /** The summary strip: as of the playhead while scrubbing, the producer's totals otherwise. */
 function summaryCells(trace: FlowTrace, at: ReturnType<typeof totalsAt> | undefined, durationMs: number) {
   const cost = costSummary(at ? at.costUsd : trace.costUsd, trace)
@@ -112,7 +102,6 @@ function summaryCells(trace: FlowTrace, at: ReturnType<typeof totalsAt> | undefi
   const errors = at ? at.errors : trace.errors ?? trace.spans.filter(spanFailed).length
   const summary: [string, ReactNode, string?][] = [
     ['Duration', formatSpanDuration(durationMs)],
-
     ...(cost.value === '—' ? [] : [[cost.label, cost.value, cost.title] as [string, ReactNode, string?]]),
     ['Tokens', formatCount(tokens), `${tokens.toLocaleString()} tokens`],
     ['Model calls', modelCalls === undefined ? '—' : modelCalls.toLocaleString(), modelCalls === undefined ? 'Model output windows do not establish the number of model requests' : undefined],
@@ -121,11 +110,8 @@ function summaryCells(trace: FlowTrace, at: ReturnType<typeof totalsAt> | undefi
   ]
   return { cost, tokens, errors, summary }
 }
-
 /** One legend item per outcome label the agents carry, with its count; nothing when no agent has an outcome. */
-
 const TONE_ORDER = ['failed', 'warn', 'live', 'neutral', 'ok']
-
 /** What each mark means, as the agent view draws it; a key only for kinds the run has. */
 function KindLegend({ rows }: { rows: FlowWaterfallRow[] }) {
   const has = (kind: string) => rows.some(row => row.own.some(mark => mark.kind === kind) || row.span.kind === kind)
@@ -136,7 +122,6 @@ function KindLegend({ rows }: { rows: FlowWaterfallRow[] }) {
     {shown.map(([kind, name]) => <li key={kind}><span className={`fw-swatch-${kind === 'waiting' ? 'wait' : kind}`} aria-hidden />{name}</li>)}
   </ul>
 }
-
 /** The axis dots and the dashed lines they drop: one key naming what they mark (a release, or the kinds the host gave). */
 function MarkerLegend({ markers }: { markers?: FlowMarker[] }) {
   if (!markers?.length) return null
@@ -144,7 +129,6 @@ function MarkerLegend({ markers }: { markers?: FlowMarker[] }) {
   const name = kinds.length === 1 ? `${kinds[0]![0]!.toUpperCase()}${kinds[0]!.slice(1)}` : 'Event'
   return <ul className="fw-legend fw-kinds" aria-label="Markers"><li><span className="fw-swatch-event" aria-hidden />{name} <b>{markers.length}</b></li></ul>
 }
-
 function OutcomeLegend({ agents, selected, onFilter }: { agents: FlowWaterfallRow[]; selected: string | null; onFilter: (label: string) => void }) {
   const items = new Map<string, { tone: string; ring?: boolean; count: number }>()
   for (const row of agents) {
@@ -155,14 +139,12 @@ function OutcomeLegend({ agents, selected, onFilter }: { agents: FlowWaterfallRo
     items.set(outcome.label, item)
   }
   if (items.size === 0) return null
-
   const failedSteps = agents.reduce((sum, row) => sum + row.own.reduce((n, mark) => n + (mark.kind === 'failed' ? mark.count : 0), 0), 0)
   return <ul className="fw-legend" aria-label="Outcomes">
     {[...items].sort(([a, x], [b, y]) => TONE_ORDER.indexOf(x.tone) - TONE_ORDER.indexOf(y.tone) || a.localeCompare(b)).map(([label, item]) => <li key={label}><button type="button" aria-pressed={selected === label} onClick={() => onFilter(label)}><span className="fw-swatch" data-tone="0" data-outcome={item.tone} data-ring={item.ring || undefined} aria-hidden />{label} <b>{item.count}</b></button></li>)}
     {failedSteps > 0 && <li><button type="button" aria-pressed={selected === "__errors"} onClick={() => onFilter("__errors")}><span className="fw-swatch-step" aria-hidden><FailGlyph /></span>Failed step <b>{failedSteps}</b></button></li>}
   </ul>
 }
-
 /** Shared trace inspector: the agent timeline and the span waterfall over one clock.
  * Data remains producer-owned; playback, zoom and folding change presentation only. */
 export function FlowWaterfall({
@@ -188,21 +170,17 @@ export function FlowWaterfall({
   const [filter, setFilter] = useState<string | null>(null)
   const [activeId, setActiveId] = useState<string>()
   const [laneElement, setLaneElement] = useState<HTMLElement | null>(null)
-
   const observedTotal = Number.isFinite(trace.totalMs) && trace.totalMs >= 0 ? trace.totalMs : 0
   const isLive = live ?? trace.spans.some(spanRunning)
   const agentFill = fillProp ?? 'agent'
   const dataEnd = useMemo(() => Math.max(observedTotal, ...trace.spans.map(span => Number.isFinite(span.endMs) ? span.endMs : 0)), [trace, observedTotal])
-
   const trackPx = Math.max(40, laneWidth - LANE_PAD - Math.min(END_LABEL_GUTTER[view], laneWidth * 0.3))
-
   useEffect(() => {
     if (!laneElement) return
     const observer = new ResizeObserver(([entry]) => setLaneWidth(entry!.contentRect.width))
     observer.observe(laneElement)
     return () => observer.disconnect()
   }, [laneElement])
-
   const viewAt = useCallback((t: number): ViewWindow => zoom ?? { startMs: 0, endMs: Math.max(dataEnd, isLive ? t : 0, 1) }, [zoom, dataEnd, isLive])
   const clock = useTraceClock({
     root, slider, timeOutput, observedTotal: dataEnd, live: isLive, startedAt, snapshot: trace, playing, speed, position,
@@ -212,7 +190,6 @@ export function FlowWaterfall({
   const clockMs = clock.clockMs
   const win = viewAt(clockMs)
   const limit = Math.max(dataEnd, isLive ? clockMs : 0)
-
   const resolution = 2 ** Math.round(Math.log2(Math.max(1, (win.endMs - win.startMs) / Math.max(200, trackPx) * 1.5)))
   const rows = useMemo(() => flowWaterfallRows({ ...trace, totalMs: dataEnd }, resolution), [trace, dataEnd, resolution])
   const byId = useMemo(() => new Map(rows.map(row => [row.id, row])), [rows])
@@ -221,7 +198,6 @@ export function FlowWaterfall({
     const pipelines = rows.filter(row => row.kind === 'pipeline')
     return pipelines.length ? pipelines : rows.filter(row => !row.parentId)
   }, [rows])
-
   const matchesFilter = (row: FlowWaterfallRow) => !filter || (filter === '__errors' ? !row.ok || Boolean(row.counts?.failed) : (row.span.outcome?.label ?? 'Unknown') === filter)
   const filteredAgents = useMemo(() => agents.filter(matchesFilter), [agents, filter])
   const sharedDetail = usual(agents.map(row => row.span.detail))
@@ -233,7 +209,6 @@ export function FlowWaterfall({
   const slowest = view === 'spans' ? slowestRow(rows, clockMs) : undefined
   const callouts = useMemo<ReturnType<typeof agentCallouts>>(() => view === 'agents' ? agentCallouts(visible, clockMs) : {}, [view, visible, clockMs])
   const rowsHeight = maxHeight ?? (view === 'agents' ? ROW_HEIGHT.agents * AGENT_ROWS : 640)
-
   const resized = useRef(false)
   useLayoutEffect(() => {
     if (view !== 'agents' || resized.current || !root.current) return
@@ -244,7 +219,6 @@ export function FlowWaterfall({
     }
     if (widest > 0) setNameWidth(Math.max(140, Math.min(560, Math.ceil(widest) + 16)))
   }, [view, agents])
-
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
       const active = document.activeElement
@@ -263,7 +237,6 @@ export function FlowWaterfall({
       else if (event.key === '0') setZoom(null)
       else if (event.key === 'Escape' && (card || selectedId)) { if (card) closeCard(); onDeselect?.() }
       else if ((event.key === 'n' || event.key === 'p') && markers?.length) {
-
         const ats = markers.map(marker => marker.at).sort((a, b) => a - b)
         const next = event.key === 'n' ? ats.find(at => at > clockMs + 1) : [...ats].reverse().find(at => at < clockMs - 1)
         if (next !== undefined) { event.preventDefault(); scrubTo(next) }
@@ -272,7 +245,6 @@ export function FlowWaterfall({
     document.addEventListener('keydown', keydown)
     return () => document.removeEventListener('keydown', keydown)
   })
-
   useEffect(() => {
     if (!card?.pinned) return
     const down = (event: PointerEvent) => {
@@ -283,13 +255,11 @@ export function FlowWaterfall({
     document.addEventListener('pointerdown', down)
     return () => document.removeEventListener('pointerdown', down)
   }, [card?.pinned])
-
   const zoomBy = (factor: number, anchor?: number) => setZoom(previous => {
     const current = previous ?? viewAt(clockMs)
     const next = zoomWindow(current, factor, anchor ?? (current.startMs + current.endMs) / 2, limit)
     return next.endMs - next.startMs >= limit - 1 ? null : next
   })
-
   const zoomFrame = useRef(0)
   const zoomTo = (row: FlowWaterfallRow) => {
     const span = row.span
@@ -297,7 +267,6 @@ export function FlowWaterfall({
     const width = current.endMs - current.startMs
     const end = spanRunning(span) ? Math.max(span.endMs, clockMs) : span.endMs
     if (view !== 'spans' || !Number.isFinite(end) || (end - span.startMs) / Math.max(1, width) > 0.25) return
-
     const pad = Math.max((end - span.startMs) * 0.15, 500, (width / 8 - (end - span.startMs)) / 2)
     const target = clampWindow({ startMs: span.startMs - pad, endMs: end + pad }, limit)
     cancelAnimationFrame(zoomFrame.current)
@@ -312,10 +281,8 @@ export function FlowWaterfall({
     zoomFrame.current = requestAnimationFrame(step)
   }
   const pan = (deltaMs: number) => setZoom(previous => previous && clampWindow({ startMs: previous.startMs + deltaMs, endMs: previous.endMs + deltaMs }, limit))
-
   const latest = useRef({ toggle: (_row: FlowWaterfallRow) => {}, pin: (_target: string, _element: HTMLElement, _x?: number) => {}, inspect: (_target: string, _element: HTMLElement, _x?: number) => {} })
   const toggleNow = (row: FlowWaterfallRow) => {
-
     const flip = (open: ReadonlySet<string>) => new Set(open.has(row.id) ? [...open].filter(id => id !== row.id) : [...open, row.id])
     if (row.id.startsWith('family:')) { setFlippedFamilies(flip); return }
     onSelect?.(row.span)
@@ -330,7 +297,6 @@ export function FlowWaterfall({
   }
   latest.current.toggle = toggleNow
   const toggle = useCallback((row: FlowWaterfallRow) => latest.current.toggle(row), [])
-
   const place = (target: string, element: HTMLElement, pinned: boolean, x?: number) => {
     const host = root.current?.getBoundingClientRect()
     if (!host) return
@@ -345,12 +311,10 @@ export function FlowWaterfall({
     const box = document.getElementById(cardId)?.getBoundingClientRect()
     if (!box) return
     const hostTop = root.current.getBoundingClientRect().top
-
     const room = { above: card.anchorTop - 16, below: globalThis.innerHeight - (hostTop + card.anchorBottom) - 16 }
     const preferred = card.above ? room.above : room.below
     const other = card.above ? room.below : room.above
     const above = box.height <= preferred || (box.height > other && preferred >= other) ? card.above : !card.above
-
     const floor = globalThis.innerHeight - hostTop - 8 - box.height
     const top = Math.max(Math.min(above ? card.anchorTop - 8 - box.height : card.anchorBottom + 8, floor), Math.max(8, 8 - hostTop))
     setCard({ ...card, fitted: true, above, top })
@@ -361,7 +325,6 @@ export function FlowWaterfall({
     clearTimeout(hideTimer.current)
     hideTimer.current = setTimeout(() => setCard(previous => previous?.pinned ? previous : null), 140)
   }, [])
-
   useEffect(() => {
     if (!card || card.pinned) return
     const move = (event: PointerEvent) => {
@@ -370,9 +333,7 @@ export function FlowWaterfall({
     document.addEventListener('pointermove', move)
     return () => document.removeEventListener('pointermove', move)
   }, [card, leave])
-
   latest.current.pin = (target, element, x) => {
-
     if (card?.pinned && card.target === target) { closeCard(); return }
     place(target, element, true, x)
     const row = byId.get(target)
@@ -385,7 +346,6 @@ export function FlowWaterfall({
     setCard(null)
     if (target) root.current?.querySelector<HTMLElement>(`.fw-canvas [data-span-id="${CSS.escape(target)}"]`)?.focus({ preventScroll: true })
   }
-
   const scrubTo = useCallback((ms: number) => { setPlaying(false); setPosition(Math.min(ms, clock.limitMs())) }, [clock])
   const timeListener = useRef(onTimeChange)
   timeListener.current = onTimeChange
@@ -395,7 +355,6 @@ export function FlowWaterfall({
     if (position === null || position >= limit - 1) setPosition(0)
     setPlaying(true)
   }
-
   const scrubbing = position !== null || playing
   const at = scrubbing ? totalsAt(trace, clockMs) : undefined
   const { errors, summary } = summaryCells(trace, at, scrubbing ? clockMs : limit)
@@ -408,25 +367,21 @@ export function FlowWaterfall({
   const errorSpans = recordedErrors.length ? recordedErrors : trace.spans.filter(spanFailed)
   const errorTimes = Array.from({ length: errors }, (_, index) => errorSpans[index]?.endMs)
   const done = !isLive && !trace.spans.some(spanRunning)
-
   const shown = (row?: FlowWaterfallRow) => row && drawnRow(row, visible)
   const cardRow = shown(card ? byId.get(card.target) : undefined)
   const cardAgent = cardRow && (() => {
     for (let cursor: FlowWaterfallRow | undefined = cardRow; cursor; cursor = cursor.parentId ? byId.get(cursor.parentId) : undefined) if (cursor.kind === 'pipeline') return shown(cursor)
     return undefined
   })()
-
   const moving = isLive || position !== null || playing
   const showCursor = moving || view === 'agents'
   const overviewMarks = useMemo(() => rows.filter(row => !row.parentId).flatMap(row => row.hasChildren ? row.segments : row.kind === 'pipeline' ? [] : [{ startMs: row.span.startMs, endMs: row.span.endMs, kind: row.ok ? 'tool' as const : 'failed' as const, tone: row.tone, id: row.id, count: 1, retry: false }]), [rows])
-
   const playback = (
     <PlaybackBar view={view} playing={playing} limit={limit} clockMs={clockMs} speed={speed} zoom={zoom} marks={overviewMarks}
       slider={slider} timeOutput={timeOutput} followLabel={position === null ? undefined : isLive ? 'Follow live' : 'Show full trace'}
       onTogglePlay={togglePlay} onRestart={() => { setPosition(0); setPlaying(false) }} onSpeed={setSpeed} onScrub={scrubTo}
       onFollow={() => { setPosition(null); setPlaying(false) }} onZoom={zoomBy} onFit={() => setZoom(null)} />
   )
-
   return (
     <section ref={root} data-flow-waterfall aria-label={label} className={`fw-root fw-root-${view} fw-fill-${agentFill}`} data-selection={selectedId ? '' : undefined}
       style={{ '--fw-name-w': `${nameWidth}px`, '--fw-pad': `${LANE_PAD}px`, '--fw-row-h': `${ROW_HEIGHT[view]}px`, '--fw-live': `var(${statusMeta('running').token})`, '--fw-failed': `var(${statusMeta('failed').token})`, '--fw-ok': `var(${statusMeta('done').token})`, '--fw-amber': `var(${statusMeta('needs-you').token})` } as CSSProperties}>

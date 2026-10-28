@@ -6,7 +6,6 @@ import { useRowMotion } from './flow-waterfall-motion.js'
 import { clockTicks, formatClock, type ViewWindow } from './flow-waterfall-time.js'
 import { duration } from '../format.js'
 
-// 40 px agent rows keep a 17-agent run, its axis and its controls inside a 945 px viewport.
 export const ROW_HEIGHT: Record<FlowView, number> = { spans: 36, agents: 44 }
 const OVERSCAN = 8
 /** Rows re-render once per CHUNK rows scrolled; overscan covers the rows in between. */
@@ -114,25 +113,25 @@ export function FlowBody(props: BodyProps) {
   const [viewport, setViewport] = useState(maxHeight)
   const latest = useRef(props)
   latest.current = props
-  // A live body fits its rows and grows with them, but never shrinks while live, so a row folding away cannot pull the page
-  // up under the reader. A fixed live height left empty space below a short run (330 px on 22a at 1512 x 945).
+
+
   const tallest = useRef(0)
   if (!props.holdHeight) tallest.current = 0
   const height = tallest.current = Math.max(tallest.current, Math.min(maxHeight, Math.max(rows.length, 1) * rowHeight))
   const links = useMemo(() => linksFor(rows, props.byId, view), [rows, props.byId, view])
   const matched = useMemo(() => searching ? searchMatchIds(rows, props.query, props.matchSpan) : undefined, [searching, rows, props.query, props.matchSpan])
   const index = useMemo(() => new Map(rows.map((row, i) => [row.id, i])), [rows])
-  const motion = useRowMotion(rows)
-  // The event the reader jumped to keeps its label up on the axis, so the jump says where it went.
+  const motion = useRowMotion(rows, surface.current)
+
   const [jumped, setJumped] = useState<FlowMarker>()
-  // Ticks run into the end-label gutter but stop where a label would be cut at the right edge.
+
   const msPerPx = (win.endMs - win.startMs) / Math.max(1, trackPx)
   const tickEnd = win.startMs + (trackPx + (view === 'spans' ? 72 : 0)) * msPerPx
   const ticks = narrow ? Array.from({length:4}, (_,i) => win.startMs + (win.endMs-win.startMs)*i/3) : clockTicks(win.startMs, tickEnd, Math.max(1, trackPx + (view === 'spans' ? 72 : 0)))
-  // Marker labels thin out where they would collide (the line stays) and flip left at the right edge.
+
   const markerLabels = useMemo(() => {
     const shown = new Map<FlowMarker, 'right' | 'left'>()
-    // The agents view names events on the axis (their dots, and the one jumped to); labels over the rows hit its end labels.
+
     if (view === 'agents') return shown
     let freeFrom = -Infinity
     for (const marker of [...(props.markers ?? [])].sort((a, b) => a.at - b.at)) {
@@ -155,7 +154,6 @@ export function FlowBody(props: BodyProps) {
     return () => observer.disconnect()
   }, [])
 
-  // Wheel: Ctrl/Cmd zooms about the pointer; horizontal or Shift wheel pans a zoomed window.
   useEffect(() => {
     const element = surface.current
     if (!element) return
@@ -186,7 +184,7 @@ export function FlowBody(props: BodyProps) {
     if (i * rowHeight - offset < element.scrollTop) element.scrollTop = Math.max(0, i * rowHeight - offset)
     else if ((i + 1) * rowHeight > element.scrollTop + element.clientHeight) element.scrollTop = (i + 1) * rowHeight - element.clientHeight
   }
-  // A selection the host makes, such as stepping through search matches, scrolls its row into view without taking focus.
+
   const shownSelection = useRef<string>(undefined)
   useEffect(() => {
     if (!selectedId || selectedId === shownSelection.current) return
@@ -279,7 +277,7 @@ export function FlowBody(props: BodyProps) {
           style={{ '--s': marker.at } as CSSProperties} title={marker.kind ? `${marker.kind}: ${marker.label}` : marker.label}
           aria-label={`Jump to ${marker.kind ? `${marker.kind} ` : ''}${marker.label}`} aria-pressed={jumped === marker}
           onPointerDown={event => event.stopPropagation()} onClick={() => {
-            // A second click on the event you are on lets go of it, so no click on the track is a no-op.
+
             if (jumped === marker) { setJumped(undefined); return }
             setJumped(marker); props.onScrub(marker.at)
           }} />)}
@@ -323,8 +321,8 @@ export function FlowBody(props: BodyProps) {
               {links.filter(link => Math.max(link.from, link.to) >= first && Math.min(link.from, link.to) <= last)
                 .map(link => {
                   const hot = props.focusId !== undefined && (rows[link.from]?.id === props.focusId || rows[link.to]?.id === props.focusId)
-                  // The agent view draws whole connectors only for the agent in focus. At rest a spawn is a short elbow into its
-                  // child and a return is not drawn, so 55 agents never stripe every lane with full-height lines.
+
+
                   if (view === 'agents' && !hot && link.id.startsWith('r-')) return null
                   return <LinkMark key={link.id} link={link} rowHeight={rowHeight} hot={hot} short={view === 'agents' && !hot} />
                 })}

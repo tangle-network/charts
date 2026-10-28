@@ -171,9 +171,9 @@
 .fw-root .fw-view-agents .fw-subtitle-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fw-root .fw-view-agents .fw-detail-icon { flex: none; width: 16px; height: 16px; align-items: center; justify-content: center; overflow: hidden; }
 .fw-root .fw-view-agents .fw-detail { font-size: 14px; line-height: 18px; }
-.fw-root .fw-agent-dot { --line: var(--fw-muted); flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--line, var(--fw-muted)); }
+.fw-root .fw-agent-dot { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--tone, var(--fw-muted)); }
 .fw-root .fw-agent-dot:not([data-outcome]) { background: transparent; box-shadow: inset 0 0 0 1.5px var(--fw-muted); }
-.fw-root :is(.fw-agent-dot, .fw-legend .fw-swatch)[data-ring] { background: transparent; box-shadow: inset 0 0 0 2px var(--line, var(--fw-muted)); }
+.fw-root :is(.fw-agent-dot, .fw-legend .fw-swatch)[data-ring] { background: transparent; box-shadow: inset 0 0 0 1.5px var(--tone, var(--fw-muted)); }
 .fw-root :is(.fw-agent-dot, .fw-legend .fw-swatch)[data-outcome="live"]:not([data-ring]) { animation: tangle-breathe var(--motion-ambient) infinite; }
 
 .fw-root .fw-lane { position: relative; overflow: hidden; min-width: 0; }

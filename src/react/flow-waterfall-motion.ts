@@ -1,19 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { type FlowWaterfallRow, spanRunning } from './flow-waterfall-model.js'
 
-/** How one row moves this render: `enter` is its stagger delay in ms when it just arrived; `settle` when it just finished. */
 export interface RowMotion { enter?: number; settle?: boolean }
 
-const HOLD_MS = 700
-const STAGGER_MS = 20
-const STAGGER_CAP_MS = 200
+const milliseconds = (style: CSSStyleDeclaration | undefined, token: string) => {
+  const value = style?.getPropertyValue(token).trim() ?? ''
+  return (parseFloat(value) || 0) * (value.endsWith('ms') ? 1 : 1000)
+}
 
-/**
- * Grow, unfold and settle. Rows that arrived since the last change (a live span, an unfolded branch, the first paint) grow
- * from their start in a short stagger; a row that stops running settles. Motion is keyed to the row set, not to what is
- * mounted, so scrolling a virtualized tree never replays it; an entry expires after its animation so a remount stays still.
- */
-export function useRowMotion(rows: readonly FlowWaterfallRow[]): ReadonlyMap<string, RowMotion> {
+export function useRowMotion(rows: readonly FlowWaterfallRow[], element: HTMLElement | null): ReadonlyMap<string, RowMotion> {
+  const style = element ? getComputedStyle(element) : undefined
+  const hold = milliseconds(style, '--duration-arrive') + milliseconds(style, '--duration-stream')
+  const stagger = milliseconds(style, '--stagger-step')
+  const cap = stagger * 4
   const known = useRef<Set<string> | null>(null)
   const running = useRef(new Set<string>())
   const active = useRef(new Map<string, RowMotion & { until: number }>())
@@ -27,22 +26,22 @@ export function useRowMotion(rows: readonly FlowWaterfallRow[]): ReadonlyMap<str
     for (const row of rows) {
       const isRunning = spanRunning(row.span)
       if (!previous || !previous.has(row.id)) {
-        active.current.set(row.id, { enter: Math.min(order++ * STAGGER_MS, STAGGER_CAP_MS), until: now + HOLD_MS + STAGGER_CAP_MS })
+        active.current.set(row.id, { enter: Math.min(order++ * stagger, cap), until: now + hold + cap })
       } else if (running.current.has(row.id) && !isRunning) {
-        active.current.set(row.id, { settle: true, until: now + HOLD_MS })
+        active.current.set(row.id, { settle: true, until: now + hold })
       }
     }
     known.current = new Set(rows.map(row => row.id))
     running.current = new Set(rows.filter(row => spanRunning(row.span)).map(row => row.id))
     return new Map(active.current)
-    // `expiry` is a dependency only to re-run the pass once the held entries have played out.
-  }, [rows, expiry])
+
+  }, [rows, expiry, element])
 
   useEffect(() => {
     if (motion.size === 0) return
-    const timer = setTimeout(() => setExpiry(value => value + 1), HOLD_MS + STAGGER_CAP_MS + 20)
+    const timer = setTimeout(() => setExpiry(value => value + 1), hold + cap)
     return () => clearTimeout(timer)
-  }, [motion])
+  }, [motion, hold, cap])
 
   return motion
 }
