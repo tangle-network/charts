@@ -242,6 +242,16 @@ try {
       check(`${theme}/${width}/${duration} single-line time chip`,chip,true)
       await page.screenshot({path:`${out}/axis-${theme}-${duration}-${width}.png`,fullPage:true})
     }
+    for(const footerWidth of width===1280?[1280,1440]:[390])for(const duration of [1715993,84928112,431000]) {
+      await page.setViewportSize({width:footerWidth,height:1000})
+      await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&long=${duration}`)
+      await page.getByRole('radio',{name:'Steps',exact:true}).click()
+      const footer=await page.locator('.fw-playback').evaluate(el=>{const time=el.querySelector('.fw-time'),range=document.createRange();range.selectNodeContents(time);const text=range.getBoundingClientRect(),rail=el.querySelector('.fw-overview-marks').getBoundingClientRect(),area=el.getBoundingClientRect();return {text:{left:text.left,right:text.right,top:text.top,bottom:text.bottom},rail:{left:rail.left,right:rail.right,top:rail.top,bottom:rail.bottom},separate:text.right+4<=rail.left||text.left>=rail.right+4||text.bottom+1<=rail.top||text.top>=rail.bottom+1,contained:text.left>=area.left&&text.right<=area.right&&text.top>=area.top&&text.bottom<=area.bottom,oneLine:range.getClientRects().length===1}})
+      console.log('PLAYBACK TEXT/RAIL',theme,footerWidth,duration,footer)
+      check(`${theme}/${footerWidth}/${duration} playback time clear single line inside footer`,footer.separate&&footer.contained&&footer.oneLine,true)
+      await page.locator('.fw-playback').screenshot({path:`${out}/playback-${theme}-${duration}-${footerWidth}.png`})
+    }
+    await page.setViewportSize({width,height:1000})
     await page.emulateMedia({reducedMotion:'no-preference'})
     await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&live=1`)
     const liveBadge=page.locator('.fw-state-live')

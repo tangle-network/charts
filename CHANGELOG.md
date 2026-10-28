@@ -1,3 +1,7 @@
+## 2.0.4
+
+- Keep desktop playback time beside the mini scrubber in its own sized column, so long durations stay readable. Preserve the phone's single-line time above its track.
+
 ## 2.0.3
 
 - Under reduced motion, keep the Live badge text still while its 6px dot alone breathes. Preserve the essential row dots without animating whole labels.
