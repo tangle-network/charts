@@ -1,3 +1,4 @@
+import { runStatus, statusMeta } from '@tangle-network/ui/run'
 import type { FlowOutcome, FlowSpan, FlowTrace } from '../flow-trace.js'
 
 /** A minimap mark on a parent row: merged descendant activity of one kind. */
@@ -142,7 +143,13 @@ function mergeSegments(marks: FlowSegment[], gapMs: number, cap = 240): FlowSegm
 export function flowWaterfallRows(trace: FlowTrace, resolutionMs?: number): FlowWaterfallRow[] {
   const ids = new Set<string>()
   const rows: FlowWaterfallRow[] = [...trace.spans]
-    .map((span, i) => ({ span, key: span.id ?? `span-${i}` }))
+    .map((recorded, i) => {
+      const state = runStatus(recorded.status ?? 'unknown')
+      // Adapt the legacy chart tone vocabulary; the owner supplies every state label and colour.
+      const outcome: FlowOutcome = { label: statusMeta(state).label, tone: state === 'running' ? 'live' : state === 'done' ? 'ok' : state === 'needs-you' ? 'warn' : state === 'failed' ? 'failed' : 'neutral', ...(state === 'unknown' ? { ring: true } : {}) }
+      const span = recorded.outcome ? recorded : { ...recorded, outcome }
+      return { span, key: span.id ?? `span-${i}` }
+    })
     .sort((a, b) => a.span.startMs - b.span.startMs)
     .map(({ span, key }, index) => {
       let id = key

@@ -1,3 +1,4 @@
+import { runStatus, statusMeta } from '@tangle-network/ui/run'
 import { type CSSProperties, type ReactNode, memo } from 'react'
 import type { FlowSpan } from '../flow-trace.js'
 import { KIND_LABEL } from './flow-waterfall-card.js'
@@ -94,6 +95,8 @@ function endLabel(row: FlowWaterfallRow, clockMs: number): string {
 export const FlowRow = memo(function FlowRow(props: RowProps) {
   const { row, view, top, collapsed, searching, slowest, costliest, critical, matched, active, focusable, selected, sticky, clockMs, renderIcon, fillByAgent, motion } = props
   const span = row.span
+  const state = runStatus(span.status ?? 'unknown')
+  const meta = statusMeta(state)
   const running = spanRunning(span)
   const agentView = view === 'agents'
   const folded = row.hasChildren && collapsed && !searching
@@ -149,6 +152,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
             {/* A live outcome dot already says it runs; a spinner beside it was a second, contradicting mark. */}
             {running && !((isAgent || agentView && !step) && outcomes.length) && <span className="fw-spinner" data-motion={activity.quiet ? undefined : "essential"} role="status" aria-label="running" />}
             <span className="fw-name-text">{row.name}</span>
+            {(state === "failed" || state === "needs-you") && <span className="fw-row-state" style={{ color: `var(${meta.token})` }}>{meta.label}</span>}
             {activity.quiet && <span className="fw-quiet">Quiet {formatSpanDuration(activity.quietMs)}</span>}
           </span>
           {/* Two levels on every agent row: the name, then how it ended and how much it did. */}

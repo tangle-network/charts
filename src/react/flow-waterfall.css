@@ -13,15 +13,15 @@
   --fw-ok: var(--surface-success-text);
   --fw-amber: var(--surface-warning-text);
   --fw-live: var(--fw-accent);
-  --fw-kind-model: var(--chart-accent);
-  --fw-kind-tool: var(--tone-cyan-icon);
+  --fw-kind-model: light-dark(oklch(from var(--chart-accent) .50 min(c, .10) h), oklch(from var(--chart-accent) .72 min(c, .10) h));
+  --fw-kind-tool: light-dark(oklch(from var(--tone-cyan-icon) .80 min(c, .10) h), oklch(from var(--tone-cyan-icon) .46 min(c, .10) h));
   --fw-neutral-bar: color-mix(in oklab, var(--fw-text) 15%, var(--fw-surface));
   --fw-hatch: color-mix(in oklab, var(--fw-text) 22%, transparent);
   --fw-h0: var(--chart-muted);
   --fw-h1: light-dark(oklch(from var(--tone-blue-icon) .58 .11 calc(h + 39)), oklch(from var(--tone-blue-icon) .67 .11 calc(h + 39)));
   --fw-h2: light-dark(oklch(from var(--tone-violet-icon) .55 .11 h), oklch(from var(--tone-violet-icon) .70 .11 h));
   --fw-h3: light-dark(oklch(from var(--tone-pink-icon) .55 .11 h), oklch(from var(--tone-pink-icon) .67 .11 calc(h - 16)));
-  --fw-h4: light-dark(oklch(from var(--tone-cyan-icon) .58 .11 calc(h - 16.256)), oklch(from var(--tone-cyan-icon) .669 .11 calc(h - 26.148)));
+  --fw-h4: light-dark(oklch(from var(--tone-cyan-icon) .60 .11 calc(h - 16.256)), oklch(from var(--tone-cyan-icon) .669 .11 calc(h - 26.148)));
   --fw-h5: light-dark(oklch(from var(--tone-blue-icon) .58 .03 calc(h + 37.6)), oklch(from var(--tone-blue-icon) .67 .03 calc(h + 29.5)));
   --fw-ease: var(--ease-standard, cubic-bezier(.2,.8,.2,1));
   --fw-bar-h: 20px;
@@ -260,9 +260,8 @@
 .fw-root .fw-view-agents .fw-seg .fw-glyph { flex: none; margin-left: 0; display: grid; place-items: center; width: min(14px, 100%); height: 14px; border-radius: 50%; background: var(--fw-failed); color: light-dark(var(--fw-surface), var(--bg-root)); }
 .fw-root .fw-view-agents .fw-seg .fw-glyph[data-glyph="retry"] { background: var(--fw-muted); }
 .fw-root .fw-view-agents .fw-seg .fw-glyph svg { width: min(9px, 100%); height: 9px; stroke-width: 2.5; }
-.fw-root:is(.fw-fill-muted, .fw-fill-outcome) .fw-view-agents :is(.fw-seg-alt.fw-seg-model, .fw-seg-alt.fw-seg-tool) { filter: brightness(.88); }
 .fw-root .fw-seg-failed { background: color-mix(in oklab, var(--fw-failed) 18%, var(--fw-surface)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-failed) 70%, transparent); color: var(--fw-failed); }
-.fw-root .fw-view-agents .fw-seg-failed { background: var(--dim); box-shadow: inset 0 0 0 1px var(--dim-line); }
+.fw-root .fw-view-agents .fw-seg-failed { background: var(--tool-fill); box-shadow: inset 0 0 0 1px var(--dim-line); }
 .fw-root .fw-glyph { display: inline-flex; color: currentColor; }
 .fw-root .fw-glyph svg { width: 11px; height: 11px; stroke-width: 2; }
 .fw-root .fw-seg-model .fw-glyph, .fw-root .fw-k-model .fw-glyph { color: light-dark(var(--tone), var(--fw-text)); }
@@ -371,6 +370,9 @@
 .fw-root .fw-legend button[aria-pressed="true"] { color: var(--fw-text); text-decoration: underline; text-underline-offset: 4px; }
 .fw-root .fw-summary button { appearance: none; background: transparent; border: 0; padding: 0; cursor: pointer; color: inherit; }
 .fw-root .fw-key > summary { display: none; }
+.fw-root .fw-key > summary svg { width: 12px; height: 12px; margin-left: 6px; }
+.fw-root .fw-key[open] > summary svg { transform: rotate(90deg); }
+.fw-root .fw-row-state { display: none; font-size: 12px; font-weight: 600; }
 .fw-root .fw-error-rug { position: relative; height: 10px; margin-left: var(--fw-label-col); overflow: hidden; }
 .fw-root .fw-error-tick { position: absolute; width: 2px; height: 8px; background: var(--fw-failed); left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); }
 .fw-root .fw-error-tick[data-unlocated] { left: auto; right: calc(var(--error-index) * 3px); }
@@ -387,6 +389,7 @@
   .fw-root .fw-summary > div:nth-child(4) { border-left: 0; }
   .fw-root .fw-summary > div:nth-child(n+4) { border-top: 1px solid var(--fw-border); }
   .fw-root :is(.fw-zoom, .fw-branch-controls, .fw-resize, .fw-links, .fw-gridlayer, .fw-marker-layer, .fw-subtitle, .fw-badge, .fw-icon-tile) { display: none; }
+  .fw-root .fw-row-state { display: inline; }
   .fw-root .fw-key > summary { display: flex; align-items: center; min-height: 32px; cursor: pointer; }
   .fw-root .fw-key:not([open]) .fw-legends { display: none; }
   .fw-root .fw-heading { padding: 12px 8px; }
@@ -412,4 +415,4 @@
 
 .fw-root.fw-root.fw-root-agents[data-selection] .fw-row:not([aria-selected="true"]) .fw-seg { opacity: var(--on); background: color-mix(in oklab, var(--fw-surface) 80%, var(--tone)); --fw-seg-ink: var(--fw-text); }
 
-.fw-root:is(.fw-fill-muted, .fw-fill-outcome) .fw-view-agents .fw-seg-tool { --fw-seg-ink: light-dark(var(--fw-surface), var(--bg-root)); }
+
