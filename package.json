@@ -37,21 +37,26 @@
     "./react/flow-waterfall.css": "./dist/react/flow-waterfall.css"
   },
   "peerDependencies": {
-    "react": "^18.0.0 || ^19.0.0"
+    "react": "^18.0.0 || ^19.0.0",
+    "@tangle-network/ui": "^11.50.3"
   },
   "peerDependenciesMeta": {
     "react": {
+      "optional": true
+    },
+    "@tangle-network/ui": {
       "optional": true
     }
   },
   "scripts": {
     "gen:css": "node scripts/gen-css.mjs",
-    "build": "node scripts/gen-css.mjs --check && tsdown && cp src/figure.css dist/figure.css && cp src/react/live.css dist/react/live.css && cp src/react/flow-waterfall.css dist/react/flow-waterfall.css",
+    "build": "node scripts/check-run-tokens.mjs && node scripts/gen-css.mjs --check && tsdown && cp src/figure.css dist/figure.css && cp src/react/live.css dist/react/live.css && cp src/react/flow-waterfall.css dist/react/flow-waterfall.css",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:run-tokens": "node scripts/check-run-tokens.mjs"
   },
   "devDependencies": {
-    "@tangle-network/brand": "1.24.2",
+    "@tangle-network/brand": "1.31.0",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
     "@types/node": "^26.6.3",
@@ -64,7 +69,8 @@
     "react-dom": "^19.3.0",
     "tsdown": "^0.23.0",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.2"
+    "vitest": "^5.0.2",
+    "@tangle-network/ui": "11.50.3"
   },
   "keywords": [
     "tangle",

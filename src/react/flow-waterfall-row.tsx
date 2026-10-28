@@ -2,7 +2,7 @@ import { type CSSProperties, type ReactNode, memo } from 'react'
 import type { FlowSpan } from '../flow-trace.js'
 import { KIND_LABEL } from './flow-waterfall-card.js'
 import { AlertGlyph, ChevronGlyph, FailGlyph, KindGlyph, RetryGlyph } from './flow-waterfall-icons.js'
-import { type FlowSegment, type FlowWaterfallRow, agentSummary, formatCost, rowCostText, formatSpanDuration, spanRunning, toneKey } from './flow-waterfall-model.js'
+import { type FlowSegment, type FlowWaterfallRow, agentSummary, quietActivity, formatCost, rowCostText, formatSpanDuration, spanRunning, toneKey } from './flow-waterfall-model.js'
 import type { RowMotion } from './flow-waterfall-motion.js'
 
 export type FlowView = 'spans' | 'agents'
@@ -53,7 +53,7 @@ export interface RowProps extends RowEvents {
 
 function Segment({ mark, events, agentView, ending }: { mark: FlowSegment; events: RowEvents; agentView: boolean; ending?: boolean }) {
   // In the agent view only the turn that ended a failed agent carries the failure glyph; a retry always shows its own.
-  const glyph = mark.kind === 'failed' ? (agentView && !ending ? null : 'fail') : mark.retry ? 'retry' : null
+  const glyph = mark.kind === 'failed' ? 'fail' : mark.retry ? 'retry' : null
   // Every agent-view step labels itself as the trace references do: its tool's icon and name, a count chip when merged steps share a
   // tool ("bash" ×9), then duration and cost. Each part shows whole or not at all: parts that do not fit wrap out of the one-line box,
   // so a label is never cut to "b…" and never paints past its step (blind round 28).
@@ -103,8 +103,9 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   const kind = !row.ok ? 'failed' : row.kind
   const marks = isAgent || row.hasChildren || row.id.startsWith('run:') ? (folded && !agentView ? row.segments : row.own) : []
   const label = endLabel(row, clockMs)
+  const activity = quietActivity(row, clockMs)
   // The model leads the second line unless the header names it for every agent.
-  const summary = [...(span.detail && span.detail !== props.sharedDetail ? [span.detail] : []), ...agentSummary(row).filter(part => part !== props.sharedOutcome)]
+  const summary = [...(activity.quiet ? [`Quiet ${formatSpanDuration(activity.quietMs)}`] : []), ...(span.detail && span.detail !== props.sharedDetail ? [span.detail] : []), ...agentSummary(row).filter(part => part !== props.sharedOutcome)]
   const inspect = (event: { currentTarget: HTMLElement; clientX: number }) => props.onInspect(row.id, event.currentTarget, event.clientX)
   const family = agentView && row.id.startsWith('family:')
   const step = agentView && row.stepOf !== undefined
@@ -113,12 +114,12 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   const ending = agentView && !row.ok ? marks.map(mark => mark.kind).lastIndexOf('failed') : -1
 
   return (
-    <div role="row" data-span-id={row.id} data-span-kind={kind} data-slowest={slowest || undefined} data-critical={critical || undefined} data-search={searching ? (matched ? 'match' : 'context') : undefined} data-running={running || undefined}
+    <div role="row" data-span-id={row.id} data-span-kind={kind} data-slowest={slowest || undefined} data-critical={critical || undefined} data-search={searching ? (matched ? 'match' : 'context') : undefined} data-running={running || undefined} data-activity={activity.quiet ? "quiet" : undefined}
       aria-level={agentView ? undefined : row.depth + 1} aria-expanded={row.hasChildren && !agentView ? !folded : undefined}
       aria-selected={selected} tabIndex={focusable ? 0 : -1} data-tone={toneKey(row.tone)} data-outcome={fillByAgent ? undefined : span.outcome?.tone}
       className={`fw-row${active ? ' fw-active' : ''}${sticky ? ' fw-sticky-row' : ''}${isAgent ? ' fw-agent-row' : ''}${step ? ' fw-step' : ''}${motion?.enter !== undefined ? ' fw-enter' : ''}${motion?.settle ? ' fw-settle' : ''}`}
       // The end label's width rides on the row: a label that would run past the lane slides back over its bar's tail, and a stacked name stops short of it.
-      style={{ '--row-y': `${top}px`, '--fw-enter-delay': `${motion?.enter ?? 0}ms`, '--fw-end-w': `${endLabelWidth(label, slowest, costliest)}px` } as CSSProperties}
+      style={{ '--row-y': `${top}px`, '--fw-enter-delay': `${motion?.enter ?? 0}ms`, '--fw-end-w': `${endLabelWidth(label)}px` } as CSSProperties}
       onFocus={event => { if (event.target === event.currentTarget) props.onActivate(row) }}
       onClick={event => {
         props.onActivate(row)
@@ -144,10 +145,10 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
           <span className={`fw-span-name${isAgent || row.hasChildren ? ' fw-strong' : ''}`}>
             {/* With agent fill, the outcome rides on the agent's dot in both views. */}
             {fillByAgent && isAgent && span.outcome
-              ? <span className="fw-agent-dot" data-tone="0" data-outcome={span.outcome.tone} data-ring={span.outcome.ring || undefined} title={span.outcome.label} aria-hidden />
+              ? <span className="fw-agent-dot" data-tone="0" data-outcome={span.outcome.tone} data-ring={span.outcome.ring || undefined} data-motion={span.outcome.tone === "live" && !activity.quiet ? "essential" : undefined} title={span.outcome.label} aria-hidden />
               : agentView && !step && <span className="fw-agent-dot" aria-hidden />}
             {/* A live outcome dot already says it runs; a spinner beside it was a second, contradicting mark. */}
-            {running && !(fillByAgent && isAgent && span.outcome) && <span className="fw-spinner" role="status" aria-label="running" />}
+            {running && !(fillByAgent && isAgent && span.outcome) && <span className="fw-spinner" data-motion={activity.quiet ? undefined : "essential"} role="status" aria-label="running" />}
             <span className="fw-name-text">{row.name}</span>
           </span>
           {/* Two levels on every agent row: the name, then how it ended and how much it did. */}
@@ -176,6 +177,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
             {!isAgent && !row.ok && <span className="fw-glyph"><FailGlyph /></span>}
             {!isAgent && row.ok && row.retry && <span className="fw-glyph"><RetryGlyph /></span>}
           </span>
+          {activity.quiet && <span className="fw-quiet-tail" style={at(activity.last, OPEN_END)} aria-label={`Quiet ${formatSpanDuration(activity.quietMs)}`} />}
           {marks.map((mark, i) => <Segment key={`${mark.id}-${i}`} mark={mark} events={props} agentView={agentView} ending={i === ending} />)}
           <span className="fw-end" style={at(span.startMs, running ? OPEN_END : span.endMs)}>
             <span className="fw-duration">{label}</span>

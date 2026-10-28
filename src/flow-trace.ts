@@ -5,7 +5,9 @@ export interface FlowSpan {
   id?: string
   parentId?: string
   /** Running spans extend from endMs to the viewer's observation time. */
-  status?: 'running' | 'done' | 'failed'
+  status?: 'running' | 'waiting' | 'needs-you' | 'done' | 'failed' | 'stopped' | 'idle' | 'unknown'
+  /** Trace-relative event times. Quiet detection uses these, or the agent's recorded child activity. */
+  activityAt?: readonly number[]
   name: string
   startMs: number
   endMs: number

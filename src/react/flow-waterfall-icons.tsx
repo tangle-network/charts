@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react'
+import { RunStatusIcon } from '@tangle-network/ui/run'
 import type { FlowSpan } from '../flow-trace.js'
 
 const svg = (children: ReactNode, label?: string) => (
-  <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"
+  <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.75"
     strokeLinecap="round" strokeLinejoin="round" aria-hidden={label ? undefined : true} role={label ? 'img' : undefined} aria-label={label}>
     {children}
   </svg>
@@ -10,7 +11,7 @@ const svg = (children: ReactNode, label?: string) => (
 
 /** Kind glyphs drawn when the host supplies no `renderIcon`. Brand marks belong to the host. */
 /** Generic tool identity by name: a terminal, a file, a pencil, a lens, a globe or a branch, never a vendor mark. */
-function toolGlyph(name: string | undefined) {
+export function toolGlyph(name: string | undefined) {
   const n = (name ?? '').toLowerCase()
   if (/bash|shell|exec|terminal|command|run/.test(n)) return svg(<><rect x="2" y="3" width="12" height="10" rx="2" /><path d="m5 7 2 1.5L5 10M8.5 10.5h2.5" /></>)
   if (/edit|write|patch|apply/.test(n)) return svg(<path d="M3 13l1-3.5L10.5 3a1.4 1.4 0 0 1 2 2L6 11.5 3 13ZM9.5 4l2 2" />)
@@ -34,14 +35,14 @@ export function KindGlyph({ kind, name }: { kind: FlowSpan['kind']; name?: strin
 
 export const ChevronGlyph = () => svg(<path d="m6 4 4 4-4 4" />)
 export const SearchGlyph = () => svg(<><circle cx="7" cy="7" r="4.25" /><path d="m10.25 10.25 3.25 3.25" /></>)
-export const PlayGlyph = () => <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden><path d="M4.5 3.2v9.6a.6.6 0 0 0 .9.5l7.6-4.8a.6.6 0 0 0 0-1L5.4 2.7a.6.6 0 0 0-.9.5Z" fill="currentColor" /></svg>
-export const PauseGlyph = () => <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden><rect x="4" y="3" width="2.75" height="10" rx=".8" fill="currentColor" /><rect x="9.25" y="3" width="2.75" height="10" rx=".8" fill="currentColor" /></svg>
+export const PlayGlyph = () => <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden><path d="M4.5 3.2v9.6a.6.6 0 0 0 .9.5l7.6-4.8a.6.6 0 0 0 0-1L5.4 2.7a.6.6 0 0 0-.9.5Z" fill="currentColor" /></svg>
+export const PauseGlyph = () => <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden><rect x="4" y="3" width="2.75" height="10" rx=".8" fill="currentColor" /><rect x="9.25" y="3" width="2.75" height="10" rx=".8" fill="currentColor" /></svg>
 export const RestartGlyph = () => svg(<><path d="M3 8a5 5 0 1 0 1.5-3.55" /><path d="M3 2.75V5.5h2.75" /></>)
 export const RetryGlyph = ({ label }: { label?: string }) => svg(<><path d="M12.5 8A4.5 4.5 0 1 1 11 4.6" /><path d="M11.5 2v3h-3" /></>, label)
-export const FailGlyph = ({ label }: { label?: string }) => svg(<path d="m4.5 4.5 7 7m0-7-7 7" />, label)
+export const FailGlyph = ({ label }: { label?: string }) => <RunStatusIcon status="failed" aria-label={label} />
 export const CloseGlyph = () => svg(<path d="m4.5 4.5 7 7m0-7-7 7" />)
 export const TraceGlyph = () => svg(<path d="M8 1.5v3M8 11.5v3M1.5 8h3M11.5 8h3M3.4 3.4l2.1 2.1M10.5 10.5l2.1 2.1M3.4 12.6l2.1-2.1M10.5 5.5l2.1-2.1" />)
-export const AlertGlyph = ({ label }: { label?: string }) => svg(<><path d="M8 2.5 14 13H2L8 2.5Z" /><path d="M8 6.5v3M8 11.25v.01" /></>, label)
+export const AlertGlyph = FailGlyph
 export const ZoomInGlyph = () => svg(<><circle cx="7" cy="7" r="4.25" /><path d="m10.25 10.25 3.25 3.25M5 7h4M7 5v4" /></>)
 export const ZoomOutGlyph = () => svg(<><circle cx="7" cy="7" r="4.25" /><path d="m10.25 10.25 3.25 3.25M5 7h4" /></>)
 export const FitGlyph = () => svg(<path d="M2.5 6V3.5a1 1 0 0 1 1-1H6M10 2.5h2.5a1 1 0 0 1 1 1V6M13.5 10v2.5a1 1 0 0 1-1 1H10M6 13.5H3.5a1 1 0 0 1-1-1V10" />)

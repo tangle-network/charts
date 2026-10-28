@@ -7,7 +7,7 @@ import { clockTicks, formatClock, type ViewWindow } from './flow-waterfall-time.
 import { duration } from '../format.js'
 
 // 40 px agent rows keep a 17-agent run, its axis and its controls inside a 945 px viewport.
-export const ROW_HEIGHT: Record<FlowView, number> = { spans: 36, agents: 40 }
+export const ROW_HEIGHT: Record<FlowView, number> = { spans: 36, agents: 44 }
 const OVERSCAN = 8
 /** Rows re-render once per CHUNK rows scrolled; overscan covers the rows in between. */
 const CHUNK = 4
@@ -31,6 +31,7 @@ export interface BodyProps extends RowEvents {
   matchSpan?: (span: FlowSpan, query: string) => boolean
   activeId?: string
   pauses?: readonly FlowPause[]
+  errorTimes?: readonly (number | undefined)[]
   /** The model every agent shares: rows leave it out because the header names it. */
   sharedDetail?: string
   sharedOutcome?: string
@@ -99,9 +100,16 @@ function linksFor(rows: FlowWaterfallRow[], byId: Map<string, FlowWaterfallRow>,
 /** The scrolling tree: rows are virtualized, ancestors stay pinned, the axis and cursor stay in view. */
 export function FlowBody(props: BodyProps) {
   const { rows, view, maxHeight, collapsed, searching, slowestId, activeId, selectedId, clockMs, window: win, trackPx, showCursor, zoomed } = props
-  const rowHeight = ROW_HEIGHT[view]
+  const [narrow, setNarrow] = useState(false)
+  const rowHeight = narrow ? 44 : ROW_HEIGHT[view]
   const scroller = useRef<HTMLDivElement>(null)
   const surface = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!surface.current) return
+    const observer = new ResizeObserver(([entry]) => setNarrow(entry!.contentRect.width < 600))
+    observer.observe(surface.current)
+    return () => observer.disconnect()
+  }, [])
   const [chunk, setChunk] = useState(0)
   const [viewport, setViewport] = useState(maxHeight)
   const latest = useRef(props)
@@ -120,7 +128,7 @@ export function FlowBody(props: BodyProps) {
   // Ticks run into the end-label gutter but stop where a label would be cut at the right edge.
   const msPerPx = (win.endMs - win.startMs) / Math.max(1, trackPx)
   const tickEnd = win.startMs + (trackPx + (view === 'spans' ? 72 : 0)) * msPerPx
-  const ticks = clockTicks(win.startMs, tickEnd, Math.max(1, trackPx + (view === 'spans' ? 72 : 0)))
+  const ticks = narrow ? Array.from({length:4}, (_,i) => win.startMs + (win.endMs-win.startMs)*i/3) : clockTicks(win.startMs, tickEnd, Math.max(1, trackPx + (view === 'spans' ? 72 : 0)))
   // Marker labels thin out where they would collide (the line stays) and flip left at the right edge.
   const markerLabels = useMemo(() => {
     const shown = new Map<FlowMarker, 'right' | 'left'>()
@@ -298,6 +306,9 @@ export function FlowBody(props: BodyProps) {
   return (
     <div className={`fw-body fw-view-${view}${zoomed ? ' fw-zoomed' : ''}`} ref={surface}>
       {axis}
+      {Boolean(props.errorTimes?.length) && <div className="fw-error-rug" aria-label={`${props.errorTimes!.length} errors`}>
+        {props.errorTimes!.map((at, index) => <span key={index} className="fw-error-tick" data-unlocated={at === undefined || undefined} style={{ '--s': at, '--error-index': index } as CSSProperties} title={at === undefined ? 'Error time not reported' : `Error at ${formatClock(at)}`} />)}
+      </div>}
       <div className="fw-viewport">
         <div className="fw-gridlayer" aria-hidden>
           {props.pauses?.map(pause => <span key={`p-${pause.startMs}`} className="fw-pause" style={{ '--s': pause.startMs, '--e': pause.endMs } as CSSProperties} />)}
@@ -329,7 +340,7 @@ export function FlowBody(props: BodyProps) {
             {markerLabels.has(marker) && <span className={`fw-marker-label${markerLabels.get(marker) === 'left' ? ' fw-marker-label-left' : ''}`}>{marker.label}</span>}
           </span>)}
         </div> : null}
-        {showCursor && props.cursorLine !== false && <div className="fw-cursor-layer" aria-hidden><span className="fw-cursor" /></div>}
+        {showCursor && props.cursorLine !== false && <div className="fw-cursor-layer" aria-hidden><span className="fw-cursor fw-now" /></div>}
       </div>
     </div>
   )

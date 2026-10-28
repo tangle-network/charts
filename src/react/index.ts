@@ -44,3 +44,5 @@ export type { FlowWaterfallProps } from "./flow-waterfall.js";
 export type { ViewWindow as FlowWaterfallWindow } from "./flow-waterfall-time.js";
 export { criticalPathIds, flowWaterfallRows } from "./flow-waterfall-model.js";
 export type { FlowWaterfallRow } from "./flow-waterfall-model.js";
+
+export { toolGlyph } from './flow-waterfall-icons.js'

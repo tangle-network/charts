@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { statusMeta } from '@tangle-network/ui/run'
 import type { FlowSpan } from '../flow-trace.js'
 import { CloseGlyph, KindGlyph } from './flow-waterfall-icons.js'
 import { type FlowWaterfallRow, rowCostText, formatCount, formatSpanDuration, spanRunning, toneKey } from './flow-waterfall-model.js'
@@ -39,8 +40,8 @@ function metrics(row: FlowWaterfallRow, clockMs: number, full: boolean): [string
   const out: [string, ReactNode][] = []
   if (span.detail) out.push([span.kind === 'tool' ? 'Provider' : 'Model', span.detail])
   const stop = spanRunning(span) ? Math.max(span.endMs, clockMs) : span.endMs
-  out.push(['Duration', Number.isFinite(stop - span.startMs) && stop >= span.startMs ? formatSpanDuration(stop - span.startMs) : '—'])
-  if (full) out.push(['Started', `+${formatSpanDuration(Math.max(0, span.startMs))}`])
+  out.push(['Ran for', Number.isFinite(stop - span.startMs) && stop >= span.startMs ? formatSpanDuration(stop - span.startMs) : '—'])
+  if (full) out.push(['Started at', `+${formatSpanDuration(Math.max(0, span.startMs))}`])
   const tokens = row.tokens
   if (tokens) {
     const parts = ([['prompt', 'in'], ['completion', 'out'], ['cached', 'cached']] as const).flatMap(([key, unit]) => tokens[key] === undefined ? [] : [count(tokens[key], unit)])
@@ -55,7 +56,7 @@ function metrics(row: FlowWaterfallRow, clockMs: number, full: boolean): [string
   if (counts?.tool) {
     const tools = Object.entries(counts.tools).sort(([a, x], [b, y]) => y - x || a.localeCompare(b))
     const rest = tools.length - TOOLS_SHOWN
-    // By tool, most used first, as a small table under the total; a long tool name truncates, its count never does.
+
     out.push(['Tool calls', <>{counts.tool.toLocaleString()}<span className="fw-card-tools" title={tools.map(([tool, n]) => `${tool} ${n}`).join(', ')}>
       {tools.slice(0, rest > 1 ? TOOLS_SHOWN : tools.length).map(([tool, n]) => <span key={tool}><span>{tool}</span><span>{n.toLocaleString()}</span></span>)}
       {rest > 1 && <span><span>{rest} more tools</span><span>{tools.slice(TOOLS_SHOWN).reduce((sum, [, n]) => sum + n, 0).toLocaleString()}</span></span>}</span></>])
@@ -64,7 +65,7 @@ function metrics(row: FlowWaterfallRow, clockMs: number, full: boolean): [string
   const restarts = span.marks?.filter(mark => mark.kind === 'restart').length ?? 0
   if (counts?.retried || restarts) out.push(['Retries', [counts?.retried ? plural(counts.retried, 'step retried', 'steps retried') : '', restarts ? plural(restarts, 'restart') : ''].filter(Boolean).join(' · ')])
   if (full && row.hasChildren) out.push(['Steps', row.descendants.toLocaleString()])
-  // The host's facts follow; one the table already states is not repeated.
+
   for (const fact of span.facts ?? []) if (!out.some(([label]) => label.toLowerCase() === fact.label.toLowerCase())) out.push([fact.label, fact.value])
   return out
 }
@@ -76,7 +77,7 @@ function Table({ rows }: { rows: [string, ReactNode][] }) {
 /** The span card: what ran, for how long, on what tokens and at what recorded cost, then its input and output. */
 export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, renderIcon, compact }: SpanCardProps) {
   const span = row.span
-  const status = spanRunning(span) ? 'Running' : row.ok ? 'Done' : 'Failed'
+  const status = statusMeta(span.status ?? 'unknown').label
   const owner = agent && agent.id !== row.id ? agent : undefined
   const frame = {
     id, role: pinned ? 'dialog' : 'tooltip', 'aria-label': pinned ? `${span.name} details` : undefined, style: { left, top },
@@ -84,19 +85,19 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
   }
   const close = pinned && <button type="button" className="fw-icon-button fw-card-close" aria-label="Close details" onClick={onClose} autoFocus><CloseGlyph /></button>
   if (compact) {
-    // A segment inside an agent bar keeps the agent's table; the segment itself is one line under it.
+
     const who = owner ?? row
     const outcome = who.span.outcome
     const kind = span.kind === 'model' ? 'Thinking' : KIND_LABEL[span.kind]
-    // A zero-length step (an instant event) has nothing to say in a step line ("Thinking Model call 0ms").
+
     const named = span.name && span.name.toLowerCase() !== kind.toLowerCase() && span.name.toLowerCase() !== span.kind ? ` ${span.name}` : ''
     const stop = spanRunning(span) ? Math.max(span.endMs, clockMs) : span.endMs
     const step = owner && span.endMs > span.startMs ? `${kind}${named} · ${formatSpanDuration(stop - span.startMs)}${row.ok ? '' : ' · failed'}` : undefined
-    // The sentence is what the agent did; a name repeated from the title says nothing.
+
     const sentence = !owner && span.output && span.output !== who.name ? span.output : undefined
     return (
       <div {...frame} className="fw-card fw-card-compact" data-tone={toneKey(who.tone)} data-outcome={outcome?.tone}>
-        <div className="fw-card-agent"><span className="fw-agent-dot" data-ring={outcome?.ring || undefined} aria-hidden /><span className="fw-card-who">{keepWords(who.name)}</span>
+        <div className="fw-card-agent"><span className="fw-agent-dot" data-tone="0" data-outcome={outcome?.tone} data-ring={outcome?.ring || undefined} aria-hidden /><span className="fw-card-who">{keepWords(who.name)}</span>
           {outcome
             ? <span className="fw-pill fw-pill-outcome" data-tone="0" data-outcome={outcome.tone}>{outcome.label}</span>
             : <span className={`fw-pill fw-pill-${status.toLowerCase()}`}>{status}</span>}
@@ -104,13 +105,14 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
         </div>
         <Table rows={metrics(who, clockMs, false)} />
         {step && <p className="fw-card-step">{step}</p>}
-        {sentence && <p className="fw-card-result">{sentence}</p>}
+        {!row.ok && <p className="fw-card-error">Error: {span.output ?? who.span.output ?? "No error detail reported"}</p>}
+        {sentence && row.ok && <p className="fw-card-result">{sentence}</p>}
       </div>
     )
   }
   return (
     <div {...frame} className="fw-card" data-tone={toneKey(row.tone)}>
-      {owner && <div className="fw-card-agent"><span className="fw-agent-dot" aria-hidden />{owner.name}</div>}
+      {owner && <div className="fw-card-agent"><span className="fw-agent-dot" data-tone="0" data-outcome={owner.span.outcome?.tone} data-ring={owner.span.outcome?.ring || undefined} aria-hidden />{owner.name}</div>}
       <div className="fw-card-head">
         <span className="fw-icon-tile" aria-hidden>{renderIcon?.(span) ?? <KindGlyph kind={span.kind} name={span.name} />}</span>
         <div className="fw-card-name">{keepWords(span.name)}</div>
