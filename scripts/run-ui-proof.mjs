@@ -25,6 +25,8 @@ spans.push({id:'peer-model',parentId:'agent-9',kind:'model',name:'Turn 1',startM
 spans.push({id:'model',parentId:'agent-0',kind:'model',name:'Turn 1',startMs:30000,endMs:350000,status:'done'});
 for(let i=0;i<17;i++)spans.push({id:'error-'+i,parentId:'agent-'+(i%17),kind:'tool',name:'bash',startMs:i===0?350000:5000+i*1000,endMs:i===0?700000:6000+i*1000,status:'failed',output:'Compiler rejected the build'});
 if(new URLSearchParams(location.search).has('grammar'))spans.push({id:'grammar-model',parentId:'agent-1',kind:'model',name:'Turn 2',startMs:30000,endMs:300000,status:'done'},{id:'grammar-tool',parentId:'agent-1',kind:'tool',name:'read',startMs:300000,endMs:500000,status:'done'});
+const failureCase=new URLSearchParams(location.search).get('failure-proof');if(failureCase){spans[0].output='Owner final reply unrelated to tool failure';const failed=spans.find(span=>span.id==='error-0');delete failed.output;if(failureCase==='fact')failed.facts=[{label:'Failure',value:'Recorded subprocess exit 7'}];if(failureCase==='output')failed.output='Raw tool stdout before exit'}
+if(new URLSearchParams(location.search).has('comparisons')){spans[0].costUsd=1000;for(const [i,name,cost,end]of[[1,'Collector',20,1200000],[2,'Verifier',10,600000]])Object.assign(spans[i],{parentId:'agent-0',name,costUsd:cost,endMs:end,status:'done',outcome:{tone:'ok',label:'Done'}})}
 let trace={spans,totalMs:1200000,promptTokens:0,completionTokens:0,errors:17};
 const totals=new URLSearchParams(location.search).get('totals');
 const long=Number(new URLSearchParams(location.search).get('long'));if(long){const scale=long/trace.totalMs;for(const span of trace.spans){span.startMs*=scale;span.endMs*=scale;if(span.activityAt)span.activityAt=span.activityAt.map(at=>at*scale)}trace.totalMs=long;document.getElementById('root').style.padding='16px'}
@@ -161,6 +163,27 @@ try {
       cells=await read()
       check(`${theme}/${width}/${totals} playback token total`,cells.Tokens.value,expected)
     }
+    for(const [failure,expected] of [['missing','Failure detail not reported'],['fact','Failure: Recorded subprocess exit 7'],['output','Recorded output: Raw tool stdout before exit']]) {
+      await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&failure-proof=${failure}`)
+      await page.locator('[data-span-id="agent-0"] .fw-seg-failed').hover()
+      await page.locator('.fw-card-error').waitFor()
+      const message=await page.locator('.fw-card-error').textContent()
+      check(`${theme}/${width}/${failure} uses own failure evidence`,message,expected)
+      check(`${theme}/${width}/${failure} never certifies owner output`,message.includes('Owner final reply'),false)
+      if(failure==='output') {
+        await page.getByRole('radio',{name:'Steps',exact:true}).click()
+        await page.locator('[data-span-id="error-0"] .fw-bar').hover()
+        check(`${theme}/${width} full card labels recorded output`,await page.locator('.fw-card-text .fw-card-label').last().textContent(),'Recorded output')
+      }
+    }
+    await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&comparisons=1`)
+    await page.locator('[data-span-id="agent-1"]').waitFor()
+    await page.waitForTimeout(1200)
+    check(`${theme}/${width} parent excluded from leaf comparisons`,await page.locator('[data-span-id="agent-0"] .fw-badge').count(),0)
+    check(`${theme}/${width} leaf comparison labels`,(await page.locator('[data-span-id="agent-1"] .fw-badge').allTextContents()).toString(),['Longest leaf','Costliest leaf'].toString())
+    if(width>=600)check(`${theme}/${width} comparisons stay in label area`,await page.locator('[data-span-id="agent-1"] .fw-badge').evaluateAll(nodes=>nodes.every(node=>{const a=node.getBoundingClientRect(),label=node.closest('.fw-label');if(!label)return false;const b=label.getBoundingClientRect();return a.left>=b.left&&a.right<=b.right&&a.top>=b.top&&a.bottom<=b.bottom})),true)
+    if(width===390){check(`${theme}/${width} explicit running label`,await page.locator('[data-span-id="agent-0"] .fw-row-state').textContent(),'Running');check(`${theme}/${width} explicit done label`,await page.locator('[data-span-id="agent-2"] .fw-row-state').textContent(),'Done')}
+    await page.screenshot({path:`${out}/leaf-${theme}-${width}.png`,fullPage:true})
     await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&compose=1`)
     await page.locator('[data-flow-waterfall]').waitFor()
     const graphChoice=page.getByRole('radio',{name:'Graph',exact:true})
