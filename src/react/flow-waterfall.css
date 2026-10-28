@@ -335,17 +335,17 @@
 .fw-root .fw-speed { position: relative; display: inline-flex; }
 .fw-root .fw-speed::after { content: ""; position: absolute; top: 50%; right: 11px; width: 5px; height: 5px; border: solid var(--fw-muted); border-width: 0 1.5px 1.5px 0; transform: translateY(-70%) rotate(45deg); pointer-events: none; }
 .fw-root .fw-speed select { appearance: none; height: 28px; padding: 0 28px 0 12px; border-radius: var(--radius-control); border: 1px solid var(--fw-border); background: var(--fw-well); font-size: 14px; font-variant-numeric: tabular-nums; cursor: pointer; }
-.fw-root .fw-overview { position: relative; flex: 1 1 160px; min-width: 120px; height: 28px; }
-.fw-root .fw-overview-marks { position: absolute; left: 0; right: 0; top: 8px; height: 12px; border-radius: var(--radius-tag); background: var(--fw-well); overflow: hidden; box-shadow: inset 0 0 0 1px var(--fw-border); }
+.fw-root .fw-overview { position: relative; display: grid; grid-template-columns: max-content minmax(0, 1fr); align-items: center; column-gap: 8px; flex: 1 1 160px; min-width: 120px; height: 28px; }
+.fw-root .fw-overview-marks { position: relative; grid-area: 1 / 2; height: 12px; border-radius: var(--radius-tag); background: var(--fw-well); overflow: hidden; box-shadow: inset 0 0 0 1px var(--fw-border); }
 .fw-root .fw-ov { position: absolute; top: 2px; bottom: 2px; border-radius: 1px; }
 .fw-root .fw-ov.fw-seg-model, .fw-root .fw-ov.fw-seg-tool { background: var(--line); opacity: .75; }
 .fw-root .fw-ov.fw-seg-tool { opacity: .45; }
 .fw-root .fw-ov.fw-seg-failed { background: var(--fw-failed); }
 .fw-root .fw-brush { position: absolute; top: 0; bottom: 0; border-radius: 3px; box-shadow: inset 0 0 0 1.5px var(--fw-accent); background: color-mix(in oklab, var(--fw-accent) 10%, transparent); }
-.fw-root .fw-slider { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; appearance: none; -webkit-appearance: none; background: linear-gradient(90deg, transparent var(--fw-progress), color-mix(in oklab, var(--fw-surface) 55%, transparent) var(--fw-progress)) 0 8px / 100% 12px no-repeat; cursor: pointer; }
+.fw-root .fw-slider { position: relative; grid-area: 1 / 2; width: 100%; height: 100%; margin: 0; appearance: none; -webkit-appearance: none; background: linear-gradient(90deg, transparent var(--fw-progress), color-mix(in oklab, var(--fw-surface) 55%, transparent) var(--fw-progress)) 0 8px / 100% 12px no-repeat; cursor: pointer; }
 .fw-root .fw-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 4px; height: 22px; border-radius: 2px; background: var(--fw-text); box-shadow: 0 0 0 2px var(--fw-surface); }
 .fw-root .fw-slider::-moz-range-thumb { width: 4px; height: 22px; border: 0; border-radius: 2px; background: var(--fw-text); box-shadow: 0 0 0 2px var(--fw-surface); }
-.fw-root .fw-time { min-width: 48px; font-size: 14px; color: var(--fw-muted); font-variant-numeric: tabular-nums; }
+.fw-root .fw-time { grid-area: 1 / 1; min-width: 48px; white-space: nowrap; font-size: 14px; color: var(--fw-muted); font-variant-numeric: tabular-nums; }
 .fw-root .fw-zoom { display: inline-flex; gap: 0; }
 .fw-root .fw-sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 
@@ -362,7 +362,7 @@
 .fw-root-agents .fw-body { padding-bottom: 12px; }
 .fw-root-agents .fw-view-agents .fw-label { padding-left: 24px; }
 .fw-root-agents .fw-zoom, .fw-root-agents .fw-time { display: none; }
-.fw-root-agents .fw-overview-marks { top: 13px; height: 2px; box-shadow: none; }
+.fw-root-agents .fw-overview-marks { top: 0; height: 2px; box-shadow: none; }
 .fw-root-agents .fw-overview-marks > * { display: none; }
 .fw-root .fw-segmented { display: inline-flex; padding: 4px; border-radius: var(--radius-control); background: var(--fw-well); border: 1px solid var(--fw-border); }
 .fw-root .fw-segmented button { appearance: none; border: 0; background: transparent; height: 26px; min-width: 36px; padding: 0 12px; border-radius: var(--radius-tag); font-size: 14px; color: var(--fw-muted); cursor: pointer; font-variant-numeric: tabular-nums; transition: background-color var(--motion-control), color var(--motion-control); }
@@ -405,9 +405,9 @@
   .fw-root .fw-lane { grid-column: 2; }
   .fw-root .fw-end { top: 0; height: 20px; left: auto; right: 4px; }
   .fw-root .fw-duration { font-size: 12px; }
-  .fw-root .fw-time { display: block; position: absolute; top: -12px; left: var(--fw-progress); transform: translateX(calc(-1 * var(--fw-progress))); width: max-content; max-width: 100%; white-space: nowrap; background: var(--fw-surface); }
+  .fw-root .fw-time { display: block; grid-column: 2; position: absolute; top: -12px; left: var(--fw-progress); transform: translateX(calc(-1 * var(--fw-progress))); width: max-content; max-width: 100%; background: var(--fw-surface); }
   .fw-root .fw-playback { position: relative; padding: 12px 8px 8px; }
-  .fw-root .fw-overview { margin-top: 12px; }
+  .fw-root .fw-overview { margin-top: 12px; grid-template-columns: 0 minmax(0, 1fr); column-gap: 0; }
 }
 
 
