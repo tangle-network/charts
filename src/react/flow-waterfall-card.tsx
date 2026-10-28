@@ -90,6 +90,7 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
 
     const who = owner ?? row
     const outcome = who.span.outcome
+    const outcomes = who.outcomes ?? (outcome ? [outcome] : [])
     const kind = span.kind === 'model' ? 'Thinking' : KIND_LABEL[span.kind]
 
     const named = span.name && span.name.toLowerCase() !== kind.toLowerCase() && span.name.toLowerCase() !== span.kind ? ` ${span.name}` : ''
@@ -99,7 +100,7 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
     const sentence = !owner && span.output && span.output !== who.name ? span.output : undefined
     return (
       <div {...frame} className="fw-card fw-card-compact" data-tone={toneKey(who.tone)} data-outcome={outcome?.tone}>
-        <div className="fw-card-agent"><span className="fw-agent-dot" data-tone="0" data-outcome={outcome?.tone} data-ring={outcome?.ring || undefined} aria-hidden /><span className="fw-card-who">{keepWords(who.name)}</span>
+        <div className="fw-card-agent">{outcomes.length ? outcomes.map(state => <span key={`${state.label}:${state.tone}:${state.ring}`} className="fw-agent-dot" data-tone="0" data-outcome={state.tone} data-ring={state.ring || undefined} aria-hidden />) : <span className="fw-agent-dot" aria-hidden />}<span className="fw-card-who">{keepWords(who.name)}</span>
           {outcome
             ? <span className="fw-pill fw-pill-outcome" data-tone="0" data-outcome={outcome.tone}>{outcome.label}</span>
             : <span className={`fw-pill fw-pill-${state}`}>{status}</span>}

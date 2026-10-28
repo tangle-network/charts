@@ -46,7 +46,8 @@ try {
     const colors=await page.evaluate(()=>{
       const color=el=>getComputedStyle(el).backgroundColor
       const legend=new Set([...document.querySelectorAll('.fw-legend .fw-swatch')].map(color))
-      return [...document.querySelectorAll('.fw-row .fw-agent-dot')].filter(el=>el.getBoundingClientRect().width).every(el=>legend.has(color(el)))
+      const drawn=new Set([...document.querySelectorAll('.fw-row .fw-agent-dot')].filter(el=>el.getBoundingClientRect().width).map(color))
+      return drawn.size===legend.size&&[...drawn].every(value=>legend.has(value))
     })
     check(`${theme}/${width} outcome legend matches dots`,colors,true)
     if(process.env.PROOF_BASELINE==='1') {await context.close();renameSync(await page.video().path(),`${out}/${theme}-${width}.webm`);continue}
@@ -92,7 +93,8 @@ try {
     check(`${theme}/${width} essential opacity survives`,await page.evaluate(()=>document.getAnimations().some(a=>a.playState==='running'&&a.effect?.getKeyframes().some(f=>'opacity'in f))),true)
     await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&family=1`)
     await page.locator('[data-span-id="family:Worker"]').waitFor()
-    check(`${theme}/${width} mixed family has neutral key`,await page.locator('.fw-legend .fw-swatch[data-ring]').count()>0,true)
+    check(`${theme}/${width} mixed family keeps member outcomes`,await page.locator('[data-span-id="family:Worker"] .fw-agent-dot[data-outcome]').count(),4)
+    check(`${theme}/${width} mixed family key colors`,await page.evaluate(()=>{const color=el=>getComputedStyle(el).backgroundColor;const key=new Set([...document.querySelectorAll('.fw-legend .fw-swatch')].map(color));const drawn=new Set([...document.querySelectorAll('.fw-row .fw-agent-dot')].map(color));return key.size===drawn.size&&[...drawn].every(value=>key.has(value))}),true)
     await page.getByRole('button',{name:'1 quiet',exact:true}).click()
     check(`${theme}/${width} quiet filter reveals agent`,await page.locator('[data-span-id="agent-1"][data-activity="quiet"]').count(),1)
     await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&selected=1`)

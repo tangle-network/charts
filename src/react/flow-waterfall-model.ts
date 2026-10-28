@@ -1,4 +1,4 @@
-import type { FlowSpan, FlowTrace } from '../flow-trace.js'
+import type { FlowOutcome, FlowSpan, FlowTrace } from '../flow-trace.js'
 
 /** A minimap mark on a parent row: merged descendant activity of one kind. */
 export interface FlowSegment {
@@ -42,6 +42,7 @@ export interface FlowWaterfallRow {
   depth: number
   hasChildren: boolean
   span: FlowSpan
+  outcomes?: readonly FlowOutcome[]
   /** Agent hue: the index of the nearest pipeline ancestor (or self), in first-start order. */
   tone: number
   /** All descendants, for the collapsed "+N" count. */
@@ -431,7 +432,6 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
     groups.set(key, [...(groups.get(key) ?? []), row])
   }
   const out: FlowWaterfallRow[] = []
-  // Each top-level row takes the next hue slot, so no two families share a hue band (two cyan families read as one).
   let next = 0
   const hue = (row: FlowWaterfallRow) => row.tone <= 0 || ++next > 5 ? 0 : 1 + [...roleOf(row.name)].reduce((hash, c) => (hash * 31 + c.charCodeAt(0)) >>> 0, 0) % 5
   for (const [role, members] of groups) {
@@ -452,12 +452,13 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
       costFloor: known.length < members.length || members.some(row => row.costFloor),
       id, parentId: members[0]!.parentId, name: role, kind: 'pipeline', durationLabel: formatSpanDuration(endMs - startMs),
       approx: members.some(row => row.approx), ok: failed === 0, depth: 0, hasChildren: true, tone,
+      outcomes: [...new Map(members.map(row => { const state = row.span.outcome ?? { tone: 'neutral' as const, label: 'Unknown', ring: true }; return [`${state.label}:${state.tone}:${state.ring}`, state] as const })).values()],
       descendants: members.length, segments: [], retry: false, hasAgents: false,
       // One hue per family (round 5: mixed member hues in one lane read as "muddy"); members alternate shades of it.
       own: members.flatMap((row, i) => row.own.map(mark => ({ ...mark, tone, alt: i % 2 === 1 }))).sort((a, b) => a.startMs - b.startMs),
       ...(known.length ? { rollupCostUsd: known.reduce((sum, cost) => sum + cost, 0) } : {}),
       ...mergeStats(members),
-      span: { id, kind: 'pipeline', name: role, startMs, endMs, status: running ? 'running' : failed ? 'failed' : 'done', ...(outcome ? { outcome } : {}), detail: members[0]!.span.detail, meta: { failedAgents: failed, costPartial: known.length < members.length, members: members.map(row => row.id) } },
+      span: { id, kind: 'pipeline', name: role, startMs, endMs, activityAt: members.flatMap(row => row.span.activityAt ?? row.own.flatMap(mark => [mark.startMs, mark.endMs])), status: running ? 'running' : failed ? 'failed' : 'done', ...(outcome ? { outcome } : {}), detail: members[0]!.span.detail, meta: { failedAgents: failed, costPartial: known.length < members.length, members: members.map(row => row.id) } },
     })
     if (open.has(id)) out.push(...members.map((row, i) => ({ ...row, family: id, inset: 1, tone, own: row.own.map(mark => ({ ...mark, tone, alt: i % 2 === 1 })) })))
   }
