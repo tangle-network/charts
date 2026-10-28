@@ -391,6 +391,8 @@
   .fw-root > * { --fw-label-col: 0px; --fw-bar-shift: 8px; --fw-bar-h: 8px; --fw-row-h: 44px; }
   .fw-root .fw-summary > div:nth-child(-n+2) { flex: 1 0 auto; display: flex; align-items: baseline; gap: 8px; padding: 6px 8px; }
   .fw-root .fw-summary > div:nth-child(-n+2) .fw-value { margin: 0; font-size: 20px; line-height: 28px; }
+  .fw-root .fw-summary::after { content: ""; flex-basis: 100%; }
+  .fw-root .fw-summary > div:nth-child(n+3) { order: 1; }
   .fw-root :is(.fw-zoom, .fw-branch-controls, .fw-resize, .fw-links, .fw-gridlayer, .fw-marker-layer, .fw-subtitle, .fw-badge, .fw-icon-tile) { display: none; }
   .fw-root .fw-key > summary { display: flex; align-items: center; min-height: 32px; cursor: pointer; grid-area: 2 / 2; }
   .fw-root .fw-key:not([open]) .fw-legends { display: none; }
