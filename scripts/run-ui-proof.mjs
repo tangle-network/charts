@@ -37,7 +37,7 @@ if(totals==='invalid'){trace.promptTokens=Number.NaN;trace.completionTokens=Infi
 if(totals?.startsWith('otlp-'))trace=otlpFlowTrace([{trace_id:'totals',span_id:'call',name:'llm.call',kind:'LLM',start_time:'2026-01-01T00:00:00Z',end_time:'2026-01-01T00:00:01Z',attributes:{'gen_ai.request.model':'fixture/model',...(totals==='otlp-zero'?{'gen_ai.usage.input_tokens':0,'gen_ai.usage.output_tokens':0}:totals==='otlp-positive'?{'gen_ai.usage.input_tokens':3,'gen_ai.usage.output_tokens':5}:totals==='otlp-partial'?{'gen_ai.usage.input_tokens':3}:{})}}],{price:catalogPrice({data:[{id:'fixture/model',pricing:{prompt:'0.01',completion:'0.02'}}]})});
 const compose=new URLSearchParams(location.search).has('compose');
 function Feed(){const[paused,setPaused]=React.useState(false);return <aside data-feed data-paused={paused}><button onClick={()=>setPaused(!paused)}>Pause feed</button>Latest recorded event</aside>}
-function App(){const[cursor,setCursor]=React.useState(null),[selected,setSelected]=React.useState(undefined);return <FlowWaterfall label="Seventeen agents" trace={trace} defaultView={new URLSearchParams(location.search).has('graph-default')?'graph':'agents'} live={false} agentFill={new URLSearchParams(location.search).get("fill")??"agent"} graph={compose?<article data-graph data-cursor={cursor??'full'} data-selected={selected??''}>Host graph</article>:undefined} latestEvents={compose?<Feed/>:undefined} onTimeChange={setCursor} onSelect={compose?span=>setSelected(span.id):undefined} selectedId={selected??(new URLSearchParams(location.search).has("selected")?"agent-0":undefined)}/>}
+function App(){const[cursor,setCursor]=React.useState(null),[selected,setSelected]=React.useState(undefined);return <FlowWaterfall label="Seventeen agents" trace={trace} defaultView={new URLSearchParams(location.search).has('graph-default')?'graph':'agents'} live={new URLSearchParams(location.search).has('live')} agentFill={new URLSearchParams(location.search).get("fill")??"agent"} graph={compose?<article data-graph data-cursor={cursor??'full'} data-selected={selected??''}>Host graph</article>:undefined} latestEvents={compose?<Feed/>:undefined} onTimeChange={setCursor} onSelect={compose?span=>setSelected(span.id):undefined} selectedId={selected??(new URLSearchParams(location.search).has("selected")?"agent-0":undefined)}/>}
 createRoot(document.getElementById('root')).render(<App/>);
 `, resolveDir: process.cwd(), sourcefile: 'proof.jsx', loader: 'jsx' }, bundle: true, write: false, outdir: 'proof', format: 'esm', jsx: 'automatic', define: { 'process.env.NODE_ENV': '"production"' } })
 const files = Object.fromEntries(result.outputFiles.map(file => [file.path.split('/').pop(), file.text]))
@@ -242,6 +242,20 @@ try {
       check(`${theme}/${width}/${duration} single-line time chip`,chip,true)
       await page.screenshot({path:`${out}/axis-${theme}-${duration}-${width}.png`,fullPage:true})
     }
+    await page.emulateMedia({reducedMotion:'no-preference'})
+    await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&live=1`)
+    const liveBadge=page.locator('.fw-state-live')
+    await liveBadge.waitFor()
+    check(`${theme}/${width} normal Live badge host stays still`,await liveBadge.evaluate(el=>getComputedStyle(el).animationName),'none')
+    await liveBadge.screenshot({path:`${out}/live-badge-normal-${theme}-${width}.png`})
+    await page.emulateMedia({reducedMotion:'reduce'})
+    await page.waitForTimeout(100)
+    const badgeMotion=await liveBadge.evaluate(el=>{const host=getComputedStyle(el),dot=getComputedStyle(el,'::before');return {host:host.animationName,dot:dot.animationName,width:parseFloat(dot.width),height:parseFloat(dot.height),effects:el.getAnimations().map(a=>({name:a.animationName,pseudo:a.effect?.pseudoElement??null,duration:a.effect?.getComputedTiming().duration,iterations:a.effect?.getTiming().iterations}))}})
+    console.log('ACTUAL LIVE BADGE MOTION',theme,width,badgeMotion)
+    check(`${theme}/${width} reduced Live badge host stays still`,badgeMotion.host,'none')
+    check(`${theme}/${width} reduced Live dot still breathes`,badgeMotion.dot,'tangle-breathe')
+    check(`${theme}/${width} Live pulse is6px dot`,badgeMotion.width===6&&badgeMotion.height===6,true)
+    await liveBadge.screenshot({path:`${out}/live-badge-reduced-${theme}-${width}.png`})
     await context.close()
     renameSync(await page.video().path(),`${out}/${theme}-${width}.webm`)
   }
