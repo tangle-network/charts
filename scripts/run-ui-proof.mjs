@@ -62,6 +62,10 @@ try {
     check(`${theme}/${width} name fits row`,await page.locator('.fw-name-text').first().evaluate(el=>{const a=el.getBoundingClientRect(),b=el.closest('.fw-row').getBoundingClientRect();return a.top>=b.top&&a.bottom<=b.bottom}),true)
     await page.screenshot({path:`${out}/${theme}-${width}.png`,fullPage:true})
     check(`${theme}/${width} error rug`,await page.locator('.fw-error-tick').count(),17)
+    check(`${theme}/${width} canonical failed status glyph`,await page.locator('.fw-row-state svg[data-run-status="failed"]').count()>0,true)
+    check(`${theme}/${width} quiet keeps running explicit`,await page.locator('.fw-row[data-running] .fw-quiet').evaluateAll(nodes=>nodes.every(node=>node.getAttribute('aria-label')?.startsWith('Running; Quiet '))),true)
+    check(`${theme}/${width} quiet is not waiting status`,await page.locator('.fw-quiet svg[data-run-status="waiting"]').count(),0)
+
     check(`${theme}/${width} quiet agent`,await page.locator('[data-activity="quiet"]').count()>0,true)
     check(`${theme}/${width} overflow`,await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true)
     check(`${theme}/${width} filters`,await page.locator('.fw-legend button[aria-pressed]').count()>0,true)
@@ -199,6 +203,7 @@ try {
     }
     await page.emulateMedia({reducedMotion:'no-preference'})
     check(`${theme}/${width} running legend static`,await page.locator('.fw-legend [data-outcome="live"]').evaluateAll(nodes=>nodes.every(node=>getComputedStyle(node).animationName==='none')),true)
+    await page.screenshot({path:`${out}/composition-${theme}-${width}.png`,fullPage:true})
     const graphChoice=page.getByRole('radio',{name:'Graph',exact:true})
     check(`${theme}/${width} single three-view control`,await page.getByRole('radiogroup',{name:'Trace view',exact:true}).getByRole('radio').count(),3)
     if(await graphChoice.count()) {
@@ -229,13 +234,13 @@ try {
     if(width===390)await page.locator('.fw-key summary').click()
     check(`${theme}/${width} bar grammar explanation`,await page.locator('.fw-kind-rule').isVisible(),true)
     check(`${theme}/${width} waiting key uses actual hatch`,await page.locator('.fw-swatch-wait').evaluate(el=>getComputedStyle(el).backgroundImage.includes('repeating-linear-gradient')),true)
-    check(`${theme}/${width} kind key matches drawn model`,await page.evaluate(()=>getComputedStyle(document.querySelector('.fw-swatch-model')).backgroundColor===getComputedStyle(document.querySelector('[data-span-id="agent-1"] .fw-seg-model')).backgroundColor),true)
+    check(`${theme}/${width} kind key matches drawn model`,await page.evaluate(()=>{const swatch=document.querySelector('.fw-swatch-model'),owner=swatch.closest('[data-example]').dataset.example;return getComputedStyle(swatch).backgroundColor===getComputedStyle(document.querySelector('[data-span-id="'+owner+'"] .fw-seg-model')).backgroundColor}),true)
     if(width===390) {
       await page.locator('.fw-key summary').click()
       const hierarchy=await page.locator('.fw-summary').evaluate(el=>{const children=[...el.children];const rest=children.slice(2).map(node=>node.getBoundingClientRect());return {height:el.getBoundingClientRect().height,hero:parseFloat(getComputedStyle(children[0].querySelector('dd')).fontSize),oneLine:rest.every(box=>Math.abs(box.top-rest[0].top)<1)}})
-      check(`${theme}/${width} summary hero hierarchy`,hierarchy.hero,28)
+      check(`${theme}/${width} compact summary hierarchy`,hierarchy.hero,20)
       check(`${theme}/${width} secondary metrics one line`,hierarchy.oneLine,true)
-      check(`${theme}/${width} summary under110px`,hierarchy.height<=110,true)
+      check(`${theme}/${width} summary under80px`,hierarchy.height<=80,true)
     }
     await page.screenshot({path:`${out}/grammar-${theme}-${width}.png`,fullPage:true})
     if(width===390)for(const duration of [1715993,84928112,431000]) {

@@ -117,21 +117,21 @@ function summaryCells(trace: FlowTrace, at: ReturnType<typeof totalsAt> | undefi
   ]
   return { cost, tokens, errors, summary }
 }
-/** One legend item per outcome label the agents carry, with its count; nothing when no agent has an outcome. */
 const TONE_ORDER = ['failed', 'warn', 'live', 'neutral', 'ok']
-/** What each mark means, as the agent view draws it; a key only for kinds the run has. */
 function KindLegend({ rows, fill }: { rows: FlowWaterfallRow[]; fill: NonNullable<FlowWaterfallProps['agentFill']> }) {
   const has = (kind: string) => rows.some(row => row.own.some(mark => mark.kind === kind) || row.span.kind === kind)
-  const keys: [string, string][] = [['model', 'Model call'], ['tool', 'Tool call'], ['waiting', 'Waiting'], ['handoff', 'Handoff']]
+  const keys: [string, string][] = [['model', 'Model call'], ['tool', 'Tool call'], ['waiting', 'No recorded work'], ['handoff', 'Handoff']]
   const shown = keys.filter(([kind]) => kind === 'waiting' ? rows.some(row => row.kind === 'pipeline') : kind === 'handoff' ? rows.some(row => row.span.handoffTo || row.hasAgents) : has(kind))
   if (shown.length === 0) return null
-  const example = rows.find(row => toneKey(row.tone) > 0 && row.own.some(mark => mark.kind === 'model')) ?? rows.find(row => row.own.length)
-  return <ul className="fw-legend fw-kinds" aria-label="Key" data-tone={fill === 'agent' ? toneKey(example?.tone ?? 0) : undefined} data-example={example?.id}>
-    {shown.map(([kind, name]) => <li key={kind}><span className={`fw-swatch-${kind === 'waiting' ? 'wait' : kind}`} aria-hidden />{name}</li>)}
-    <li className="fw-kind-rule">{fill === 'agent' ? 'Bar color identifies family; shade identifies work.' : 'Shade identifies work.'}</li>
+  return <ul className="fw-legend fw-kinds" aria-label="Key">
+    {shown.map(([kind, name]) => {
+      const owner = rows.find(row => row.own.some(mark => mark.kind === kind || kind === 'tool' && mark.kind === 'failed' && !mark.modelCall))
+      const mark = owner?.own.find(mark => mark.kind === kind || kind === 'tool' && mark.kind === 'failed' && !mark.modelCall)
+      return <li key={kind} data-tone={fill === 'agent' ? toneKey(mark?.tone ?? 0) : undefined} data-example={owner?.id}><span className={`fw-swatch-${kind === 'waiting' ? 'wait' : kind}`} aria-hidden />{name}{owner && <span className="fw-key-example">({owner.name})</span>}</li>
+    })}
+    <li className="fw-kind-rule">{fill === 'agent' ? 'Hue identifies family; shade identifies work. Rail: recorded elapsed time.' : 'Shade identifies work. Rail: recorded elapsed time.'}</li>
   </ul>
 }
-/** The axis dots and the dashed lines they drop: one key naming what they mark (a release, or the kinds the host gave). */
 function MarkerLegend({ markers }: { markers?: FlowMarker[] }) {
   if (!markers?.length) return null
   const kinds = [...new Set(markers.map(marker => marker.kind ?? 'event'))]
@@ -435,7 +435,7 @@ export function FlowWaterfall({
           </div>}
         </div>
       </header>
-      {latestEvents}
+      {latestEvents != null && <div className="fw-latest">{latestEvents}</div>}
       {view === 'graph' ? graph : <>
       {showSummary && <dl className="fw-summary">
         {summary.map(([name, value, title]) => <div key={name} className={name === 'Errors' && errors !== undefined && errors > 0 ? 'fw-has-errors' : undefined}>
