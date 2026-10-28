@@ -8,6 +8,8 @@ export interface FlowSpan {
   status?: 'running' | 'waiting' | 'needs-you' | 'done' | 'failed' | 'stopped' | 'idle' | 'unknown'
   /** Trace-relative event times. Quiet detection uses these, or the agent's recorded child activity. */
   activityAt?: readonly number[]
+  /** Full-stream cadence supplied before the producer truncates its event tail. */
+  medianEventGapMs?: number
   name: string
   startMs: number
   endMs: number

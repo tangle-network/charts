@@ -14,6 +14,8 @@ import '@tangle-network/brand/styles/tokens.css'; import '${process.env.PROOF_SO
 document.documentElement.className=new URLSearchParams(location.search).get('theme')??'dark';
 const spans=Array.from({length:17},(_,i)=>({id:'agent-'+i,kind:'pipeline',name:'Worker '+i,startMs:i*1000,endMs:1200000,status:i===0||i===1?'running':i===2?'needs-you':i<9?'failed':'done',activityAt:[1000,2000,i===0?1199999:3000],outcome:{tone:i<2?'live':i===2?'warn':i<9?'failed':'ok',label:i<2?'Running':i===2?'Needs you':i<9?'Failed':'Done'},output:i<9?'Compiler rejected the build':undefined}));
 if(new URLSearchParams(location.search).has('family')) {spans.forEach(span=>span.parentId='orch');spans.unshift({id:'orch',kind:'pipeline',name:'Orchestrator',startMs:0,endMs:1200000,status:'done',outcome:{tone:'ok',label:'Done'}})}
+if(new URLSearchParams(location.search).has('cadence')) {spans[1].activityAt=[3000];spans[1].medianEventGapMs=600000}
+if(new URLSearchParams(location.search).has('zero-cadence')) {spans[1].activityAt=[0,400000,800000];spans[1].medianEventGapMs=0}
 spans.push({id:'gap',parentId:'agent-16',kind:'tool',name:'Not reported',startMs:Number.NaN,endMs:Number.NaN});
 spans.push({id:'peer-model',parentId:'agent-9',kind:'model',name:'Turn 1',startMs:30000,endMs:350000,status:'done'},{id:'peer-tool',parentId:'agent-9',kind:'tool',name:'read',startMs:350000,endMs:700000,status:'done'});
 spans.push({id:'model',parentId:'agent-0',kind:'model',name:'Turn 1',startMs:30000,endMs:350000,status:'done'});
@@ -24,7 +26,7 @@ const files = Object.fromEntries(result.outputFiles.map(file => [file.path.split
 const server = createServer((req, res) => {
   const name = req.url.split('?')[0].slice(1)
   res.setHeader('content-type', name.endsWith('.js')?'text/javascript':name.endsWith('.css')?'text/css':'text/html')
-  res.end(files[name] ?? '<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/stdin.css"><style>body{margin:0;background:var(--bg-canvas)}</style><div id="root"></div><script type="module" src="/stdin.js"></script>')
+  res.end(files[name] ?? '<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/stdin.css"><style>body{margin:0;background:var(--bg-root)}</style><div id="root"></div><script type="module" src="/stdin.js"></script>')
 })
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve))
 const browser = await chromium.launch({headless:true,args:['--no-sandbox']})
@@ -103,6 +105,11 @@ try {
     const selectedContrast=await page.evaluate(contrastAudit)
     console.log('SELECTED CONTRAST',theme,width,selectedContrast)
     check(`${theme}/${width} selected peer text contrast`,selectedContrast.failures.length,0)
+    for(const [cadence,expected] of [['cadence',0],['zero-cadence',1]]) {
+      await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&${cadence}=1`)
+      await page.locator('[data-flow-waterfall]').waitFor()
+      check(`${theme}/${width}/${cadence} preserves producer gap`,await page.locator('[data-span-id="agent-1"][data-activity="quiet"]').count(),expected)
+    }
     for(const fill of ['muted','outcome']) {
       await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&fill=${fill}`)
       await page.locator('[data-flow-waterfall]').waitFor()

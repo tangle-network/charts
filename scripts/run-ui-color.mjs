@@ -53,7 +53,7 @@ export function contrastAudit() {
     const style=getComputedStyle(el),ink=color(style.color);ink[3]*=opacity
     const foreground=luminance(over(ink,bg)),background=luminance(bg),ratio=(Math.max(foreground,background)+.05)/(Math.min(foreground,background)+.05)
     const required=parseFloat(style.fontSize)>=18?3:4.5
-    findings.push({text,ratio,required,className:el.className})
+    findings.push({text,ratio,required,className:el.className,ink:style.color,background:bg})
   }
   return {count:findings.length,min:Math.min(...findings.map(row=>row.ratio)),failures:findings.filter(row=>row.ratio<row.required)}
 }

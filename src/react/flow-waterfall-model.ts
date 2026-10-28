@@ -543,7 +543,9 @@ export function quietActivity(row: FlowWaterfallRow, now: number) {
   const last = times.at(-1) ?? row.span.startMs
   const gaps = times.slice(1).map((at,i) => at-times[i]!).filter(gap => gap > 0).sort((a,b)=>a-b)
   const middle = Math.floor(gaps.length / 2)
-  const median = gaps.length ? gaps.length % 2 ? gaps[middle]! : (gaps[middle-1]! + gaps[middle]!) / 2 : 0
+  const observedMedian = gaps.length ? gaps.length % 2 ? gaps[middle]! : (gaps[middle-1]! + gaps[middle]!) / 2 : 0
+  const supplied = row.span.medianEventGapMs
+  const median = typeof supplied === 'number' && Number.isFinite(supplied) && supplied >= 0 ? supplied : observedMedian
   const quietMs = Math.max(0, now-last)
   return { last, quietMs, quiet: spanRunning(row.span) && quietMs > Math.max(300000, 3*median) }
 }

@@ -54,7 +54,7 @@
 .fw-root [data-tone="4"] { --tone: var(--fw-h4); }
 .fw-root [data-tone="5"] { --tone: var(--fw-h5); }
 .fw-root [data-tone], .fw-root .fw-kinds {
-  --fill: light-dark(var(--tone), color-mix(in oklab, var(--tone) 94%, var(--bg-canvas)));
+  --fill: light-dark(var(--tone), color-mix(in oklab, var(--tone) 94%, var(--bg-root)));
   --line: var(--tone);
   --model-fill: light-dark(oklch(from var(--tone, var(--fw-h0)) .50 min(c, .10) h), oklch(from var(--tone, var(--fw-h0)) .72 min(c, .10) h));
   --tool-fill: light-dark(oklch(from var(--tone, var(--fw-h0)) .80 min(c, .10) h), oklch(from var(--tone, var(--fw-h0)) .46 min(c, .10) h));
@@ -246,7 +246,7 @@
 .fw-root.fw-fill-agent .fw-view-agents :is(.fw-seg-tool, .fw-seg-failed) { background: var(--tool-fill); box-shadow: none; }
 .fw-root.fw-fill-agent .fw-view-agents .fw-seg-failed { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-failed) 55%, transparent); }
 .fw-root .fw-view-agents .fw-seg { container-type: inline-size; justify-content: flex-start; font-size: 14px; line-height: 18px; white-space: nowrap; color: var(--fw-seg-ink); }
-.fw-root .fw-view-agents .fw-seg-model { --fw-seg-ink: light-dark(var(--fw-surface), var(--bg-canvas)); }
+.fw-root .fw-view-agents .fw-seg-model { --fw-seg-ink: light-dark(var(--fw-surface), var(--bg-root)); }
 .fw-root .fw-view-agents :is(.fw-seg-tool, .fw-seg-failed) { --fw-seg-ink: var(--fw-text); }
 .fw-root .fw-view-agents .fw-seg > * { pointer-events: none; }
 .fw-root .fw-seg-label { flex: 1; min-width: 0; height: 16px; margin: 0 6px; display: flex; flex-wrap: wrap; align-items: center; column-gap: 4px; overflow: hidden; }
@@ -257,7 +257,7 @@
 .fw-root .fw-seg-meta { font-variant-numeric: tabular-nums; }
 @container (max-width: 24px) { .fw-root .fw-seg-label { display: none; } }
 @container (max-width: 5px) { .fw-root .fw-view-agents .fw-seg .fw-glyph { display: none; } }
-.fw-root .fw-view-agents .fw-seg .fw-glyph { flex: none; margin-left: 0; display: grid; place-items: center; width: min(14px, 100%); height: 14px; border-radius: 50%; background: var(--fw-failed); color: light-dark(var(--fw-surface), var(--bg-canvas)); }
+.fw-root .fw-view-agents .fw-seg .fw-glyph { flex: none; margin-left: 0; display: grid; place-items: center; width: min(14px, 100%); height: 14px; border-radius: 50%; background: var(--fw-failed); color: light-dark(var(--fw-surface), var(--bg-root)); }
 .fw-root .fw-view-agents .fw-seg .fw-glyph[data-glyph="retry"] { background: var(--fw-muted); }
 .fw-root .fw-view-agents .fw-seg .fw-glyph svg { width: min(9px, 100%); height: 9px; stroke-width: 2.5; }
 .fw-root:is(.fw-fill-muted, .fw-fill-outcome) .fw-view-agents :is(.fw-seg-alt.fw-seg-model, .fw-seg-alt.fw-seg-tool) { filter: brightness(.88); }
@@ -408,8 +408,8 @@
 
 @container flow-waterfall (max-width: 599px) { .fw-root .fw-tick:nth-child(4) { transform: translate(calc(-100% - 4px), -50%); } }
 
-.fw-root.fw-fill-agent .fw-view-agents .fw-seg-failed[data-model] { background: var(--model-fill); --fw-seg-ink: light-dark(var(--fw-surface), var(--bg-canvas)); }
+.fw-root.fw-fill-agent .fw-view-agents .fw-seg-failed[data-model] { background: var(--model-fill); --fw-seg-ink: light-dark(var(--fw-surface), var(--bg-root)); }
 
 .fw-root.fw-root.fw-root-agents[data-selection] .fw-row:not([aria-selected="true"]) .fw-seg { opacity: var(--on); background: color-mix(in oklab, var(--fw-surface) 80%, var(--tone)); --fw-seg-ink: var(--fw-text); }
 
-.fw-root:is(.fw-fill-muted, .fw-fill-outcome) .fw-view-agents .fw-seg-tool { --fw-seg-ink: light-dark(var(--fw-surface), var(--bg-canvas)); }
+.fw-root:is(.fw-fill-muted, .fw-fill-outcome) .fw-view-agents .fw-seg-tool { --fw-seg-ink: light-dark(var(--fw-surface), var(--bg-root)); }
