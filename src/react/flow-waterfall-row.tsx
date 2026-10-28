@@ -3,7 +3,7 @@ import { type CSSProperties, type ReactNode, memo } from 'react'
 import type { FlowSpan } from '../flow-trace.js'
 import { KIND_LABEL } from './flow-waterfall-card.js'
 import { AlertGlyph, ChevronGlyph, FailGlyph, KindGlyph, RetryGlyph } from './flow-waterfall-icons.js'
-import { type FlowSegment, type FlowWaterfallRow, agentSummary, quietActivity, formatCost, rowCostText, formatSpanDuration, spanRunning, toneKey } from './flow-waterfall-model.js'
+import { type FlowSegment, type FlowWaterfallRow, agentSummary, quietActivity, formatCost, rowCostText, formatSpanDuration, spanRunning, toneKey, workKind } from './flow-waterfall-model.js'
 import type { RowMotion } from './flow-waterfall-motion.js'
 
 export type FlowView = 'spans' | 'agents' | 'graph'
@@ -52,7 +52,7 @@ export interface RowProps extends RowEvents {
 
 function Segment({ mark, events, agentView }: { mark: FlowSegment; events: RowEvents; agentView: boolean }) {
   const glyph = mark.kind === 'failed' ? 'fail' : mark.retry ? 'retry' : null
-  const model = mark.kind === 'model' || mark.modelCall
+  const model = workKind(mark) === 'model'
   const name = model ? undefined : mark.count === 1 ? mark.name : mark.tool
   const duration = Number.isFinite(mark.endMs) ? formatSpanDuration(mark.endMs - mark.startMs) : ''
   const meta = [duration, mark.costUsd ? formatCost(mark.costUsd) : ''].filter(Boolean).join(' · ')

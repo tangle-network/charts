@@ -24,10 +24,10 @@ spans.push({id:'gap',parentId:'agent-16',kind:'tool',name:'Not reported',startMs
 spans.push({id:'peer-model',parentId:'agent-9',kind:'model',name:'Turn 1',startMs:30000,endMs:350000,status:'done'},{id:'peer-tool',parentId:'agent-9',kind:'tool',name:'read',startMs:350000,endMs:700000,status:'done'});
 spans.push({id:'model',parentId:'agent-0',kind:'model',name:'Turn 1',startMs:30000,endMs:350000,status:'done'});
 for(let i=0;i<17;i++)spans.push({id:'error-'+i,parentId:'agent-'+(i%17),kind:'tool',name:'bash',startMs:i===0?350000:5000+i*1000,endMs:i===0?700000:6000+i*1000,status:'failed',output:'Compiler rejected the build'});
-if(new URLSearchParams(location.search).has('grammar'))spans.push({id:'grammar-model',parentId:'agent-1',kind:'model',name:'Turn 2',startMs:30000,endMs:300000,status:'done'},{id:'grammar-tool',parentId:'agent-1',kind:'tool',name:'read',startMs:300000,endMs:500000,status:'done'});
+if(new URLSearchParams(location.search).has('grammar'))spans.push({id:'grammar-model',parentId:'agent-1',kind:'model',name:'Turn 2',startMs:30000,endMs:300000,status:'failed'},{id:'grammar-tool',parentId:'agent-1',kind:'tool',name:'read',startMs:300000,endMs:500000,status:'done'});
 const failureCase=new URLSearchParams(location.search).get('failure-proof');if(failureCase){spans[0].output='Owner final reply unrelated to tool failure';const failed=spans.find(span=>span.id==='error-0');delete failed.output;if(failureCase==='fact')failed.facts=[{label:'Failure',value:'Recorded subprocess exit 7'}];if(failureCase==='output')failed.output='Raw tool stdout before exit'}
 if(new URLSearchParams(location.search).has('comparisons')){spans[0].costUsd=1000;for(const [i,name,cost,end]of[[1,'Collector',20,1200000],[2,'Verifier',10,600000]])Object.assign(spans[i],{parentId:'agent-0',name,costUsd:cost,endMs:end,status:'done',outcome:{tone:'ok',label:'Done'}})}
-let trace={spans,totalMs:1200000,promptTokens:0,completionTokens:0,errors:17};
+let trace={spans,totalMs:1200000,promptTokens:0,completionTokens:0,errors:new URLSearchParams(location.search).has('grammar')?18:17};
 const totals=new URLSearchParams(location.search).get('totals');
 const long=Number(new URLSearchParams(location.search).get('long'));if(long){const scale=long/trace.totalMs;for(const span of trace.spans){span.startMs*=scale;span.endMs*=scale;if(span.activityAt)span.activityAt=span.activityAt.map(at=>at*scale)}trace.totalMs=long;document.getElementById('root').style.padding='16px'}
 if(totals==='missing'){delete trace.promptTokens;delete trace.completionTokens}
@@ -259,7 +259,7 @@ try {
     check(`${theme}/${width} kind key prefers actual colored family`,await page.locator('.fw-swatch-model').evaluate(el=>el.parentElement.dataset.example),'agent-1')
     check(`${theme}/${width} lifecycle not repeated in subtitle`,await page.locator('[data-span-id="agent-3"] .fw-subtitle').evaluate(el=>!el.textContent.includes('Failed')),true)
     check(`${theme}/${width} waiting key uses actual hatch`,await page.locator('.fw-swatch-wait').evaluate(el=>getComputedStyle(el).backgroundImage.includes('repeating-linear-gradient')),true)
-    check(`${theme}/${width} kind key matches drawn model`,await page.evaluate(()=>{const swatch=document.querySelector('.fw-swatch-model'),owner=swatch.closest('[data-example]').dataset.example;return getComputedStyle(swatch).backgroundColor===getComputedStyle(document.querySelector('[data-span-id="'+owner+'"] .fw-seg-model')).backgroundColor}),true)
+    check(`${theme}/${width} kind key matches drawn model`,await page.evaluate(()=>{const swatch=document.querySelector('.fw-swatch-model'),owner=swatch.closest('[data-example]').dataset.example;return getComputedStyle(swatch).backgroundColor===getComputedStyle(document.querySelector('[data-span-id="'+owner+'"] .fw-seg[data-model]')).backgroundColor}),true)
     if(width===390) {
       await page.screenshot({path:`${out}/grammar-key-${theme}-${width}.png`,fullPage:true})
       check(`${theme}/${width} open key fits card`,await page.locator('.fw-legends').evaluate(el=>{const box=el.getBoundingClientRect(),root=el.closest('[data-flow-waterfall]').getBoundingClientRect();return box.left>=root.left&&box.right<=root.right&&el.scrollWidth<=el.clientWidth}),true)

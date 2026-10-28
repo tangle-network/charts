@@ -24,6 +24,7 @@ export interface FlowSegment {
   modelCall?: boolean
 }
 
+export const workKind = (mark: FlowSegment): 'model' | 'tool' => mark.kind === 'model' || mark.modelCall ? 'model' : 'tool'
 const toolOf = (name?: string) => name?.split(' · ')[0]
 
 /** A row's direct steps: model and tool calls (failed ones included), the failed and retrying ones, and tool calls by tool. */
@@ -528,7 +529,7 @@ function stepRuns(steps: readonly FlowWaterfallRow[]): FlowWaterfallRow[] {
     out.push({
       ...first, id: `run:${first.id}`, name: `${run.length} ${noun}`, durationLabel: formatSpanDuration(endMs - startMs), ok: failed === 0,
       hasChildren: false, descendants: 0, segments: [], ...stepStats(run), tokens: sumTokens(run),
-      own: run.map(step => ({ startMs: step.span.startMs, endMs: step.span.endMs, kind: step.ok ? (step.kind === 'model' ? 'model' : 'tool') : 'failed', tone: first.tone, id: step.id, count: 1, retry: step.retry, name: step.name, tool: toolOf(step.name) })),
+      own: run.map(step => ({ ...segmentOf(step), tone: first.tone })),
       ...(costs.length ? { rollupCostUsd: costs.reduce((sum, cost) => sum + cost, 0) } : {}),
       span: { ...first.span, id: `run:${first.id}`, name: `${run.length} ${noun}`, startMs, endMs, status: failed ? 'failed' : first.span.status, costUsd: undefined },
     })

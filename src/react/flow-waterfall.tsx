@@ -8,7 +8,7 @@ import { ChevronGlyph, FailGlyph, SearchGlyph, TraceGlyph } from './flow-waterfa
 import { PlaybackBar } from './flow-waterfall-playback.js'
 import {
   quietActivity, agentCallouts, agentViewRows, criticalPathIds, defaultOpenFamilies, busyMs, drawnRow, costSummary, type FlowWaterfallRow, flowWaterfallRows, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
-  toneKey, totalsAt, visibleFlowWaterfallRows,
+  toneKey, totalsAt, visibleFlowWaterfallRows, workKind,
 } from './flow-waterfall-model.js'
 import { motionMilliseconds } from './flow-waterfall-motion.js'
 import type { FlowView } from './flow-waterfall-row.js'
@@ -119,13 +119,13 @@ function summaryCells(trace: FlowTrace, at: ReturnType<typeof totalsAt> | undefi
 }
 const TONE_ORDER = ['failed', 'warn', 'live', 'neutral', 'ok']
 function KindLegend({ rows, fill }: { rows: FlowWaterfallRow[]; fill: NonNullable<FlowWaterfallProps['agentFill']> }) {
-  const has = (kind: string) => rows.some(row => row.own.some(mark => mark.kind === kind) || row.span.kind === kind)
+  const has = (kind: string) => rows.some(row => row.own.some(mark => workKind(mark) === kind) || row.span.kind === kind)
   const keys: [string, string][] = [['model', 'Model call'], ['tool', 'Tool call'], ['waiting', 'No recorded work'], ['handoff', 'Handoff']]
   const shown = keys.filter(([kind]) => kind === 'waiting' ? rows.some(row => row.kind === 'pipeline') : kind === 'handoff' ? rows.some(row => row.span.handoffTo || row.hasAgents) : has(kind))
   if (shown.length === 0) return null
   return <ul className="fw-legend fw-kinds" aria-label="Key">
     {shown.map(([kind, name]) => {
-      const examples = rows.flatMap(owner => owner.own.flatMap(mark => mark.kind === kind || kind === 'tool' && mark.kind === 'failed' && !mark.modelCall ? [{ owner, mark }] : []))
+      const examples = rows.flatMap(owner => owner.own.flatMap(mark => workKind(mark) === kind ? [{ owner, mark }] : []))
       const example = examples.find(({ mark }) => toneKey(mark.tone) > 0) ?? examples[0]
       return <li key={kind} data-tone={fill === 'agent' ? toneKey(example?.mark.tone ?? 0) : undefined} data-example={example?.owner.id}><span className={`fw-swatch-${kind === 'waiting' ? 'wait' : kind}`} aria-hidden />{name}{example && <span>({example.owner.name})</span>}</li>
     })}
