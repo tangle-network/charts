@@ -1,5 +1,9 @@
 # @tangle-network/charts
 
+## 0.21.25
+
+- With the muted fill (`agentFill="muted"`), an agent's dot keeps its outcome's colour. The muted fill retoned every element with a tone, so in 0.21.23 a Shipped agent's dot drew grey beside a green Shipped key.
+
 ## 0.21.24
 
 - Nothing in the static figures or the live charts reads below 14px. The figure's note references, reading line, data table, data summary and notes were 12px (`figure.css`). The live charts' axis labels, bar values and meter text were 12px monospace (`live.css`); they are now 14px in the host's sans with tabular digits, as the design bar asks ("mono is for ids"). The dot-map tooltip was 12px. The 10-27 judges found `.tgc-table` and `.tgc-notes` at 12px in the served Discovery stylesheet, and the Fleet page's bar values and meter text use `live.css`.
