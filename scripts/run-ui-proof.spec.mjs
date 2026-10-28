@@ -49,6 +49,7 @@ const server = createServer((req, res) => {
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve))
 const browser = await chromium.launch({headless:true,args:['--no-sandbox']})
 const checks=[]
+const numericGeometry=page=>page.locator('.fw-summary > div:nth-child(-n+2) dd').evaluateAll(nodes=>nodes.map(el=>{const range=document.createRange();range.selectNodeContents(el);const text=range.getBoundingClientRect(),box=el.getBoundingClientRect();return {text:el.textContent,whole:el.scrollWidth<=el.clientWidth&&text.left>=box.left-.5&&text.right<=box.right+.5}}))
 const check=(name,actual,expected)=>{const pass=actual===expected;checks.push({name,pass,actual,expected});console.log(`${pass?'PASS':'FAIL'} ${name}: ${JSON.stringify(actual)}`)}
 try {
   for(const theme of ['dark','light'])for(const width of [1280,390]){
@@ -59,6 +60,17 @@ try {
     await page.locator('[data-flow-waterfall]').waitFor()
     await page.waitForTimeout(1200)
     if(process.env.PALETTE_SEARCH==='1'){const solved=await page.evaluate(paletteAudit,{search:true});writeFileSync(`${out}/${theme}-search.json`,JSON.stringify(solved,null,2));console.log('BOUNDED PALETTE',theme,JSON.stringify({...solved,feasibleHueSamples:solved.feasibleHueSamples.length}));await context.close();continue}
+    if(process.env.PROOF_SUMMARY_ONLY==='1') {
+      if(width===390)for(const duration of [1715993,84928112,431000]) {
+        await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&long=${duration}`)
+        await page.locator('.fw-summary').waitFor()
+        const numbers=await numericGeometry(page)
+        console.log('PRIMARY NUMERIC GEOMETRY',theme,duration,numbers)
+        check(`${theme}/${width}/${duration} complete primary numbers`,numbers.every(value=>value.whole),true)
+        await page.screenshot({path:`${out}/summary-${theme}-${duration}-${width}.png`,fullPage:true})
+      }
+      await context.close();renameSync(await page.video().path(),`${out}/${theme}-${width}.webm`);continue
+    }
     check(`${theme}/${width} name fits row`,await page.locator('.fw-name-text').first().evaluate(el=>{const a=el.getBoundingClientRect(),b=el.closest('.fw-row').getBoundingClientRect();return a.top>=b.top&&a.bottom<=b.bottom}),true)
     await page.screenshot({path:`${out}/${theme}-${width}.png`,fullPage:true})
     check(`${theme}/${width} error rug`,await page.locator('.fw-error-tick').count(),17)
@@ -261,6 +273,7 @@ try {
       await page.locator('.fw-axis-track').waitFor({state:'visible'})
       await page.waitForFunction(()=>document.querySelectorAll('.fw-axis .fw-tick').length===4)
       const geometry=await page.locator('.fw-axis-track').evaluate(track=>{const area=track.getBoundingClientRect();const labels=[...track.querySelectorAll('.fw-tick')].map(el=>({text:el.textContent,left:el.getBoundingClientRect().left,right:el.getBoundingClientRect().right}));return {labels,clear:labels.length===4&&labels.every((label,i)=>label.left>=area.left&&label.right<=area.right&&(i===0||label.left>=labels[i-1].right+4))}})
+      check(`${theme}/${width}/${duration} complete primary numbers`,(await numericGeometry(page)).every(value=>value.whole),true)
       console.log('PHONE AXIS',theme,duration,geometry)
       check(`${theme}/${width}/${duration} four unclipped separated ticks`,geometry.clear,true)
       check(`${theme}/${width}/${duration} endpoint duration`,geometry.labels.at(-1)?.text,duration===1715993?'28m 36s':duration===84928112?'23h 35m':'7m 11s')
