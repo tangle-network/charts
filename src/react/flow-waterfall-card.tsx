@@ -45,7 +45,7 @@ function metrics(row: FlowWaterfallRow, clockMs: number, full: boolean): [string
   const tokens = row.tokens
   if (tokens) {
     const parts = ([['prompt', 'in'], ['completion', 'out'], ['cached', 'cached']] as const).flatMap(([key, unit]) => tokens[key] === undefined ? [] : [count(tokens[key], unit)])
-    out.push(['Tokens', <span className={`fw-card-parts${parts.length > 2 ? ' fw-card-stack' : ''}`}>{parts.map((part, i) => <span key={i}>{part}</span>)}</span>])
+    out.push(['Tokens', parts.length ? <span className={`fw-card-parts${parts.length > 2 ? ' fw-card-stack' : ''}`}>{parts.map((part, i) => <span key={i}>{part}</span>)}</span> : <span title="Tokens not reported">—</span>])
   }
   const latency = row.modelMs
   if (latency?.length) out.push(['Model latency', <span className="fw-card-parts"><span>{formatSpanDuration(percentile(latency, 0.5))} median</span>{latency.length >= 10 && <span>{formatSpanDuration(percentile(latency, 0.95))} p95</span>}</span>])

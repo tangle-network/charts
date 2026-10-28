@@ -1,4 +1,4 @@
-import type { FlowSpan, FlowTrace } from './flow-trace.js'
+import { type FlowSpan, type FlowTrace, finiteNumber, reportedCount, sumReportedCounts } from './flow-trace.js'
 
 /** One span of the OTLP-JSONL contract written by `traces convert` (tangle-network/traces). */
 export interface OtlpSpan {
@@ -33,8 +33,9 @@ const CACHE_KEYS = [...CACHE_READ_KEYS, 'gen_ai.usage.cache_creation_input_token
 export function catalogPrice(catalog: { data?: Array<{ id?: string; pricing?: { prompt?: string | number; completion?: string | number } }> }) {
   const rates = new Map<string, { input: number; output: number }>()
   for (const model of catalog.data ?? []) {
-    const input = Number(model.pricing?.prompt), output = Number(model.pricing?.completion)
-    if (model.id && Number.isFinite(input) && Number.isFinite(output)) rates.set(model.id, { input, output })
+    const rate = (value: unknown) => typeof value === 'string' ? value.trim() ? finiteNumber(Number(value)) : undefined : finiteNumber(value)
+    const input = rate(model.pricing?.prompt), output = rate(model.pricing?.completion)
+    if (model.id && input !== undefined && output !== undefined) rates.set(model.id, { input, output })
   }
   return (model: string, inputTokens: number, outputTokens: number) => {
     const rate = rates.get(model) ?? rates.get(shortModel(model))
@@ -62,7 +63,6 @@ export function parseOtlpJsonl(text: string): { spans: OtlpSpan[]; malformed: nu
 }
 
 const str = (value: unknown) => typeof value === 'string' && value ? value : undefined
-const num = (value: unknown) => typeof value === 'number' && Number.isFinite(value) ? value : undefined
 const pick = (attributes: Record<string, unknown>, keys: string[]) => {
   for (const key of keys) { const value = str(attributes[key]); if (value) return value }
   return undefined
@@ -139,8 +139,7 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
 
   const out: FlowSpan[] = []
   let omitted = 0
-  let promptTokens = 0
-  let completionTokens = 0
+  const usage: [number | undefined, number | undefined][] = []
   let toolCalls = 0
   let modelCalls = 0
   let errors = 0
@@ -188,9 +187,9 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
     if (open) endMs = Math.max(endMs, last - origin)
     const parentId = span.parent_span_id && byId.has(span.parent_span_id) ? span.parent_span_id : groupOf.has(span.span_id) ? `group:${groupOf.get(span.span_id)}` : undefined
     const model = pick(a, MODEL_KEYS)
-    const prompt = num(a['gen_ai.usage.input_tokens'])
-    const completion = num(a['gen_ai.usage.output_tokens'])
-    const cached = CACHE_READ_KEYS.map(key => num(a[key])).find(n => n !== undefined)
+    const prompt = reportedCount(a['gen_ai.usage.input_tokens'])
+    const completion = reportedCount(a['gen_ai.usage.output_tokens'])
+    const cached = CACHE_READ_KEYS.map(key => reportedCount(a[key])).find(n => n !== undefined)
     let kind: FlowSpan['kind'] = span.kind === 'LLM' ? 'model' : span.kind === 'TOOL' ? 'tool' : 'pipeline'
     if (kind === 'tool' && (a['traces.agent.spawn'] === true || spawnTarget.has(span.span_id) || handoffTo.has(span.span_id))) kind = 'handoff'
     let name = str(a['gen_ai.tool.name']) ?? span.name
@@ -203,16 +202,17 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
     if (kind === 'model' && !aggregate) modelCalls++
     if (kind === 'tool' || kind === 'handoff') toolCalls++
     if (failed) errors++
-    if (!aggregate) { promptTokens += prompt ?? 0; completionTokens += completion ?? 0 }
-    const listPrice = kind === 'model' && !aggregate && model && options.price && (prompt !== undefined || completion !== undefined)
-      ? options.price(model, prompt ?? 0, completion ?? 0) : undefined
+    if (!aggregate && (kind === 'model' || prompt !== undefined || completion !== undefined)) usage.push([prompt, completion])
+    const listPrice = finiteNumber(kind === 'model' && !aggregate && model && options.price && prompt !== undefined && completion !== undefined
+      ? options.price(model, prompt, completion) : undefined)
     if (listPrice !== undefined) {
       cost += listPrice; priced++
       if (CACHE_KEYS.some(key => a[key] !== undefined)) cacheSplit = true
     }
-    else if (kind === 'model' && !aggregate && (prompt || completion)) unpriced++
+    else if (kind === 'model' && !aggregate) unpriced++
     out.push({
       id: span.span_id, ...(parentId ? { parentId } : {}), kind, name, startMs, endMs,
+      ...(aggregate ? { meta: { 'cli_bridge.usage.scope': 'sum_of_children' } } : {}),
       status: open ? 'running' : failed ? 'failed' : 'done',
       ...(endMs === startMs && kind !== 'pipeline' ? { approx: true } : {}),
       ...(isAgent(span) ? { detail: topModel(span.span_id) } : kind === 'model' && model ? { detail: shortModel(model) } : {}),
@@ -225,7 +225,7 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
     })
   }
   return {
-    spans: out, totalMs: Number.isFinite(last - origin) ? last - origin : 0, promptTokens, completionTokens,
+    spans: out, totalMs: Number.isFinite(last - origin) ? last - origin : 0, promptTokens: sumReportedCounts(usage.map(([value]) => value)), completionTokens: sumReportedCounts(usage.map(([,value]) => value)),
     toolCalls, modelCalls, errors, omitted,
     // A partly priced run still has a known floor: report it with its coverage rather than nothing.
     ...(options.price && priced > 0

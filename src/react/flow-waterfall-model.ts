@@ -1,5 +1,5 @@
 import { runStatus, statusMeta } from '@tangle-network/ui/run'
-import type { FlowOutcome, FlowSpan, FlowTrace } from '../flow-trace.js'
+import { type FlowOutcome, type FlowSpan, type FlowTrace, finiteNumber, reportedCount, sumReportedCounts } from '../flow-trace.js'
 
 /** A minimap mark on a parent row: merged descendant activity of one kind. */
 export interface FlowSegment {
@@ -97,6 +97,7 @@ export function formatSpanDuration(ms: number): string {
 
 /** $0.12, $0.005, $12.40; never rounds a recorded nonzero cost to $0.00. */
 export function formatCost(usd: number): string {
+  if (finiteNumber(usd) === undefined) return '—'
   if (usd === 0) return '$0.00'
   if (usd < 0.01) return `$${usd.toPrecision(1).replace(/0+$/, '')}`
   return `$${usd.toFixed(2)}`
@@ -104,6 +105,7 @@ export function formatCost(usd: number): string {
 
 /** 9.8k, 754.4k, 1.2M with the exact count left to a title. */
 export function formatCount(n: number): string {
+  if (reportedCount(n) === undefined) return '—'
   if (n < 1000) return String(n)
   if (n < 1_000_000) return `${(n / 1000).toFixed(1)}K`
   return `${(n / 1_000_000).toFixed(1)}M`
@@ -205,7 +207,7 @@ export function flowWaterfallRows(trace: FlowTrace, resolutionMs?: number): Flow
       if (child.kind !== 'pipeline' && child.kind !== 'waiting' && ordered(child.span)) row.own.push(segmentOf(child))
     }
     Object.assign(row, stepStats(kids))
-    const tokens = own ? { prompt: row.span.promptTokens, completion: row.span.completionTokens, cached: row.span.cachedTokens } : sumTokens(kids)
+    const tokens = own ? { prompt: reportedCount(row.span.promptTokens), completion: reportedCount(row.span.completionTokens), cached: reportedCount(row.span.cachedTokens) } : sumTokens(kids)
     if (tokens) row.tokens = tokens
     if (row.hasChildren && costKnown) row.rollupCostUsd = cost
     if (row.hasChildren) {
@@ -256,9 +258,10 @@ function mergeStats(rows: readonly FlowWaterfallRow[]): Pick<FlowWaterfallRow, '
 
 function sumTokens(rows: readonly FlowWaterfallRow[]): TokenCounts | undefined {
   let out: TokenCounts | undefined
-  for (const row of rows) for (const key of ['prompt', 'completion', 'cached'] as const) {
-    const n = row.tokens?.[key]
-    if (n !== undefined) (out ??= {})[key] = (out[key] ?? 0) + n
+  const sources = rows.filter(row => row.kind === 'model' || row.tokens !== undefined)
+  for (const key of ['prompt', 'completion', 'cached'] as const) {
+    const total = sumReportedCounts(sources.map(row => row.tokens?.[key]))
+    if (total !== undefined) (out ??= {})[key] = total
   }
   return out
 }
@@ -377,43 +380,47 @@ export function busyMs(row: FlowWaterfallRow, clockMs: number): number {
   return total
 }
 
-/** Totals as of a playback position, from per-span records. A total the spans do not carry stays the trace's own. */
+/** Complete per-span usage drives playback; authoritative call/error counts remain trace totals. */
 export function totalsAt(trace: FlowTrace, clockMs: number) {
-  let cost = 0, tokens = 0, models = 0, tools = 0, errors = 0
+  let cost = 0
   let costs = false, counted = false
+  const tokens: (number | undefined)[] = []
   for (const span of trace.spans) {
     if (span.startMs > clockMs) continue
-    if (span.kind === 'model') models++
-    if (span.kind === 'tool') tools++
+    const aggregate = span.meta?.['cli_bridge.usage.scope'] === 'sum_of_children'
     if (span.endMs > clockMs) continue
-    if (spanFailed(span)) errors++
     if (span.costUsd !== undefined) { cost += span.costUsd; costs = true }
-    if (span.promptTokens !== undefined || span.completionTokens !== undefined) { tokens += (span.promptTokens ?? 0) + (span.completionTokens ?? 0); counted = true }
+    if (!aggregate && (span.kind === 'model' || span.promptTokens !== undefined || span.completionTokens !== undefined)) {
+      tokens.push(sumReportedCounts([span.promptTokens, span.completionTokens]))
+      counted ||= span.promptTokens !== undefined || span.completionTokens !== undefined
+    }
   }
   return {
     costUsd: trace.costUsd === undefined ? undefined : costs ? cost : trace.costUsd,
-    tokens: counted ? tokens : trace.promptTokens + trace.completionTokens,
-    modelCalls: trace.modelCalls === undefined ? undefined : models,
-    toolCalls: trace.toolCalls === undefined ? undefined : tools,
-    errors,
+    tokens: counted ? sumReportedCounts(tokens) : sumReportedCounts([trace.promptTokens, trace.completionTokens]),
+    modelCalls: reportedCount(trace.modelCalls),
+    toolCalls: reportedCount(trace.toolCalls),
+    errors: reportedCount(trace.errors),
   }
 }
 
 /** The cost a reader can rely on: a lower bound when some calls are unpriced, a dash only when nothing is priced. */
 export function costSummary(costUsd: number | undefined, trace: Pick<FlowTrace, 'costBasis' | 'costCoverage' | 'billedUsd' | 'costBound'>): { value: string; title: string; label: string } {
+  costUsd = finiteNumber(costUsd)
+  const billedUsd = finiteNumber(trace.billedUsd)
   const list = trace.costBasis === 'list'
   const label = list ? 'Cost · list price' : 'Cost'
   if (costUsd === undefined) {
-    return trace.billedUsd !== undefined
-      ? { value: `${formatCost(trace.billedUsd)} billed`, title: 'No list price for these calls; billed is the seat charge', label }
+    return billedUsd !== undefined
+      ? { value: `${formatCost(billedUsd)} billed`, title: 'No list price for these calls; billed is the seat charge', label }
       : { value: '—', title: 'No cost source: the harness recorded no cost and no price catalog was given', label }
   }
   const coverage = trace.costCoverage
   const partial = coverage !== undefined && coverage.priced < coverage.total
   const upper = !partial && trace.costBound === 'upper'
-  const value = `${partial || trace.costBound === 'lower' ? '≥' : upper ? '≤' : list ? '≈' : ''}${formatCost(costUsd)}${trace.billedUsd !== undefined ? ` · ${formatCost(trace.billedUsd)} billed` : ''}`
+  const value = `${partial || trace.costBound === 'lower' ? '≥' : upper ? '≤' : list ? '≈' : ''}${formatCost(costUsd)}${billedUsd !== undefined ? ` · ${formatCost(billedUsd)} billed` : ''}`
   const parts = [partial ? `${coverage.priced} of ${coverage.total} model calls priced` : coverage ? `all ${coverage.total} model calls priced` : '',
-    list ? 'at the model catalog list price; not a bill' : '', upper ? 'cached input is not split out, so it is priced as fresh input: at most this' : '', trace.costBound === 'lower' ? 'a floor: the producer reports at least this' : '', trace.billedUsd !== undefined ? `billed ${formatCost(trace.billedUsd)} (the seat charge)` : '']
+    list ? 'at the model catalog list price; not a bill' : '', upper ? 'cached input is not split out, so it is priced as fresh input: at most this' : '', trace.costBound === 'lower' ? 'a floor: the producer reports at least this' : '', billedUsd !== undefined ? `billed ${formatCost(billedUsd)} (the seat charge)` : '']
   return { value, title: parts.filter(Boolean).join('; '), label }
 }
 
