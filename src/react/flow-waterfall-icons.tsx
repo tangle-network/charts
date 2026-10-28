@@ -39,7 +39,7 @@ export const PlayGlyph = () => <svg viewBox="0 0 16 16" width="16" height="16" a
 export const PauseGlyph = () => <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden><rect x="4" y="3" width="2.75" height="10" rx=".8" fill="currentColor" /><rect x="9.25" y="3" width="2.75" height="10" rx=".8" fill="currentColor" /></svg>
 export const RestartGlyph = () => svg(<><path d="M3 8a5 5 0 1 0 1.5-3.55" /><path d="M3 2.75V5.5h2.75" /></>)
 export const RetryGlyph = ({ label }: { label?: string }) => svg(<><path d="M12.5 8A4.5 4.5 0 1 1 11 4.6" /><path d="M11.5 2v3h-3" /></>, label)
-export const FailGlyph = ({ label }: { label?: string }) => <RunStatusIcon status="failed" aria-label={label} />
+export const FailGlyph = ({ label }: { label?: string }) => <RunStatusIcon status="failed" aria-label={label} style={{ color: "currentColor" }} />
 export const CloseGlyph = () => svg(<path d="m4.5 4.5 7 7m0-7-7 7" />)
 export const TraceGlyph = () => svg(<path d="M8 1.5v3M8 11.5v3M1.5 8h3M11.5 8h3M3.4 3.4l2.1 2.1M10.5 10.5l2.1 2.1M3.4 12.6l2.1-2.1M10.5 5.5l2.1-2.1" />)
 export const AlertGlyph = FailGlyph

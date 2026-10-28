@@ -10,6 +10,7 @@ import {
   quietActivity, agentCallouts, agentViewRows, criticalPathIds, defaultOpenFamilies, busyMs, drawnRow, costSummary, type FlowWaterfallRow, flowWaterfallRows, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
   toneKey, totalsAt, visibleFlowWaterfallRows,
 } from './flow-waterfall-model.js'
+import { motionMilliseconds } from './flow-waterfall-motion.js'
 import type { FlowView } from './flow-waterfall-row.js'
 import { clampWindow, type ViewWindow, zoomWindow } from './flow-waterfall-time.js'
 export type { FlowView } from './flow-waterfall-row.js'
@@ -271,13 +272,19 @@ export function FlowWaterfall({
     const pad = Math.max((end - span.startMs) * 0.15, 500, (width / 8 - (end - span.startMs)) / 2)
     const target = clampWindow({ startMs: span.startMs - pad, endMs: end + pad }, limit)
     cancelAnimationFrame(zoomFrame.current)
-    if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { setZoom(target); return }
+    const style = root.current ? getComputedStyle(root.current) : undefined
+    const duration = motionMilliseconds(style, '--duration-base'), easing = style?.getPropertyValue('--ease-standard').trim()
+    const preference = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')
+    if (preference?.matches || !duration || !easing) { setZoom(target); return }
+    const tween = new Animation(new KeyframeEffect(null, [], { duration, easing, fill: 'both' }))
     const began = performance.now()
     const step = (now: number) => {
-      const t = Math.min(1, (now - began) / 320)
-      const e = 1 - (1 - t) ** 3
+      if (preference?.matches) { tween.cancel(); setZoom(target); return }
+      const t = Math.min(1, (now - began) / duration)
+      tween.currentTime = t * duration
+      const e = tween.effect?.getComputedTiming().progress ?? t
       setZoom({ startMs: current.startMs + (target.startMs - current.startMs) * e, endMs: current.endMs + (target.endMs - current.endMs) * e })
-      if (t < 1) zoomFrame.current = requestAnimationFrame(step)
+      if (t < 1) zoomFrame.current = requestAnimationFrame(step); else tween.cancel()
     }
     zoomFrame.current = requestAnimationFrame(step)
   }

@@ -52,9 +52,11 @@
 .fw-root [data-tone="3"] { --tone: var(--fw-h3); }
 .fw-root [data-tone="4"] { --tone: var(--fw-h4); }
 .fw-root [data-tone="5"] { --tone: var(--fw-h5); }
-.fw-root [data-tone] {
+.fw-root [data-tone], .fw-root .fw-kinds {
   --fill: light-dark(var(--tone), color-mix(in oklab, var(--tone) 94%, var(--bg-canvas)));
   --line: var(--tone);
+  --model-fill: light-dark(oklch(from var(--tone, var(--fw-h0)) .50 min(c, .10) h), oklch(from var(--tone, var(--fw-h0)) .72 min(c, .10) h));
+  --tool-fill: light-dark(oklch(from var(--tone, var(--fw-h0)) .80 min(c, .10) h), oklch(from var(--tone, var(--fw-h0)) .46 min(c, .10) h));
   --dim: light-dark(color-mix(in oklab, var(--tone) 62%, var(--fw-surface)), color-mix(in oklab, var(--tone) 40%, var(--fw-surface)));
   --dim-line: light-dark(color-mix(in oklab, var(--tone) 70%, var(--fw-surface)), color-mix(in oklab, var(--tone) 55%, var(--fw-surface)));
 }
@@ -226,8 +228,8 @@
 .fw-root .fw-legends .fw-legend { margin: 0; }
 .fw-root .fw-kinds { margin: 0; padding: 0; justify-content: flex-start; color: var(--fw-muted); }
 .fw-root .fw-kinds .fw-swatch-model { width: 12px; height: 8px; border-radius: 2px; background: var(--fw-kind-model); }
-.fw-root.fw-fill-agent .fw-kinds .fw-swatch-model { background: light-dark(oklch(from var(--fw-h0) .50 0 h), oklch(from var(--fw-h0) .72 0 h)); }
-.fw-root.fw-fill-agent .fw-kinds .fw-swatch-tool { background: light-dark(oklch(from var(--fw-h0) .80 0 h), oklch(from var(--fw-h0) .46 0 h)); }
+.fw-root.fw-fill-agent .fw-kinds .fw-swatch-model { background: var(--model-fill); }
+.fw-root.fw-fill-agent .fw-kinds .fw-swatch-tool { background: var(--tool-fill); }
 .fw-root .fw-kinds .fw-swatch-tool { width: 12px; height: 8px; border-radius: 2px; background: var(--fw-kind-tool); }
 .fw-root .fw-kinds .fw-swatch-wait { width: 12px; height: 8px; border-radius: 2px; background: color-mix(in oklab, var(--fw-text) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-text) 18%, transparent); }
 .fw-root .fw-kinds .fw-swatch-event { width: 8px; height: 8px; border-radius: 50%; background: var(--fw-muted); box-shadow: 0 0 0 2px var(--fw-surface); }
@@ -244,8 +246,8 @@
 .fw-root .fw-seg-tool { background: var(--dim); box-shadow: inset 0 0 0 1px var(--dim-line); }
 .fw-root:is(.fw-fill-muted, .fw-fill-outcome) .fw-view-agents .fw-seg-model { background: var(--fw-kind-model); box-shadow: none; }
 .fw-root:is(.fw-fill-muted, .fw-fill-outcome) .fw-view-agents .fw-seg-tool { background: var(--fw-kind-tool); box-shadow: none; }
-.fw-root.fw-fill-agent .fw-view-agents .fw-seg-model { background: light-dark(oklch(from var(--tone) 0.50 min(c, 0.10) h), oklch(from var(--tone) 0.72 min(c, 0.10) h)); box-shadow: none; }
-.fw-root.fw-fill-agent .fw-view-agents :is(.fw-seg-tool, .fw-seg-failed) { background: light-dark(oklch(from var(--tone) 0.80 min(c, 0.10) h), oklch(from var(--tone) 0.46 min(c, 0.10) h)); box-shadow: none; }
+.fw-root.fw-fill-agent .fw-view-agents .fw-seg-model { background: var(--model-fill); box-shadow: none; }
+.fw-root.fw-fill-agent .fw-view-agents :is(.fw-seg-tool, .fw-seg-failed) { background: var(--tool-fill); box-shadow: none; }
 .fw-root.fw-fill-agent .fw-view-agents .fw-seg-failed { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-failed) 55%, transparent); }
 .fw-root .fw-view-agents .fw-seg { container-type: inline-size; justify-content: flex-start; font-size: 14px; line-height: 18px; white-space: nowrap; color: var(--fw-seg-ink); }
 .fw-root .fw-view-agents .fw-seg-model { --fw-seg-ink: light-dark(var(--fw-surface), var(--bg-canvas)); }
@@ -401,7 +403,7 @@
   .fw-root .fw-row { transform: none; top: var(--row-y); contain: style; }
   .fw-root .fw-label { position: absolute; z-index: 3; height: 20px; top: 0; left: 0; right: 0; padding: 0 calc(var(--fw-end-w, 0px) + 8px) 0 calc(8px + var(--depth) * 12px); border: 0; gap: 4px; background: transparent; pointer-events: none; }
   .fw-root .fw-view-agents .fw-names { flex-direction: row; font-size: 14px; line-height: 20px; }
-  .fw-root .fw-view-agents .fw-subtitle { display: none; }
+  .fw-root .fw-view-agents :is(.fw-subtitle, .fw-seg-label) { display: none; }
   .fw-root .fw-view-agents .fw-label { padding-left: calc(8px + var(--depth) * 12px); }
   .fw-root .fw-lane { grid-column: 2; }
   .fw-root .fw-end { top: 0; height: 20px; left: auto; right: 4px; }
@@ -412,3 +414,7 @@
 }
 
 @container (max-width: 599px) { .fw-root .fw-tick:nth-child(4) { transform: translate(calc(-100% - 4px), -50%); } }
+
+.fw-root.fw-fill-agent .fw-view-agents .fw-seg-failed[data-model] { background: var(--model-fill); --fw-seg-ink: light-dark(var(--fw-surface), var(--bg-canvas)); }
+
+.fw-root.fw-root.fw-root-agents[data-selection] .fw-row:not([aria-selected="true"]) .fw-seg { opacity: var(--on); background: color-mix(in oklab, var(--fw-surface) 80%, var(--tone)); --fw-seg-ink: var(--fw-text); }

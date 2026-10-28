@@ -3,15 +3,15 @@ import { type FlowWaterfallRow, spanRunning } from './flow-waterfall-model.js'
 
 export interface RowMotion { enter?: number; settle?: boolean }
 
-const milliseconds = (style: CSSStyleDeclaration | undefined, token: string) => {
+export const motionMilliseconds = (style: CSSStyleDeclaration | undefined, token: string) => {
   const value = style?.getPropertyValue(token).trim() ?? ''
   return (parseFloat(value) || 0) * (value.endsWith('ms') ? 1 : 1000)
 }
 
 export function useRowMotion(rows: readonly FlowWaterfallRow[], element: HTMLElement | null): ReadonlyMap<string, RowMotion> {
   const style = element ? getComputedStyle(element) : undefined
-  const hold = milliseconds(style, '--duration-arrive') + milliseconds(style, '--duration-stream')
-  const stagger = milliseconds(style, '--stagger-step')
+  const hold = motionMilliseconds(style, '--duration-arrive') + motionMilliseconds(style, '--duration-stream')
+  const stagger = motionMilliseconds(style, '--stagger-step')
   const cap = stagger * 4
   const known = useRef<Set<string> | null>(null)
   const running = useRef(new Set<string>())

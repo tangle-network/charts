@@ -3,19 +3,20 @@ import { build } from 'esbuild'
 import { createServer } from 'node:http'
 import { mkdirSync, renameSync, writeFileSync } from 'node:fs'
 import { chromium } from 'playwright'
-import { paletteAudit } from './run-ui-color.mjs'
+import { paletteAudit, contrastAudit } from './run-ui-color.mjs'
 
 const out = process.env.PROOF_OUT ?? '/tmp/charts-run-ui-proof'
 mkdirSync(out, { recursive: true })
 const result = await build({ stdin: { contents: `
 import React from 'react'; import {createRoot} from 'react-dom/client';
-import {FlowWaterfall} from './src/react/index.ts';
-import '@tangle-network/brand/styles/tokens.css'; import './src/react/flow-waterfall.css';
+import {FlowWaterfall} from '${process.env.PROOF_SOURCE_PREFIX ?? "."}/src/react/index.ts';
+import '@tangle-network/brand/styles/tokens.css'; import '${process.env.PROOF_SOURCE_PREFIX ?? "."}/src/react/flow-waterfall.css';
 document.documentElement.className=new URLSearchParams(location.search).get('theme')??'dark';
 const spans=Array.from({length:17},(_,i)=>({id:'agent-'+i,kind:'pipeline',name:'Worker '+i,startMs:i*1000,endMs:1200000,status:i===0||i===1?'running':i===2?'needs-you':i<9?'failed':'done',activityAt:[1000,2000,i===0?1199999:3000],outcome:{tone:i<2?'live':i===2?'warn':i<9?'failed':'ok',label:i<2?'Running':i===2?'Needs you':i<9?'Failed':'Done'},output:i<9?'Compiler rejected the build':undefined}));
 if(new URLSearchParams(location.search).has('family')) {spans.forEach(span=>span.parentId='orch');spans.unshift({id:'orch',kind:'pipeline',name:'Orchestrator',startMs:0,endMs:1200000,status:'done',outcome:{tone:'ok',label:'Done'}})}
-for(let i=0;i<17;i++)spans.push({id:'error-'+i,parentId:'agent-'+(i%17),kind:'tool',name:'bash',startMs:5000+i*1000,endMs:6000+i*1000,status:'failed',output:'Compiler rejected the build'});
-createRoot(document.getElementById('root')).render(<FlowWaterfall label="Seventeen agents" trace={{spans,totalMs:1200000,promptTokens:0,completionTokens:0,errors:17}} defaultView="agents" live={false}/>);
+spans.push({id:'model',parentId:'agent-0',kind:'model',name:'Turn 1',startMs:30000,endMs:350000,status:'done'});
+for(let i=0;i<17;i++)spans.push({id:'error-'+i,parentId:'agent-'+(i%17),kind:'tool',name:'bash',startMs:i===0?350000:5000+i*1000,endMs:i===0?700000:6000+i*1000,status:'failed',output:'Compiler rejected the build'});
+createRoot(document.getElementById('root')).render(<FlowWaterfall label="Seventeen agents" trace={{spans,totalMs:1200000,promptTokens:0,completionTokens:0,errors:17}} defaultView="agents" live={false} selectedId={new URLSearchParams(location.search).has("selected")?"agent-0":undefined}/>);
 `, resolveDir: process.cwd(), sourcefile: 'proof.jsx', loader: 'jsx' }, bundle: true, write: false, outdir: 'proof', format: 'esm', jsx: 'automatic', define: { 'process.env.NODE_ENV': '"production"' } })
 const files = Object.fromEntries(result.outputFiles.map(file => [file.path.split('/').pop(), file.text]))
 const server = createServer((req, res) => {
@@ -46,6 +47,10 @@ try {
       return [...document.querySelectorAll('.fw-row .fw-agent-dot')].filter(el=>el.getBoundingClientRect().width).every(el=>legend.has(color(el)))
     })
     check(`${theme}/${width} outcome legend matches dots`,colors,true)
+    if(process.env.PROOF_BASELINE==='1') {await context.close();renameSync(await page.video().path(),`${out}/${theme}-${width}.webm`);continue}
+    const restContrast=await page.evaluate(contrastAudit)
+    console.log('REST CONTRAST',theme,width,restContrast)
+    check(`${theme}/${width} text contrast`,restContrast.failures.length,0)
     if(width===390) {
       check(`${theme}/${width} four ticks`,await page.locator('.fw-axis .fw-tick').count(),4)
       check(`${theme}/${width} 44px rows`,await page.locator('.fw-agent-row').first().evaluate(el=>el.getBoundingClientRect().height),44)
@@ -57,6 +62,9 @@ try {
     const firstRow=page.locator('[data-span-id="agent-0"]')
     await firstRow.locator('.fw-bar').hover()
     await page.locator('.fw-card .fw-agent-dot').waitFor()
+    const hoverContrast=await page.evaluate(contrastAudit)
+    console.log('HOVER CONTRAST',theme,width,hoverContrast)
+    check(`${theme}/${width} hover text contrast`,hoverContrast.failures.length,0)
     const rowColor=await firstRow.locator('.fw-agent-dot').evaluate(el=>getComputedStyle(el).backgroundColor)
     check(`${theme}/${width} inspector dot matches row`,await page.locator('.fw-card .fw-agent-dot').evaluate(el=>getComputedStyle(el).backgroundColor),rowColor)
     await page.mouse.move(1,1)
@@ -79,6 +87,12 @@ try {
     check(`${theme}/${width} mixed family has neutral key`,await page.locator('.fw-legend .fw-swatch[data-ring]').count()>0,true)
     await page.getByRole('button',{name:'1 quiet',exact:true}).click()
     check(`${theme}/${width} quiet filter reveals agent`,await page.locator('[data-span-id="agent-1"][data-activity="quiet"]').count(),1)
+    await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&selected=1`)
+    await page.locator('[data-selection]').waitFor()
+    await page.waitForTimeout(1200)
+    const selectedContrast=await page.evaluate(contrastAudit)
+    console.log('SELECTED CONTRAST',theme,width,selectedContrast)
+    check(`${theme}/${width} selected peer text contrast`,selectedContrast.failures.length,0)
     await context.close()
     renameSync(await page.video().path(),`${out}/${theme}-${width}.webm`)
   }

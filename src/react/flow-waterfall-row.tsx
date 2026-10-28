@@ -61,7 +61,7 @@ function Segment({ mark, events, agentView, ending }: { mark: FlowSegment; event
   const name = model ? undefined : mark.count === 1 ? mark.name : mark.tool
   const duration = Number.isFinite(mark.endMs) ? formatSpanDuration(mark.endMs - mark.startMs) : ''
   const meta = [duration, mark.costUsd ? formatCost(mark.costUsd) : ''].filter(Boolean).join(' · ')
-  return <span className={`fw-seg fw-seg-${mark.kind}${mark.alt ? ' fw-seg-alt' : ''}`} data-tone={toneKey(mark.tone)} style={at(mark.startMs, mark.endMs)}
+  return <span className={`fw-seg fw-seg-${mark.kind}${mark.alt ? ' fw-seg-alt' : ''}`} data-tone={toneKey(mark.tone)} data-model={model || undefined} style={at(mark.startMs, mark.endMs)}
     title={mark.name ? `${mark.name}${mark.count > 1 ? ` +${mark.count - 1} more` : ''}${meta ? ` · ${meta}` : ''}` : undefined}
     onPointerEnter={agentView ? event => events.onInspect(mark.id, event.currentTarget, event.clientX) : undefined}
     onClick={agentView ? event => { event.stopPropagation(); events.onPin(mark.id, event.currentTarget, event.clientX) } : undefined}>
