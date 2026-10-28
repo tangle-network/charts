@@ -99,7 +99,7 @@ function summaryCells(trace: FlowTrace, at: ReturnType<typeof totalsAt> | undefi
   const cost = costSummary(at ? at.costUsd : trace.costUsd, trace)
   const tokens = at ? at.tokens : trace.promptTokens + trace.completionTokens
   const modelCalls = at ? at.modelCalls : trace.modelCalls
-  const errors = at ? at.errors : trace.errors ?? trace.spans.filter(spanFailed).length
+  const errors = at ? at.errors : trace.errors ?? (trace.spans.filter(span => spanFailed(span) && span.kind !== 'pipeline').length || trace.spans.filter(spanFailed).length)
   const summary: [string, ReactNode, string?][] = [
     ['Duration', formatSpanDuration(durationMs)],
     ...(cost.value === '—' ? [] : [[cost.label, cost.value, cost.title] as [string, ReactNode, string?]]),
@@ -199,7 +199,7 @@ export function FlowWaterfall({
     const pipelines = rows.filter(row => row.kind === 'pipeline')
     return pipelines.length ? pipelines : rows.filter(row => !row.parentId)
   }, [rows])
-  const matchesFilter = (row: FlowWaterfallRow) => !filter || (filter === '__quiet' ? quietActivity(row, clockMs).quiet : filter === '__errors' ? !row.ok || Boolean(row.counts?.failed) : (row.span.outcome?.label ?? 'Unknown') === filter)
+  const matchesFilter = (row: FlowWaterfallRow) => !filter || (filter === '__quiet' ? quietActivity(row, clockMs).quiet : filter === '__errors' ? row.span.outcome?.tone === 'failed' || !row.ok || Boolean(row.counts?.failed) : (row.span.outcome?.label ?? 'Unknown') === filter)
   const filteredAgents = useMemo(() => agents.filter(matchesFilter), [agents, filter, Math.floor(clockMs / 1000)])
   const sharedDetail = usual(agents.map(row => row.span.detail))
   const sharedOutcome = usual(agents.map(row => row.span.outcome?.label))
@@ -362,7 +362,7 @@ export function FlowWaterfall({
   const busy = agents.reduce((sum, row) => sum + busyMs(row, limit), 0)
   const speedup = limit > 0 ? busy / limit : 0
   const applyFilter = (label: string) => { setFilter(previous => previous === label || label === "__all" ? null : label); setView('agents') }
-  const failedAgents = agents.filter(row => !row.ok).length
+  const failedAgents = agents.filter(row => row.span.outcome ? row.span.outcome.tone === 'failed' : !row.ok).length
   const quietAgents = agents.filter(row => quietActivity(row, clockMs).quiet).length
   const recordedErrors = trace.spans.filter(span => spanFailed(span) && span.kind !== 'pipeline')
   const errorSpans = recordedErrors.length ? recordedErrors : trace.spans.filter(spanFailed)
