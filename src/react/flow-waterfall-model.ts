@@ -380,18 +380,15 @@ export function busyMs(row: FlowWaterfallRow, clockMs: number): number {
   return total
 }
 
-/** Totals as of a playback position, from per-span records. A total the spans do not carry stays the trace's own. */
+/** Complete per-span usage drives playback; authoritative call/error counts remain trace totals. */
 export function totalsAt(trace: FlowTrace, clockMs: number) {
-  let cost = 0, models = 0, tools = 0, errors = 0
+  let cost = 0
   let costs = false, counted = false
   const tokens: (number | undefined)[] = []
   for (const span of trace.spans) {
     if (span.startMs > clockMs) continue
     const aggregate = span.meta?.['cli_bridge.usage.scope'] === 'sum_of_children'
-    if (span.kind === 'model' && !aggregate) models++
-    if (span.kind === 'tool') tools++
     if (span.endMs > clockMs) continue
-    if (spanFailed(span)) errors++
     if (span.costUsd !== undefined) { cost += span.costUsd; costs = true }
     if (!aggregate && (span.kind === 'model' || span.promptTokens !== undefined || span.completionTokens !== undefined)) {
       tokens.push(sumReportedCounts([span.promptTokens, span.completionTokens]))
@@ -401,9 +398,9 @@ export function totalsAt(trace: FlowTrace, clockMs: number) {
   return {
     costUsd: trace.costUsd === undefined ? undefined : costs ? cost : trace.costUsd,
     tokens: counted ? sumReportedCounts(tokens) : sumReportedCounts([trace.promptTokens, trace.completionTokens]),
-    modelCalls: reportedCount(trace.modelCalls) === undefined ? undefined : models,
-    toolCalls: reportedCount(trace.toolCalls) === undefined ? undefined : tools,
-    errors: reportedCount(trace.errors) !== undefined ? errors : trace.errors === undefined && errors > 0 ? errors : undefined,
+    modelCalls: reportedCount(trace.modelCalls),
+    toolCalls: reportedCount(trace.toolCalls),
+    errors: reportedCount(trace.errors),
   }
 }
 

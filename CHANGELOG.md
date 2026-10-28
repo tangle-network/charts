@@ -1,5 +1,7 @@
 ## 2.0.0
 
+- Center intermediate phone axis labels so four ticks remain separated on long traces; keep the scrubber time on one line inside its track.
+
 - Token totals are optional. Callers reading `FlowTrace.promptTokens` or `completionTokens` must handle unknown values. Omit unreported totals; numeric zero remains measured zero.
 - Preserve unknown usage through OTLP construction, aggregation and playback. Guard invalid counts, avoid pricing unreported usage as zero, and keep aggregate usage from counting twice.
 

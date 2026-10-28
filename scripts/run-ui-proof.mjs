@@ -26,6 +26,7 @@ spans.push({id:'model',parentId:'agent-0',kind:'model',name:'Turn 1',startMs:300
 for(let i=0;i<17;i++)spans.push({id:'error-'+i,parentId:'agent-'+(i%17),kind:'tool',name:'bash',startMs:i===0?350000:5000+i*1000,endMs:i===0?700000:6000+i*1000,status:'failed',output:'Compiler rejected the build'});
 let trace={spans,totalMs:1200000,promptTokens:0,completionTokens:0,errors:17};
 const totals=new URLSearchParams(location.search).get('totals');
+const long=Number(new URLSearchParams(location.search).get('long'));if(long){trace.totalMs=long;document.getElementById('root').style.padding='16px'}
 if(totals==='missing'){delete trace.promptTokens;delete trace.completionTokens}
 if(totals==='partial'){trace.promptTokens=3;delete trace.completionTokens}
 if(totals==='zero'){trace.modelCalls=0;trace.toolCalls=0}
@@ -154,6 +155,16 @@ try {
       await page.getByRole('button',{name:'Restart',exact:true}).click()
       cells=await read()
       check(`${theme}/${width}/${totals} playback token total`,cells.Tokens.value,expected)
+    }
+    if(width===390)for(const duration of [1715993,84928112,431000]) {
+      await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&long=${duration}`)
+      await page.locator('.fw-axis .fw-tick').waitFor({state:'attached'}).catch(()=>{})
+      await page.waitForTimeout(100)
+      const geometry=await page.locator('.fw-axis-track').evaluate(track=>{const area=track.getBoundingClientRect();const labels=[...track.querySelectorAll('.fw-tick')].map(el=>({text:el.textContent,left:el.getBoundingClientRect().left,right:el.getBoundingClientRect().right}));return {labels,clear:labels.length===4&&labels.every((label,i)=>label.left>=area.left&&label.right<=area.right&&(i===0||label.left>=labels[i-1].right+4))}})
+      console.log('PHONE AXIS',theme,duration,geometry)
+      check(`${theme}/${width}/${duration} four unclipped separated ticks`,geometry.clear,true)
+      const chip=await page.locator('.fw-time').evaluate(el=>{const box=el.getBoundingClientRect(),parent=el.parentElement.getBoundingClientRect();return box.height<=parseFloat(getComputedStyle(el).lineHeight)+1&&box.left>=parent.left-1&&box.right<=parent.right+1})
+      check(`${theme}/${width}/${duration} single-line time chip`,chip,true)
     }
     await context.close()
     renameSync(await page.video().path(),`${out}/${theme}-${width}.webm`)
