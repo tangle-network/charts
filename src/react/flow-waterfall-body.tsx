@@ -6,7 +6,6 @@ import { useRowMotion } from './flow-waterfall-motion.js'
 import { clockTicks, formatClock, type ViewWindow } from './flow-waterfall-time.js'
 import { duration } from '../format.js'
 
-// 40 px agent rows keep a 17-agent run, its axis and its controls inside a 945 px viewport.
 export const ROW_HEIGHT: Record<FlowView, number> = { spans: 36, agents: 40 }
 const OVERSCAN = 8
 /** Rows re-render once per CHUNK rows scrolled; overscan covers the rows in between. */
@@ -31,6 +30,7 @@ export interface BodyProps extends RowEvents {
   matchSpan?: (span: FlowSpan, query: string) => boolean
   activeId?: string
   pauses?: readonly FlowPause[]
+  errorTimes?: readonly (number | undefined)[]
   /** The model every agent shares: rows leave it out because the header names it. */
   sharedDetail?: string
   sharedOutcome?: string
@@ -99,32 +99,39 @@ function linksFor(rows: FlowWaterfallRow[], byId: Map<string, FlowWaterfallRow>,
 /** The scrolling tree: rows are virtualized, ancestors stay pinned, the axis and cursor stay in view. */
 export function FlowBody(props: BodyProps) {
   const { rows, view, maxHeight, collapsed, searching, slowestId, activeId, selectedId, clockMs, window: win, trackPx, showCursor, zoomed } = props
-  const rowHeight = ROW_HEIGHT[view]
+  const [narrow, setNarrow] = useState(false)
+  const rowHeight = narrow ? 44 : ROW_HEIGHT[view]
   const scroller = useRef<HTMLDivElement>(null)
   const surface = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!surface.current) return
+    const observer = new ResizeObserver(([entry]) => setNarrow(entry!.contentRect.width < 600))
+    observer.observe(surface.current)
+    return () => observer.disconnect()
+  }, [])
   const [chunk, setChunk] = useState(0)
   const [viewport, setViewport] = useState(maxHeight)
   const latest = useRef(props)
   latest.current = props
-  // A live body fits its rows and grows with them, but never shrinks while live, so a row folding away cannot pull the page
-  // up under the reader. A fixed live height left empty space below a short run (330 px on 22a at 1512 x 945).
+
+
   const tallest = useRef(0)
   if (!props.holdHeight) tallest.current = 0
   const height = tallest.current = Math.max(tallest.current, Math.min(maxHeight, Math.max(rows.length, 1) * rowHeight))
   const links = useMemo(() => linksFor(rows, props.byId, view), [rows, props.byId, view])
   const matched = useMemo(() => searching ? searchMatchIds(rows, props.query, props.matchSpan) : undefined, [searching, rows, props.query, props.matchSpan])
   const index = useMemo(() => new Map(rows.map((row, i) => [row.id, i])), [rows])
-  const motion = useRowMotion(rows)
-  // The event the reader jumped to keeps its label up on the axis, so the jump says where it went.
+  const motion = useRowMotion(rows, surface.current)
+
   const [jumped, setJumped] = useState<FlowMarker>()
-  // Ticks run into the end-label gutter but stop where a label would be cut at the right edge.
+
   const msPerPx = (win.endMs - win.startMs) / Math.max(1, trackPx)
   const tickEnd = win.startMs + (trackPx + (view === 'spans' ? 72 : 0)) * msPerPx
-  const ticks = clockTicks(win.startMs, tickEnd, Math.max(1, trackPx + (view === 'spans' ? 72 : 0)))
-  // Marker labels thin out where they would collide (the line stays) and flip left at the right edge.
+  const ticks = narrow ? Array.from({length:4}, (_,i) => win.startMs + (win.endMs-win.startMs)*i/3) : clockTicks(win.startMs, tickEnd, Math.max(1, trackPx + (view === 'spans' ? 72 : 0)))
+
   const markerLabels = useMemo(() => {
     const shown = new Map<FlowMarker, 'right' | 'left'>()
-    // The agents view names events on the axis (their dots, and the one jumped to); labels over the rows hit its end labels.
+
     if (view === 'agents') return shown
     let freeFrom = -Infinity
     for (const marker of [...(props.markers ?? [])].sort((a, b) => a.at - b.at)) {
@@ -147,7 +154,6 @@ export function FlowBody(props: BodyProps) {
     return () => observer.disconnect()
   }, [])
 
-  // Wheel: Ctrl/Cmd zooms about the pointer; horizontal or Shift wheel pans a zoomed window.
   useEffect(() => {
     const element = surface.current
     if (!element) return
@@ -178,7 +184,7 @@ export function FlowBody(props: BodyProps) {
     if (i * rowHeight - offset < element.scrollTop) element.scrollTop = Math.max(0, i * rowHeight - offset)
     else if ((i + 1) * rowHeight > element.scrollTop + element.clientHeight) element.scrollTop = (i + 1) * rowHeight - element.clientHeight
   }
-  // A selection the host makes, such as stepping through search matches, scrolls its row into view without taking focus.
+
   const shownSelection = useRef<string>(undefined)
   useEffect(() => {
     if (!selectedId || selectedId === shownSelection.current) return
@@ -271,7 +277,7 @@ export function FlowBody(props: BodyProps) {
           style={{ '--s': marker.at } as CSSProperties} title={marker.kind ? `${marker.kind}: ${marker.label}` : marker.label}
           aria-label={`Jump to ${marker.kind ? `${marker.kind} ` : ''}${marker.label}`} aria-pressed={jumped === marker}
           onPointerDown={event => event.stopPropagation()} onClick={() => {
-            // A second click on the event you are on lets go of it, so no click on the track is a no-op.
+
             if (jumped === marker) { setJumped(undefined); return }
             setJumped(marker); props.onScrub(marker.at)
           }} />)}
@@ -298,6 +304,9 @@ export function FlowBody(props: BodyProps) {
   return (
     <div className={`fw-body fw-view-${view}${zoomed ? ' fw-zoomed' : ''}`} ref={surface}>
       {axis}
+      {Boolean(props.errorTimes?.length) && <div className="fw-error-rug" aria-label={`${props.errorTimes!.length} errors`}>
+        {props.errorTimes!.map((at, index) => <span key={index} className="fw-error-tick" data-unlocated={at === undefined || undefined} style={{ '--s': at, '--error-index': index } as CSSProperties} title={at === undefined ? 'Error time not reported' : `Error at ${formatClock(at)}`} />)}
+      </div>}
       <div className="fw-viewport">
         <div className="fw-gridlayer" aria-hidden>
           {props.pauses?.map(pause => <span key={`p-${pause.startMs}`} className="fw-pause" style={{ '--s': pause.startMs, '--e': pause.endMs } as CSSProperties} />)}
@@ -312,8 +321,8 @@ export function FlowBody(props: BodyProps) {
               {links.filter(link => Math.max(link.from, link.to) >= first && Math.min(link.from, link.to) <= last)
                 .map(link => {
                   const hot = props.focusId !== undefined && (rows[link.from]?.id === props.focusId || rows[link.to]?.id === props.focusId)
-                  // The agent view draws whole connectors only for the agent in focus. At rest a spawn is a short elbow into its
-                  // child and a return is not drawn, so 55 agents never stripe every lane with full-height lines.
+
+
                   if (view === 'agents' && !hot && link.id.startsWith('r-')) return null
                   return <LinkMark key={link.id} link={link} rowHeight={rowHeight} hot={hot} short={view === 'agents' && !hot} />
                 })}
@@ -329,7 +338,7 @@ export function FlowBody(props: BodyProps) {
             {markerLabels.has(marker) && <span className={`fw-marker-label${markerLabels.get(marker) === 'left' ? ' fw-marker-label-left' : ''}`}>{marker.label}</span>}
           </span>)}
         </div> : null}
-        {showCursor && props.cursorLine !== false && <div className="fw-cursor-layer" aria-hidden><span className="fw-cursor" /></div>}
+        {showCursor && props.cursorLine !== false && <div className="fw-cursor-layer" aria-hidden><span className="fw-cursor fw-now" /></div>}
       </div>
     </div>
   )

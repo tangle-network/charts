@@ -1,5 +1,12 @@
 # @tangle-network/charts
 
+## 1.0.1
+
+- The waterfall locates errors on an axis rug and opens matching agents and steps from its Errors and outcome filters. Its header reports failed-agent and quiet-agent counts. Unreported error times stay explicitly unlocated.
+- `FlowSpan.activityAt` accepts trace-relative activity timestamps. Quiet agents retain their identity, name the silence and hatch their inactive tail. Running marks share Brand's opacity-only ambient breath, including under reduced motion.
+- Below a 600px container width, rows stack name and duration above an 8px full-width lane; the axis has four ticks and the legend opens from Key. Cards and controls use Brand radii and motion roles. Model and tool segments use consistent lightness in both themes.
+- Run labels, colors and failure glyphs consume ui's canonical status metadata at build time without adding a UI runtime dependency. `toolGlyph` is available from the React entrypoint for downstream event views.
+
 ## 1.0.0
 
 - First stable release, the same code as 0.21.25. Later compatible changes ship as patch releases ([release versioning](https://github.com/tangle-network/agent-runtime/blob/main/docs/release-versioning.md)).

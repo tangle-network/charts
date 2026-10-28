@@ -1,14 +1,4 @@
 #!/usr/bin/env node
-// Writes src/css.generated.ts: `figureCss` (src/figure.css verbatim) and
-// `chartTokensCss` (the --chart-* tokens resolved to literal values per theme,
-// read from the pinned @tangle-network/brand package).
-//
-//   node scripts/gen-css.mjs           write the file
-//   node scripts/gen-css.mjs --check   exit 1 when the file is stale
-//
-// A standalone document (a PDF report, a sandboxed iframe) has no brand
-// stylesheet, so it embeds `chartTokensCss`: light on :root, dark under
-// prefers-color-scheme and [data-theme="dark"], and light again for print.
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -33,7 +23,7 @@ const find = (label, test) => {
   return block.decls
 }
 const darkSpine = find('dark spine', (b) => b.selectors.includes('.dark') && b.colorScheme === 'dark' && b.decls.has('--text-primary'))
-const lightSpine = find('light spine', (b) => b.selectors.includes('.light') && b.colorScheme === 'light' && b.decls.has('--text-primary'))
+const lightSpine = find('light spine', (b) => b.selectors.includes('.light') && b.colorScheme === 'light')
 const chartBase = find('chart', (b) => b.decls.has('--chart-ink'))
 const chartLight = find('light chart', (b) => b.selectors.includes('.light') && b.decls.has('--chart-accent') && !b.decls.has('--chart-ink'))
 

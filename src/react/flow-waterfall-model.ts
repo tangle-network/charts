@@ -73,7 +73,7 @@ export interface FlowWaterfallRow {
 }
 
 /** The CSS hue slot: 0 is the root agent's neutral, then five agent hues cycle. */
-export const toneKey = (tone: number): number => tone <= 0 ? 0 : ((tone - 1) % 5) + 1
+export const toneKey = (tone: number): number => tone > 0 && tone <= 5 ? tone : 0
 
 export const spanFailed = (span: FlowSpan): boolean => span.status === 'failed'
 export const spanRunning = (span: FlowSpan): boolean => span.status === 'running'
@@ -433,7 +433,7 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
   const out: FlowWaterfallRow[] = []
   // Each top-level row takes the next hue slot, so no two families share a hue band (two cyan families read as one).
   let next = 0
-  const hue = (row: FlowWaterfallRow) => row.tone <= 0 ? row.tone : ++next
+  const hue = (row: FlowWaterfallRow) => row.tone <= 0 || ++next > 5 ? 0 : 1 + [...roleOf(row.name)].reduce((hash, c) => (hash * 31 + c.charCodeAt(0)) >>> 0, 0) % 5
   for (const [role, members] of groups) {
     if (members.length < 2) { out.push(...members.map(row => ({ ...row, tone: hue(row) }))); continue }
     const tone = hue(members[0]!)
@@ -535,3 +535,14 @@ export function drawnRow(row: FlowWaterfallRow, visible: readonly FlowWaterfallR
 
 /** A row's cost as printed: "≥" when it is a floor. */
 export const rowCostText = (row: FlowWaterfallRow, cost: number): string => `${row.costFloor ? '≥' : ''}${formatCost(cost)}`
+
+/** Quiet is elapsed silence beyond both five minutes and three median event gaps. */
+export function quietActivity(row: FlowWaterfallRow, now: number) {
+  const times = [...(row.span.activityAt ?? row.own.flatMap(mark => [mark.startMs, mark.endMs]))].filter(Number.isFinite).sort((a,b) => a-b)
+  const last = times.at(-1) ?? row.span.startMs
+  const gaps = times.slice(1).map((at,i) => at-times[i]!).filter(gap => gap > 0).sort((a,b)=>a-b)
+  const middle = Math.floor(gaps.length / 2)
+  const median = gaps.length ? gaps.length % 2 ? gaps[middle]! : (gaps[middle-1]! + gaps[middle]!) / 2 : 0
+  const quietMs = Math.max(0, now-last)
+  return { last, quietMs, quiet: spanRunning(row.span) && quietMs > Math.max(300000, 3*median) }
+}
