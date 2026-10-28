@@ -414,5 +414,3 @@
 .fw-root.fw-fill-agent .fw-view-agents .fw-seg-failed[data-model] { background: var(--model-fill); --fw-seg-ink: light-dark(var(--fw-surface), var(--bg-root)); }
 
 .fw-root.fw-root.fw-root-agents[data-selection] .fw-row:not([aria-selected="true"]) .fw-seg { opacity: var(--on); background: color-mix(in oklab, var(--fw-surface) 80%, var(--tone)); --fw-seg-ink: var(--fw-text); }
-
-

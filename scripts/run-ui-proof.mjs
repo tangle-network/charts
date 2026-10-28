@@ -16,6 +16,7 @@ const spans=Array.from({length:17},(_,i)=>({id:'agent-'+i,kind:'pipeline',name:'
 if(new URLSearchParams(location.search).has('family')) {spans.forEach(span=>span.parentId='orch');spans.unshift({id:'orch',kind:'pipeline',name:'Orchestrator',startMs:0,endMs:1200000,status:'done',outcome:{tone:'ok',label:'Done'}})}
 if(new URLSearchParams(location.search).has('cadence')) {spans[1].activityAt=[3000];spans[1].medianEventGapMs=600000}
 if(new URLSearchParams(location.search).has('zero-cadence')) {spans[1].activityAt=[0,400000,800000];spans[1].medianEventGapMs=0}
+if(new URLSearchParams(location.search).has('status-only'))spans.forEach(span=>delete span.outcome);
 spans.push({id:'gap',parentId:'agent-16',kind:'tool',name:'Not reported',startMs:Number.NaN,endMs:Number.NaN});
 spans.push({id:'peer-model',parentId:'agent-9',kind:'model',name:'Turn 1',startMs:30000,endMs:350000,status:'done'},{id:'peer-tool',parentId:'agent-9',kind:'tool',name:'read',startMs:350000,endMs:700000,status:'done'});
 spans.push({id:'model',parentId:'agent-0',kind:'model',name:'Turn 1',startMs:30000,endMs:350000,status:'done'});
@@ -117,6 +118,15 @@ try {
       const fillContrast=await page.evaluate(contrastAudit)
       console.log('FILL CONTRAST',theme,width,fill,fillContrast)
       check(`${theme}/${width}/${fill} text contrast`,fillContrast.failures.length,0)
+    }
+    await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&status-only=1`)
+    await page.locator('[data-flow-waterfall]').waitFor()
+    check(`${theme}/${width} status-only failure dot`,await page.locator('[data-span-id="agent-3"] .fw-agent-dot[data-outcome="failed"]').count(),1)
+    check(`${theme}/${width} status-only running dot`,await page.locator('[data-span-id="agent-0"] .fw-agent-dot[data-outcome="live"]').count(),1)
+    if(width===390) {
+      check(`${theme}/${width} phone failure label`,await page.locator('[data-span-id="agent-3"] .fw-row-state').isVisible(),true)
+      check(`${theme}/${width} phone needs-you label`,await page.locator('[data-span-id="agent-2"] .fw-row-state').textContent(),'Needs you')
+      check(`${theme}/${width} key disclosure cue`,await page.locator('.fw-key summary svg').isVisible(),true)
     }
     await context.close()
     renameSync(await page.video().path(),`${out}/${theme}-${width}.webm`)

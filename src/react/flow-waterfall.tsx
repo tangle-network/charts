@@ -4,7 +4,7 @@ import type { FlowMarker, FlowSpan, FlowTrace } from '../flow-trace.js'
 import { FlowBody, ROW_HEIGHT } from './flow-waterfall-body.js'
 import { SpanCard } from './flow-waterfall-card.js'
 import { useTraceClock } from './flow-waterfall-clock.js'
-import { FailGlyph, SearchGlyph, TraceGlyph } from './flow-waterfall-icons.js'
+import { ChevronGlyph, FailGlyph, SearchGlyph, TraceGlyph } from './flow-waterfall-icons.js'
 import { PlaybackBar } from './flow-waterfall-playback.js'
 import {
   quietActivity, agentCallouts, agentViewRows, criticalPathIds, defaultOpenFamilies, busyMs, drawnRow, costSummary, type FlowWaterfallRow, flowWaterfallRows, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
