@@ -24,6 +24,7 @@ spans.push({id:'gap',parentId:'agent-16',kind:'tool',name:'Not reported',startMs
 spans.push({id:'peer-model',parentId:'agent-9',kind:'model',name:'Turn 1',startMs:30000,endMs:350000,status:'done'},{id:'peer-tool',parentId:'agent-9',kind:'tool',name:'read',startMs:350000,endMs:700000,status:'done'});
 spans.push({id:'model',parentId:'agent-0',kind:'model',name:'Turn 1',startMs:30000,endMs:350000,status:'done'});
 for(let i=0;i<17;i++)spans.push({id:'error-'+i,parentId:'agent-'+(i%17),kind:'tool',name:'bash',startMs:i===0?350000:5000+i*1000,endMs:i===0?700000:6000+i*1000,status:'failed',output:'Compiler rejected the build'});
+if(new URLSearchParams(location.search).has('grammar'))spans.push({id:'grammar-model',parentId:'agent-1',kind:'model',name:'Turn 2',startMs:30000,endMs:300000,status:'done'},{id:'grammar-tool',parentId:'agent-1',kind:'tool',name:'read',startMs:300000,endMs:500000,status:'done'});
 let trace={spans,totalMs:1200000,promptTokens:0,completionTokens:0,errors:17};
 const totals=new URLSearchParams(location.search).get('totals');
 const long=Number(new URLSearchParams(location.search).get('long'));if(long){const scale=long/trace.totalMs;for(const span of trace.spans){span.startMs*=scale;span.endMs*=scale;if(span.activityAt)span.activityAt=span.activityAt.map(at=>at*scale)}trace.totalMs=long;document.getElementById('root').style.padding='16px'}
@@ -157,6 +158,20 @@ try {
       cells=await read()
       check(`${theme}/${width}/${totals} playback token total`,cells.Tokens.value,expected)
     }
+    await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&grammar=1`)
+    await page.locator('.fw-summary').waitFor()
+    if(width===390)await page.locator('.fw-key summary').click()
+    check(`${theme}/${width} bar grammar explanation`,await page.locator('.fw-kind-rule').isVisible(),true)
+    check(`${theme}/${width} waiting key uses actual hatch`,await page.locator('.fw-swatch-wait').evaluate(el=>getComputedStyle(el).backgroundImage.includes('repeating-linear-gradient')),true)
+    check(`${theme}/${width} kind key matches drawn model`,await page.evaluate(()=>getComputedStyle(document.querySelector('.fw-swatch-model')).backgroundColor===getComputedStyle(document.querySelector('[data-span-id="agent-1"] .fw-seg-model')).backgroundColor),true)
+    if(width===390) {
+      await page.locator('.fw-key summary').click()
+      const hierarchy=await page.locator('.fw-summary').evaluate(el=>{const children=[...el.children];const rest=children.slice(2).map(node=>node.getBoundingClientRect());return {height:el.getBoundingClientRect().height,hero:parseFloat(getComputedStyle(children[0].querySelector('dd')).fontSize),oneLine:rest.every(box=>Math.abs(box.top-rest[0].top)<1)}})
+      check(`${theme}/${width} summary hero hierarchy`,hierarchy.hero,28)
+      check(`${theme}/${width} secondary metrics one line`,hierarchy.oneLine,true)
+      check(`${theme}/${width} summary under110px`,hierarchy.height<=110,true)
+    }
+    await page.screenshot({path:`${out}/grammar-${theme}-${width}.png`,fullPage:true})
     if(width===390)for(const duration of [1715993,84928112,431000]) {
       await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&long=${duration}`)
       await page.locator('.fw-axis-track').waitFor({state:'visible'})
