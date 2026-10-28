@@ -26,21 +26,7 @@ export function paletteAudit() {
   const resolved=token=>{const el=document.createElement('span');el.style.color=`var(${token})`;root.append(el);const value=lab(getComputedStyle(el).color);el.remove();return value}
   const statuses=['--fw-live','--fw-failed','--fw-ok','--fw-amber'].map(resolved)
   const distances=Array.from({length:5},(_,i)=>({slot:i+1,min:Math.min(...statuses.map(status=>delta(resolved(`--fw-h${i+1}`),status)))}))
-  const light=getComputedStyle(root).colorScheme==='light'
-  let cyanMinimum
-  if(!light) for(let l=.67;l>=.65&&!cyanMinimum;l-=.0001)for(let h=195;h<=197;h+=.1) {
-    const min=Math.min(...statuses.map(status=>delta(lab(`oklch(${l} .11 ${h})`),status)))
-    if(min>=20){cyanMinimum={h,l,min};break}
-  }
-  const search=(from,to,chroma=.11)=>{
-    const candidates=[]
-    for(let h=from;h<=to;h+=.1)for(const l of light?[.52,.55,.58]:[.67,.70,.73]) {
-      const min=Math.min(...statuses.map(status=>delta(lab(`oklch(${l} ${chroma} ${h})`),status)))
-      candidates.push({h,l,min})
-    }
-    return candidates.sort((a,b)=>b.min-a.min).slice(0,3)
-  }
-  return {cyanMinimum,distances,min:Math.min(...distances.map(entry=>entry.min)),blue:search(250,295),cyan:search(180,225),pink:search(330,350),slate:search(200,290,.03),colors:Array.from({length:5},(_,i)=>{const el=document.createElement('i');el.style.color=`var(--fw-h${i+1})`;root.append(el);const color=getComputedStyle(el).color;el.remove();return color})}
+  return {distances,min:Math.min(...distances.map(entry=>entry.min))}
 }
 
 /** WCAG contrast for visible rendered text, including ancestor alpha and clipping. */

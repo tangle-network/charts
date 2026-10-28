@@ -14,6 +14,7 @@ import '@tangle-network/brand/styles/tokens.css'; import '${process.env.PROOF_SO
 document.documentElement.className=new URLSearchParams(location.search).get('theme')??'dark';
 const spans=Array.from({length:17},(_,i)=>({id:'agent-'+i,kind:'pipeline',name:'Worker '+i,startMs:i*1000,endMs:1200000,status:i===0||i===1?'running':i===2?'needs-you':i<9?'failed':'done',activityAt:[1000,2000,i===0?1199999:3000],outcome:{tone:i<2?'live':i===2?'warn':i<9?'failed':'ok',label:i<2?'Running':i===2?'Needs you':i<9?'Failed':'Done'},output:i<9?'Compiler rejected the build':undefined}));
 if(new URLSearchParams(location.search).has('family')) {spans.forEach(span=>span.parentId='orch');spans.unshift({id:'orch',kind:'pipeline',name:'Orchestrator',startMs:0,endMs:1200000,status:'done',outcome:{tone:'ok',label:'Done'}})}
+spans.push({id:'gap',parentId:'agent-16',kind:'tool',name:'Not reported',startMs:Number.NaN,endMs:Number.NaN});
 spans.push({id:'model',parentId:'agent-0',kind:'model',name:'Turn 1',startMs:30000,endMs:350000,status:'done'});
 for(let i=0;i<17;i++)spans.push({id:'error-'+i,parentId:'agent-'+(i%17),kind:'tool',name:'bash',startMs:i===0?350000:5000+i*1000,endMs:i===0?700000:6000+i*1000,status:'failed',output:'Compiler rejected the build'});
 createRoot(document.getElementById('root')).render(<FlowWaterfall label="Seventeen agents" trace={{spans,totalMs:1200000,promptTokens:0,completionTokens:0,errors:17}} defaultView="agents" live={false} selectedId={new URLSearchParams(location.search).has("selected")?"agent-0":undefined}/>);
@@ -60,18 +61,21 @@ try {
     console.log('PALETTE',theme,palette)
     check(`${theme}/${width} identity/status distance`,palette.min>=20,true)
     const firstRow=page.locator('[data-span-id="agent-0"]')
-    await firstRow.locator('.fw-bar').hover()
+    await firstRow.locator('.fw-seg-failed').hover()
     await page.locator('.fw-card .fw-agent-dot').waitFor()
     const hoverContrast=await page.evaluate(contrastAudit)
     console.log('HOVER CONTRAST',theme,width,hoverContrast)
     check(`${theme}/${width} hover text contrast`,hoverContrast.failures.length,0)
     const rowColor=await firstRow.locator('.fw-agent-dot').evaluate(el=>getComputedStyle(el).backgroundColor)
     check(`${theme}/${width} inspector dot matches row`,await page.locator('.fw-card .fw-agent-dot').evaluate(el=>getComputedStyle(el).backgroundColor),rowColor)
+    check(`${theme}/${width} failed segment glyph`,await firstRow.locator('.fw-seg-failed .fw-glyph').count(),1)
     await page.mouse.move(1,1)
     await page.locator('.fw-summary button').click()
     check(`${theme}/${width} error filter pressed`,await page.locator('.fw-summary button').getAttribute('aria-pressed'),'true')
     check(`${theme}/${width} error filter expands steps`,await page.locator('.fw-step[data-span-kind="failed"]').count()>0,true)
     await page.locator('.fw-summary button').click()
+    await page.getByRole('button',{name:'Expand Worker 16',exact:true}).click()
+    check(`${theme}/${width} unknown timing is dash`,await page.locator('[data-span-id=gap] .fw-invalid').textContent(),'—')
     const shade=await page.evaluate(()=>{
       const parent=document.querySelector('.fw-agent-row .fw-lane')
       const tones=['model','tool'].map(kind=>{const el=document.createElement('span');el.className='fw-seg fw-seg-'+kind;el.dataset.tone='3';parent.append(el);const value=getComputedStyle(el).backgroundColor;el.remove();return Number(value.match(/oklch\(([^ ]+)/)?.[1])})

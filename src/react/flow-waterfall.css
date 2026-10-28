@@ -18,11 +18,11 @@
   --fw-neutral-bar: color-mix(in oklab, var(--fw-text) 15%, var(--fw-surface));
   --fw-hatch: color-mix(in oklab, var(--fw-text) 22%, transparent);
   --fw-h0: var(--chart-muted);
-  --fw-h1: light-dark(oklch(from var(--tone-blue-icon) .55 .11 h), oklch(from var(--tone-blue-icon) .70 .11 h));
+  --fw-h1: light-dark(oklch(from var(--tone-blue-icon) .58 .11 calc(h + 39)), oklch(from var(--tone-blue-icon) .67 .11 calc(h + 39)));
   --fw-h2: light-dark(oklch(from var(--tone-violet-icon) .55 .11 h), oklch(from var(--tone-violet-icon) .70 .11 h));
-  --fw-h3: light-dark(oklch(from var(--tone-pink-icon) .55 .11 h), oklch(from var(--tone-pink-icon) .70 .11 h));
-  --fw-h4: light-dark(oklch(from var(--tone-cyan-icon) .55 .11 h), oklch(from var(--tone-cyan-icon) .70 .11 h));
-  --fw-h5: light-dark(oklch(from var(--text-muted) .55 .03 h), oklch(from var(--text-muted) .70 .03 h));
+  --fw-h3: light-dark(oklch(from var(--tone-pink-icon) .55 .11 h), oklch(from var(--tone-pink-icon) .67 .11 calc(h - 16)));
+  --fw-h4: light-dark(oklch(from var(--tone-cyan-icon) .58 .11 calc(h - 16.256)), oklch(from var(--tone-cyan-icon) .669 .11 calc(h - 26.148)));
+  --fw-h5: light-dark(oklch(from var(--tone-blue-icon) .58 .03 calc(h + 37.6)), oklch(from var(--tone-blue-icon) .67 .03 calc(h + 29.5)));
   --fw-ease: var(--ease-standard, cubic-bezier(.2,.8,.2,1));
   --fw-bar-h: 20px;
   --fw-label-col: min(var(--fw-name-w), 42%);
@@ -145,7 +145,7 @@
 .fw-root .fw-label { position: relative; display: flex; align-items: center; gap: 8px; min-width: 0; padding: 0 12px 0 calc(12px + var(--depth) * 16px); border-right: 1px solid var(--fw-border); }
 .fw-root .fw-guides { position: absolute; top: 0; bottom: 0; left: 20px; width: calc(var(--depth) * 16px); background: repeating-linear-gradient(90deg, var(--fw-guide) 0 1px, transparent 1px 16px); }
 .fw-root .fw-toggle, .fw-root .fw-toggle-space { flex: 0 0 16px; width: 16px; height: 16px; }
-.fw-root .fw-toggle { appearance: none; display: grid; place-items: center; padding: 0; border: 0; border-radius: var(--radius-tag); background: transparent; color: var(--fw-muted); cursor: pointer; }
+.fw-root .fw-toggle { appearance: none; pointer-events: auto; display: grid; place-items: center; padding: 0; border: 0; border-radius: var(--radius-tag); background: transparent; color: var(--fw-muted); cursor: pointer; }
 .fw-root .fw-toggle svg { width: 12px; height: 12px; transition: transform var(--motion-control); }
 .fw-root .fw-toggle.fw-open svg { transform: rotate(90deg); }
 .fw-root .fw-toggle:hover { background: var(--fw-hover); color: var(--fw-text); }
