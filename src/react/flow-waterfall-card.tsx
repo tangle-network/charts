@@ -77,6 +77,7 @@ function Table({ rows }: { rows: [string, ReactNode][] }) {
 /** The span card: what ran, for how long, on what tokens and at what recorded cost, then its input and output. */
 export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, renderIcon, compact }: SpanCardProps) {
   const span = row.span
+  const failure = span.facts?.find(fact => fact.label.toLowerCase() === 'failure')?.value
   const state = runStatus(span.status ?? 'unknown')
   const meta = statusMeta(state)
   const status = meta.label
@@ -106,9 +107,9 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
             : <span className={`fw-pill fw-pill-${state}`}>{status}</span>}
           {close}
         </div>
-        <Table rows={metrics(who, clockMs, false)} />
+        <Table rows={metrics(who, clockMs, false).filter(([label]) => label.toLowerCase() !== 'failure')} />
         {step && <p className="fw-card-step">{step}</p>}
-        {!row.ok && <p className="fw-card-error">Error: {span.output ?? who.span.output ?? "No error detail reported"}</p>}
+        {!row.ok && <p className="fw-card-error">{failure ? `Failure: ${failure}` : span.output ? `Recorded output: ${span.output}` : 'Failure detail not reported'}</p>}
         {sentence && row.ok && <p className="fw-card-result">{sentence}</p>}
       </div>
     )
@@ -123,8 +124,9 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
         {close}
       </div>
       <Table rows={metrics(row, clockMs, true)} />
+      {!row.ok && !span.output && !failure && <p className="fw-card-error">Failure detail not reported</p>}
       {span.input && <div className="fw-card-text"><div className="fw-card-label">Input</div><p>{span.input}</p></div>}
-      {span.output && <div className="fw-card-text"><div className="fw-card-label">{row.ok ? 'Output' : 'Error'}</div><p>{span.output}</p></div>}
+      {span.output && <div className="fw-card-text"><div className="fw-card-label">{row.ok ? 'Output' : 'Recorded output'}</div><p>{span.output}</p></div>}
     </div>
   )
 }

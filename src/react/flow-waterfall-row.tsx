@@ -114,6 +114,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   // An agent with its own steps opens them in place; a family opens its members.
   const opens = family || (agentView && isAgent && row.own.length > 0)
   const outcomes = row.outcomes ?? (span.outcome ? [span.outcome] : [])
+  const callouts = <>{slowest && <span className="fw-badge" title={agentView ? 'Longest elapsed leaf agent' : 'Longest elapsed leaf step'}>{agentView ? 'Longest leaf' : 'Longest step'}</span>}{costliest && <span className="fw-badge" title="Highest reported cost among priced leaf agents">Costliest leaf</span>}</>
 
   return (
     <div role="row" data-span-id={row.id} data-span-kind={kind} data-slowest={slowest || undefined} data-critical={critical || undefined} data-search={searching ? (matched ? 'match' : 'context') : undefined} data-running={running || undefined} data-activity={activity.quiet ? "quiet" : undefined}
@@ -121,7 +122,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
       aria-selected={selected} tabIndex={focusable ? 0 : -1} data-tone={toneKey(row.tone)} data-outcome={fillByAgent ? undefined : span.outcome?.tone}
       className={`fw-row${active ? ' fw-active' : ''}${sticky ? ' fw-sticky-row' : ''}${isAgent ? ' fw-agent-row' : ''}${step ? ' fw-step' : ''}${motion?.enter !== undefined ? ' fw-enter' : ''}${motion?.settle ? ' fw-settle' : ''}`}
       // The end label's width rides on the row: a label that would run past the lane slides back over its bar's tail, and a stacked name stops short of it.
-      style={{ '--row-y': `${top}px`, '--fw-enter-delay': `${motion?.enter ?? 0}ms`, '--fw-end-w': `${endLabelWidth(label)}px`, '--fw-badge-w': `${(slowest ? 80 : 0) + (costliest ? 90 : 0)}px` } as CSSProperties}
+      style={{ '--row-y': `${top}px`, '--fw-enter-delay': `${motion?.enter ?? 0}ms`, '--fw-end-w': `${endLabelWidth(label)}px` } as CSSProperties}
       onFocus={event => { if (event.target === event.currentTarget) props.onActivate(row) }}
       onClick={event => {
         props.onActivate(row)
@@ -152,7 +153,8 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
             {/* A live outcome dot already says it runs; a spinner beside it was a second, contradicting mark. */}
             {running && !((isAgent || agentView && !step) && outcomes.length) && <span className="fw-spinner" data-motion={activity.quiet ? undefined : "essential"} role="status" aria-label="running" />}
             <span className="fw-name-text">{row.name}</span>
-            {(state === "failed" || state === "needs-you") && <span className="fw-row-state" style={{ color: `var(${meta.token})` }}>{meta.label}</span>}
+            {!agentView && callouts}
+            {(state !== "unknown" && !activity.quiet) && <span className="fw-row-state" style={{ color: `var(${meta.token})` }}>{meta.label}</span>}
             {activity.quiet && <span className="fw-quiet">Quiet {formatSpanDuration(activity.quietMs)}</span>}
           </span>
           {/* Two levels on every agent row: the name, then how it ended and how much it did. */}
@@ -161,6 +163,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
             <span className="fw-subtitle">
               {renderIcon && <span className="fw-detail-icon" aria-hidden>{renderIcon(span)}</span>}
               <span className="fw-subtitle-tail">
+                {callouts}
                 <span className="fw-subtitle-text">{summary[0]}</span>
                 {summary.slice(1).map(part => <span key={part} className="fw-subtitle-extra">· {part}</span>)}
               </span>
@@ -171,7 +174,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
         {/* An agent row already says it failed in its second line and marks the failed turn in its bar. */}
         {!row.ok && !agentView && <span className="fw-alert"><AlertGlyph label="failed" /></span>}
       </div>
-      <div role="gridcell" className="fw-lane" data-waterfall-track aria-label={`${KIND_LABEL[span.kind]}, ${label}${slowest ? `, slowest ${agentView ? 'agent' : 'step'}` : ''}${costliest ? ', costliest agent' : ''}${critical ? ', critical path' : ''}`}>
+      <div role="gridcell" className="fw-lane" data-waterfall-track aria-label={`${KIND_LABEL[span.kind]}, ${label}${slowest ? `, longest leaf ${agentView ? 'agent' : 'step'}` : ''}${costliest ? ', highest reported leaf-agent cost' : ''}${critical ? ', critical path' : ''}`}>
         {invalid ? <span className="fw-invalid">—</span> : <>
           {span.marks?.map(mark => <span key={`m-${mark.at}-${mark.label}`} className="fw-mark" data-mark={mark.kind} style={at(mark.at, mark.at)} title={mark.label} aria-label={mark.label} role="img" />)}
           <span className={`fw-bar fw-k-${isAgent ? 'pipeline' : kind}${row.approx ? ' fw-approx' : ''}${marks.length ? ' fw-has-marks' : ''}${row.hasAgents ? ' fw-has-agents' : ''}`}
@@ -185,8 +188,6 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
           {marks.map((mark, i) => <Segment key={`${mark.id}-${i}`} mark={mark} events={props} agentView={agentView} />)}
           <span className="fw-end" style={at(span.startMs, running ? OPEN_END : span.endMs)}>
             <span className="fw-duration">{label}</span>
-            {slowest && <span className="fw-badge">Slowest</span>}
-            {costliest && <span className="fw-badge">Costliest</span>}
           </span>
         </>}
       </div>
