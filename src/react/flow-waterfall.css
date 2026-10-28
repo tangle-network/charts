@@ -21,8 +21,8 @@
   --fw-h1: light-dark(oklch(from var(--tone-blue-icon) .58 .11 calc(h + 39)), oklch(from var(--tone-blue-icon) .67 .11 calc(h + 39)));
   --fw-h2: light-dark(oklch(from var(--tone-violet-icon) .55 .11 h), oklch(from var(--tone-violet-icon) .70 .11 h));
   --fw-h3: light-dark(oklch(from var(--tone-pink-icon) .55 .11 h), oklch(from var(--tone-pink-icon) .67 .11 calc(h - 16)));
-  --fw-h4: light-dark(oklch(from var(--tone-cyan-icon) .60 .11 calc(h - 16.256)), oklch(from var(--tone-cyan-icon) .67 .11 calc(h - 26.148)));
-  --fw-h5: light-dark(oklch(from var(--tone-blue-icon) .58 .03 calc(h + 37.6)), oklch(from var(--tone-blue-icon) .67 .03 calc(h + 29.5)));
+  --fw-h4: light-dark(oklch(from var(--tone-cyan-icon) .578 .11 calc(h - 22.894)), oklch(from var(--tone-cyan-icon) .67 .11 calc(h - 26.148)));
+  --fw-h5: light-dark(oklch(from var(--tone-blue-icon) .58 .11 calc(h + 37.6)), oklch(from var(--tone-blue-icon) .67 .11 calc(h + 29.5)));
   --fw-ease: var(--ease-standard, cubic-bezier(.2,.8,.2,1));
   --fw-bar-h: 20px;
   --fw-label-col: min(var(--fw-name-w), 42%);

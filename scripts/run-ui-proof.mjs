@@ -52,11 +52,13 @@ const checks=[]
 const check=(name,actual,expected)=>{const pass=actual===expected;checks.push({name,pass,actual,expected});console.log(`${pass?'PASS':'FAIL'} ${name}: ${JSON.stringify(actual)}`)}
 try {
   for(const theme of ['dark','light'])for(const width of [1280,390]){
+    if(process.env.PALETTE_SEARCH==='1'&&width!==1280)continue
     const context=await browser.newContext({viewport:{width,height:1100},recordVideo:{dir:out,size:{width,height:1100}}})
     const page=await context.newPage()
     await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}`)
     await page.locator('[data-flow-waterfall]').waitFor()
     await page.waitForTimeout(1200)
+    if(process.env.PALETTE_SEARCH==='1'){const solved=await page.evaluate(paletteAudit,{search:true});writeFileSync(`${out}/${theme}-search.json`,JSON.stringify(solved,null,2));console.log('BOUNDED PALETTE',theme,JSON.stringify({...solved,feasibleHueSamples:solved.feasibleHueSamples.length}));await context.close();continue}
     check(`${theme}/${width} name fits row`,await page.locator('.fw-name-text').first().evaluate(el=>{const a=el.getBoundingClientRect(),b=el.closest('.fw-row').getBoundingClientRect();return a.top>=b.top&&a.bottom<=b.bottom}),true)
     await page.screenshot({path:`${out}/${theme}-${width}.png`,fullPage:true})
     check(`${theme}/${width} error rug`,await page.locator('.fw-error-tick').count(),17)
@@ -84,6 +86,8 @@ try {
     const palette=await page.evaluate(paletteAudit)
     console.log('PALETTE',theme,palette)
     check(`${theme}/${width} identity/status distance`,palette.min>=20,true)
+    check(`${theme}/${width} identity lightness bounds`,palette.lightnessOk,true)
+    check(`${theme}/${width} identity chroma .11`,palette.chromaOk,true)
     const firstRow=page.locator('[data-span-id="agent-0"]')
     await firstRow.locator('.fw-seg-failed').hover()
     await page.locator('.fw-card .fw-agent-dot').waitFor()
