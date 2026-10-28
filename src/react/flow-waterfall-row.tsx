@@ -102,7 +102,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   const label = endLabel(row, clockMs)
   const activity = quietActivity(row, clockMs)
   // The model leads the second line unless the header names it for every agent.
-  const summary = [...(span.detail && span.detail !== props.sharedDetail ? [span.detail] : []), ...agentSummary(row).filter(part => part !== props.sharedOutcome)]
+  const summary = [...(span.detail && span.detail !== props.sharedDetail ? [span.detail] : []), ...agentSummary(row).filter(part => part !== props.sharedOutcome && (state === "unknown" || part !== meta.label))]
   const inspect = (event: { currentTarget: HTMLElement; clientX: number }) => props.onInspect(row.id, event.currentTarget, event.clientX)
   const family = agentView && row.id.startsWith('family:')
   const step = agentView && row.stepOf !== undefined

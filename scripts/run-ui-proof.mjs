@@ -242,6 +242,8 @@ try {
     await page.waitForTimeout(1200)
     if(width===390)await page.locator('.fw-key summary').click()
     check(`${theme}/${width} bar grammar explanation`,await page.locator('.fw-kind-rule').isVisible(),true)
+    check(`${theme}/${width} kind key prefers actual colored family`,await page.locator('.fw-swatch-model').evaluate(el=>el.parentElement.dataset.example),'agent-1')
+    check(`${theme}/${width} lifecycle not repeated in subtitle`,await page.locator('[data-span-id="agent-3"] .fw-subtitle').evaluate(el=>!el.textContent.includes('Failed')),true)
     check(`${theme}/${width} waiting key uses actual hatch`,await page.locator('.fw-swatch-wait').evaluate(el=>getComputedStyle(el).backgroundImage.includes('repeating-linear-gradient')),true)
     check(`${theme}/${width} kind key matches drawn model`,await page.evaluate(()=>{const swatch=document.querySelector('.fw-swatch-model'),owner=swatch.closest('[data-example]').dataset.example;return getComputedStyle(swatch).backgroundColor===getComputedStyle(document.querySelector('[data-span-id="'+owner+'"] .fw-seg-model')).backgroundColor}),true)
     if(width===390) {

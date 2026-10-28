@@ -125,9 +125,9 @@ function KindLegend({ rows, fill }: { rows: FlowWaterfallRow[]; fill: NonNullabl
   if (shown.length === 0) return null
   return <ul className="fw-legend fw-kinds" aria-label="Key">
     {shown.map(([kind, name]) => {
-      const owner = rows.find(row => row.own.some(mark => mark.kind === kind || kind === 'tool' && mark.kind === 'failed' && !mark.modelCall))
-      const mark = owner?.own.find(mark => mark.kind === kind || kind === 'tool' && mark.kind === 'failed' && !mark.modelCall)
-      return <li key={kind} data-tone={fill === 'agent' ? toneKey(mark?.tone ?? 0) : undefined} data-example={owner?.id}><span className={`fw-swatch-${kind === 'waiting' ? 'wait' : kind}`} aria-hidden />{name}{owner && <span className="fw-key-example">({owner.name})</span>}</li>
+      const examples = rows.flatMap(owner => owner.own.flatMap(mark => mark.kind === kind || kind === 'tool' && mark.kind === 'failed' && !mark.modelCall ? [{ owner, mark }] : []))
+      const example = examples.find(({ mark }) => toneKey(mark.tone) > 0) ?? examples[0]
+      return <li key={kind} data-tone={fill === 'agent' ? toneKey(example?.mark.tone ?? 0) : undefined} data-example={example?.owner.id}><span className={`fw-swatch-${kind === 'waiting' ? 'wait' : kind}`} aria-hidden />{name}{example && <span>({example.owner.name})</span>}</li>
     })}
     <li className="fw-kind-rule">{fill === 'agent' ? 'Hue identifies family; shade identifies work. Rail: recorded elapsed time.' : 'Shade identifies work. Rail: recorded elapsed time.'}</li>
   </ul>
