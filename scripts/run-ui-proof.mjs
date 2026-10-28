@@ -58,7 +58,7 @@ try {
     await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}`)
     await page.locator('[data-flow-waterfall]').waitFor()
     await page.waitForTimeout(1200)
-    if(process.env.PALETTE_SEARCH==='1'){const solved=await page.evaluate(paletteAudit,{search:true});writeFileSync(`${out}/${theme}-search.json`,JSON.stringify(solved,null,2));console.log('BOUNDED PALETTE',theme,JSON.stringify(solved));await context.close();continue}
+    if(process.env.PALETTE_SEARCH==='1'){const solved=await page.evaluate(paletteAudit,{search:true});writeFileSync(`${out}/${theme}-search.json`,JSON.stringify(solved,null,2));console.log('BOUNDED PALETTE',theme,JSON.stringify({...solved,feasibleHueSamples:solved.feasibleHueSamples.length}));await context.close();continue}
     check(`${theme}/${width} name fits row`,await page.locator('.fw-name-text').first().evaluate(el=>{const a=el.getBoundingClientRect(),b=el.closest('.fw-row').getBoundingClientRect();return a.top>=b.top&&a.bottom<=b.bottom}),true)
     await page.screenshot({path:`${out}/${theme}-${width}.png`,fullPage:true})
     check(`${theme}/${width} error rug`,await page.locator('.fw-error-tick').count(),17)
