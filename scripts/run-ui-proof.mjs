@@ -26,7 +26,7 @@ spans.push({id:'model',parentId:'agent-0',kind:'model',name:'Turn 1',startMs:300
 for(let i=0;i<17;i++)spans.push({id:'error-'+i,parentId:'agent-'+(i%17),kind:'tool',name:'bash',startMs:i===0?350000:5000+i*1000,endMs:i===0?700000:6000+i*1000,status:'failed',output:'Compiler rejected the build'});
 let trace={spans,totalMs:1200000,promptTokens:0,completionTokens:0,errors:17};
 const totals=new URLSearchParams(location.search).get('totals');
-const long=Number(new URLSearchParams(location.search).get('long'));if(long){trace.totalMs=long;document.getElementById('root').style.padding='16px'}
+const long=Number(new URLSearchParams(location.search).get('long'));if(long){const scale=long/trace.totalMs;for(const span of trace.spans){span.startMs*=scale;span.endMs*=scale;if(span.activityAt)span.activityAt=span.activityAt.map(at=>at*scale)}trace.totalMs=long;document.getElementById('root').style.padding='16px'}
 if(totals==='missing'){delete trace.promptTokens;delete trace.completionTokens}
 if(totals==='partial'){trace.promptTokens=3;delete trace.completionTokens}
 if(totals==='zero'){trace.modelCalls=0;trace.toolCalls=0}
@@ -158,8 +158,8 @@ try {
     }
     if(width===390)for(const duration of [1715993,84928112,431000]) {
       await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&long=${duration}`)
-      await page.locator('.fw-axis .fw-tick').waitFor({state:'attached'}).catch(()=>{})
-      await page.waitForTimeout(100)
+      await page.locator('.fw-axis-track').waitFor({state:'visible'})
+      await page.waitForFunction(()=>document.querySelectorAll('.fw-axis .fw-tick').length===4)
       const geometry=await page.locator('.fw-axis-track').evaluate(track=>{const area=track.getBoundingClientRect();const labels=[...track.querySelectorAll('.fw-tick')].map(el=>({text:el.textContent,left:el.getBoundingClientRect().left,right:el.getBoundingClientRect().right}));return {labels,clear:labels.length===4&&labels.every((label,i)=>label.left>=area.left&&label.right<=area.right&&(i===0||label.left>=labels[i-1].right+4))}})
       console.log('PHONE AXIS',theme,duration,geometry)
       check(`${theme}/${width}/${duration} four unclipped separated ticks`,geometry.clear,true)
