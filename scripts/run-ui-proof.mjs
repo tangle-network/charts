@@ -189,6 +189,7 @@ try {
     }
     await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&grammar=1`)
     await page.locator('.fw-summary').waitFor()
+    await page.waitForTimeout(1200)
     if(width===390)await page.locator('.fw-key summary').click()
     check(`${theme}/${width} bar grammar explanation`,await page.locator('.fw-kind-rule').isVisible(),true)
     check(`${theme}/${width} waiting key uses actual hatch`,await page.locator('.fw-swatch-wait').evaluate(el=>getComputedStyle(el).backgroundImage.includes('repeating-linear-gradient')),true)
