@@ -171,8 +171,7 @@ export function FlowWaterfall({
   const slider = useRef<HTMLInputElement>(null)
   const timeOutput = useRef<HTMLOutputElement>(null)
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
-  const searchId = useId()
-  const cardId = useId()
+  const searchId = useId(), cardId = useId()
   const [requestedView, setView] = useState<FlowView>(defaultView)
   const view = requestedView === 'graph' && graph == null ? 'agents' : requestedView
   const [query, setQuery] = useHostable(queryProp, onQueryChange, '')
