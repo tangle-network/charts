@@ -4,7 +4,7 @@ import type { FlowMarker, FlowSpan, FlowTrace } from '../flow-trace.js'
 import { FlowBody, ROW_HEIGHT } from './flow-waterfall-body.js'
 import { SpanCard } from './flow-waterfall-card.js'
 import { useTraceClock } from './flow-waterfall-clock.js'
-import { FailGlyph, SearchGlyph, TraceGlyph } from './flow-waterfall-icons.js'
+import { ChevronGlyph, FailGlyph, SearchGlyph, TraceGlyph } from './flow-waterfall-icons.js'
 import { PlaybackBar } from './flow-waterfall-playback.js'
 import {
   quietActivity, agentCallouts, agentViewRows, criticalPathIds, defaultOpenFamilies, busyMs, drawnRow, costSummary, type FlowWaterfallRow, flowWaterfallRows, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
@@ -408,7 +408,7 @@ export function FlowWaterfall({
             {isLive && <span className="fw-state fw-state-live" data-motion="essential">Live</span>}
           </div>
           {/* One legend row: outcomes, then the bar-type key (round 24: stacked key bands read as clutter above the rows). */}
-          <details className="fw-key" open={root.current ? root.current.clientWidth >= 600 : true}><summary>Key</summary><div className="fw-legends"><OutcomeLegend agents={agents} neutral={visible.some(row => row.kind === "pipeline" && !row.span.outcome && !row.outcomes?.length)} selected={filter} onFilter={applyFilter} />{view === 'agents' && <KindLegend rows={rows} />}<MarkerLegend markers={markers} /></div></details>
+          <details className="fw-key" open={root.current ? root.current.clientWidth >= 600 : true}><summary>Key<ChevronGlyph /></summary><div className="fw-legends"><OutcomeLegend agents={agents} neutral={visible.some(row => row.kind === "pipeline" && !row.span.outcome && !row.outcomes?.length)} selected={filter} onFilter={applyFilter} />{view === 'agents' && <KindLegend rows={rows} />}<MarkerLegend markers={markers} /></div></details>
         </div>
         <div className="fw-tools">
           <div className="fw-views" role="radiogroup" aria-label="Trace view">

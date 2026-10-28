@@ -1,3 +1,8 @@
+## 1.0.2
+
+- Keep waterfall identity colours and bar-label contrast separated from Brand 1.31.1 status colours across fill modes.
+- Show canonical status dots when a trace omits custom outcomes, retain Failed and Needs you labels on phones, and mark the Key disclosure with a chevron.
+
 # @tangle-network/charts
 
 ## 1.0.1
