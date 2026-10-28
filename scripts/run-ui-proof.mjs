@@ -170,6 +170,7 @@ try {
       const message=await page.locator('.fw-card-error').textContent()
       check(`${theme}/${width}/${failure} uses own failure evidence`,message,expected)
       check(`${theme}/${width}/${failure} never certifies owner output`,message.includes('Owner final reply'),false)
+      await page.screenshot({path:`${out}/failure-${failure}-${theme}-${width}.png`,fullPage:true})
       if(failure==='output') {
         await page.getByRole('radio',{name:'Steps',exact:true}).click()
         await page.locator('[data-span-id="error-0"] .fw-bar').hover()
