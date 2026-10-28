@@ -1,3 +1,7 @@
+## 2.0.5
+
+Keep timeline and graph content before the shared recent-events feed, compress summary and playback controls, and keep the running Key swatch still. Status labels use the shared UI glyphs; Quiet remains an activity observation. Work swatches name their actual example rows. Failed-agent end labels and the error rug identify recorded ends, never an inferred failure instant or cause. Public APIs and measured totals are unchanged.
+
 ## 2.0.4
 
 - Keep desktop playback time beside the mini scrubber in its own sized column, so long durations stay readable. Preserve the phone's single-line time above its track.

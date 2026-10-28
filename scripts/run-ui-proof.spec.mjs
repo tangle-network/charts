@@ -13,7 +13,7 @@ import {FlowWaterfall} from '${process.env.PROOF_SOURCE_PREFIX ?? "."}/src/react
 import {catalogPrice,otlpFlowTrace} from '${process.env.PROOF_SOURCE_PREFIX ?? "."}/src/index.ts';
 import '@tangle-network/brand/styles/tokens.css'; import '${process.env.PROOF_SOURCE_PREFIX ?? "."}/src/react/flow-waterfall.css';
 document.documentElement.className=new URLSearchParams(location.search).get('theme')??'dark';
-const spans=Array.from({length:17},(_,i)=>({id:'agent-'+i,kind:'pipeline',name:'Worker '+i,startMs:i*1000,endMs:1200000,status:i===0||i===1?'running':i===2?'needs-you':i<9?'failed':'done',activityAt:[1000,2000,i===0?1199999:3000],outcome:{tone:i<2?'live':i===2?'warn':i<9?'failed':'ok',label:i<2?'Running':i===2?'Needs you':i<9?'Failed':'Done'},output:i<9?'Compiler rejected the build':undefined}));
+const spans=Array.from({length:new URLSearchParams(location.search).has('many')?200:17},(_,i)=>({id:'agent-'+i,kind:'pipeline',name:'Worker '+i,startMs:i*1000,endMs:1200000,status:i===0||i===1?'running':i===2?'needs-you':i<9?'failed':'done',activityAt:[1000,2000,i===0?1199999:3000],outcome:{tone:i<2?'live':i===2?'warn':i<9?'failed':'ok',label:i<2?'Running':i===2?'Needs you':i<9?'Failed':'Done'},output:i<9?'Compiler rejected the build':undefined}));
 if(new URLSearchParams(location.search).has('family')) {spans.forEach(span=>span.parentId='orch');spans.unshift({id:'orch',kind:'pipeline',name:'Orchestrator',startMs:0,endMs:1200000,status:'done',outcome:{tone:'ok',label:'Done'}})}
 if(new URLSearchParams(location.search).has('cadence')) {spans[1].activityAt=[3000];spans[1].medianEventGapMs=600000}
 if(new URLSearchParams(location.search).has('zero-cadence')) {spans[1].activityAt=[0,400000,800000];spans[1].medianEventGapMs=0}
@@ -24,10 +24,10 @@ spans.push({id:'gap',parentId:'agent-16',kind:'tool',name:'Not reported',startMs
 spans.push({id:'peer-model',parentId:'agent-9',kind:'model',name:'Turn 1',startMs:30000,endMs:350000,status:'done'},{id:'peer-tool',parentId:'agent-9',kind:'tool',name:'read',startMs:350000,endMs:700000,status:'done'});
 spans.push({id:'model',parentId:'agent-0',kind:'model',name:'Turn 1',startMs:30000,endMs:350000,status:'done'});
 for(let i=0;i<17;i++)spans.push({id:'error-'+i,parentId:'agent-'+(i%17),kind:'tool',name:'bash',startMs:i===0?350000:5000+i*1000,endMs:i===0?700000:6000+i*1000,status:'failed',output:'Compiler rejected the build'});
-if(new URLSearchParams(location.search).has('grammar'))spans.push({id:'grammar-model',parentId:'agent-1',kind:'model',name:'Turn 2',startMs:30000,endMs:300000,status:'done'},{id:'grammar-tool',parentId:'agent-1',kind:'tool',name:'read',startMs:300000,endMs:500000,status:'done'});
+if(new URLSearchParams(location.search).has('grammar'))spans.push({id:'grammar-model',parentId:'agent-1',kind:'model',name:'Turn 2',startMs:30000,endMs:300000,status:'failed'},{id:'grammar-tool',parentId:'agent-1',kind:'tool',name:'read',startMs:300000,endMs:500000,status:'done'});
 const failureCase=new URLSearchParams(location.search).get('failure-proof');if(failureCase){spans[0].output='Owner final reply unrelated to tool failure';const failed=spans.find(span=>span.id==='error-0');delete failed.output;if(failureCase==='fact')failed.facts=[{label:'Failure',value:'Recorded subprocess exit 7'}];if(failureCase==='output')failed.output='Raw tool stdout before exit'}
 if(new URLSearchParams(location.search).has('comparisons')){spans[0].costUsd=1000;for(const [i,name,cost,end]of[[1,'Collector',20,1200000],[2,'Verifier',10,600000]])Object.assign(spans[i],{parentId:'agent-0',name,costUsd:cost,endMs:end,status:'done',outcome:{tone:'ok',label:'Done'}})}
-let trace={spans,totalMs:1200000,promptTokens:0,completionTokens:0,errors:17};
+let trace={spans,totalMs:1200000,promptTokens:0,completionTokens:0,errors:new URLSearchParams(location.search).has('grammar')?18:17};
 const totals=new URLSearchParams(location.search).get('totals');
 const long=Number(new URLSearchParams(location.search).get('long'));if(long){const scale=long/trace.totalMs;for(const span of trace.spans){span.startMs*=scale;span.endMs*=scale;if(span.activityAt)span.activityAt=span.activityAt.map(at=>at*scale)}trace.totalMs=long;document.getElementById('root').style.padding='16px'}
 if(totals==='missing'){delete trace.promptTokens;delete trace.completionTokens}
@@ -35,8 +35,8 @@ if(totals==='partial'){trace.promptTokens=3;delete trace.completionTokens}
 if(totals==='zero'){trace.modelCalls=0;trace.toolCalls=0}
 if(totals==='invalid'){trace.promptTokens=Number.NaN;trace.completionTokens=Infinity;trace.modelCalls=Number.NaN;trace.toolCalls=Infinity}
 if(totals?.startsWith('otlp-'))trace=otlpFlowTrace([{trace_id:'totals',span_id:'call',name:'llm.call',kind:'LLM',start_time:'2026-01-01T00:00:00Z',end_time:'2026-01-01T00:00:01Z',attributes:{'gen_ai.request.model':'fixture/model',...(totals==='otlp-zero'?{'gen_ai.usage.input_tokens':0,'gen_ai.usage.output_tokens':0}:totals==='otlp-positive'?{'gen_ai.usage.input_tokens':3,'gen_ai.usage.output_tokens':5}:totals==='otlp-partial'?{'gen_ai.usage.input_tokens':3}:{})}}],{price:catalogPrice({data:[{id:'fixture/model',pricing:{prompt:'0.01',completion:'0.02'}}]})});
-const compose=new URLSearchParams(location.search).has('compose');
-function Feed(){const[paused,setPaused]=React.useState(false);return <aside data-feed data-paused={paused}><button onClick={()=>setPaused(!paused)}>Pause feed</button>Latest recorded event</aside>}
+const compose=new URLSearchParams(location.search).has('compose');if(compose)document.getElementById('root').style.padding='16px';
+function Feed(){const[paused,setPaused]=React.useState(false);return <aside data-feed data-paused={paused}><button onClick={()=>setPaused(!paused)}>Pause feed</button><div style={{height:192}}>Latest recorded event</div></aside>}
 function App(){const[cursor,setCursor]=React.useState(null),[selected,setSelected]=React.useState(undefined);return <FlowWaterfall label="Seventeen agents" trace={trace} defaultView={new URLSearchParams(location.search).has('graph-default')?'graph':'agents'} live={new URLSearchParams(location.search).has('live')} agentFill={new URLSearchParams(location.search).get("fill")??"agent"} graph={compose?<article data-graph data-cursor={cursor??'full'} data-selected={selected??''}>Host graph</article>:undefined} latestEvents={compose?<Feed/>:undefined} onTimeChange={setCursor} onSelect={compose?span=>setSelected(span.id):undefined} selectedId={selected??(new URLSearchParams(location.search).has("selected")?"agent-0":undefined)}/>}
 createRoot(document.getElementById('root')).render(<App/>);
 `, resolveDir: process.cwd(), sourcefile: 'proof.jsx', loader: 'jsx' }, bundle: true, write: false, outdir: 'proof', format: 'esm', jsx: 'automatic', define: { 'process.env.NODE_ENV': '"production"' } })
@@ -49,6 +49,8 @@ const server = createServer((req, res) => {
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve))
 const browser = await chromium.launch({headless:true,args:['--no-sandbox']})
 const checks=[]
+const numericGeometry=page=>page.locator('.fw-summary > div:nth-child(-n+2) dd').evaluateAll(nodes=>nodes.map(el=>{const range=document.createRange();range.selectNodeContents(el);const text=range.getBoundingClientRect(),box=el.getBoundingClientRect();return {text:el.textContent,whole:el.scrollWidth<=el.clientWidth&&text.left>=box.left-.5&&text.right<=box.right+.5}}))
+const summaryGeometry=page=>page.locator('.fw-summary').evaluate(el=>{const children=[...el.children],rest=children.slice(2).map(node=>node.getBoundingClientRect());return {height:el.getBoundingClientRect().height,hero:parseFloat(getComputedStyle(children[0].querySelector('dd')).fontSize),oneLine:rest.every(box=>Math.abs(box.top-rest[0].top)<1)}})
 const check=(name,actual,expected)=>{const pass=actual===expected;checks.push({name,pass,actual,expected});console.log(`${pass?'PASS':'FAIL'} ${name}: ${JSON.stringify(actual)}`)}
 try {
   for(const theme of ['dark','light'])for(const width of [1280,390]){
@@ -59,9 +61,26 @@ try {
     await page.locator('[data-flow-waterfall]').waitFor()
     await page.waitForTimeout(1200)
     if(process.env.PALETTE_SEARCH==='1'){const solved=await page.evaluate(paletteAudit,{search:true});writeFileSync(`${out}/${theme}-search.json`,JSON.stringify(solved,null,2));console.log('BOUNDED PALETTE',theme,JSON.stringify({...solved,feasibleHueSamples:solved.feasibleHueSamples.length}));await context.close();continue}
+    if(process.env.PROOF_SUMMARY_ONLY==='1') {
+      if(width===390)for(const duration of [1715993,84928112,431000]) {
+        await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&long=${duration}`)
+        await page.locator('.fw-summary').waitFor()
+        const numbers=await numericGeometry(page)
+        console.log('PRIMARY NUMERIC GEOMETRY',theme,duration,numbers)
+        check(`${theme}/${width}/${duration} complete primary numbers`,numbers.every(value=>value.whole),true)
+        check(`${theme}/${width}/${duration} secondary metric grouping`,(await summaryGeometry(page)).oneLine,true)
+        await page.screenshot({path:`${out}/summary-${theme}-${duration}-${width}.png`,fullPage:true})
+      }
+      await context.close();renameSync(await page.video().path(),`${out}/${theme}-${width}.webm`);continue
+    }
     check(`${theme}/${width} name fits row`,await page.locator('.fw-name-text').first().evaluate(el=>{const a=el.getBoundingClientRect(),b=el.closest('.fw-row').getBoundingClientRect();return a.top>=b.top&&a.bottom<=b.bottom}),true)
     await page.screenshot({path:`${out}/${theme}-${width}.png`,fullPage:true})
     check(`${theme}/${width} error rug`,await page.locator('.fw-error-tick').count(),17)
+    check(`${theme}/${width} error rug labels recorded ends`,await page.locator('.fw-error-tick').evaluateAll(nodes=>nodes.every(node=>node.title.startsWith('Recorded end of failed span at ')&&node.title.endsWith('failure instant not reported'))),true)
+    check(`${theme}/${width} canonical failed status glyph`,await page.locator('.fw-row-state svg[data-run-status="failed"]').count()>0,true)
+    check(`${theme}/${width} quiet keeps running explicit`,await page.locator('.fw-row[data-running] .fw-quiet').evaluateAll(nodes=>nodes.every(node=>node.getAttribute('aria-label')?.startsWith('Running; Quiet '))),true)
+    check(`${theme}/${width} quiet is not waiting status`,await page.locator('.fw-quiet svg[data-run-status="waiting"]').count(),0)
+
     check(`${theme}/${width} quiet agent`,await page.locator('[data-activity="quiet"]').count()>0,true)
     check(`${theme}/${width} overflow`,await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true)
     check(`${theme}/${width} filters`,await page.locator('.fw-legend button[aria-pressed]').count()>0,true)
@@ -191,6 +210,16 @@ try {
     await page.screenshot({path:`${out}/leaf-${theme}-${width}.png`,fullPage:true})
     await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&compose=1`)
     await page.locator('[data-flow-waterfall]').waitFor()
+    if(width===390){
+      const geometry=await page.locator('[data-flow-waterfall]').evaluate(root=>{const row=root.querySelector('.fw-row').getBoundingClientRect(),feed=root.querySelector('[data-feed]').getBoundingClientRect(),body=root.querySelector('.fw-body').getBoundingClientRect();return {first:row.top-root.getBoundingClientRect().top,feedAfterRows:feed.top>=body.bottom}})
+      console.log('PHONE COMPOSITION',theme,geometry)
+      check(`${theme}/${width} first agent within300px`,geometry.first<300,true)
+      check(`${theme}/${width} latest events after timeline`,geometry.feedAfterRows,true)
+    }
+    await page.emulateMedia({reducedMotion:'no-preference'})
+    check(`${theme}/${width} running legend static`,await page.locator('.fw-legend [data-outcome="live"]').evaluateAll(nodes=>nodes.every(node=>getComputedStyle(node).animationName==='none')),true)
+    await page.screenshot({path:`${out}/composition-${theme}-${width}.png`,fullPage:true})
+    check(`${theme}/${width} feed follows active view in DOM`,await page.locator('[data-feed]').evaluate(feed=>Boolean(feed.compareDocumentPosition(document.querySelector('.fw-body'))&Node.DOCUMENT_POSITION_PRECEDING)),true)
     const graphChoice=page.getByRole('radio',{name:'Graph',exact:true})
     check(`${theme}/${width} single three-view control`,await page.getByRole('radiogroup',{name:'Trace view',exact:true}).getByRole('radio').count(),3)
     if(await graphChoice.count()) {
@@ -215,19 +244,30 @@ try {
       await page.locator('[data-graph]').waitFor()
       check(`${theme}/${width} default graph`,await page.getByRole('radio',{name:'Graph',exact:true}).getAttribute('aria-checked'),'true')
     }
+    await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&compose=1&many=1`)
+    await page.locator('.fw-body').waitFor()
+    await page.mouse.move(2,40);await page.mouse.wheel(0,2000);await page.waitForTimeout(300)
+    check(`${theme}/${width} 200-agent feed reachable by native wheel`,await page.locator('[data-feed]').evaluate(el=>{const r=el.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight}),true)
+    await page.getByRole('button',{name:'Pause feed',exact:true}).click()
+    await page.getByRole('radio',{name:'Graph',exact:true}).click()
+    check(`${theme}/${width} 200-agent graph retains reachable feed`,await page.locator('[data-feed]').getAttribute('data-paused'),'true')
     await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&grammar=1`)
     await page.locator('.fw-summary').waitFor()
     await page.waitForTimeout(1200)
     if(width===390)await page.locator('.fw-key summary').click()
     check(`${theme}/${width} bar grammar explanation`,await page.locator('.fw-kind-rule').isVisible(),true)
+    check(`${theme}/${width} kind key prefers actual colored family`,await page.locator('.fw-swatch-model').evaluate(el=>el.parentElement.dataset.example),'agent-1')
+    check(`${theme}/${width} lifecycle not repeated in subtitle`,await page.locator('[data-span-id="agent-3"] .fw-subtitle').evaluate(el=>!el.textContent.includes('Failed')),true)
     check(`${theme}/${width} waiting key uses actual hatch`,await page.locator('.fw-swatch-wait').evaluate(el=>getComputedStyle(el).backgroundImage.includes('repeating-linear-gradient')),true)
-    check(`${theme}/${width} kind key matches drawn model`,await page.evaluate(()=>getComputedStyle(document.querySelector('.fw-swatch-model')).backgroundColor===getComputedStyle(document.querySelector('[data-span-id="agent-1"] .fw-seg-model')).backgroundColor),true)
+    check(`${theme}/${width} kind key matches drawn model`,await page.evaluate(()=>{const swatch=document.querySelector('.fw-swatch-model'),owner=swatch.closest('[data-example]').dataset.example;return getComputedStyle(swatch).backgroundColor===getComputedStyle(document.querySelector('[data-span-id="'+owner+'"] .fw-seg[data-model]')).backgroundColor}),true)
     if(width===390) {
+      await page.screenshot({path:`${out}/grammar-key-${theme}-${width}.png`,fullPage:true})
+      check(`${theme}/${width} open key fits card`,await page.locator('.fw-legends').evaluate(el=>{const box=el.getBoundingClientRect(),root=el.closest('[data-flow-waterfall]').getBoundingClientRect();return box.left>=root.left&&box.right<=root.right&&el.scrollWidth<=el.clientWidth}),true)
       await page.locator('.fw-key summary').click()
-      const hierarchy=await page.locator('.fw-summary').evaluate(el=>{const children=[...el.children];const rest=children.slice(2).map(node=>node.getBoundingClientRect());return {height:el.getBoundingClientRect().height,hero:parseFloat(getComputedStyle(children[0].querySelector('dd')).fontSize),oneLine:rest.every(box=>Math.abs(box.top-rest[0].top)<1)}})
-      check(`${theme}/${width} summary hero hierarchy`,hierarchy.hero,28)
+      const hierarchy=await summaryGeometry(page)
+      check(`${theme}/${width} compact summary hierarchy`,hierarchy.hero,20)
       check(`${theme}/${width} secondary metrics one line`,hierarchy.oneLine,true)
-      check(`${theme}/${width} summary under110px`,hierarchy.height<=110,true)
+      check(`${theme}/${width} summary under80px`,hierarchy.height<=80,true)
     }
     await page.screenshot({path:`${out}/grammar-${theme}-${width}.png`,fullPage:true})
     if(width===390)for(const duration of [1715993,84928112,431000]) {
@@ -235,6 +275,7 @@ try {
       await page.locator('.fw-axis-track').waitFor({state:'visible'})
       await page.waitForFunction(()=>document.querySelectorAll('.fw-axis .fw-tick').length===4)
       const geometry=await page.locator('.fw-axis-track').evaluate(track=>{const area=track.getBoundingClientRect();const labels=[...track.querySelectorAll('.fw-tick')].map(el=>({text:el.textContent,left:el.getBoundingClientRect().left,right:el.getBoundingClientRect().right}));return {labels,clear:labels.length===4&&labels.every((label,i)=>label.left>=area.left&&label.right<=area.right&&(i===0||label.left>=labels[i-1].right+4))}})
+      check(`${theme}/${width}/${duration} complete primary numbers`,(await numericGeometry(page)).every(value=>value.whole),true)
       console.log('PHONE AXIS',theme,duration,geometry)
       check(`${theme}/${width}/${duration} four unclipped separated ticks`,geometry.clear,true)
       check(`${theme}/${width}/${duration} endpoint duration`,geometry.labels.at(-1)?.text,duration===1715993?'28m 36s':duration===84928112?'23h 35m':'7m 11s')

@@ -177,7 +177,7 @@
 .fw-root .fw-agent-dot { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--tone, var(--fw-muted)); }
 .fw-root .fw-agent-dot:not([data-outcome]) { background: transparent; box-shadow: inset 0 0 0 1.5px var(--fw-muted); }
 .fw-root :is(.fw-agent-dot, .fw-legend .fw-swatch)[data-ring] { background: transparent; box-shadow: inset 0 0 0 1.5px var(--tone, var(--fw-muted)); }
-.fw-root :is(.fw-agent-dot, .fw-legend .fw-swatch)[data-outcome="live"]:not([data-ring]) { animation: tangle-breathe var(--motion-ambient) infinite; }
+.fw-root .fw-agent-dot[data-outcome="live"]:not([data-ring]) { animation: tangle-breathe var(--motion-ambient) infinite; }
 
 .fw-root .fw-lane { position: relative; overflow: hidden; min-width: 0; }
 .fw-root .fw-invalid { position: absolute; left: var(--fw-pad); top: 50%; transform: translateY(-50%); color: var(--fw-muted); }
@@ -221,7 +221,7 @@
 .fw-root [data-outcome], .fw-root [data-outcome] [data-tone] { --tone: var(--outcome-tone); }
 .fw-root.fw-root .fw-agent-dot[data-outcome] { --tone: var(--outcome-tone); }
 .fw-root .fw-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; padding: 0; list-style: none; color: var(--fw-muted); font-size: 14px; line-height: 18px; }
-.fw-root .fw-legend li { display: inline-flex; align-items: center; gap: 8px; }
+.fw-root .fw-legend li { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; max-width: 100%; overflow-wrap: anywhere; }
 .fw-root .fw-legends { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 24px; margin-top: 8px; }
 .fw-root .fw-legends .fw-legend { margin: 0; }
 .fw-root .fw-kinds { margin: 0; padding: 0; justify-content: flex-start; color: var(--fw-muted); }
@@ -270,6 +270,7 @@
 .fw-root .fw-end { z-index: 2; display: inline-flex; align-items: center; gap: 8px; top: calc(50% + var(--fw-bar-shift) - var(--fw-bar-h) / 2); height: var(--fw-bar-h);
   left: min(calc(var(--x0) + max(var(--w), 3px) + 4px), calc(100% - var(--fw-end-w, 0px) - 4px)); padding: 0 4px; border-radius: var(--radius-tag);
   background: linear-gradient(var(--fw-tint, transparent) 0 0), var(--fw-surface); white-space: nowrap; pointer-events: none; }
+.fw-root .fw-outcome-end { display: inline-flex; pointer-events: auto; }
 .fw-root .fw-duration { font-size: 14px; color: var(--fw-muted); font-variant-numeric: tabular-nums; }
 .fw-root .fw-k-failed ~ .fw-end .fw-duration { color: var(--fw-failed); }
 .fw-root .fw-badge { display: inline-flex; flex: none; height: 18px; padding: 0 6px; border-radius: var(--radius-pill); font-size: 12px; line-height: 18px; font-weight: 500; color: var(--fw-muted); background: transparent; box-shadow: inset 0 0 0 1px var(--fw-border); }
@@ -374,11 +375,13 @@
 .fw-root .fw-key > summary { display: none; }
 .fw-root .fw-key > summary svg { width: 12px; height: 12px; margin-left: 6px; }
 .fw-root .fw-key[open] > summary svg { transform: rotate(90deg); }
-.fw-root .fw-row-state { display: none; font-size: 12px; font-weight: 600; }
+.fw-root .fw-row-state { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; }
 .fw-root .fw-error-rug { position: relative; height: 10px; margin-left: var(--fw-label-col); overflow: hidden; }
 .fw-root .fw-error-tick { position: absolute; width: 2px; height: 8px; background: var(--fw-failed); left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); }
 .fw-root .fw-error-tick[data-unlocated] { left: auto; right: calc(var(--error-index) * 3px); }
-.fw-root .fw-quiet { color: var(--fw-amber); font-size: 12px; font-weight: 500; white-space: nowrap; }
+.fw-root .fw-quiet { display: inline-flex; align-items: center; gap: 4px; color: var(--fw-amber); font-size: 12px; font-weight: 500; white-space: nowrap; }
+.fw-root .fw-quiet::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+.fw-root [data-activity="quiet"] :is(.fw-agent-dot[data-outcome="live"], .fw-spinner) { display: none; }
 .fw-root [data-activity="quiet"] :is(.fw-agent-dot, .fw-spinner) { animation: none !important; }
 .fw-root .fw-quiet-tail { position: absolute; top: calc(50% + var(--fw-bar-shift) - var(--fw-bar-h) / 2); height: var(--fw-bar-h); left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); width: calc(max(0, var(--fw-t) - var(--s)) * var(--fw-k) * 1px); background: repeating-linear-gradient(-45deg, var(--fw-hatch) 0 1px, transparent 1px 5px); pointer-events: none; }
 .fw-root .fw-now { background: color-mix(in oklab, var(--fw-text) 28%, transparent); }
@@ -386,13 +389,22 @@
 .fw-root .fw-card .fw-agent-dot:not([data-outcome]) { background: transparent; box-shadow: inset 0 0 0 1.5px var(--fw-muted); }
 @container flow-waterfall (max-width: 599px) {
   .fw-root > * { --fw-label-col: 0px; --fw-bar-shift: 8px; --fw-bar-h: 8px; --fw-row-h: 44px; }
-  .fw-root .fw-summary > div:nth-child(-n+2) { flex-basis: 50%; padding: 6px 8px; }
+  .fw-root .fw-summary > div:nth-child(-n+2) { flex: 1 0 auto; display: flex; align-items: baseline; gap: 8px; padding: 6px 8px; }
+  .fw-root .fw-summary > div:nth-child(-n+2) .fw-value { margin: 0; font-size: 20px; line-height: 28px; }
+  .fw-root .fw-summary::after { content: ""; flex-basis: 100%; }
+  .fw-root .fw-summary > div:nth-child(n+3) { order: 1; }
   .fw-root :is(.fw-zoom, .fw-branch-controls, .fw-resize, .fw-links, .fw-gridlayer, .fw-marker-layer, .fw-subtitle, .fw-badge, .fw-icon-tile) { display: none; }
-  .fw-root .fw-row-state { display: inline; }
-  .fw-root .fw-key > summary { display: flex; align-items: center; min-height: 32px; cursor: pointer; }
+  .fw-root .fw-key > summary { display: flex; align-items: center; min-height: 32px; cursor: pointer; grid-area: 2 / 2; }
   .fw-root .fw-key:not([open]) .fw-legends { display: none; }
-  .fw-root .fw-heading { padding: 12px 8px; }
-  .fw-root .fw-title-line { flex-wrap: wrap; }
+  .fw-root .fw-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 8px; padding: 8px; }
+  .fw-root .fw-title-block, .fw-root .fw-key { display: contents; }
+  .fw-root .fw-title-line { grid-column: 1 / -1; flex-wrap: wrap; }
+  .fw-root .fw-legends { grid-area: 3 / 1 / auto / -1; margin: 4px 0; }
+  .fw-root .fw-tools { grid-area: 2 / 1; flex-wrap: wrap; }
+  .fw-root .fw-segmented { padding: 2px; }
+  .fw-root .fw-segmented button { min-width: 28px; padding: 0 6px; }
+  .fw-root.fw-root-agents .fw-playback { padding: 8px; }
+  .fw-root.fw-root-agents .fw-overview { margin-top: 0; }
   .fw-root .fw-search-input { width: 120px; }
   .fw-root .fw-axis-label { border: 0; padding: 0; }
   .fw-root .fw-tick:is(:nth-child(2), :nth-child(3)) { transform: translate(-50%, -50%); }
