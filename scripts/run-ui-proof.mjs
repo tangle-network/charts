@@ -10,6 +10,7 @@ mkdirSync(out, { recursive: true })
 const result = await build({ stdin: { contents: `
 import React from 'react'; import {createRoot} from 'react-dom/client';
 import {FlowWaterfall} from '${process.env.PROOF_SOURCE_PREFIX ?? "."}/src/react/index.ts';
+import {otlpFlowTrace} from '${process.env.PROOF_SOURCE_PREFIX ?? "."}/src/index.ts';
 import '@tangle-network/brand/styles/tokens.css'; import '${process.env.PROOF_SOURCE_PREFIX ?? "."}/src/react/flow-waterfall.css';
 document.documentElement.className=new URLSearchParams(location.search).get('theme')??'dark';
 const spans=Array.from({length:17},(_,i)=>({id:'agent-'+i,kind:'pipeline',name:'Worker '+i,startMs:i*1000,endMs:1200000,status:i===0||i===1?'running':i===2?'needs-you':i<9?'failed':'done',activityAt:[1000,2000,i===0?1199999:3000],outcome:{tone:i<2?'live':i===2?'warn':i<9?'failed':'ok',label:i<2?'Running':i===2?'Needs you':i<9?'Failed':'Done'},output:i<9?'Compiler rejected the build':undefined}));
@@ -23,7 +24,14 @@ spans.push({id:'gap',parentId:'agent-16',kind:'tool',name:'Not reported',startMs
 spans.push({id:'peer-model',parentId:'agent-9',kind:'model',name:'Turn 1',startMs:30000,endMs:350000,status:'done'},{id:'peer-tool',parentId:'agent-9',kind:'tool',name:'read',startMs:350000,endMs:700000,status:'done'});
 spans.push({id:'model',parentId:'agent-0',kind:'model',name:'Turn 1',startMs:30000,endMs:350000,status:'done'});
 for(let i=0;i<17;i++)spans.push({id:'error-'+i,parentId:'agent-'+(i%17),kind:'tool',name:'bash',startMs:i===0?350000:5000+i*1000,endMs:i===0?700000:6000+i*1000,status:'failed',output:'Compiler rejected the build'});
-createRoot(document.getElementById('root')).render(<FlowWaterfall label="Seventeen agents" trace={{spans,totalMs:1200000,promptTokens:0,completionTokens:0,errors:17}} defaultView="agents" live={false} agentFill={new URLSearchParams(location.search).get("fill")??"agent"} selectedId={new URLSearchParams(location.search).has("selected")?"agent-0":undefined}/>);
+let trace={spans,totalMs:1200000,promptTokens:0,completionTokens:0,errors:17};
+const totals=new URLSearchParams(location.search).get('totals');
+if(totals==='missing'){delete trace.promptTokens;delete trace.completionTokens}
+if(totals==='partial'){trace.promptTokens=3;delete trace.completionTokens}
+if(totals==='zero'){trace.modelCalls=0;trace.toolCalls=0}
+if(totals==='invalid'){trace.promptTokens=Number.NaN;trace.completionTokens=Infinity;trace.modelCalls=Number.NaN;trace.toolCalls=Infinity}
+if(totals?.startsWith('otlp-'))trace=otlpFlowTrace([{trace_id:'totals',span_id:'call',name:'llm.call',kind:'LLM',start_time:'2026-01-01T00:00:00Z',end_time:'2026-01-01T00:00:01Z',attributes:totals==='otlp-zero'?{'gen_ai.usage.input_tokens':0,'gen_ai.usage.output_tokens':0}:totals==='otlp-positive'?{'gen_ai.usage.input_tokens':3,'gen_ai.usage.output_tokens':5}:totals==='otlp-partial'?{'gen_ai.usage.input_tokens':3}:{}}]);
+createRoot(document.getElementById('root')).render(<FlowWaterfall label="Seventeen agents" trace={trace} defaultView="agents" live={false} agentFill={new URLSearchParams(location.search).get("fill")??"agent"} selectedId={new URLSearchParams(location.search).has("selected")?"agent-0":undefined}/>);
 `, resolveDir: process.cwd(), sourcefile: 'proof.jsx', loader: 'jsx' }, bundle: true, write: false, outdir: 'proof', format: 'esm', jsx: 'automatic', define: { 'process.env.NODE_ENV': '"production"' } })
 const files = Object.fromEntries(result.outputFiles.map(file => [file.path.split('/').pop(), file.text]))
 const server = createServer((req, res) => {
@@ -134,6 +142,18 @@ try {
       await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&${query}=1`)
       await page.locator('[data-flow-waterfall]').waitFor()
       check(`${theme}/${width}/${query} uses recorded activity`,await page.locator(`[data-span-id="${id}"][data-activity="quiet"]`).count(),expected)
+    }
+    for(const [totals,expected] of [['missing','—'],['zero','0'],['invalid','—'],['partial','—'],['otlp-missing','—'],['otlp-zero','0'],['otlp-partial','—'],['otlp-positive','8']]) {
+      await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&totals=${totals}`)
+      await page.locator('.fw-summary').waitFor()
+      const read=()=>page.locator('.fw-summary dt').evaluateAll(nodes=>Object.fromEntries(nodes.map(dt=>[dt.textContent,{value:dt.nextElementSibling.textContent,title:dt.nextElementSibling.title}])))
+      let cells=await read()
+      check(`${theme}/${width}/${totals} token total`,cells.Tokens.value,expected)
+      if(expected==='—')check(`${theme}/${width}/${totals} unknown title`,/not reported/i.test(cells.Tokens.title),true)
+      if(totals==='invalid'||totals==='zero')for(const key of ['Model calls','Tool calls'])check(`${theme}/${width}/${totals} ${key}`,cells[key].value,totals==='zero'?'0':'—')
+      await page.getByRole('button',{name:'Restart',exact:true}).click()
+      cells=await read()
+      check(`${theme}/${width}/${totals} playback token total`,cells.Tokens.value,expected)
     }
     await context.close()
     renameSync(await page.video().path(),`${out}/${theme}-${width}.webm`)
