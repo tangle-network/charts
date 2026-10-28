@@ -1,5 +1,5 @@
 import { runStatus, statusMeta } from '@tangle-network/ui/run'
-import { type FlowOutcome, type FlowSpan, type FlowTrace, reportedCount, sumReportedCounts } from '../flow-trace.js'
+import { type FlowOutcome, type FlowSpan, type FlowTrace, finiteNumber, reportedCount, sumReportedCounts } from '../flow-trace.js'
 
 /** A minimap mark on a parent row: merged descendant activity of one kind. */
 export interface FlowSegment {
@@ -97,7 +97,7 @@ export function formatSpanDuration(ms: number): string {
 
 /** $0.12, $0.005, $12.40; never rounds a recorded nonzero cost to $0.00. */
 export function formatCost(usd: number): string {
-  if (!Number.isFinite(usd) || usd < 0) return '—'
+  if (finiteNumber(usd) === undefined) return '—'
   if (usd === 0) return '$0.00'
   if (usd < 0.01) return `$${usd.toPrecision(1).replace(/0+$/, '')}`
   return `$${usd.toFixed(2)}`
@@ -406,19 +406,21 @@ export function totalsAt(trace: FlowTrace, clockMs: number) {
 
 /** The cost a reader can rely on: a lower bound when some calls are unpriced, a dash only when nothing is priced. */
 export function costSummary(costUsd: number | undefined, trace: Pick<FlowTrace, 'costBasis' | 'costCoverage' | 'billedUsd' | 'costBound'>): { value: string; title: string; label: string } {
+  costUsd = finiteNumber(costUsd)
+  const billedUsd = finiteNumber(trace.billedUsd)
   const list = trace.costBasis === 'list'
   const label = list ? 'Cost · list price' : 'Cost'
   if (costUsd === undefined) {
-    return trace.billedUsd !== undefined
-      ? { value: `${formatCost(trace.billedUsd)} billed`, title: 'No list price for these calls; billed is the seat charge', label }
+    return billedUsd !== undefined
+      ? { value: `${formatCost(billedUsd)} billed`, title: 'No list price for these calls; billed is the seat charge', label }
       : { value: '—', title: 'No cost source: the harness recorded no cost and no price catalog was given', label }
   }
   const coverage = trace.costCoverage
   const partial = coverage !== undefined && coverage.priced < coverage.total
   const upper = !partial && trace.costBound === 'upper'
-  const value = `${partial || trace.costBound === 'lower' ? '≥' : upper ? '≤' : list ? '≈' : ''}${formatCost(costUsd)}${trace.billedUsd !== undefined ? ` · ${formatCost(trace.billedUsd)} billed` : ''}`
+  const value = `${partial || trace.costBound === 'lower' ? '≥' : upper ? '≤' : list ? '≈' : ''}${formatCost(costUsd)}${billedUsd !== undefined ? ` · ${formatCost(billedUsd)} billed` : ''}`
   const parts = [partial ? `${coverage.priced} of ${coverage.total} model calls priced` : coverage ? `all ${coverage.total} model calls priced` : '',
-    list ? 'at the model catalog list price; not a bill' : '', upper ? 'cached input is not split out, so it is priced as fresh input: at most this' : '', trace.costBound === 'lower' ? 'a floor: the producer reports at least this' : '', trace.billedUsd !== undefined ? `billed ${formatCost(trace.billedUsd)} (the seat charge)` : '']
+    list ? 'at the model catalog list price; not a bill' : '', upper ? 'cached input is not split out, so it is priced as fresh input: at most this' : '', trace.costBound === 'lower' ? 'a floor: the producer reports at least this' : '', billedUsd !== undefined ? `billed ${formatCost(billedUsd)} (the seat charge)` : '']
   return { value, title: parts.filter(Boolean).join('; '), label }
 }
 

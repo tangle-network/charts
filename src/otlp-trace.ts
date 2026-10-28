@@ -1,4 +1,4 @@
-import { type FlowSpan, type FlowTrace, reportedCount, sumReportedCounts } from './flow-trace.js'
+import { type FlowSpan, type FlowTrace, finiteNumber, reportedCount, sumReportedCounts } from './flow-trace.js'
 
 /** One span of the OTLP-JSONL contract written by `traces convert` (tangle-network/traces). */
 export interface OtlpSpan {
@@ -33,8 +33,9 @@ const CACHE_KEYS = [...CACHE_READ_KEYS, 'gen_ai.usage.cache_creation_input_token
 export function catalogPrice(catalog: { data?: Array<{ id?: string; pricing?: { prompt?: string | number; completion?: string | number } }> }) {
   const rates = new Map<string, { input: number; output: number }>()
   for (const model of catalog.data ?? []) {
-    const input = Number(model.pricing?.prompt), output = Number(model.pricing?.completion)
-    if (model.id && Number.isFinite(input) && Number.isFinite(output)) rates.set(model.id, { input, output })
+    const rate = (value: unknown) => typeof value === 'string' ? value.trim() ? finiteNumber(Number(value)) : undefined : finiteNumber(value)
+    const input = rate(model.pricing?.prompt), output = rate(model.pricing?.completion)
+    if (model.id && input !== undefined && output !== undefined) rates.set(model.id, { input, output })
   }
   return (model: string, inputTokens: number, outputTokens: number) => {
     const rate = rates.get(model) ?? rates.get(shortModel(model))
@@ -202,8 +203,8 @@ export function otlpFlowTrace(input: OtlpSpan[], options: OtlpTraceOptions = {})
     if (kind === 'tool' || kind === 'handoff') toolCalls++
     if (failed) errors++
     if (!aggregate && (kind === 'model' || prompt !== undefined || completion !== undefined)) usage.push([prompt, completion])
-    const listPrice = kind === 'model' && !aggregate && model && options.price && prompt !== undefined && completion !== undefined
-      ? options.price(model, prompt, completion) : undefined
+    const listPrice = finiteNumber(kind === 'model' && !aggregate && model && options.price && prompt !== undefined && completion !== undefined
+      ? options.price(model, prompt, completion) : undefined)
     if (listPrice !== undefined) {
       cost += listPrice; priced++
       if (CACHE_KEYS.some(key => a[key] !== undefined)) cacheSplit = true

@@ -10,7 +10,7 @@ mkdirSync(out, { recursive: true })
 const result = await build({ stdin: { contents: `
 import React from 'react'; import {createRoot} from 'react-dom/client';
 import {FlowWaterfall} from '${process.env.PROOF_SOURCE_PREFIX ?? "."}/src/react/index.ts';
-import {otlpFlowTrace} from '${process.env.PROOF_SOURCE_PREFIX ?? "."}/src/index.ts';
+import {catalogPrice,otlpFlowTrace} from '${process.env.PROOF_SOURCE_PREFIX ?? "."}/src/index.ts';
 import '@tangle-network/brand/styles/tokens.css'; import '${process.env.PROOF_SOURCE_PREFIX ?? "."}/src/react/flow-waterfall.css';
 document.documentElement.className=new URLSearchParams(location.search).get('theme')??'dark';
 const spans=Array.from({length:17},(_,i)=>({id:'agent-'+i,kind:'pipeline',name:'Worker '+i,startMs:i*1000,endMs:1200000,status:i===0||i===1?'running':i===2?'needs-you':i<9?'failed':'done',activityAt:[1000,2000,i===0?1199999:3000],outcome:{tone:i<2?'live':i===2?'warn':i<9?'failed':'ok',label:i<2?'Running':i===2?'Needs you':i<9?'Failed':'Done'},output:i<9?'Compiler rejected the build':undefined}));
@@ -31,7 +31,7 @@ if(totals==='missing'){delete trace.promptTokens;delete trace.completionTokens}
 if(totals==='partial'){trace.promptTokens=3;delete trace.completionTokens}
 if(totals==='zero'){trace.modelCalls=0;trace.toolCalls=0}
 if(totals==='invalid'){trace.promptTokens=Number.NaN;trace.completionTokens=Infinity;trace.modelCalls=Number.NaN;trace.toolCalls=Infinity}
-if(totals?.startsWith('otlp-'))trace=otlpFlowTrace([{trace_id:'totals',span_id:'call',name:'llm.call',kind:'LLM',start_time:'2026-01-01T00:00:00Z',end_time:'2026-01-01T00:00:01Z',attributes:totals==='otlp-zero'?{'gen_ai.usage.input_tokens':0,'gen_ai.usage.output_tokens':0}:totals==='otlp-positive'?{'gen_ai.usage.input_tokens':3,'gen_ai.usage.output_tokens':5}:totals==='otlp-partial'?{'gen_ai.usage.input_tokens':3}:{}}]);
+if(totals?.startsWith('otlp-'))trace=otlpFlowTrace([{trace_id:'totals',span_id:'call',name:'llm.call',kind:'LLM',start_time:'2026-01-01T00:00:00Z',end_time:'2026-01-01T00:00:01Z',attributes:{'gen_ai.request.model':'fixture/model',...(totals==='otlp-zero'?{'gen_ai.usage.input_tokens':0,'gen_ai.usage.output_tokens':0}:totals==='otlp-positive'?{'gen_ai.usage.input_tokens':3,'gen_ai.usage.output_tokens':5}:totals==='otlp-partial'?{'gen_ai.usage.input_tokens':3}:{})}}],{price:catalogPrice({data:[{id:'fixture/model',pricing:{prompt:'0.01',completion:'0.02'}}]})});
 createRoot(document.getElementById('root')).render(<FlowWaterfall label="Seventeen agents" trace={trace} defaultView="agents" live={false} agentFill={new URLSearchParams(location.search).get("fill")??"agent"} selectedId={new URLSearchParams(location.search).has("selected")?"agent-0":undefined}/>);
 `, resolveDir: process.cwd(), sourcefile: 'proof.jsx', loader: 'jsx' }, bundle: true, write: false, outdir: 'proof', format: 'esm', jsx: 'automatic', define: { 'process.env.NODE_ENV': '"production"' } })
 const files = Object.fromEntries(result.outputFiles.map(file => [file.path.split('/').pop(), file.text]))
@@ -151,6 +151,7 @@ try {
       let cells=await read()
       check(`${theme}/${width}/${totals} token total`,cells.Tokens.value,expected)
       if(expected==='—')check(`${theme}/${width}/${totals} unknown title`,/not reported/i.test(cells.Tokens.title),true)
+      if(totals.startsWith('otlp-'))check(`${theme}/${width}/${totals} priced only from reported usage`,cells['Cost · list price'].value.includes(totals==='otlp-positive'?'$0.13':totals==='otlp-zero'?'$0.00':'—'),true)
       if(totals==='invalid'||totals==='zero')for(const key of ['Model calls','Tool calls'])check(`${theme}/${width}/${totals} ${key}`,cells[key].value,totals==='zero'?'0':'—')
       await page.getByRole('button',{name:'Restart',exact:true}).click()
       cells=await read()
@@ -163,8 +164,10 @@ try {
       const geometry=await page.locator('.fw-axis-track').evaluate(track=>{const area=track.getBoundingClientRect();const labels=[...track.querySelectorAll('.fw-tick')].map(el=>({text:el.textContent,left:el.getBoundingClientRect().left,right:el.getBoundingClientRect().right}));return {labels,clear:labels.length===4&&labels.every((label,i)=>label.left>=area.left&&label.right<=area.right&&(i===0||label.left>=labels[i-1].right+4))}})
       console.log('PHONE AXIS',theme,duration,geometry)
       check(`${theme}/${width}/${duration} four unclipped separated ticks`,geometry.clear,true)
+      check(`${theme}/${width}/${duration} endpoint duration`,geometry.labels.at(-1)?.text,duration===1715993?'28m 36s':duration===84928112?'23h 35m':'7m 11s')
       const chip=await page.locator('.fw-time').evaluate(el=>{const box=el.getBoundingClientRect(),parent=el.parentElement.getBoundingClientRect();return box.height<=parseFloat(getComputedStyle(el).lineHeight)+1&&box.left>=parent.left-1&&box.right<=parent.right+1})
       check(`${theme}/${width}/${duration} single-line time chip`,chip,true)
+      await page.screenshot({path:`${out}/axis-${theme}-${duration}-${width}.png`,fullPage:true})
     }
     await context.close()
     renameSync(await page.video().path(),`${out}/${theme}-${width}.webm`)

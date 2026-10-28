@@ -105,7 +105,7 @@ function summaryCells(trace: FlowTrace, at: ReturnType<typeof totalsAt> | undefi
   const errors = at ? at.errors : trace.errors === undefined ? observedErrors || undefined : reportedCount(trace.errors)
   const summary: [string, ReactNode, string?][] = [
     ['Duration', formatSpanDuration(durationMs)],
-    ...(cost.value === '—' ? [] : [[cost.label, cost.value, cost.title] as [string, ReactNode, string?]]),
+    [cost.label, cost.value, cost.title],
     ['Tokens', tokens === undefined ? '—' : formatCount(tokens), tokens === undefined ? 'Tokens not reported' : `${tokens.toLocaleString()} tokens`],
     ['Model calls', modelCalls === undefined ? '—' : modelCalls.toLocaleString(), modelCalls === undefined ? 'Model calls not reported; output windows do not establish request counts' : at ? 'Reported trace total' : undefined],
     ['Tool calls', toolCalls?.toLocaleString() ?? '—', toolCalls === undefined ? 'Tool calls not reported' : at ? 'Reported trace total' : undefined],
