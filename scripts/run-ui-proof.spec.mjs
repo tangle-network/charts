@@ -50,6 +50,7 @@ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve))
 const browser = await chromium.launch({headless:true,args:['--no-sandbox']})
 const checks=[]
 const numericGeometry=page=>page.locator('.fw-summary > div:nth-child(-n+2) dd').evaluateAll(nodes=>nodes.map(el=>{const range=document.createRange();range.selectNodeContents(el);const text=range.getBoundingClientRect(),box=el.getBoundingClientRect();return {text:el.textContent,whole:el.scrollWidth<=el.clientWidth&&text.left>=box.left-.5&&text.right<=box.right+.5}}))
+const summaryGeometry=page=>page.locator('.fw-summary').evaluate(el=>{const children=[...el.children],rest=children.slice(2).map(node=>node.getBoundingClientRect());return {height:el.getBoundingClientRect().height,hero:parseFloat(getComputedStyle(children[0].querySelector('dd')).fontSize),oneLine:rest.every(box=>Math.abs(box.top-rest[0].top)<1)}})
 const check=(name,actual,expected)=>{const pass=actual===expected;checks.push({name,pass,actual,expected});console.log(`${pass?'PASS':'FAIL'} ${name}: ${JSON.stringify(actual)}`)}
 try {
   for(const theme of ['dark','light'])for(const width of [1280,390]){
@@ -67,6 +68,7 @@ try {
         const numbers=await numericGeometry(page)
         console.log('PRIMARY NUMERIC GEOMETRY',theme,duration,numbers)
         check(`${theme}/${width}/${duration} complete primary numbers`,numbers.every(value=>value.whole),true)
+        check(`${theme}/${width}/${duration} secondary metric grouping`,(await summaryGeometry(page)).oneLine,true)
         await page.screenshot({path:`${out}/summary-${theme}-${duration}-${width}.png`,fullPage:true})
       }
       await context.close();renameSync(await page.video().path(),`${out}/${theme}-${width}.webm`);continue
@@ -262,7 +264,7 @@ try {
       await page.screenshot({path:`${out}/grammar-key-${theme}-${width}.png`,fullPage:true})
       check(`${theme}/${width} open key fits card`,await page.locator('.fw-legends').evaluate(el=>{const box=el.getBoundingClientRect(),root=el.closest('[data-flow-waterfall]').getBoundingClientRect();return box.left>=root.left&&box.right<=root.right&&el.scrollWidth<=el.clientWidth}),true)
       await page.locator('.fw-key summary').click()
-      const hierarchy=await page.locator('.fw-summary').evaluate(el=>{const children=[...el.children];const rest=children.slice(2).map(node=>node.getBoundingClientRect());return {height:el.getBoundingClientRect().height,hero:parseFloat(getComputedStyle(children[0].querySelector('dd')).fontSize),oneLine:rest.every(box=>Math.abs(box.top-rest[0].top)<1)}})
+      const hierarchy=await summaryGeometry(page)
       check(`${theme}/${width} compact summary hierarchy`,hierarchy.hero,20)
       check(`${theme}/${width} secondary metrics one line`,hierarchy.oneLine,true)
       check(`${theme}/${width} summary under80px`,hierarchy.height<=80,true)
