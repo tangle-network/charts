@@ -1,5 +1,7 @@
 ## 2.0.1
 
+- Optional graph and latestEvents slots compose one Agents/Steps/Graph control. Graph switches retain the owner clock and controlled selection; the shared header feed remains mounted.
+
 - Explain bar family color and work shade with actual displayed-agent model/tool examples and the same waiting hatch.
 - Give Duration and Cost the primary number role; keep other metrics on a compact line so phone agent rows lead sooner. Unknown values remain a dash and measured zero remains zero.
 

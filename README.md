@@ -350,3 +350,5 @@ CHARTS_REACT_VERSION=19 CHARTS_PROOF_DIR=/tmp/charts-react19 node scripts/charts
 ```
 
 Consumers: agent-record adapts record provenance; agent-app supplies application trace producers; Creative consumes both. Intelligence already uses the row/axis primitives with its controlled virtualized tree. Tangle Website’s `RecordedRunWaterfall` uses the Header/Row primitives; Blueprint Agent’s execution timeline is a separately owned follow-up. Keep these existing primitives exported. Agent-record’s earlier agent-app dependency increased its installed graph from 134 to 256 package versions (tangle-tools #1674); adopting the lower chart owner removes that framework dependency, with the actual new graph measured by the deployment owner.
+
+`FlowWaterfall` accepts optional `graph` and `latestEvents` React nodes. Supplying `graph` adds Graph to its existing Agents/Steps view control, including `defaultView="graph"`. The trace clock and controlled selection survive switches. Graph hides waterfall-only controls; `latestEvents` stays mounted in the header across all views.
