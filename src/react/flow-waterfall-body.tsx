@@ -30,7 +30,7 @@ export interface BodyProps extends RowEvents {
   matchSpan?: (span: FlowSpan, query: string) => boolean
   activeId?: string
   pauses?: readonly FlowPause[]
-  errorTimes?: readonly (number | undefined)[]
+  errorEnds?: readonly (number | undefined)[]
   /** The model every agent shares: rows leave it out because the header names it. */
   sharedDetail?: string
   sharedOutcome?: string
@@ -304,8 +304,8 @@ export function FlowBody(props: BodyProps) {
   return (
     <div className={`fw-body fw-view-${view}${zoomed ? ' fw-zoomed' : ''}`} ref={surface}>
       {axis}
-      {Boolean(props.errorTimes?.length) && <div className="fw-error-rug" aria-label={`${props.errorTimes!.length} errors`}>
-        {props.errorTimes!.map((at, index) => <span key={index} className="fw-error-tick" data-unlocated={at === undefined || undefined} style={{ '--s': at, '--error-index': index } as CSSProperties} title={at === undefined ? 'Error time not reported' : `Error at ${formatClock(at)}`} />)}
+      {Boolean(props.errorEnds?.length) && <div className="fw-error-rug" aria-label={`${props.errorEnds!.length} errors`}>
+        {props.errorEnds!.map((at, index) => <span key={index} className="fw-error-tick" data-unlocated={at === undefined || undefined} style={{ '--s': at, '--error-index': index } as CSSProperties} title={at === undefined ? 'Error time not reported' : `Recorded end of failed span at ${formatClock(at)}; failure instant not reported`} />)}
       </div>}
       <div className="fw-viewport">
         <div className="fw-gridlayer" aria-hidden>

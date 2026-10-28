@@ -27,8 +27,6 @@
   --fw-bar-h: 20px;
   --fw-label-col: min(var(--fw-name-w), 42%);
   --fw-bar-shift: 0px;
-  display: flex;
-  flex-direction: column;
   position: relative;
   container-type: inline-size;
   container-name: flow-waterfall;
@@ -401,8 +399,6 @@
   .fw-root .fw-title-line { grid-column: 1 / -1; flex-wrap: wrap; }
   .fw-root .fw-legends { grid-area: 3 / 1 / auto / -1; margin: 4px 0; }
   .fw-root .fw-tools { grid-area: 2 / 1; flex-wrap: wrap; }
-  .fw-root .fw-latest { order: 1; }
-  .fw-root-graph .fw-latest { order: 0; }
   .fw-root .fw-segmented { padding: 2px; }
   .fw-root .fw-segmented button { min-width: 28px; padding: 0 6px; }
   .fw-root.fw-root-agents .fw-playback { padding: 8px; }

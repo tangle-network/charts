@@ -13,7 +13,7 @@ import {FlowWaterfall} from '${process.env.PROOF_SOURCE_PREFIX ?? "."}/src/react
 import {catalogPrice,otlpFlowTrace} from '${process.env.PROOF_SOURCE_PREFIX ?? "."}/src/index.ts';
 import '@tangle-network/brand/styles/tokens.css'; import '${process.env.PROOF_SOURCE_PREFIX ?? "."}/src/react/flow-waterfall.css';
 document.documentElement.className=new URLSearchParams(location.search).get('theme')??'dark';
-const spans=Array.from({length:17},(_,i)=>({id:'agent-'+i,kind:'pipeline',name:'Worker '+i,startMs:i*1000,endMs:1200000,status:i===0||i===1?'running':i===2?'needs-you':i<9?'failed':'done',activityAt:[1000,2000,i===0?1199999:3000],outcome:{tone:i<2?'live':i===2?'warn':i<9?'failed':'ok',label:i<2?'Running':i===2?'Needs you':i<9?'Failed':'Done'},output:i<9?'Compiler rejected the build':undefined}));
+const spans=Array.from({length:new URLSearchParams(location.search).has('many')?200:17},(_,i)=>({id:'agent-'+i,kind:'pipeline',name:'Worker '+i,startMs:i*1000,endMs:1200000,status:i===0||i===1?'running':i===2?'needs-you':i<9?'failed':'done',activityAt:[1000,2000,i===0?1199999:3000],outcome:{tone:i<2?'live':i===2?'warn':i<9?'failed':'ok',label:i<2?'Running':i===2?'Needs you':i<9?'Failed':'Done'},output:i<9?'Compiler rejected the build':undefined}));
 if(new URLSearchParams(location.search).has('family')) {spans.forEach(span=>span.parentId='orch');spans.unshift({id:'orch',kind:'pipeline',name:'Orchestrator',startMs:0,endMs:1200000,status:'done',outcome:{tone:'ok',label:'Done'}})}
 if(new URLSearchParams(location.search).has('cadence')) {spans[1].activityAt=[3000];spans[1].medianEventGapMs=600000}
 if(new URLSearchParams(location.search).has('zero-cadence')) {spans[1].activityAt=[0,400000,800000];spans[1].medianEventGapMs=0}
@@ -62,6 +62,7 @@ try {
     check(`${theme}/${width} name fits row`,await page.locator('.fw-name-text').first().evaluate(el=>{const a=el.getBoundingClientRect(),b=el.closest('.fw-row').getBoundingClientRect();return a.top>=b.top&&a.bottom<=b.bottom}),true)
     await page.screenshot({path:`${out}/${theme}-${width}.png`,fullPage:true})
     check(`${theme}/${width} error rug`,await page.locator('.fw-error-tick').count(),17)
+    check(`${theme}/${width} error rug labels recorded ends`,await page.locator('.fw-error-tick').evaluateAll(nodes=>nodes.every(node=>node.title.startsWith('Recorded end of failed span at ')&&node.title.endsWith('failure instant not reported'))),true)
     check(`${theme}/${width} canonical failed status glyph`,await page.locator('.fw-row-state svg[data-run-status="failed"]').count()>0,true)
     check(`${theme}/${width} quiet keeps running explicit`,await page.locator('.fw-row[data-running] .fw-quiet').evaluateAll(nodes=>nodes.every(node=>node.getAttribute('aria-label')?.startsWith('Running; Quiet '))),true)
     check(`${theme}/${width} quiet is not waiting status`,await page.locator('.fw-quiet svg[data-run-status="waiting"]').count(),0)
@@ -204,6 +205,7 @@ try {
     await page.emulateMedia({reducedMotion:'no-preference'})
     check(`${theme}/${width} running legend static`,await page.locator('.fw-legend [data-outcome="live"]').evaluateAll(nodes=>nodes.every(node=>getComputedStyle(node).animationName==='none')),true)
     await page.screenshot({path:`${out}/composition-${theme}-${width}.png`,fullPage:true})
+    check(`${theme}/${width} feed follows active view in DOM`,await page.locator('[data-feed]').evaluate(feed=>Boolean(feed.compareDocumentPosition(document.querySelector('.fw-body'))&Node.DOCUMENT_POSITION_PRECEDING)),true)
     const graphChoice=page.getByRole('radio',{name:'Graph',exact:true})
     check(`${theme}/${width} single three-view control`,await page.getByRole('radiogroup',{name:'Trace view',exact:true}).getByRole('radio').count(),3)
     if(await graphChoice.count()) {
@@ -228,6 +230,13 @@ try {
       await page.locator('[data-graph]').waitFor()
       check(`${theme}/${width} default graph`,await page.getByRole('radio',{name:'Graph',exact:true}).getAttribute('aria-checked'),'true')
     }
+    await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&compose=1&many=1`)
+    await page.locator('.fw-body').waitFor()
+    await page.mouse.move(2,40);await page.mouse.wheel(0,2000);await page.waitForTimeout(300)
+    check(`${theme}/${width} 200-agent feed reachable by native wheel`,await page.locator('[data-feed]').evaluate(el=>{const r=el.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight}),true)
+    await page.getByRole('button',{name:'Pause feed',exact:true}).click()
+    await page.getByRole('radio',{name:'Graph',exact:true}).click()
+    check(`${theme}/${width} 200-agent graph retains reachable feed`,await page.locator('[data-feed]').getAttribute('data-paused'),'true')
     await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&grammar=1`)
     await page.locator('.fw-summary').waitFor()
     await page.waitForTimeout(1200)

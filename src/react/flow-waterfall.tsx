@@ -33,7 +33,7 @@ export interface FlowWaterfallProps {
   defaultView?: FlowView
   /** Host graph rendered by the same view control, retaining the trace clock and selection. */
   graph?: ReactNode
-  /** Shared header feed, kept mounted across Agents, Steps and Graph. */
+  /** Shared feed after the active view, kept mounted across Agents, Steps and Graph. */
   latestEvents?: ReactNode
   /** Host brand marks by span; the inspector draws kind glyphs without it. */
   renderIcon?: (span: FlowSpan) => ReactNode
@@ -388,7 +388,7 @@ export function FlowWaterfall({
   const quietAgents = agents.filter(row => quietActivity(row, clockMs).quiet).length
   const recordedErrors = trace.spans.filter(span => spanFailed(span) && span.kind !== 'pipeline')
   const errorSpans = recordedErrors.length ? recordedErrors : trace.spans.filter(spanFailed)
-  const errorTimes = Array.from({ length: errors ?? 0 }, (_, index) => errorSpans[index]?.endMs)
+  const errorEnds = Array.from({ length: errors ?? 0 }, (_, index) => Number.isFinite(errorSpans[index]?.endMs) ? errorSpans[index]!.endMs : undefined)
   const done = !isLive && !trace.spans.some(spanRunning)
   const shown = (row?: FlowWaterfallRow) => row && drawnRow(row, visible)
   const cardRow = shown(card ? byId.get(card.target) : undefined)
@@ -435,7 +435,6 @@ export function FlowWaterfall({
           </div>}
         </div>
       </header>
-      {latestEvents != null && <div className="fw-latest">{latestEvents}</div>}
       {view === 'graph' ? graph : <>
       {showSummary && <dl className="fw-summary">
         {summary.map(([name, value, title]) => <div key={name} className={name === 'Errors' && errors !== undefined && errors > 0 ? 'fw-has-errors' : undefined}>
@@ -445,7 +444,7 @@ export function FlowWaterfall({
       </dl>}
       {view === 'agents' && playback}
       <FlowBody rows={visible} byId={byId} totalRows={rows.length} view={view} maxHeight={rowsHeight} collapsed={collapsed} searching={Boolean(query.trim())} query={query} matchSpan={matchSpan}
-        pauses={trace.pauses} errorTimes={errorTimes} cursorLine={isLive || position !== null || playing} sharedDetail={sharedDetail} sharedOutcome={sharedOutcome} expandedIds={view === 'agents' ? new Set([...openFamilies, ...openSteps]) : undefined} holdHeight={isLive} slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} criticalIds={criticalPath && view === 'spans' ? critical : undefined} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
+        pauses={trace.pauses} errorEnds={errorEnds} cursorLine={isLive || position !== null || playing} sharedDetail={sharedDetail} sharedOutcome={sharedOutcome} expandedIds={view === 'agents' ? new Set([...openFamilies, ...openSteps]) : undefined} holdHeight={isLive} slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} criticalIds={criticalPath && view === 'spans' ? critical : undefined} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
         trackPx={trackPx} showCursor={showCursor} markers={markers} fillByAgent={agentFill !== 'outcome'} zoomed={zoom !== null} renderIcon={renderIcon}
         emptyText={rows.length === 0 ? 'No spans yet. Waiting for trace events.' : `No matching steps for “${query}”.`}
         onToggle={toggle} onInspect={inspect} onLeave={leave} onPin={pin} onActivate={row => setActiveId(row.id)}
@@ -459,6 +458,7 @@ export function FlowWaterfall({
       </div>}
       {view === 'spans' && playback}
       </>}
+      {latestEvents}
     </section>
   )
 }

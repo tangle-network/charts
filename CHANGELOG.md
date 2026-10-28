@@ -1,6 +1,6 @@
 ## 2.0.5
 
-Keep phone timeline rows before recent events, compress summary and playback controls, and keep the running Key swatch still. Status labels use the shared UI glyphs; Quiet remains an activity observation. Work swatches name their actual example rows. A failed agent's end label refers to its recorded end, never an inferred failure instant or cause. Public APIs and measured totals are unchanged.
+Keep timeline and graph content before the shared recent-events feed, compress summary and playback controls, and keep the running Key swatch still. Status labels use the shared UI glyphs; Quiet remains an activity observation. Work swatches name their actual example rows. Failed-agent end labels and the error rug identify recorded ends, never an inferred failure instant or cause. Public APIs and measured totals are unchanged.
 
 ## 2.0.4
 
