@@ -1,3 +1,7 @@
+## 2.0.3
+
+- Under reduced motion, keep the Live badge text still while its 6px dot alone breathes. Preserve the essential row dots without animating whole labels.
+
 ## 2.0.2
 
 - Enforce the identity palette's exact lightness and chroma bounds, with rendered status-distance and contrast checks. Correct light cyan and the fifth family slot before publishing this version.

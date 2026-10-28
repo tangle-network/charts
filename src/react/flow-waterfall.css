@@ -352,7 +352,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .fw-root *, .fw-root *::before { animation: none !important; transition: opacity var(--duration-fast) !important; }
-  .fw-root [data-motion="essential"], .fw-root [data-motion="essential"]::before { animation: tangle-breathe var(--motion-ambient) infinite !important; }
+  .fw-root :is(.fw-agent-dot, .fw-spinner)[data-motion="essential"], .fw-root .fw-state-live[data-motion="essential"]::before { animation: tangle-breathe var(--motion-ambient) infinite !important; }
 }
 
 .fw-root-agents .fw-heading { border-bottom: 0; padding: 20px 24px 12px; }
