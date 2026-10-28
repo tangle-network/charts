@@ -1,6 +1,6 @@
 /** Browser-side palette distance in CIEDE2000, computed from rendered sRGB pixels. */
 export function paletteAudit(options = {}) {
-  const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d')
+  const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d',{willReadFrequently:true})
   canvas.width=canvas.height=1
   const rgb=color=>{ctx.clearRect(0,0,1,1);ctx.fillStyle=color;ctx.fillRect(0,0,1,1);return [...ctx.getImageData(0,0,1,1).data]}
   const lab=color=>{
@@ -26,7 +26,7 @@ export function paletteAudit(options = {}) {
   const rendered=token=>{const el=document.createElement('span');el.style.color=`var(${token})`;root.append(el);const value=getComputedStyle(el).color;el.remove();return value}
   const statusNames=['--fw-live','--fw-failed','--fw-ok','--fw-amber']
   const statusColors=statusNames.map(rendered),statuses=statusColors.map(lab)
-  const score=color=>Math.min(...statuses.map(status=>delta(lab(color),status)))
+  const score=color=>{const candidate=lab(color);return Math.min(...statuses.map(status=>delta(candidate,status)))}
   const light=getComputedStyle(root).colorScheme==='light'
   const bounds=light?[.52,.58]:[.67,.73]
   const identities=Array.from({length:5},(_,i)=>{const color=rendered(`--fw-h${i+1}`),parts=color.match(/oklch\(\s*([\d.e+-]+)\s+([\d.e+-]+)\s+([\d.e+-]+)/i);return {slot:i+1,color,L:parts?Number(parts[1]):null,C:parts?Number(parts[2]):null,h:parts?Number(parts[3]):null,min:score(color)}})
