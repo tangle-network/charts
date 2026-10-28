@@ -1,3 +1,8 @@
+## 2.0.1
+
+- Explain bar family color and work shade with actual displayed-agent model/tool examples and the same waiting hatch.
+- Give Duration and Cost the primary number role; keep other metrics on a compact line so phone agent rows lead sooner. Unknown values remain a dash and measured zero remains zero.
+
 ## 2.0.0
 
 - Center intermediate phone axis labels so four ticks remain separated on long traces; keep the scrubber time on one line inside its track.

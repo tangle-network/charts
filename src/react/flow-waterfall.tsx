@@ -116,13 +116,15 @@ function summaryCells(trace: FlowTrace, at: ReturnType<typeof totalsAt> | undefi
 /** One legend item per outcome label the agents carry, with its count; nothing when no agent has an outcome. */
 const TONE_ORDER = ['failed', 'warn', 'live', 'neutral', 'ok']
 /** What each mark means, as the agent view draws it; a key only for kinds the run has. */
-function KindLegend({ rows }: { rows: FlowWaterfallRow[] }) {
+function KindLegend({ rows, fill }: { rows: FlowWaterfallRow[]; fill: NonNullable<FlowWaterfallProps['agentFill']> }) {
   const has = (kind: string) => rows.some(row => row.own.some(mark => mark.kind === kind) || row.span.kind === kind)
   const keys: [string, string][] = [['model', 'Model call'], ['tool', 'Tool call'], ['waiting', 'Waiting'], ['handoff', 'Handoff']]
   const shown = keys.filter(([kind]) => kind === 'waiting' ? rows.some(row => row.kind === 'pipeline') : kind === 'handoff' ? rows.some(row => row.span.handoffTo || row.hasAgents) : has(kind))
   if (shown.length === 0) return null
-  return <ul className="fw-legend fw-kinds" aria-label="Key">
+  const example = rows.find(row => toneKey(row.tone) > 0 && row.own.some(mark => mark.kind === 'model')) ?? rows.find(row => row.own.length)
+  return <ul className="fw-legend fw-kinds" aria-label="Key" data-tone={fill === 'agent' ? toneKey(example?.tone ?? 0) : undefined} data-example={example?.id}>
     {shown.map(([kind, name]) => <li key={kind}><span className={`fw-swatch-${kind === 'waiting' ? 'wait' : kind}`} aria-hidden />{name}</li>)}
+    <li className="fw-kind-rule">{fill === 'agent' ? 'Bar color identifies family; shade identifies work.' : 'Shade identifies work.'}</li>
   </ul>
 }
 /** The axis dots and the dashed lines they drop: one key naming what they mark (a release, or the kinds the host gave). */
@@ -410,7 +412,7 @@ export function FlowWaterfall({
             {isLive && <span className="fw-state fw-state-live" data-motion="essential">Live</span>}
           </div>
           {/* One legend row: outcomes, then the bar-type key (round 24: stacked key bands read as clutter above the rows). */}
-          <details className="fw-key" open={root.current ? root.current.clientWidth >= 600 : true}><summary>Key<ChevronGlyph /></summary><div className="fw-legends"><OutcomeLegend agents={agents} neutral={visible.some(row => row.kind === "pipeline" && !row.span.outcome && !row.outcomes?.length)} selected={filter} onFilter={applyFilter} />{view === 'agents' && <KindLegend rows={rows} />}<MarkerLegend markers={markers} /></div></details>
+          <details className="fw-key" open={root.current ? root.current.clientWidth >= 600 : true}><summary>Key<ChevronGlyph /></summary><div className="fw-legends"><OutcomeLegend agents={agents} neutral={visible.some(row => row.kind === "pipeline" && !row.span.outcome && !row.outcomes?.length)} selected={filter} onFilter={applyFilter} />{view === 'agents' && <KindLegend rows={visible} fill={agentFill} />}<MarkerLegend markers={markers} /></div></details>
         </div>
         <div className="fw-tools">
           <div className="fw-views" role="radiogroup" aria-label="Trace view">
