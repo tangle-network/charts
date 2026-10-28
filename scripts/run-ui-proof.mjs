@@ -125,7 +125,7 @@ try {
     check(`${theme}/${width} status-only running dot`,await page.locator('[data-span-id="agent-0"] .fw-agent-dot[data-outcome="live"]').count(),1)
     if(width===390) {
       check(`${theme}/${width} phone failure label`,await page.locator('[data-span-id="agent-3"] .fw-row-state').isVisible(),true)
-      check(`${theme}/${width} phone needs-you label`,await page.locator('[data-span-id="agent-2"] .fw-row-state').textContent(),'Needs you')
+      check(`${theme}/${width} phone needs-you label`,await page.locator('[data-span-id="agent-2"] .fw-row-state').evaluateAll(nodes=>nodes[0]?.textContent??null),'Needs you')
       check(`${theme}/${width} key disclosure cue`,await page.locator('.fw-key summary svg').isVisible(),true)
     }
     await context.close()
