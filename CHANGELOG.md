@@ -1,5 +1,7 @@
 ## 2.0.2
 
+- Enforce the identity palette's exact lightness and chroma bounds, with rendered status-distance and contrast checks. Correct light cyan and the fifth family slot before publishing this version.
+
 - Keep failed-span evidence on its own source: use explicit Failure facts, label other output as recorded output, and never substitute an agent's unrelated output. Missing detail remains explicit.
 - Retain known Running/Done phone labels. Compare leaf agents only and keep scoped, neutral comparison badges in the label area.
 
