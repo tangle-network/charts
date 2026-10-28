@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { build } from 'esbuild'
 import { createServer } from 'node:http'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, renameSync, writeFileSync } from 'node:fs'
 import { chromium } from 'playwright'
 
 const out = process.env.PROOF_OUT ?? '/tmp/charts-run-ui-proof'
@@ -32,6 +32,8 @@ try {
     await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}`)
     await page.locator('[data-flow-waterfall]').waitFor()
     await page.waitForTimeout(1200)
+    check(`${theme}/${width} name fits row`,await page.locator('.fw-name-text').first().evaluate(el=>{const a=el.getBoundingClientRect(),b=el.closest('.fw-row').getBoundingClientRect();return a.top>=b.top&&a.bottom<=b.bottom}),true)
+    console.log('ROW GEOMETRY',await page.locator('.fw-agent-row').first().evaluate(el=>Object.fromEntries(['.fw-label','.fw-lane','.fw-end','.fw-duration'].map(selector=>{const node=el.querySelector(selector),r=node.getBoundingClientRect(),s=getComputedStyle(node);return [selector,{x:r.x,y:r.y,w:r.width,h:r.height,left:s.left,right:s.right,display:s.display,opacity:s.opacity}]}))))
     await page.screenshot({path:`${out}/${theme}-${width}.png`,fullPage:true})
     check(`${theme}/${width} error rug`,await page.locator('.fw-error-tick').count(),17)
     check(`${theme}/${width} quiet agent`,await page.locator('[data-activity="quiet"]').count()>0,true)
@@ -43,10 +45,33 @@ try {
       return [...document.querySelectorAll('.fw-row .fw-agent-dot')].filter(el=>el.getBoundingClientRect().width).every(el=>legend.has(color(el)))
     })
     check(`${theme}/${width} outcome legend matches dots`,colors,true)
+    if(width===390) {
+      check(`${theme}/${width} four ticks`,await page.locator('.fw-axis .fw-tick').count(),4)
+      check(`${theme}/${width} 44px rows`,await page.locator('.fw-agent-row').first().evaluate(el=>el.getBoundingClientRect().height),44)
+      await page.locator('.fw-key summary').click()
+    }
+    const firstRow=page.locator('[data-span-id="agent-0"]')
+    await firstRow.locator('.fw-bar').hover()
+    await page.locator('.fw-card .fw-agent-dot').waitFor()
+    const rowColor=await firstRow.locator('.fw-agent-dot').evaluate(el=>getComputedStyle(el).backgroundColor)
+    check(`${theme}/${width} inspector dot matches row`,await page.locator('.fw-card .fw-agent-dot').evaluate(el=>getComputedStyle(el).backgroundColor),rowColor)
+    await page.mouse.move(1,1)
+    await page.locator('.fw-summary button').click()
+    check(`${theme}/${width} error filter pressed`,await page.locator('.fw-summary button').getAttribute('aria-pressed'),'true')
+    check(`${theme}/${width} error filter expands steps`,await page.locator('.fw-step[data-span-kind="failed"]').count()>0,true)
+    await page.locator('.fw-summary button').click()
+    const shade=await page.evaluate(()=>{
+      const parent=document.querySelector('.fw-agent-row .fw-lane')
+      const tones=['model','tool'].map(kind=>{const el=document.createElement('span');el.className='fw-seg fw-seg-'+kind;el.dataset.tone='3';parent.append(el);const value=getComputedStyle(el).backgroundColor;el.remove();return Number(value.match(/oklch\(([^ ]+)/)?.[1])})
+      return Math.abs(tones[0]-tones[1])
+    })
+    check(`${theme}/${width} model/tool lightness gap`,shade>=.18,true)
     await page.emulateMedia({reducedMotion:'reduce'})
     await page.waitForTimeout(100)
     check(`${theme}/${width} reduced motion transforms`,await page.evaluate(()=>document.getAnimations().some(a=>a.playState==='running'&&a.effect?.getKeyframes().some(f=>'transform'in f||'translate'in f))),false)
+    check(`${theme}/${width} essential opacity survives`,await page.evaluate(()=>document.getAnimations().some(a=>a.playState==='running'&&a.effect?.getKeyframes().some(f=>'opacity'in f))),true)
     await context.close()
+    renameSync(await page.video().path(),`${out}/${theme}-${width}.webm`)
   }
 }finally{await browser.close();server.close();writeFileSync(`${out}/checks.json`,JSON.stringify(checks,null,2))}
 assert.equal(checks.filter(c=>!c.pass).length,0,'run UI browser checks failed')

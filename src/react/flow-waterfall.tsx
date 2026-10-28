@@ -174,7 +174,7 @@ export function FlowWaterfall({
   const isLive = live ?? trace.spans.some(spanRunning)
   const agentFill = fillProp ?? 'agent'
   const dataEnd = useMemo(() => Math.max(observedTotal, ...trace.spans.map(span => Number.isFinite(span.endMs) ? span.endMs : 0)), [trace, observedTotal])
-  const trackPx = Math.max(40, laneWidth - LANE_PAD - Math.min(END_LABEL_GUTTER[view], laneWidth * 0.3))
+  const trackPx = Math.max(40, laneWidth - LANE_PAD - (root.current && root.current.clientWidth < 600 ? LANE_PAD : Math.min(END_LABEL_GUTTER[view], laneWidth * 0.3)))
   useEffect(() => {
     if (!laneElement) return
     const observer = new ResizeObserver(([entry]) => setLaneWidth(entry!.contentRect.width))

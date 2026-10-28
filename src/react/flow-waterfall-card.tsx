@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { statusMeta } from '@tangle-network/ui/run'
+import { runStatus, statusMeta } from '@tangle-network/ui/run'
 import type { FlowSpan } from '../flow-trace.js'
 import { CloseGlyph, KindGlyph } from './flow-waterfall-icons.js'
 import { type FlowWaterfallRow, rowCostText, formatCount, formatSpanDuration, spanRunning, toneKey } from './flow-waterfall-model.js'
@@ -77,10 +77,12 @@ function Table({ rows }: { rows: [string, ReactNode][] }) {
 /** The span card: what ran, for how long, on what tokens and at what recorded cost, then its input and output. */
 export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, renderIcon, compact }: SpanCardProps) {
   const span = row.span
-  const status = statusMeta(span.status ?? 'unknown').label
+  const state = runStatus(span.status ?? 'unknown')
+  const meta = statusMeta(state)
+  const status = meta.label
   const owner = agent && agent.id !== row.id ? agent : undefined
   const frame = {
-    id, role: pinned ? 'dialog' : 'tooltip', 'aria-label': pinned ? `${span.name} details` : undefined, style: { left, top },
+    id, role: pinned ? 'dialog' : 'tooltip', 'aria-label': pinned ? `${span.name} details` : undefined, style: { left, top, '--fw-status': `var(${meta.token})` },
     onKeyDown: (event: { key: string; stopPropagation: () => void }) => { if (event.key === 'Escape') { event.stopPropagation(); onClose() } },
   }
   const close = pinned && <button type="button" className="fw-icon-button fw-card-close" aria-label="Close details" onClick={onClose} autoFocus><CloseGlyph /></button>
@@ -100,7 +102,7 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
         <div className="fw-card-agent"><span className="fw-agent-dot" data-tone="0" data-outcome={outcome?.tone} data-ring={outcome?.ring || undefined} aria-hidden /><span className="fw-card-who">{keepWords(who.name)}</span>
           {outcome
             ? <span className="fw-pill fw-pill-outcome" data-tone="0" data-outcome={outcome.tone}>{outcome.label}</span>
-            : <span className={`fw-pill fw-pill-${status.toLowerCase()}`}>{status}</span>}
+            : <span className={`fw-pill fw-pill-${state}`}>{status}</span>}
           {close}
         </div>
         <Table rows={metrics(who, clockMs, false)} />
@@ -116,7 +118,7 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
       <div className="fw-card-head">
         <span className="fw-icon-tile" aria-hidden>{renderIcon?.(span) ?? <KindGlyph kind={span.kind} name={span.name} />}</span>
         <div className="fw-card-name">{keepWords(span.name)}</div>
-        <span className={`fw-pill fw-pill-${status.toLowerCase()}`}>{status}</span>
+        <span className={`fw-pill fw-pill-${state}`}>{status}</span>
         {close}
       </div>
       <Table rows={metrics(row, clockMs, true)} />

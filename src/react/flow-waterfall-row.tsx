@@ -105,7 +105,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   const label = endLabel(row, clockMs)
   const activity = quietActivity(row, clockMs)
   // The model leads the second line unless the header names it for every agent.
-  const summary = [...(activity.quiet ? [`Quiet ${formatSpanDuration(activity.quietMs)}`] : []), ...(span.detail && span.detail !== props.sharedDetail ? [span.detail] : []), ...agentSummary(row).filter(part => part !== props.sharedOutcome)]
+  const summary = [...(span.detail && span.detail !== props.sharedDetail ? [span.detail] : []), ...agentSummary(row).filter(part => part !== props.sharedOutcome)]
   const inspect = (event: { currentTarget: HTMLElement; clientX: number }) => props.onInspect(row.id, event.currentTarget, event.clientX)
   const family = agentView && row.id.startsWith('family:')
   const step = agentView && row.stepOf !== undefined
@@ -150,6 +150,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
             {/* A live outcome dot already says it runs; a spinner beside it was a second, contradicting mark. */}
             {running && !(fillByAgent && isAgent && span.outcome) && <span className="fw-spinner" data-motion={activity.quiet ? undefined : "essential"} role="status" aria-label="running" />}
             <span className="fw-name-text">{row.name}</span>
+            {activity.quiet && <span className="fw-quiet">Quiet {formatSpanDuration(activity.quietMs)}</span>}
           </span>
           {/* Two levels on every agent row: the name, then how it ended and how much it did. */}
           {/* The host's mark leads the second line: a third line would overflow the 40 px row into the next one. */}
