@@ -221,7 +221,7 @@
 .fw-root [data-outcome], .fw-root [data-outcome] [data-tone] { --tone: var(--outcome-tone); }
 .fw-root.fw-root .fw-agent-dot[data-outcome] { --tone: var(--outcome-tone); }
 .fw-root .fw-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; padding: 0; list-style: none; color: var(--fw-muted); font-size: 14px; line-height: 18px; }
-.fw-root .fw-legend li { display: inline-flex; align-items: center; gap: 8px; }
+.fw-root .fw-legend li { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; max-width: 100%; overflow-wrap: anywhere; }
 .fw-root .fw-legends { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 24px; margin-top: 8px; }
 .fw-root .fw-legends .fw-legend { margin: 0; }
 .fw-root .fw-kinds { margin: 0; padding: 0; justify-content: flex-start; color: var(--fw-muted); }

@@ -247,6 +247,8 @@ try {
     check(`${theme}/${width} waiting key uses actual hatch`,await page.locator('.fw-swatch-wait').evaluate(el=>getComputedStyle(el).backgroundImage.includes('repeating-linear-gradient')),true)
     check(`${theme}/${width} kind key matches drawn model`,await page.evaluate(()=>{const swatch=document.querySelector('.fw-swatch-model'),owner=swatch.closest('[data-example]').dataset.example;return getComputedStyle(swatch).backgroundColor===getComputedStyle(document.querySelector('[data-span-id="'+owner+'"] .fw-seg-model')).backgroundColor}),true)
     if(width===390) {
+      await page.screenshot({path:`${out}/grammar-key-${theme}-${width}.png`,fullPage:true})
+      check(`${theme}/${width} open key fits card`,await page.locator('.fw-legends').evaluate(el=>{const box=el.getBoundingClientRect(),root=el.closest('[data-flow-waterfall]').getBoundingClientRect();return box.left>=root.left&&box.right<=root.right&&el.scrollWidth<=el.clientWidth}),true)
       await page.locator('.fw-key summary').click()
       const hierarchy=await page.locator('.fw-summary').evaluate(el=>{const children=[...el.children];const rest=children.slice(2).map(node=>node.getBoundingClientRect());return {height:el.getBoundingClientRect().height,hero:parseFloat(getComputedStyle(children[0].querySelector('dd')).fontSize),oneLine:rest.every(box=>Math.abs(box.top-rest[0].top)<1)}})
       check(`${theme}/${width} compact summary hierarchy`,hierarchy.hero,20)
