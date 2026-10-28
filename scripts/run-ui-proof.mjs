@@ -82,6 +82,7 @@ try {
       return Math.abs(tones[0]-tones[1])
     })
     check(`${theme}/${width} model/tool lightness gap`,shade>=.18,true)
+    check(`${theme}/${width} one ambient period`,await page.evaluate(()=>new Set(document.getAnimations().filter(a=>a.effect?.getTiming().iterations===Infinity).map(a=>a.effect.getTiming().duration)).size),1)
     await page.emulateMedia({reducedMotion:'reduce'})
     await page.waitForTimeout(100)
     check(`${theme}/${width} reduced motion transforms`,await page.evaluate(()=>document.getAnimations().some(a=>a.playState==='running'&&a.effect?.getKeyframes().some(f=>'transform'in f||'translate'in f))),false)

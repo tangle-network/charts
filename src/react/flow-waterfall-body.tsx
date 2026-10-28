@@ -6,7 +6,7 @@ import { useRowMotion } from './flow-waterfall-motion.js'
 import { clockTicks, formatClock, type ViewWindow } from './flow-waterfall-time.js'
 import { duration } from '../format.js'
 
-export const ROW_HEIGHT: Record<FlowView, number> = { spans: 36, agents: 44 }
+export const ROW_HEIGHT: Record<FlowView, number> = { spans: 36, agents: 40 }
 const OVERSCAN = 8
 /** Rows re-render once per CHUNK rows scrolled; overscan covers the rows in between. */
 const CHUNK = 4
