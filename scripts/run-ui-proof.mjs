@@ -182,7 +182,7 @@ try {
     check(`${theme}/${width} parent excluded from leaf comparisons`,await page.locator('[data-span-id="agent-0"] .fw-badge').count(),0)
     check(`${theme}/${width} leaf comparison labels`,(await page.locator('[data-span-id="agent-1"] .fw-badge').allTextContents()).toString(),['Longest leaf','Costliest leaf'].toString())
     if(width>=600)check(`${theme}/${width} comparisons stay in label area`,await page.locator('[data-span-id="agent-1"] .fw-badge').evaluateAll(nodes=>nodes.every(node=>{const a=node.getBoundingClientRect(),label=node.closest('.fw-label');if(!label)return false;const b=label.getBoundingClientRect();return a.left>=b.left&&a.right<=b.right&&a.top>=b.top&&a.bottom<=b.bottom})),true)
-    if(width===390){check(`${theme}/${width} explicit running label`,await page.locator('[data-span-id="agent-0"] .fw-row-state').textContent(),'Running');check(`${theme}/${width} explicit done label`,await page.locator('[data-span-id="agent-2"] .fw-row-state').textContent(),'Done')}
+    if(width===390){check(`${theme}/${width} explicit running label`,await page.locator('[data-span-id="agent-0"] .fw-row-state').evaluateAll(nodes=>nodes[0]?.textContent??null),'Running');check(`${theme}/${width} explicit done label`,await page.locator('[data-span-id="agent-2"] .fw-row-state').evaluateAll(nodes=>nodes[0]?.textContent??null),'Done')}
     await page.screenshot({path:`${out}/leaf-${theme}-${width}.png`,fullPage:true})
     await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&compose=1`)
     await page.locator('[data-flow-waterfall]').waitFor()
