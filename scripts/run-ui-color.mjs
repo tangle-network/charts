@@ -19,7 +19,7 @@ export function paletteAudit() {
     let hm=h1+h2;if(cp1&&cp2)hm=Math.abs(h1-h2)<=180?hm/2:hm<360?(hm+360)/2:(hm-360)/2
     const t=1-.17*Math.cos(rad(hm-30))+.24*Math.cos(rad(2*hm))+.32*Math.cos(rad(3*hm+6))-.20*Math.cos(rad(4*hm-63))
     const sl=1+.015*(lm-50)**2/Math.sqrt(20+(lm-50)**2),sc=1+.045*cm,sh=1+.015*cm*t
-    const rt=-2*Math.sqrt(cm**7/(cm**7+25**7))*Math.sin(rad(60*Math.exp(-((hm-275)/25)**2)))
+    const rt=-2*Math.sqrt(cm**7/(cm**7+25**7))*Math.sin(rad(60*Math.exp(-(((hm-275)/25)**2))))
     return Math.sqrt((dl/sl)**2+(dc/sc)**2+(dH/sh)**2+rt*(dc/sc)*(dH/sh))
   }
   const root=document.querySelector('[data-flow-waterfall]')
