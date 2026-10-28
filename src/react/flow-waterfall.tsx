@@ -129,7 +129,7 @@ function MarkerLegend({ markers }: { markers?: FlowMarker[] }) {
   const name = kinds.length === 1 ? `${kinds[0]![0]!.toUpperCase()}${kinds[0]!.slice(1)}` : 'Event'
   return <ul className="fw-legend fw-kinds" aria-label="Markers"><li><span className="fw-swatch-event" aria-hidden />{name} <b>{markers.length}</b></li></ul>
 }
-function OutcomeLegend({ agents, selected, onFilter }: { agents: FlowWaterfallRow[]; selected: string | null; onFilter: (label: string) => void }) {
+function OutcomeLegend({ agents, selected, onFilter, neutral }: { neutral: boolean; agents: FlowWaterfallRow[]; selected: string | null; onFilter: (label: string) => void }) {
   const items = new Map<string, { tone: string; ring?: boolean; count: number }>()
   for (const row of agents) {
     const outcome = row.span.outcome
@@ -141,6 +141,7 @@ function OutcomeLegend({ agents, selected, onFilter }: { agents: FlowWaterfallRo
   if (items.size === 0) return null
   const failedSteps = agents.reduce((sum, row) => sum + row.own.reduce((n, mark) => n + (mark.kind === 'failed' ? mark.count : 0), 0), 0)
   return <ul className="fw-legend" aria-label="Outcomes">
+    {neutral && !items.has("Unknown") && <li><button type="button" aria-pressed={selected === null} onClick={() => onFilter("__all")}><span className="fw-swatch" data-tone="0" data-outcome="neutral" data-ring aria-hidden />All outcomes <b>{agents.length}</b></button></li>}
     {[...items].sort(([a, x], [b, y]) => TONE_ORDER.indexOf(x.tone) - TONE_ORDER.indexOf(y.tone) || a.localeCompare(b)).map(([label, item]) => <li key={label}><button type="button" aria-pressed={selected === label} onClick={() => onFilter(label)}><span className="fw-swatch" data-tone="0" data-outcome={item.tone} data-ring={item.ring || undefined} aria-hidden />{label} <b>{item.count}</b></button></li>)}
     {failedSteps > 0 && <li><button type="button" aria-pressed={selected === "__errors"} onClick={() => onFilter("__errors")}><span className="fw-swatch-step" aria-hidden><FailGlyph /></span>Failed step <b>{failedSteps}</b></button></li>}
   </ul>
@@ -198,8 +199,8 @@ export function FlowWaterfall({
     const pipelines = rows.filter(row => row.kind === 'pipeline')
     return pipelines.length ? pipelines : rows.filter(row => !row.parentId)
   }, [rows])
-  const matchesFilter = (row: FlowWaterfallRow) => !filter || (filter === '__errors' ? !row.ok || Boolean(row.counts?.failed) : (row.span.outcome?.label ?? 'Unknown') === filter)
-  const filteredAgents = useMemo(() => agents.filter(matchesFilter), [agents, filter])
+  const matchesFilter = (row: FlowWaterfallRow) => !filter || (filter === '__quiet' ? quietActivity(row, clockMs).quiet : filter === '__errors' ? !row.ok || Boolean(row.counts?.failed) : (row.span.outcome?.label ?? 'Unknown') === filter)
+  const filteredAgents = useMemo(() => agents.filter(matchesFilter), [agents, filter, Math.floor(clockMs / 1000)])
   const sharedDetail = usual(agents.map(row => row.span.detail))
   const sharedOutcome = usual(agents.map(row => row.span.outcome?.label))
   const [flippedFamilies, setFlippedFamilies] = useState<ReadonlySet<string>>(new Set())
@@ -360,7 +361,7 @@ export function FlowWaterfall({
   const { errors, summary } = summaryCells(trace, at, scrubbing ? clockMs : limit)
   const busy = agents.reduce((sum, row) => sum + busyMs(row, limit), 0)
   const speedup = limit > 0 ? busy / limit : 0
-  const applyFilter = (label: string) => { setFilter(previous => previous === label ? null : label); setView('agents') }
+  const applyFilter = (label: string) => { setFilter(previous => previous === label || label === "__all" ? null : label); setView('agents') }
   const failedAgents = agents.filter(row => !row.ok).length
   const quietAgents = agents.filter(row => quietActivity(row, clockMs).quiet).length
   const recordedErrors = trace.spans.filter(span => spanFailed(span) && span.kind !== 'pipeline')
@@ -396,11 +397,11 @@ export function FlowWaterfall({
               {agents.length} {agents.length === 1 ? 'agent' : 'agents'}{sharedDetail ? ` · ${agents.every(row => row.span.detail === sharedDetail) ? '' : 'mostly '}${sharedDetail}` : ''}{done && speedup >= 1.05 ? ` · ${speedup.toFixed(1)}x parallel` : ''}
             </p>}
             {failedAgents > 0 && <button type="button" className="fw-text-button fw-alert" aria-pressed={filter === '__errors'} onClick={() => applyFilter('__errors')}>{failedAgents} of {agents.length} failed</button>}
-            {quietAgents > 0 && <span className="fw-quiet">{quietAgents} quiet</span>}
+            {quietAgents > 0 && <button type="button" className="fw-text-button fw-quiet" aria-pressed={filter === "__quiet"} onClick={() => applyFilter("__quiet")}>{quietAgents} quiet</button>}
             {isLive && <span className="fw-state fw-state-live" data-motion="essential">Live</span>}
           </div>
           {/* One legend row: outcomes, then the bar-type key (round 24: stacked key bands read as clutter above the rows). */}
-          <details className="fw-key" open={root.current ? root.current.clientWidth >= 600 : true}><summary>Key</summary><div className="fw-legends"><OutcomeLegend agents={agents} selected={filter} onFilter={applyFilter} />{view === 'agents' && <KindLegend rows={rows} />}<MarkerLegend markers={markers} /></div></details>
+          <details className="fw-key" open={root.current ? root.current.clientWidth >= 600 : true}><summary>Key</summary><div className="fw-legends"><OutcomeLegend agents={agents} neutral={visible.some(row => row.kind === "pipeline" && !row.span.outcome)} selected={filter} onFilter={applyFilter} />{view === 'agents' && <KindLegend rows={rows} />}<MarkerLegend markers={markers} /></div></details>
         </div>
         <div className="fw-tools">
           <div className="fw-views" role="radiogroup" aria-label="Trace view">

@@ -13,6 +13,7 @@ import {FlowWaterfall} from './src/react/index.ts';
 import '@tangle-network/brand/styles/tokens.css'; import './src/react/flow-waterfall.css';
 document.documentElement.className=new URLSearchParams(location.search).get('theme')??'dark';
 const spans=Array.from({length:17},(_,i)=>({id:'agent-'+i,kind:'pipeline',name:'Worker '+i,startMs:i*1000,endMs:1200000,status:i===0||i===1?'running':i===2?'needs-you':i<9?'failed':'done',activityAt:[1000,2000,i===0?1199999:3000],outcome:{tone:i<2?'live':i===2?'warn':i<9?'failed':'ok',label:i<2?'Running':i===2?'Needs you':i<9?'Failed':'Done'},output:i<9?'Compiler rejected the build':undefined}));
+if(new URLSearchParams(location.search).has('family')) {spans.forEach(span=>span.parentId='orch');spans.unshift({id:'orch',kind:'pipeline',name:'Orchestrator',startMs:0,endMs:1200000,status:'done',outcome:{tone:'ok',label:'Done'}})}
 for(let i=0;i<17;i++)spans.push({id:'error-'+i,parentId:'agent-'+(i%17),kind:'tool',name:'bash',startMs:5000+i*1000,endMs:6000+i*1000,status:'failed',output:'Compiler rejected the build'});
 createRoot(document.getElementById('root')).render(<FlowWaterfall label="Seventeen agents" trace={{spans,totalMs:1200000,promptTokens:0,completionTokens:0,errors:17}} defaultView="agents" live={false}/>);
 `, resolveDir: process.cwd(), sourcefile: 'proof.jsx', loader: 'jsx' }, bundle: true, write: false, outdir: 'proof', format: 'esm', jsx: 'automatic', define: { 'process.env.NODE_ENV': '"production"' } })
@@ -73,6 +74,11 @@ try {
     await page.waitForTimeout(100)
     check(`${theme}/${width} reduced motion transforms`,await page.evaluate(()=>document.getAnimations().some(a=>a.playState==='running'&&a.effect?.getKeyframes().some(f=>'transform'in f||'translate'in f))),false)
     check(`${theme}/${width} essential opacity survives`,await page.evaluate(()=>document.getAnimations().some(a=>a.playState==='running'&&a.effect?.getKeyframes().some(f=>'opacity'in f))),true)
+    await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&family=1`)
+    await page.locator('[data-span-id="family:Worker"]').waitFor()
+    check(`${theme}/${width} mixed family has neutral key`,await page.locator('.fw-legend .fw-swatch[data-ring]').count()>0,true)
+    await page.getByRole('button',{name:'1 quiet',exact:true}).click()
+    check(`${theme}/${width} quiet filter reveals agent`,await page.locator('[data-span-id="agent-1"][data-activity="quiet"]').count(),1)
     await context.close()
     renameSync(await page.video().path(),`${out}/${theme}-${width}.webm`)
   }
