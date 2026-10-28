@@ -36,7 +36,7 @@ if(totals==='zero'){trace.modelCalls=0;trace.toolCalls=0}
 if(totals==='invalid'){trace.promptTokens=Number.NaN;trace.completionTokens=Infinity;trace.modelCalls=Number.NaN;trace.toolCalls=Infinity}
 if(totals?.startsWith('otlp-'))trace=otlpFlowTrace([{trace_id:'totals',span_id:'call',name:'llm.call',kind:'LLM',start_time:'2026-01-01T00:00:00Z',end_time:'2026-01-01T00:00:01Z',attributes:{'gen_ai.request.model':'fixture/model',...(totals==='otlp-zero'?{'gen_ai.usage.input_tokens':0,'gen_ai.usage.output_tokens':0}:totals==='otlp-positive'?{'gen_ai.usage.input_tokens':3,'gen_ai.usage.output_tokens':5}:totals==='otlp-partial'?{'gen_ai.usage.input_tokens':3}:{})}}],{price:catalogPrice({data:[{id:'fixture/model',pricing:{prompt:'0.01',completion:'0.02'}}]})});
 const compose=new URLSearchParams(location.search).has('compose');
-function Feed(){const[paused,setPaused]=React.useState(false);return <aside data-feed data-paused={paused}><button onClick={()=>setPaused(!paused)}>Pause feed</button>Latest recorded event</aside>}
+function Feed(){const[paused,setPaused]=React.useState(false);return <aside data-feed data-paused={paused}><button onClick={()=>setPaused(!paused)}>Pause feed</button><div style={{height:192}}>Latest recorded event</div></aside>}
 function App(){const[cursor,setCursor]=React.useState(null),[selected,setSelected]=React.useState(undefined);return <FlowWaterfall label="Seventeen agents" trace={trace} defaultView={new URLSearchParams(location.search).has('graph-default')?'graph':'agents'} live={new URLSearchParams(location.search).has('live')} agentFill={new URLSearchParams(location.search).get("fill")??"agent"} graph={compose?<article data-graph data-cursor={cursor??'full'} data-selected={selected??''}>Host graph</article>:undefined} latestEvents={compose?<Feed/>:undefined} onTimeChange={setCursor} onSelect={compose?span=>setSelected(span.id):undefined} selectedId={selected??(new URLSearchParams(location.search).has("selected")?"agent-0":undefined)}/>}
 createRoot(document.getElementById('root')).render(<App/>);
 `, resolveDir: process.cwd(), sourcefile: 'proof.jsx', loader: 'jsx' }, bundle: true, write: false, outdir: 'proof', format: 'esm', jsx: 'automatic', define: { 'process.env.NODE_ENV': '"production"' } })
@@ -191,6 +191,14 @@ try {
     await page.screenshot({path:`${out}/leaf-${theme}-${width}.png`,fullPage:true})
     await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&compose=1`)
     await page.locator('[data-flow-waterfall]').waitFor()
+    if(width===390){
+      const geometry=await page.locator('[data-flow-waterfall]').evaluate(root=>{const row=root.querySelector('.fw-row').getBoundingClientRect(),feed=root.querySelector('[data-feed]').getBoundingClientRect(),body=root.querySelector('.fw-body').getBoundingClientRect();return {first:row.top-root.getBoundingClientRect().top,feedAfterRows:feed.top>=body.bottom}})
+      console.log('PHONE COMPOSITION',theme,geometry)
+      check(`${theme}/${width} first agent within300px`,geometry.first<300,true)
+      check(`${theme}/${width} latest events after timeline`,geometry.feedAfterRows,true)
+    }
+    await page.emulateMedia({reducedMotion:'no-preference'})
+    check(`${theme}/${width} running legend static`,await page.locator('.fw-legend [data-outcome="live"]').evaluateAll(nodes=>nodes.every(node=>getComputedStyle(node).animationName==='none')),true)
     const graphChoice=page.getByRole('radio',{name:'Graph',exact:true})
     check(`${theme}/${width} single three-view control`,await page.getByRole('radiogroup',{name:'Trace view',exact:true}).getByRole('radio').count(),3)
     if(await graphChoice.count()) {
