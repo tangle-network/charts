@@ -33,7 +33,10 @@ if(totals==='partial'){trace.promptTokens=3;delete trace.completionTokens}
 if(totals==='zero'){trace.modelCalls=0;trace.toolCalls=0}
 if(totals==='invalid'){trace.promptTokens=Number.NaN;trace.completionTokens=Infinity;trace.modelCalls=Number.NaN;trace.toolCalls=Infinity}
 if(totals?.startsWith('otlp-'))trace=otlpFlowTrace([{trace_id:'totals',span_id:'call',name:'llm.call',kind:'LLM',start_time:'2026-01-01T00:00:00Z',end_time:'2026-01-01T00:00:01Z',attributes:{'gen_ai.request.model':'fixture/model',...(totals==='otlp-zero'?{'gen_ai.usage.input_tokens':0,'gen_ai.usage.output_tokens':0}:totals==='otlp-positive'?{'gen_ai.usage.input_tokens':3,'gen_ai.usage.output_tokens':5}:totals==='otlp-partial'?{'gen_ai.usage.input_tokens':3}:{})}}],{price:catalogPrice({data:[{id:'fixture/model',pricing:{prompt:'0.01',completion:'0.02'}}]})});
-createRoot(document.getElementById('root')).render(<FlowWaterfall label="Seventeen agents" trace={trace} defaultView="agents" live={false} agentFill={new URLSearchParams(location.search).get("fill")??"agent"} selectedId={new URLSearchParams(location.search).has("selected")?"agent-0":undefined}/>);
+const compose=new URLSearchParams(location.search).has('compose');
+function Feed(){const[paused,setPaused]=React.useState(false);return <aside data-feed data-paused={paused}><button onClick={()=>setPaused(!paused)}>Pause feed</button>Latest recorded event</aside>}
+function App(){const[cursor,setCursor]=React.useState(null),[selected,setSelected]=React.useState(undefined);return <FlowWaterfall label="Seventeen agents" trace={trace} defaultView={new URLSearchParams(location.search).has('graph-default')?'graph':'agents'} live={false} agentFill={new URLSearchParams(location.search).get("fill")??"agent"} graph={compose?<article data-graph data-cursor={cursor??'full'} data-selected={selected??''}>Host graph</article>:undefined} latestEvents={compose?<Feed/>:undefined} onTimeChange={setCursor} onSelect={span=>setSelected(span.id)} selectedId={selected??(new URLSearchParams(location.search).has("selected")?"agent-0":undefined)}/>}
+createRoot(document.getElementById('root')).render(<App/>);
 `, resolveDir: process.cwd(), sourcefile: 'proof.jsx', loader: 'jsx' }, bundle: true, write: false, outdir: 'proof', format: 'esm', jsx: 'automatic', define: { 'process.env.NODE_ENV': '"production"' } })
 const files = Object.fromEntries(result.outputFiles.map(file => [file.path.split('/').pop(), file.text]))
 const server = createServer((req, res) => {
@@ -157,6 +160,32 @@ try {
       await page.getByRole('button',{name:'Restart',exact:true}).click()
       cells=await read()
       check(`${theme}/${width}/${totals} playback token total`,cells.Tokens.value,expected)
+    }
+    await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&compose=1`)
+    await page.locator('[data-flow-waterfall]').waitFor()
+    const graphChoice=page.getByRole('radio',{name:'Graph',exact:true})
+    check(`${theme}/${width} single three-view control`,await page.getByRole('radiogroup',{name:'Trace view',exact:true}).getByRole('radio').count(),3)
+    if(await graphChoice.count()) {
+      await page.getByRole('button',{name:'Pause feed',exact:true}).click()
+      const slider=page.getByRole('slider',{name:'Playback position',exact:true})
+      await slider.focus();await page.keyboard.press('Home');await page.keyboard.press('ArrowRight')
+      const position=await slider.inputValue()
+      await page.getByRole('button',{name:'Expand Worker 3',exact:true}).click()
+      await graphChoice.click()
+      check(`${theme}/${width} supplied graph visible`,await page.locator('[data-graph]').isVisible(),true)
+      check(`${theme}/${width} graph retains cursor`,await page.locator('[data-graph]').getAttribute('data-cursor'),position)
+      check(`${theme}/${width} graph retains selection`,await page.locator('[data-graph]').getAttribute('data-selected'),'agent-3')
+      check(`${theme}/${width} graph hides waterfall controls`,await page.locator('.fw-summary,.fw-key,.fw-playback,.fw-canvas').count(),0)
+      check(`${theme}/${width} graph keeps feed state`,await page.locator('[data-feed]').getAttribute('data-paused'),'true')
+      await page.getByRole('radio',{name:'Steps',exact:true}).click()
+      check(`${theme}/${width} steps keeps feed state`,await page.locator('[data-feed]').getAttribute('data-paused'),'true')
+      check(`${theme}/${width} steps retains cursor`,await page.getByRole('slider',{name:'Playback position',exact:true}).inputValue(),position)
+      await page.getByRole('radio',{name:'Agents',exact:true}).click()
+      check(`${theme}/${width} agents retains selection`,await page.locator('[data-span-id="agent-3"]').getAttribute('aria-selected'),'true')
+      check(`${theme}/${width} agents keeps feed state`,await page.locator('[data-feed]').getAttribute('data-paused'),'true')
+      await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&compose=1&graph-default=1`)
+      await page.locator('[data-graph]').waitFor()
+      check(`${theme}/${width} default graph`,await page.getByRole('radio',{name:'Graph',exact:true}).getAttribute('aria-checked'),'true')
     }
     await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&grammar=1`)
     await page.locator('.fw-summary').waitFor()

@@ -155,6 +155,12 @@ function OutcomeLegend({ agents, selected, onFilter, neutral }: { neutral: boole
     {failedSteps > 0 && <li><button type="button" aria-pressed={selected === "__errors"} onClick={() => onFilter("__errors")}><span className="fw-swatch-step" aria-hidden><FailGlyph /></span>Failed step <b>{failedSteps}</b></button></li>}
   </ul>
 }
+function ViewControl({ view, graph, onChange }: { view: FlowView; graph: boolean; onChange: (view: FlowView) => void }) {
+  return <div className="fw-views" role="radiogroup" aria-label="Trace view">
+    {(['agents', 'spans', ...(graph ? ['graph'] : [])] as FlowView[]).map(option => <button key={option} type="button" role="radio" aria-checked={view === option} disabled={view === option}
+      className="fw-view-button" onClick={() => onChange(option)}>{option === 'agents' ? 'Agents' : option === 'spans' ? 'Steps' : 'Graph'}</button>)}
+  </div>
+}
 /** Shared trace inspector: the agent timeline and the span waterfall over one clock.
  * Data remains producer-owned; playback, zoom and folding change presentation only. */
 export function FlowWaterfall({
@@ -409,7 +415,6 @@ export function FlowWaterfall({
             <span className="fw-title-glyph" aria-hidden><TraceGlyph /></span>
             <h3 className="fw-title">{label}</h3>
             {description && <p className="fw-description" title={description}>{description}</p>}
-            {/* The headline shares the title's line (one row less above the lanes); it says only what the stat strip cannot. */}
             {view === 'agents' && <p className="fw-headline" aria-live="polite">
               {agents.length} {agents.length === 1 ? 'agent' : 'agents'}{sharedDetail ? ` · ${agents.every(row => row.span.detail === sharedDetail) ? '' : 'mostly '}${sharedDetail}` : ''}{done && speedup >= 1.05 ? ` · ${speedup.toFixed(1)}x parallel` : ''}
             </p>}
@@ -417,14 +422,10 @@ export function FlowWaterfall({
             {view !== 'graph' && quietAgents > 0 && <button type="button" className="fw-text-button fw-quiet" aria-pressed={filter === "__quiet"} onClick={() => applyFilter("__quiet")}>{quietAgents} quiet</button>}
             {isLive && <span className="fw-state fw-state-live" data-motion="essential">Live</span>}
           </div>
-          {/* One legend row: outcomes, then the bar-type key (round 24: stacked key bands read as clutter above the rows). */}
           {view !== 'graph' && <details className="fw-key" open={root.current ? root.current.clientWidth >= 600 : true}><summary>Key<ChevronGlyph /></summary><div className="fw-legends"><OutcomeLegend agents={agents} neutral={visible.some(row => row.kind === "pipeline" && !row.span.outcome && !row.outcomes?.length)} selected={filter} onFilter={applyFilter} />{view === 'agents' && <KindLegend rows={visible} fill={agentFill} />}<MarkerLegend markers={markers} /></div></details>}
         </div>
         <div className="fw-tools">
-          <div className="fw-views" role="radiogroup" aria-label="Trace view">
-            {(['agents', 'spans', ...(graph == null ? [] : ['graph'])] as FlowView[]).map(option => <button key={option} type="button" role="radio" aria-checked={view === option} disabled={view === option}
-              className="fw-view-button" onClick={() => { setView(option); setNameWidth(NAME_WIDTH[option]); setCard(null) }}>{option === 'agents' ? 'Agents' : option === 'spans' ? 'Steps' : 'Graph'}</button>)}
-          </div>
+          <ViewControl view={view} graph={graph != null} onChange={option => { setView(option); setNameWidth(NAME_WIDTH[option]); setCard(null) }} />
           {view === 'spans' && <div className="fw-search">
             <label htmlFor={searchId} className="fw-sr-only">Search trace</label>
             <span className="fw-search-glyph" aria-hidden><SearchGlyph /></span>
