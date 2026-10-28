@@ -262,7 +262,7 @@
 @container (max-width: 5px) { .fw-root .fw-view-agents .fw-seg .fw-glyph { display: none; } }
 .fw-root .fw-view-agents .fw-seg .fw-glyph { flex: none; margin-left: 0; display: grid; place-items: center; width: min(14px, 100%); height: 14px; border-radius: 50%; background: var(--fw-failed); color: light-dark(var(--fw-surface), var(--bg-canvas)); }
 .fw-root .fw-view-agents .fw-seg .fw-glyph[data-glyph="retry"] { background: var(--fw-muted); }
-.fw-root .fw-view-agents .fw-seg .fw-glyph svg { width: 9px; height: 9px; stroke-width: 2.5; }
+.fw-root .fw-view-agents .fw-seg .fw-glyph svg { width: min(9px, 100%); height: 9px; stroke-width: 2.5; }
 .fw-root:is(.fw-fill-muted, .fw-fill-outcome) .fw-view-agents :is(.fw-seg-alt.fw-seg-model, .fw-seg-alt.fw-seg-tool) { filter: brightness(.88); }
 .fw-root .fw-seg-failed { background: color-mix(in oklab, var(--fw-failed) 18%, var(--fw-surface)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-failed) 70%, transparent); color: var(--fw-failed); }
 .fw-root .fw-view-agents .fw-seg-failed { background: var(--dim); box-shadow: inset 0 0 0 1px var(--dim-line); }
@@ -400,7 +400,7 @@
   .fw-root .fw-search-input { width: 120px; }
   .fw-root .fw-axis-label { border: 0; padding: 0; }
   .fw-root .fw-row { transform: none; top: var(--row-y); contain: style; }
-  .fw-root .fw-label { position: absolute; z-index: 3; height: 20px; top: 0; left: 0; right: 0; padding: 0 calc(var(--fw-end-w, 0px) + 8px) 0 calc(8px + var(--depth) * 12px); border: 0; gap: 4px; background: var(--fw-surface); pointer-events: none; }
+  .fw-root .fw-label { position: absolute; z-index: 3; height: 20px; top: 0; left: 0; right: 0; padding: 0 calc(var(--fw-end-w, 0px) + 8px) 0 calc(8px + var(--depth) * 12px); border: 0; gap: 4px; background: transparent; pointer-events: none; }
   .fw-root .fw-view-agents .fw-names { flex-direction: row; font-size: 14px; line-height: 20px; }
   .fw-root .fw-view-agents .fw-subtitle { display: none; }
   .fw-root .fw-view-agents .fw-label { padding-left: calc(8px + var(--depth) * 12px); }

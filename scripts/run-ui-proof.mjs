@@ -33,7 +33,6 @@ try {
     await page.locator('[data-flow-waterfall]').waitFor()
     await page.waitForTimeout(1200)
     check(`${theme}/${width} name fits row`,await page.locator('.fw-name-text').first().evaluate(el=>{const a=el.getBoundingClientRect(),b=el.closest('.fw-row').getBoundingClientRect();return a.top>=b.top&&a.bottom<=b.bottom}),true)
-    console.log('ROW GEOMETRY',await page.locator('.fw-agent-row').first().evaluate(el=>Object.fromEntries(['.fw-label','.fw-lane','.fw-end','.fw-duration'].map(selector=>{const node=el.querySelector(selector),r=node.getBoundingClientRect(),s=getComputedStyle(node);return [selector,{x:r.x,y:r.y,w:r.width,h:r.height,left:s.left,right:s.right,display:s.display,opacity:s.opacity}]}))))
     await page.screenshot({path:`${out}/${theme}-${width}.png`,fullPage:true})
     check(`${theme}/${width} error rug`,await page.locator('.fw-error-tick').count(),17)
     check(`${theme}/${width} quiet agent`,await page.locator('[data-activity="quiet"]').count()>0,true)
