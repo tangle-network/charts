@@ -26,5 +26,14 @@ export function paletteAudit() {
   const resolved=token=>{const el=document.createElement('span');el.style.color=`var(${token})`;root.append(el);const value=lab(getComputedStyle(el).color);el.remove();return value}
   const statuses=['--fw-live','--fw-failed','--fw-ok','--fw-amber'].map(resolved)
   const distances=Array.from({length:5},(_,i)=>({slot:i+1,min:Math.min(...statuses.map(status=>delta(resolved(`--fw-h${i+1}`),status)))}))
-  return {distances,min:Math.min(...distances.map(entry=>entry.min))}
+  const light=getComputedStyle(root).colorScheme==='light'
+  const search=(from,to)=>{
+    const candidates=[]
+    for(let h=from;h<=to;h+=2)for(const l of light?[.52,.55,.58]:[.67,.70,.73]) {
+      const min=Math.min(...statuses.map(status=>delta(lab(`oklch(${l} .11 ${h})`),status)))
+      candidates.push({h,l,min})
+    }
+    return candidates.sort((a,b)=>b.min-a.min).slice(0,3)
+  }
+  return {distances,min:Math.min(...distances.map(entry=>entry.min)),blue:search(250,290),cyan:search(180,225)}
 }
