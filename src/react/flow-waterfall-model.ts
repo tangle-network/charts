@@ -449,7 +449,7 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
   let next = 0
   const hue = (row: FlowWaterfallRow) => row.tone <= 0 || ++next > 5 ? 0 : 1 + [...roleOf(row.name)].reduce((hash, c) => (hash * 31 + c.charCodeAt(0)) >>> 0, 0) % 5
   for (const [role, members] of groups) {
-    if (members.length < 2) { out.push(...members.map(row => ({ ...row, tone: hue(row) }))); continue }
+    if (members.length < 2) { const row = members[0]!, tone = hue(row); out.push({ ...row, tone, own: row.own.map(mark => ({ ...mark, tone })) }); continue }
     const tone = hue(members[0]!)
     const id = `family:${role}`
     const startMs = Math.min(...members.map(row => row.span.startMs))

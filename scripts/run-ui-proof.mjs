@@ -24,6 +24,7 @@ spans.push({id:'gap',parentId:'agent-16',kind:'tool',name:'Not reported',startMs
 spans.push({id:'peer-model',parentId:'agent-9',kind:'model',name:'Turn 1',startMs:30000,endMs:350000,status:'done'},{id:'peer-tool',parentId:'agent-9',kind:'tool',name:'read',startMs:350000,endMs:700000,status:'done'});
 spans.push({id:'model',parentId:'agent-0',kind:'model',name:'Turn 1',startMs:30000,endMs:350000,status:'done'});
 for(let i=0;i<17;i++)spans.push({id:'error-'+i,parentId:'agent-'+(i%17),kind:'tool',name:'bash',startMs:i===0?350000:5000+i*1000,endMs:i===0?700000:6000+i*1000,status:'failed',output:'Compiler rejected the build'});
+if(new URLSearchParams(location.search).has('grammar'))spans.push({id:'grammar-model',parentId:'agent-1',kind:'model',name:'Turn 2',startMs:30000,endMs:300000,status:'done'},{id:'grammar-tool',parentId:'agent-1',kind:'tool',name:'read',startMs:300000,endMs:500000,status:'done'});
 let trace={spans,totalMs:1200000,promptTokens:0,completionTokens:0,errors:17};
 const totals=new URLSearchParams(location.search).get('totals');
 const long=Number(new URLSearchParams(location.search).get('long'));if(long){const scale=long/trace.totalMs;for(const span of trace.spans){span.startMs*=scale;span.endMs*=scale;if(span.activityAt)span.activityAt=span.activityAt.map(at=>at*scale)}trace.totalMs=long;document.getElementById('root').style.padding='16px'}
@@ -32,7 +33,10 @@ if(totals==='partial'){trace.promptTokens=3;delete trace.completionTokens}
 if(totals==='zero'){trace.modelCalls=0;trace.toolCalls=0}
 if(totals==='invalid'){trace.promptTokens=Number.NaN;trace.completionTokens=Infinity;trace.modelCalls=Number.NaN;trace.toolCalls=Infinity}
 if(totals?.startsWith('otlp-'))trace=otlpFlowTrace([{trace_id:'totals',span_id:'call',name:'llm.call',kind:'LLM',start_time:'2026-01-01T00:00:00Z',end_time:'2026-01-01T00:00:01Z',attributes:{'gen_ai.request.model':'fixture/model',...(totals==='otlp-zero'?{'gen_ai.usage.input_tokens':0,'gen_ai.usage.output_tokens':0}:totals==='otlp-positive'?{'gen_ai.usage.input_tokens':3,'gen_ai.usage.output_tokens':5}:totals==='otlp-partial'?{'gen_ai.usage.input_tokens':3}:{})}}],{price:catalogPrice({data:[{id:'fixture/model',pricing:{prompt:'0.01',completion:'0.02'}}]})});
-createRoot(document.getElementById('root')).render(<FlowWaterfall label="Seventeen agents" trace={trace} defaultView="agents" live={false} agentFill={new URLSearchParams(location.search).get("fill")??"agent"} selectedId={new URLSearchParams(location.search).has("selected")?"agent-0":undefined}/>);
+const compose=new URLSearchParams(location.search).has('compose');
+function Feed(){const[paused,setPaused]=React.useState(false);return <aside data-feed data-paused={paused}><button onClick={()=>setPaused(!paused)}>Pause feed</button>Latest recorded event</aside>}
+function App(){const[cursor,setCursor]=React.useState(null),[selected,setSelected]=React.useState(undefined);return <FlowWaterfall label="Seventeen agents" trace={trace} defaultView={new URLSearchParams(location.search).has('graph-default')?'graph':'agents'} live={false} agentFill={new URLSearchParams(location.search).get("fill")??"agent"} graph={compose?<article data-graph data-cursor={cursor??'full'} data-selected={selected??''}>Host graph</article>:undefined} latestEvents={compose?<Feed/>:undefined} onTimeChange={setCursor} onSelect={compose?span=>setSelected(span.id):undefined} selectedId={selected??(new URLSearchParams(location.search).has("selected")?"agent-0":undefined)}/>}
+createRoot(document.getElementById('root')).render(<App/>);
 `, resolveDir: process.cwd(), sourcefile: 'proof.jsx', loader: 'jsx' }, bundle: true, write: false, outdir: 'proof', format: 'esm', jsx: 'automatic', define: { 'process.env.NODE_ENV': '"production"' } })
 const files = Object.fromEntries(result.outputFiles.map(file => [file.path.split('/').pop(), file.text]))
 const server = createServer((req, res) => {
@@ -157,6 +161,47 @@ try {
       cells=await read()
       check(`${theme}/${width}/${totals} playback token total`,cells.Tokens.value,expected)
     }
+    await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&compose=1`)
+    await page.locator('[data-flow-waterfall]').waitFor()
+    const graphChoice=page.getByRole('radio',{name:'Graph',exact:true})
+    check(`${theme}/${width} single three-view control`,await page.getByRole('radiogroup',{name:'Trace view',exact:true}).getByRole('radio').count(),3)
+    if(await graphChoice.count()) {
+      await page.getByRole('button',{name:'Pause feed',exact:true}).click()
+      const slider=page.getByRole('slider',{name:'Playback position',exact:true})
+      await slider.focus();await page.keyboard.press('Home');await page.keyboard.press('ArrowRight')
+      const position=await slider.inputValue()
+      await page.getByRole('button',{name:'Expand Worker 3',exact:true}).click()
+      await graphChoice.click()
+      check(`${theme}/${width} supplied graph visible`,await page.locator('[data-graph]').isVisible(),true)
+      check(`${theme}/${width} graph retains cursor`,await page.locator('[data-graph]').getAttribute('data-cursor'),position)
+      check(`${theme}/${width} graph retains selection`,await page.locator('[data-graph]').getAttribute('data-selected'),'agent-3')
+      check(`${theme}/${width} graph hides waterfall controls`,await page.locator('.fw-summary,.fw-key,.fw-playback,.fw-canvas').count(),0)
+      check(`${theme}/${width} graph keeps feed state`,await page.locator('[data-feed]').getAttribute('data-paused'),'true')
+      await page.getByRole('radio',{name:'Steps',exact:true}).click()
+      check(`${theme}/${width} steps keeps feed state`,await page.locator('[data-feed]').getAttribute('data-paused'),'true')
+      check(`${theme}/${width} steps retains cursor`,await page.getByRole('slider',{name:'Playback position',exact:true}).inputValue(),position)
+      await page.getByRole('radio',{name:'Agents',exact:true}).click()
+      check(`${theme}/${width} agents retains selection`,await page.locator('[data-span-id="agent-3"]').getAttribute('aria-selected'),'true')
+      check(`${theme}/${width} agents keeps feed state`,await page.locator('[data-feed]').getAttribute('data-paused'),'true')
+      await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&compose=1&graph-default=1`)
+      await page.locator('[data-graph]').waitFor()
+      check(`${theme}/${width} default graph`,await page.getByRole('radio',{name:'Graph',exact:true}).getAttribute('aria-checked'),'true')
+    }
+    await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&grammar=1`)
+    await page.locator('.fw-summary').waitFor()
+    await page.waitForTimeout(1200)
+    if(width===390)await page.locator('.fw-key summary').click()
+    check(`${theme}/${width} bar grammar explanation`,await page.locator('.fw-kind-rule').isVisible(),true)
+    check(`${theme}/${width} waiting key uses actual hatch`,await page.locator('.fw-swatch-wait').evaluate(el=>getComputedStyle(el).backgroundImage.includes('repeating-linear-gradient')),true)
+    check(`${theme}/${width} kind key matches drawn model`,await page.evaluate(()=>getComputedStyle(document.querySelector('.fw-swatch-model')).backgroundColor===getComputedStyle(document.querySelector('[data-span-id="agent-1"] .fw-seg-model')).backgroundColor),true)
+    if(width===390) {
+      await page.locator('.fw-key summary').click()
+      const hierarchy=await page.locator('.fw-summary').evaluate(el=>{const children=[...el.children];const rest=children.slice(2).map(node=>node.getBoundingClientRect());return {height:el.getBoundingClientRect().height,hero:parseFloat(getComputedStyle(children[0].querySelector('dd')).fontSize),oneLine:rest.every(box=>Math.abs(box.top-rest[0].top)<1)}})
+      check(`${theme}/${width} summary hero hierarchy`,hierarchy.hero,28)
+      check(`${theme}/${width} secondary metrics one line`,hierarchy.oneLine,true)
+      check(`${theme}/${width} summary under110px`,hierarchy.height<=110,true)
+    }
+    await page.screenshot({path:`${out}/grammar-${theme}-${width}.png`,fullPage:true})
     if(width===390)for(const duration of [1715993,84928112,431000]) {
       await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&long=${duration}`)
       await page.locator('.fw-axis-track').waitFor({state:'visible'})

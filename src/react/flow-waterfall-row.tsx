@@ -6,7 +6,7 @@ import { AlertGlyph, ChevronGlyph, FailGlyph, KindGlyph, RetryGlyph } from './fl
 import { type FlowSegment, type FlowWaterfallRow, agentSummary, quietActivity, formatCost, rowCostText, formatSpanDuration, spanRunning, toneKey } from './flow-waterfall-model.js'
 import type { RowMotion } from './flow-waterfall-motion.js'
 
-export type FlowView = 'spans' | 'agents'
+export type FlowView = 'spans' | 'agents' | 'graph'
 
 /** Running ends are drawn to the clock; CSS clips with min(), so a far-future end stands in for "still open". */
 export const OPEN_END = 1e13
