@@ -272,6 +272,12 @@
 .fw-root [data-outcome="warn"], .fw-root [data-outcome="warn"] [data-tone] { --tone: var(--fw-amber); }
 .fw-root [data-outcome="live"], .fw-root [data-outcome="live"] [data-tone] { --tone: var(--fw-live); }
 .fw-root [data-outcome="neutral"], .fw-root [data-outcome="neutral"] [data-tone] { --tone: var(--fw-muted); }
+/* An agent's dot states how it ended in every fill: the muted fill quiets the lanes, never the dot (0.21.23 drew Shipped grey). */
+.fw-root.fw-root .fw-agent-dot[data-outcome="ok"] { --tone: var(--fw-ok); }
+.fw-root.fw-root .fw-agent-dot[data-outcome="failed"] { --tone: var(--fw-failed); }
+.fw-root.fw-root .fw-agent-dot[data-outcome="warn"] { --tone: var(--fw-amber); }
+.fw-root.fw-root .fw-agent-dot[data-outcome="live"] { --tone: var(--fw-live); }
+.fw-root.fw-root .fw-agent-dot[data-outcome="neutral"] { --tone: var(--fw-muted); }
 .fw-root .fw-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; padding: 0; list-style: none; color: var(--fw-muted); font-size: 14px; line-height: 18px; }
 .fw-root .fw-legend li { display: inline-flex; align-items: center; gap: 8px; }
 .fw-root .fw-legends { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 24px; margin-top: 8px; }
