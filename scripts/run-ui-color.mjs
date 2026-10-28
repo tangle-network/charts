@@ -1,5 +1,5 @@
 /** Browser-side palette distance in CIEDE2000, computed from rendered sRGB pixels. */
-export function paletteAudit() {
+export function paletteAudit(options = {}) {
   const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d')
   canvas.width=canvas.height=1
   const rgb=color=>{ctx.clearRect(0,0,1,1);ctx.fillStyle=color;ctx.fillRect(0,0,1,1);return [...ctx.getImageData(0,0,1,1).data]}
@@ -23,10 +23,20 @@ export function paletteAudit() {
     return Math.sqrt((dl/sl)**2+(dc/sc)**2+(dH/sh)**2+rt*(dc/sc)*(dH/sh))
   }
   const root=document.querySelector('[data-flow-waterfall]')
-  const resolved=token=>{const el=document.createElement('span');el.style.color=`var(${token})`;root.append(el);const value=lab(getComputedStyle(el).color);el.remove();return value}
-  const statuses=['--fw-live','--fw-failed','--fw-ok','--fw-amber'].map(resolved)
-  const distances=Array.from({length:5},(_,i)=>({slot:i+1,min:Math.min(...statuses.map(status=>delta(resolved(`--fw-h${i+1}`),status)))}))
-  return {distances,min:Math.min(...distances.map(entry=>entry.min))}
+  const rendered=token=>{const el=document.createElement('span');el.style.color=`var(${token})`;root.append(el);const value=getComputedStyle(el).color;el.remove();return value}
+  const statusNames=['--fw-live','--fw-failed','--fw-ok','--fw-amber']
+  const statusColors=statusNames.map(rendered),statuses=statusColors.map(lab)
+  const score=color=>Math.min(...statuses.map(status=>delta(lab(color),status)))
+  const light=getComputedStyle(root).colorScheme==='light'
+  const bounds=light?[.52,.58]:[.67,.73]
+  const identities=Array.from({length:5},(_,i)=>{const color=rendered(`--fw-h${i+1}`),parts=color.match(/oklch\(\s*([\d.e+-]+)\s+([\d.e+-]+)\s+([\d.e+-]+)/i);return {slot:i+1,color,L:parts?Number(parts[1]):null,C:parts?Number(parts[2]):null,h:parts?Number(parts[3]):null,min:score(color)}})
+  if(options.search){
+    const bestByHue=[]
+    for(let h=0;h<360;h+=.25){let best={h,min:-1};for(let n=0;n<=120;n++){const L=bounds[0]+n*.0005,min=score(`oklch(${L} .11 ${h})`);if(min>best.min)best={h,L,C:.11,min}}bestByHue.push(best)}
+    const ranges={blue:[240,285],violet:[275,330],pink:[320,359.75],cyan:[175,240],slate:[240,285]}
+    return {light,bounds,statuses:statusNames.map((name,i)=>({name,color:statusColors[i]})),identities,bestByRole:Object.fromEntries(Object.entries(ranges).map(([name,[lo,hi]])=>[name,bestByHue.filter(v=>v.h>=lo&&v.h<=hi).sort((a,b)=>b.min-a.min).slice(0,8)])),feasibleHueSamples:bestByHue.filter(v=>v.min>=20),best:bestByHue.reduce((a,b)=>a.min>b.min?a:b)}
+  }
+  return {identities,bounds,lightnessOk:identities.every(v=>v.L!==null&&v.L>=bounds[0]-1e-6&&v.L<=bounds[1]+1e-6),chromaOk:identities.every(v=>v.C!==null&&Math.abs(v.C-.11)<1e-6),distances:identities.map(({slot,min})=>({slot,min})),min:Math.min(...identities.map(v=>v.min))}
 }
 
 /** WCAG contrast for visible rendered text, including ancestor alpha and clipping. */
