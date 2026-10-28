@@ -1,3 +1,8 @@
+## 2.0.2
+
+- Keep failed-span evidence on its own source: use explicit Failure facts, label other output as recorded output, and never substitute an agent's unrelated output. Missing detail remains explicit.
+- Retain known Running/Done phone labels. Compare leaf agents only and keep scoped, neutral comparison badges in the label area.
+
 ## 2.0.1
 
 - Optional graph and latestEvents slots compose one Agents/Steps/Graph control. Graph switches retain the owner clock and controlled selection; the shared header feed remains mounted.

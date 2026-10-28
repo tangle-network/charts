@@ -354,15 +354,12 @@ export function agentCallouts(agents: FlowWaterfallRow[], clockMs: number): { sl
   let slowest: FlowWaterfallRow | undefined, slowestMs = -1, costliest: FlowWaterfallRow | undefined, top = -1, priced = 0, timed = 0
   for (const row of agents) {
     // Only agents compete: a family's bar is its members' extent and its cost their sum, and an opened step is not an agent.
-    if (row.durationLabel === '—' || row.span.startMs > clockMs || row.kind !== 'pipeline' || row.id.startsWith('family:') || row.id.startsWith('run:')) continue
-    // Slowest ranks agents with a parent: the root spans the whole run by construction, so it would always win.
-    if (row.parentId !== undefined) {
-      const ms = (spanRunning(row.span) ? Math.max(row.span.endMs, clockMs) : Math.min(row.span.endMs, clockMs)) - row.span.startMs
-      timed += 1
-      if (ms > slowestMs) { slowest = row; slowestMs = ms }
-    }
+    if (row.durationLabel === '—' || row.span.startMs > clockMs || row.kind !== 'pipeline' || row.hasAgents || row.id.startsWith('family:') || row.id.startsWith('run:')) continue
+    const ms = (spanRunning(row.span) ? Math.max(row.span.endMs, clockMs) : Math.min(row.span.endMs, clockMs)) - row.span.startMs
+    timed += 1
+    if (ms > slowestMs) { slowest = row; slowestMs = ms }
     const cost = row.span.costUsd ?? row.rollupCostUsd
-    if (cost === undefined) continue
+    if (typeof cost !== 'number' || !Number.isFinite(cost)) continue
     priced += 1
     if (cost > top) { costliest = row; top = cost }
   }
