@@ -1,5 +1,9 @@
 # @tangle-network/charts
 
+## 1.0.0
+
+- First stable release, the same code as 0.21.25. Later compatible changes ship as patch releases ([release versioning](https://github.com/tangle-network/agent-runtime/blob/main/docs/release-versioning.md)).
+
 ## 0.21.25
 
 - With the muted fill (`agentFill="muted"`), an agent's dot keeps its outcome's colour. The muted fill retoned every element with a tone, so in 0.21.23 a Shipped agent's dot drew grey beside a green Shipped key.
