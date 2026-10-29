@@ -13,7 +13,7 @@ const dir = mkdtempSync(join(tmpdir(), 'charts-browser-'))
 const supplied = process.argv[2]
 const packed = supplied ? resolve(supplied) : join(dir, JSON.parse(execFileSync('npm', ['pack', '--json', '--ignore-scripts', '--pack-destination', dir], { cwd: root, encoding: 'utf8' }))[0].filename)
 writeFileSync(join(dir, 'package.json'), JSON.stringify({ private: true, type: 'module' }))
-execFileSync('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--package-lock=false', packed], { cwd: dir, stdio: 'inherit' })
+execFileSync('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--package-lock=false', packed, '@tangle-network/brand@1.31.2'], { cwd: dir, stdio: 'inherit' })
 let peerRequire = createRequire(join(dir, 'package.json'))
 const reactVersion = process.env.CHARTS_REACT_VERSION ?? '19'
 if (reactVersion) {
