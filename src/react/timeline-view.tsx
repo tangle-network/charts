@@ -46,7 +46,7 @@ export function TimelineView({ lanes, options, defaultCollapsed = [], presentati
 
 const NO_MARKS: ChartMark[] = [], NO_DATA = ['missing', 'untraced']
 
-/** The live face of timeline's plot: one span geometry, with a bounded viewport and native row actions. */
+/** Gantt/useLaneActions size exception: one controller preserves native lane/mark identity across live SVG and viewport updates. */
 export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = NO_MARKS, now, hatch = NO_DATA, selectedId, onSelect, bestMark, maxHeight }: { selectedId?: string; onSelect?: (id: string) => void; bestMark?: string; maxHeight?: number; rows?: { label: string; start: number; end: number; state: string; note?: string }[]; lanes?: TimelineLane[]; colors: Record<string, string>; axis: (t: number) => string; span: (start: number, end: number) => string; marks?: ChartMark[]; now?: number; hatch?: string[] }) {
   const [ref, width, em] = useWidth<HTMLDivElement>(), scroller = useRef<HTMLDivElement>(null)
   const [scrollTop, setScrollTop] = useState(0), [tip, setTip] = useState<Tip | null>(null)
@@ -79,12 +79,12 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = NO_M
 
 type LaneModel = PreparedTimeline & { lanes: TimelineLane[] }
 function useLaneActions(model: LaneModel | null, plot: ReturnType<LaneModel['plot']> | undefined, scroller: React.RefObject<HTMLDivElement | null>, setScrollTop: (value: number) => void, setTip: (tip: Tip | null) => void, { span, now, colors, em, onSelect }: { onSelect?: (id: string) => void; span: (start: number, end: number) => string; now?: number; colors: Record<string, string>; em: number }) {
-  const focus = useRef<{ id: string; mark: boolean } | null>(null)
+  const focus = useRef<{ id: string; mark: boolean; restoring?: boolean } | null>(null)
   useLayoutEffect(() => {
     const root = scroller.current?.parentElement
     if (!focus.current || !root || (document.activeElement !== document.body && !root.contains(document.activeElement))) return
     const row = [...root.querySelectorAll<SVGGElement>('[data-lane], [data-labelled]')].find(row => (focus.current!.mark ? row.getAttribute('aria-label') : row.dataset.lane) === focus.current!.id)
-    if (row && row !== document.activeElement) row.focus({ preventScroll: true })
+    if (row && row !== document.activeElement) { focus.current.restoring = true; row.focus({ preventScroll: true }); focus.current.restoring = false }
   }, [plot?.body])
   const hover = (event: SyntheticEvent<HTMLDivElement>) => {
     if (!model) return
@@ -112,6 +112,7 @@ function useLaneActions(model: LaneModel | null, plot: ReturnType<LaneModel['plo
     setScrollTop(Math.max(0, position))
   }
   const captureFocus = (event: FocusEvent<HTMLDivElement>) => {
+    if (focus.current?.restoring) return
     const node = event.target.closest('[data-lane], [data-labelled]')
     if (node) focus.current = { id: node.getAttribute('data-lane') ?? node.getAttribute('aria-label')!, mark: node.hasAttribute('data-labelled') }
     hover(event)

@@ -74,8 +74,7 @@ export interface TimelineViewport { em?: number; maxHeight?: number; scrollTop?:
 export interface TimelinePlot { body: string; height: number; rowHeight: number; top: number }
 export interface PreparedTimeline { plot: (width: number, view?: TimelineViewport) => TimelinePlot; report: () => Figure; rowIds: string[] }
 
-/** One preparation and plot for reports and the live adapter. Reports validate trees; Gantt keeps producer row order
- * and the legacy single-span input's leniency. Report/table generation is lazy and never runs while scrolling. */
+/** Domain-size exception: one compiler closure shares validated time/tree indexes between the lazy report and live plot. */
 export function prepareTimeline(lanes: TimelineLane[], o: TimelineOptions, presentation: TimelinePresentation = {}): PreparedTimeline | Refusal {
   const id = o.id ?? "timeline";
   if (!lanes.length) return { id, refused: "No lanes recorded." };
