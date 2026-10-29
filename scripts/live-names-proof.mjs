@@ -29,7 +29,9 @@ try {
     await bar.waitFor()
     await page.evaluate(() => document.fonts.ready)
     const column = () => row.locator('.fw-label').evaluate(el => el.getBoundingClientRect().width)
-    const initial = await column(), samples = [], check = { theme, width, initial, samples }
+    const resize = page.getByRole('separator', { name: 'Resize the step column' })
+    const preferred = async () => Number(await resize.getAttribute('aria-valuenow'))
+    const initial = await column(), initialPreferred = await preferred(), samples = [], check = { theme, width, initial, initialPreferred, samples }
     checks.push(check)
     const target = await bar.boundingBox()
     await page.mouse.move(target.x + 6, target.y + target.height / 2)
@@ -47,14 +49,14 @@ try {
     await row.locator('.fw-name-text').filter({ hasText: 'Proof-verification-worker' }).waitFor()
     const renamed = await column()
     if (width > 390) {
-      assert.ok(renamed > initial + 20, 'a longer incoming agent identity sizes the column from its content')
-      const resize = page.getByRole('separator', { name: 'Resize the step column' })
+      check.renamedPreferred = await preferred()
+      assert.ok(check.renamedPreferred > initialPreferred + 20, `a longer incoming identity sizes its preferred column: ${initialPreferred} → ${check.renamedPreferred}`)
       await resize.focus()
       await page.keyboard.press('ArrowRight')
-      const manual = await column()
-      assert.ok(manual > renamed, 'keyboard resizing changes the allocated column')
+      const manual = await preferred()
+      assert.equal(manual, check.renamedPreferred + 16, 'keyboard resizing changes the preferred column within the responsive cap')
       await page.waitForTimeout(1200)
-      assert.equal(await column(), manual, 'subsequent snapshots respect manual sizing')
+      assert.equal(await preferred(), manual, 'subsequent snapshots respect manual sizing')
     }
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
     assert.deepEqual(errors, [])
