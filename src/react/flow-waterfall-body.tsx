@@ -100,7 +100,7 @@ function linksFor(rows: FlowWaterfallRow[], byId: Map<string, FlowWaterfallRow>,
 export function FlowBody(props: BodyProps) {
   const { rows, view, maxHeight, collapsed, searching, slowestId, activeId, selectedId, clockMs, window: win, trackPx, showCursor, zoomed } = props
   const [narrow, setNarrow] = useState(false)
-  const rowHeight = narrow ? 44 : ROW_HEIGHT[view]
+  const rowHeight = narrow ? 52 : ROW_HEIGHT[view]
   const scroller = useRef<HTMLDivElement>(null)
   const surface = useRef<HTMLDivElement>(null)
   useEffect(() => {

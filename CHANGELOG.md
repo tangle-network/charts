@@ -1,3 +1,7 @@
+## 2.0.6
+
+Keep long agent names on their own phone line, with status and duration/cost below and work bars underneath. Preserve the full metric card, failure and quiet evidence, compact Key and desktop layout. Phone rows remain virtualized at the measured height.
+
 ## 2.0.5
 
 Keep timeline and graph content before the shared recent-events feed, compress summary and playback controls, and keep the running Key swatch still. Status labels use the shared UI glyphs; Quiet remains an activity observation. Work swatches name their actual example rows. Failed-agent end labels and the error rug identify recorded ends, never an inferred failure instant or cause. Public APIs and measured totals are unchanged.

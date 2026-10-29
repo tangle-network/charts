@@ -99,7 +99,7 @@ try {
     check(`${theme}/${width} text contrast`,restContrast.failures.length,0)
     if(width===390) {
       check(`${theme}/${width} four ticks`,await page.locator('.fw-axis .fw-tick').count(),4)
-      check(`${theme}/${width} 44px rows`,await page.locator('.fw-agent-row').first().evaluate(el=>el.getBoundingClientRect().height),44)
+      check(`${theme}/${width} 52px rows`,await page.locator('.fw-agent-row').first().evaluate(el=>el.getBoundingClientRect().height),52)
       await page.locator('.fw-key summary').click()
     }
     const palette=await page.evaluate(paletteAudit)
