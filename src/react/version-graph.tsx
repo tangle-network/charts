@@ -127,15 +127,18 @@ export function VersionGraph({
     return `M${x1},${y1} C${x1},${y1 + bend * 0.7} ${x2},${y1 + bend * 0.3} ${x2},${y1 + bend} V${y2}`
   }
   const pane = useRef<HTMLDivElement>(null)
+  const focusTarget = useRef<string | null>(null)
   const [scrollTop, setScrollTop] = useState(0)
   const first = Math.max(0, tops.findIndex(top => top >= scrollTop) - 7)
   const end = Math.min(laid.rows.length, Math.max(first + 1, tops.findIndex(top => top > scrollTop + maxHeight)) + 7)
   const visible = laid.rows.slice(first, end)
   const focusRow = (index: number) => {
     const at = Math.max(0, Math.min(laid.rows.length - 1, index)), top = tops[at] ?? 0
+    focusTarget.current = laid.rows[at]?.node.id ?? null
     if (pane.current) pane.current.scrollTop = top
     setScrollTop(top)
-    requestAnimationFrame(() => pane.current?.querySelector<HTMLButtonElement>(`[data-row="${at}"]`)?.focus())
+    const target = pane.current?.querySelector<HTMLButtonElement>(`[data-row="${at}"]`)
+    if (target) { focusTarget.current = null; target.focus() }
   }
   useEffect(() => {
     const at = laid.rows.findIndex(row => row.node.id === selected), element = pane.current
@@ -186,6 +189,7 @@ export function VersionGraph({
               return (
                 <li key={node.id} aria-posinset={row.row + 1} aria-setsize={laid.rows.length} style={{ height: tops[row.row + 1]! - tops[row.row]! }}>
                   <button
+                    ref={element => { if (element && focusTarget.current === node.id) { focusTarget.current = null; element.focus() } }}
                     type="button"
                     className={`vg-row kind-${node.kind} ${on ? 'on' : ''}`}
                     aria-pressed={on}
