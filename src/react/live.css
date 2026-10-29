@@ -132,7 +132,7 @@ button.tgc-count-label { cursor: pointer; }
 .ov-gantt [data-open='true'] rect { animation: ov-gantt-live var(--motion-ambient) infinite; }
 .ov-gantt [data-labelled="false"] text { display: none; }
 .ov-gantt [data-labelled]:is(:hover, :focus) text { display: block; }
-.ov-gantt [data-labelled]:focus { outline: none; }
+.ov-gantt [data-labelled]:focus { outline: auto; }
 .ov-gantt-count { fill: var(--chart-live-fg, var(--chart-ink)); }
 .ov-gantt-end { fill: var(--chart-live-fg, var(--chart-ink)); font-size: 13px; paint-order: stroke; stroke: var(--chart-live-surface, var(--chart-canvas)); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
 .ov-gantt[data-featured] .ov-events { display: none; }

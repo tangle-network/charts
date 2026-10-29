@@ -66,7 +66,7 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = NO_M
   const { hover, key, focus } = useLaneActions(model, plot, scroller, setScrollTop, setTip, { span, now, colors, em, onSelect })
   if (!model || !model.lanes.some(lane => lane.spans.length)) return <p className="ov-empty">No agent has started.</p>
   const header = maxHeight ? model.plot(width, { ...view, header: true }) : null
-  return <div ref={ref} className="ov-plot ov-gantt tgc-figure" data-featured={bestMark ? true : undefined} onMouseLeave={() => setTip(null)} onMouseOver={hover} onFocus={event => { const row = event.target.closest('[data-lane]'); if (row) focus.current = row.getAttribute('data-lane'); hover(event) }} onKeyDown={key}
+  return <div ref={ref} className="ov-plot ov-gantt tgc-figure tgc-figure-chart" data-featured={bestMark ? true : undefined} onMouseLeave={() => setTip(null)} onMouseOver={hover} onFocus={event => { const row = event.target.closest('[data-lane]'); if (row) focus.current = row.getAttribute('data-lane'); hover(event) }} onKeyDown={key}
     onClick={event => { const row = event.target instanceof Element ? event.target.closest('[data-lane-index]') : null; if (row) onSelect?.(row.getAttribute('data-lane')!) }}>
     {header && width > 0 && <svg width={width} height={header.height} aria-label="Releases and time axis" dangerouslySetInnerHTML={{ __html: header.body }} />}
     <div ref={scroller} className="ov-gantt-scroll" style={{ maxHeight, overflow: maxHeight ? 'auto' : undefined }} onScroll={event => { setScrollTop(event.currentTarget.scrollTop); setTip(null) }}>

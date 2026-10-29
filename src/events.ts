@@ -173,7 +173,7 @@ function layoutLabels(groups: MarkGroup[], left: number, right: number, o: MarkL
   // A gap between positions is context: every other mark claims a label row first.
   for (const group of [...groups.filter((g) => !isGap(g.marks[0]!)), ...groups.filter((g) => isGap(g.marks[0]!))]) {
     const flip = group.x > left + (right - left) * 0.62;
-    const name = markName(group.marks[0]!) + (group.marks.length > 1 ? ` (+${group.marks.length - 1})` : "");
+    const name = markName(group.marks.find(mark => mark.label === o.priority) ?? group.marks[0]!) + (group.marks.length > 1 ? ` (+${group.marks.length - 1})` : "");
     const spot = place(name, group.x + 4, group.x - 4, flip ? "end" : "start", true);
     if (spot) placed.set(group, spot);
   }
@@ -214,7 +214,7 @@ export function drawMarks(marks: readonly ChartMark[], px: (x: number) => number
   // Labels go over every rule, so a later rule never strikes through an earlier label.
   for (const group of groups) {
     const spot = placed.get(group);
-    const lead = group.marks[0]!;
+    const lead = group.marks.find(mark => mark.label === o.priority) ?? group.marks[0]!;
     if (o.live && o.rows !== 0) {
       const label = spot?.text ?? wrap(markName(lead), Math.max(48, Math.min(200, right - left)), 12, 'sans', 1).lines[0]!;
       const x = spot?.x ?? Math.max(left, Math.min(group.x + 4, right - textWidth(label, 12)));
