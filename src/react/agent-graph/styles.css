@@ -92,7 +92,7 @@
 .ag-live-respond { min-height: 44px; min-width: 44px; }
 }
 
-.ag-topology { --ag-surface: hsl(var(--hsl-raised)); --font-size-xs: 13px; --text-xs: 13px; }
+.ag-topology { --ag-surface: hsl(var(--hsl-raised)); --font-size-xs: 13px; --text-xs: 13px; } .ag-topology :is(.text-xs, .ag-parent-label) { font-size: 13px; }
 .ag-topology .ag-team-frame { background: hsl(var(--hsl-card)) !important; }
 .ag-topology .ag-agent-card { background: var(--ag-surface); }
 .ag-topology .ag-agent-card[data-selected] { background: hsl(var(--hsl-raised-2)); }
