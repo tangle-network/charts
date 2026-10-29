@@ -76,6 +76,8 @@ export interface PreparedTimeline { plot: (width: number, view?: TimelineViewpor
 
 /** Domain-size exception: one compiler closure shares validated time/tree indexes between the lazy report and live plot. */
 export function prepareTimeline(lanes: TimelineLane[], o: TimelineOptions, presentation: TimelinePresentation = {}): PreparedTimeline | Refusal {
+  const inputGap = presentation.gantt && (eventsGap(o.marks, o.bands) ?? (o.now !== undefined && !Number.isFinite(o.now) ? "now must be a finite time." : null));
+  if (inputGap) throw new RangeError(inputGap);
   const id = o.id ?? "timeline";
   if (!lanes.length) return { id, refused: "No lanes recorded." };
   if (!o.measure?.trim()) return { id, refused: "A timeline needs a measure." };
@@ -110,7 +112,7 @@ export function prepareTimeline(lanes: TimelineLane[], o: TimelineOptions, prese
     if (!tick || !Number.isFinite(tick.at)) return { id, refused: `${lane.label}: every tick needs a finite time.` };
     if (!TICK_OUTCOMES.includes(tick.outcome)) return { id, refused: `${lane.label}: tick outcome ${String(tick.outcome)} is not one of ${TICK_OUTCOMES.join(", ")}.` };
   }
-  const shape = eventsGap(o.marks, o.bands);
+  const shape = presentation.gantt ? null : eventsGap(o.marks, o.bands);
   if (shape) return { id, refused: shape };
   const marks = o.marks ?? [], bands = o.bands ?? [];
   const stray = !presentation.gantt && marks.find((mark) => mark.lane !== undefined && !byId.has(mark.lane));

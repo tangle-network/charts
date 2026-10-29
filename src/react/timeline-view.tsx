@@ -3,7 +3,7 @@
 import { type FocusEvent, type SyntheticEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { prepareTimeline, timeline, type TimelineLane, type TimelineOptions, type PreparedTimeline } from '../timeline.js'
 import { FigureView, type FigureViewProps } from './figure-view.js'
-import { type ChartMark, eventsGap } from '../events.js'
+import type { ChartMark } from '../events.js'
 import { EventList, Tooltip, type Tip, useWidth } from './live-presentation.js'
 
 export interface TimelineViewProps {
@@ -51,9 +51,6 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = NO_M
   const [ref, width, em] = useWidth<HTMLDivElement>(), scroller = useRef<HTMLDivElement>(null)
   const [scrollTop, setScrollTop] = useState(0), [tip, setTip] = useState<Tip | null>(null)
   const model = useMemo(() => {
-    const gap = eventsGap(marks)
-    if (gap) throw new RangeError(gap)
-    if (now !== undefined && !Number.isFinite(now)) throw new RangeError('now must be a finite time.')
     const lanes: TimelineLane[] = laneInput ?? (rows ?? []).map((row, i) => ({ id: `${row.label}-${i}`, label: row.label, spans: [{ start: row.start, end: row.end, state: row.state, note: row.note }] }))
     const prepared = prepareTimeline(lanes, { measure: 'Agent activity', formatTime: axis, now, hatch, marks }, { gantt: true, legacy: !laneInput, span })
     if ('refused' in prepared) {
@@ -69,7 +66,7 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = NO_M
   return <div ref={ref} className="ov-plot ov-gantt tgc-figure tgc-figure-chart" data-featured={bestMark ? true : undefined} onMouseLeave={() => setTip(null)} onMouseOver={hover} onFocus={captureFocus} onKeyDown={key}
     onClick={event => { const row = event.target instanceof Element ? event.target.closest('[data-lane-index]') : null; if (row) onSelect?.(row.getAttribute('data-lane')!) }}>
     {header && width > 0 && <svg width={width} height={header.height} aria-label="Releases and time axis" dangerouslySetInnerHTML={{ __html: header.body }} />}
-    <div ref={scroller} className="ov-gantt-scroll" style={{ maxHeight, overflow: maxHeight ? 'auto' : undefined }} onScroll={event => { setScrollTop(event.currentTarget.scrollTop); setTip(null) }}>
+    <div ref={scroller} className="ov-gantt-scroll" style={{ maxHeight, overflow: maxHeight ? 'auto' : undefined }} onScroll={event => { if (event.currentTarget.scrollTop !== scrollTop) { setScrollTop(event.currentTarget.scrollTop); setTip(null) } }}>
       {width > 0 && plot && <svg width={width} height={plot.height} role={onSelect ? 'group' : 'img'} aria-label={`${model.rowIds.length} ${laneInput ? 'lanes' : 'agents'} over time`} dangerouslySetInnerHTML={{ __html: plot.body }} />}
     </div>
     <Tooltip tip={tip} /><EventList marks={marks} bands={[]} format={axis} />
@@ -79,7 +76,7 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = NO_M
 
 type LaneModel = PreparedTimeline & { lanes: TimelineLane[] }
 function useLaneActions(model: LaneModel | null, plot: ReturnType<LaneModel['plot']> | undefined, scroller: React.RefObject<HTMLDivElement | null>, setScrollTop: (value: number) => void, setTip: (tip: Tip | null) => void, { span, now, colors, em, onSelect }: { onSelect?: (id: string) => void; span: (start: number, end: number) => string; now?: number; colors: Record<string, string>; em: number }) {
-  const focus = useRef<{ id: string; mark: boolean; restoring?: boolean } | null>(null)
+  const focus = useRef<{ id: string; mark: boolean; restoring?: boolean; reveal?: boolean } | null>(null)
   useLayoutEffect(() => {
     const root = scroller.current?.parentElement
     if (!focus.current || !root || (document.activeElement !== document.body && !root.contains(document.activeElement))) return
@@ -104,15 +101,16 @@ function useLaneActions(model: LaneModel | null, plot: ReturnType<LaneModel['plo
     if (next === undefined || !plot) return
     event.preventDefault()
     const at = Math.max(0, Math.min(model.rowIds.length - 1, next)), position = at === 0 ? 0 : plot.top + (at - 1) * plot.rowHeight
-    focus.current = { id: model.rowIds[at]!, mark: false }
+    focus.current = { id: model.rowIds[at]!, mark: false, reveal: true }
     if (scroller.current) {
       scroller.current.scrollTop = position
       ;[...scroller.current.querySelectorAll<SVGGElement>('[data-lane-index]')].find(row => Number(row.dataset.laneIndex) === at)?.focus({ preventScroll: true })
     }
-    setScrollTop(Math.max(0, position))
+    setScrollTop(scroller.current?.scrollTop ?? Math.max(0, position))
+    if (at === i) { hover(event); focus.current.reveal = false }
   }
   const captureFocus = (event: FocusEvent<HTMLDivElement>) => {
-    if (focus.current?.restoring) return
+    if (focus.current?.restoring && !focus.current.reveal) return
     const node = event.target.closest('[data-lane], [data-mark-id]')
     if (node) focus.current = { id: node.getAttribute('data-lane') ?? node.getAttribute('data-mark-id')!, mark: node.hasAttribute('data-mark-id') }
     hover(event)
