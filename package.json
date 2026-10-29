@@ -1,6 +1,6 @@
 {
   "name": "@tangle-network/charts",
-  "version": "2.0.13",
+  "version": "2.0.14",
   "description": "Static SVG and HTML figures for benchmarks and operational timing. Draws from producer data and refuses what it cannot draw honestly.",
   "type": "module",
   "license": "MIT",
@@ -15,7 +15,8 @@
   "sideEffects": [
     "./dist/figure.css",
     "./dist/react/live.css",
-    "./dist/react/flow-waterfall.css"
+    "./dist/react/flow-waterfall.css",
+    "./dist/react/agent-graph.css"
   ],
   "files": [
     "dist",
@@ -34,19 +35,42 @@
       "import": "./dist/react/index.js",
       "default": "./dist/react/index.js"
     },
-    "./react/flow-waterfall.css": "./dist/react/flow-waterfall.css"
+    "./react/flow-waterfall.css": "./dist/react/flow-waterfall.css",
+    "./react/agent-graph.css": "./dist/react/agent-graph.css",
+    "./react/agent-graph": {
+      "types": "./dist/react/agent-graph/index.d.ts",
+      "import": "./dist/react/agent-graph/index.js",
+      "default": "./dist/react/agent-graph/index.js"
+    },
+    "./react/agent-graph/presentation": {
+      "types": "./dist/react/agent-graph/presentation.d.ts",
+      "import": "./dist/react/agent-graph/presentation.js",
+      "default": "./dist/react/agent-graph/presentation.js"
+    }
   },
   "peerDependencies": {
-    "react": "^18.0.0 || ^19.0.0"
+    "react": "^18.0.0 || ^19.0.0",
+    "elkjs": "^0.12.0",
+    "@xyflow/react": "^12.0.0",
+    "react-dom": "^18 || ^19"
   },
   "peerDependenciesMeta": {
     "react": {
+      "optional": true
+    },
+    "elkjs": {
+      "optional": true
+    },
+    "@xyflow/react": {
+      "optional": true
+    },
+    "react-dom": {
       "optional": true
     }
   },
   "scripts": {
     "gen:css": "node scripts/gen-css.mjs",
-    "build": "node scripts/check-run-tokens.mjs && node scripts/gen-css.mjs --check && tsdown && cp src/figure.css dist/figure.css && cp src/react/live.css dist/react/live.css && cp src/react/flow-waterfall.css dist/react/flow-waterfall.css",
+    "build": "node scripts/check-run-tokens.mjs && node scripts/gen-css.mjs --check && tsdown && cp src/figure.css dist/figure.css && cp src/react/live.css dist/react/live.css && cp src/react/flow-waterfall.css dist/react/flow-waterfall.css && node scripts/build-agent-graph-css.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "check:run-tokens": "node scripts/check-run-tokens.mjs"
@@ -62,11 +86,17 @@
     "jsdom": "^30.1.1",
     "playwright": "^1.63.0",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0",
+    "react-dom": "^19.3.1",
     "tsdown": "^0.23.0",
     "typescript": "^7.0.2",
     "vitest": "^5.0.2",
-    "@tangle-network/ui": "^11.51.1"
+    "@tangle-network/ui": "^11.51.1",
+    "elkjs": "0.12.0",
+    "@xyflow/react": "^12.12.0",
+    "postcss": "^8.5.31",
+    "tailwindcss": "^4.3.3",
+    "@tailwindcss/postcss": "^4.3.3",
+    "lucide-react": "^1.61.0"
   },
   "keywords": [
     "tangle",
