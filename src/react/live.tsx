@@ -538,6 +538,7 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
   const rowH = Math.round((phone ? 2.8 : 2.2) * em)
   const labelW = phone ? 8 : Math.min(Math.round(16 * em), Math.round(width * 0.28))
   const top = maxHeight ? 4 : marks.length ? 48 : 8
+  const fractions = phone ? [0, .5, 1] : [0, .25, .5, .75, 1]
   const bottom = Math.round(1.8 * em)
   const height = top + lanes.length * rowH + bottom
   const times = [...spans.flatMap((s) => [s.start, ends(s)]), ...marks.map((m) => m.at), ...(now === undefined ? [] : [now])]
@@ -562,12 +563,12 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
     <div ref={ref} className="ov-plot ov-gantt" data-featured={bestMark ? true : undefined} onMouseLeave={() => setTip(null)}>
       {maxHeight && width > 0 && <svg width={width} height={52} aria-label="Releases and time axis">
         {marks.map((mark, i) => <g key={i} data-best={mark.label === bestMark || undefined}><Mark mark={mark} x={x(mark.at)} top={10} bottom={28} row={0} em={em} flip={x(mark.at) > width * .62} />{mark.label === bestMark && <circle cx={x(mark.at)} cy={14} r={8} fill="none" stroke="var(--accent-text)" strokeWidth={2} />}</g>)}
-        {[0, .25, .5, .75, 1].map(f => <text key={f} x={labelW + f * plotW} y={46} className="ov-axis" textAnchor={f === 0 ? 'start' : f === 1 ? 'end' : 'middle'}>{axis(t0 + f * (t1 - t0))}</text>)}
+        {fractions.map(f => <text key={f} x={labelW + f * plotW} y={46} className="ov-axis" textAnchor={f === 0 ? 'start' : f === 1 ? 'end' : 'middle'}>{axis(t0 + f * (t1 - t0))}</text>)}
       </svg>}
       <div ref={scroller} className="ov-gantt-scroll" style={{ maxHeight, overflow: maxHeight ? 'auto' : undefined }} onScroll={event => setScrollTop(event.currentTarget.scrollTop)}>
       {width > 0 && (
         <svg width={width} height={height} role="group" aria-label={`${lanes.length} ${laneInput ? 'lanes' : 'agents'} over time`}>
-          {[0, 0.25, 0.5, 0.75, 1].map((f) => (
+          {fractions.map((f) => (
             <g key={f}>
               <line x1={labelW + f * plotW} x2={labelW + f * plotW} y1={top} y2={plotBottom} className="ov-gridline" />
               {!maxHeight && <text x={labelW + f * plotW} y={height - em * 0.35} className="ov-axis" textAnchor={f === 0 ? 'start' : f === 1 ? 'end' : 'middle'}>{axis(t0 + f * (t1 - t0))}</text>}
