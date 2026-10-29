@@ -129,3 +129,42 @@ line.ov-gridline { stroke: color-mix(in srgb, var(--chart-live-faint, #777) 22%,
 
 .ov-meter-steps span { overflow-wrap: anywhere; }
 @media (max-width: 720px) { .ov-meter-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ov-meter-steps li { padding: 12px; min-height: 94px; } }
+
+/* Recorded version history shares chart/Brand roles with the live timeline. */
+.tgc-version-graph { min-width: 0; font: 14px/1.4 var(--font-sans, sans-serif); color: var(--chart-live-fg, var(--text-primary));
+  --vg-c0: var(--chart-live-accent, var(--accent-text)); --vg-c1: light-dark(#2a7fa8, #6cc0e8); --vg-c2: light-dark(#7b4fc0, #b99af0); --vg-c3: light-dark(#1f7f88, #5fc2c9); --vg-c4: light-dark(#a8418f, #e58ccf); --vg-c5: light-dark(#5a6ad8, #8fa4ff); --vg-c6: light-dark(#45507a, #c0c4dc); --vg-c7: var(--chart-live-muted, var(--text-muted));
+}
+.tgc-version-graph .vg-host { position: relative; min-width: max-content; }
+.tgc-version-graph .vg-lines { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+.tgc-version-graph .vg-lines path { fill: none; stroke: currentColor; stroke-width: 2; opacity: .55; }
+.tgc-version-graph .vg-lines path.hot { opacity: 1; stroke-width: 2.5; }
+.tgc-version-graph .vg-lines .vg-dot { fill: currentColor; stroke: var(--chart-live-surface, var(--bg-surface)); stroke-width: 2; }
+.tgc-version-graph .vg-lines .vg-dot.kind-profile, .tgc-version-graph .vg-lines .vg-dot.kind-authored { fill: var(--chart-live-surface, var(--bg-surface)); stroke: currentColor; stroke-width: 2.5; }
+.tgc-version-graph .vg-lines .vg-dot.kind-ghost { fill: var(--chart-live-surface, var(--bg-surface)); stroke: var(--chart-live-faint, var(--text-muted)); stroke-dasharray: 2 2; }
+.tgc-version-graph .vg-lines .vg-dot.on { stroke: var(--chart-live-fg, var(--text-primary)); stroke-width: 3; }
+.tgc-version-graph .vg-c0 { color: var(--vg-c0); } .tgc-version-graph .vg-c1 { color: var(--vg-c1); } .tgc-version-graph .vg-c2 { color: var(--vg-c2); } .tgc-version-graph .vg-c3 { color: var(--vg-c3); }
+.tgc-version-graph .vg-c4 { color: var(--vg-c4); } .tgc-version-graph .vg-c5 { color: var(--vg-c5); } .tgc-version-graph .vg-c6 { color: var(--vg-c6); } .tgc-version-graph .vg-c7 { color: var(--vg-c7); }
+.tgc-version-graph .vg-rows { list-style: none; margin: 0; padding-right: 8px; }
+.tgc-version-graph .vg-rows > li { display: flex; }
+.tgc-version-graph .vg-row { display: flex; flex-direction: column; justify-content: flex-start; gap: 4px; width: 100%; min-width: 0; padding: 0 8px; border: 0; border-radius: 6px; background: none; color: var(--chart-live-fg, var(--text-primary)); font: inherit; text-align: left; cursor: pointer; }
+.tgc-version-graph .vg-row:hover, .tgc-version-graph .vg-row:focus-visible { background: var(--chart-live-raised, var(--bg-elevated)); }
+.tgc-version-graph .vg-row:focus-visible { outline: 2px solid var(--chart-live-accent, var(--accent-text)); outline-offset: -2px; }
+.tgc-version-graph .vg-row.on { background: color-mix(in srgb, var(--chart-live-accent, var(--accent-text)) 13%, var(--chart-live-surface, var(--bg-surface))); box-shadow: inset 2px 0 var(--chart-live-border, var(--border-color)); }
+.tgc-version-graph .vg-row:disabled { cursor: default; opacity: .8; }
+.tgc-version-graph .vg-line { display: flex; align-items: center; gap: 8px; min-width: 0; height: 30px; flex: none; }
+.tgc-version-graph .vg-line.vg-tags { height: 22px; flex-wrap: nowrap; overflow: hidden; }
+.tgc-version-graph .vg-title { font-weight: 600; max-width: 46ch; }
+.tgc-version-graph .vg-row.kind-integrate .vg-title { font-weight: 400; color: var(--chart-live-muted, var(--text-muted)); }
+.tgc-version-graph .vg-row.kind-ghost .vg-title { font-weight: 400; color: var(--chart-live-faint, var(--text-muted)); }
+.tgc-version-graph .vg-detail { font-size: var(--font-size-sm, 13px); color: var(--chart-live-muted, var(--text-muted)); }
+.tgc-version-graph .vg-chip { display: inline-block; flex: none; margin-left: 4px; padding: 0 8px; border-radius: 4px; font: 600 var(--font-size-sm, 13px)/1.6 var(--font-sans); white-space: nowrap; background: var(--chart-live-raised, var(--bg-elevated)); color: var(--chart-live-muted, var(--text-muted)); }
+.tgc-version-graph .vg-chip.tone-neutral { background: none; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chart-live-muted, var(--text-muted)) 55%, transparent); }
+.tgc-version-graph .vg-chip.tone-accent { color: var(--chart-live-accent, var(--accent-text)); background: color-mix(in srgb, var(--chart-live-accent, var(--accent-text)) 14%, transparent); }
+.tgc-version-graph .vg-chip.tone-info { color: var(--chart-live-fg, var(--text-primary)); background: var(--chart-live-raised, var(--bg-elevated)); font-weight: 400; }
+
+.tgc-version-graph :is(.vg-title,.vg-detail) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (forced-colors: active) { .tgc-version-graph .vg-chip { forced-color-adjust: none; border: 1px solid CanvasText; } }
+
+.tgc-version-graph .vg-row[data-arriving] { transition: opacity var(--motion-arrive); }
+@starting-style { .tgc-version-graph .vg-row[data-arriving] { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .tgc-version-graph .vg-row[data-arriving] { transition: none; } }

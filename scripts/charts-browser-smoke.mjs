@@ -26,13 +26,14 @@ if (reactVersion) {
  execFileSync(process.execPath,[join(dirname(manifestPath),manifest.bin.tsc),'-p','tsconfig.json'],{cwd:dir,stdio:'inherit'})
 }
 const flowApp = readFileSync(join(root,'scripts/fixtures/flow-waterfall-consumer.jsx'),'utf8')
+const versionApp = readFileSync(join(root,'scripts/fixtures/version-graph-consumer.jsx'),'utf8')
 const topologyApp = readFileSync(join(root,'scripts/fixtures/agent-graph-consumer.jsx'),'utf8')
 const recorded = JSON.parse(readFileSync(join(root,'docs/fixtures/discovery-waterfall.json'),'utf8'))
 const healthy = JSON.parse(readFileSync(join(root,'docs/fixtures/healthy-flow.json'),'utf8'))
 const app = `
 import React, { useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Sparkline, StackedBarChart, FlowWaterfall, Gantt, Meter } from '@tangle-network/charts/react'
+import { Sparkline, StackedBarChart, FlowWaterfall, Gantt, Meter, VersionGraph } from '@tangle-network/charts/react'
 import { AgentGraph } from '@tangle-network/charts/react/agent-graph'
 function App() {
  const [selectedBucketId, onSelectionChange] = useState(null)
@@ -41,6 +42,7 @@ function App() {
 const recorded = ${JSON.stringify(recorded)}, healthy = ${JSON.stringify(healthy)}
 ${flowApp}
 ${topologyApp}
+${versionApp}
 import { ENDING_COLORS } from '@tangle-network/charts'
 function Journey() {
  const [selectedId, onSelect] = useState(), [now, setNow] = useState(Date.now())
@@ -51,7 +53,7 @@ function Journey() {
 const params = new URLSearchParams(location.search)
 const name = (params.get('id') ?? '').replace('chatcontrols-flowwaterfall--','')
 document.documentElement.dataset.theme=params.get('globals')?.includes('agent-light')?'light':'dark'
-createRoot(document.getElementById('root')).render(name === 'topology' ? <Topology/> : name === 'journey' ? <Journey/> : name ? <FlowApp name={name}/> : <App />)
+createRoot(document.getElementById('root')).render(name === 'versions' ? <Versions/> : name === 'topology' ? <Topology/> : name === 'journey' ? <Journey/> : name ? <FlowApp name={name}/> : <App />)
 `
 writeFileSync(join(dir, 'app.jsx'), app)
 await build({entryPoints:[join(dir,'app.jsx')],bundle:true,outfile:join(dir,'app.js'),jsx:'automatic',alias:{react:dirname(peerRequire.resolve('react/package.json')),'react-dom':dirname(peerRequire.resolve('react-dom/package.json'))}})

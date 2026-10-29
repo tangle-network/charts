@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { type FlowWaterfallRow, spanRunning } from './flow-waterfall-model.js'
+import { spanRunning } from './flow-waterfall-model.js'
+import type { FlowSpan } from '../flow-trace.js'
 
 export interface RowMotion { enter?: number; settle?: boolean }
 
@@ -8,7 +9,7 @@ export const motionMilliseconds = (style: CSSStyleDeclaration | undefined, token
   return (parseFloat(value) || 0) * (value.endsWith('ms') ? 1 : 1000)
 }
 
-export function useRowMotion(rows: readonly FlowWaterfallRow[], element: HTMLElement | null): ReadonlyMap<string, RowMotion> {
+export function useRowMotion(rows: readonly { id: string; span?: FlowSpan }[], element: HTMLElement | null): ReadonlyMap<string, RowMotion> {
   const style = element ? getComputedStyle(element) : undefined
   const hold = motionMilliseconds(style, '--duration-arrive') + motionMilliseconds(style, '--duration-stream')
   const stagger = motionMilliseconds(style, '--stagger-step')
@@ -24,7 +25,7 @@ export function useRowMotion(rows: readonly FlowWaterfallRow[], element: HTMLEle
     const previous = known.current
     let order = 0
     for (const row of rows) {
-      const isRunning = spanRunning(row.span)
+      const isRunning = !!row.span && spanRunning(row.span)
       if (!previous || !previous.has(row.id)) {
         active.current.set(row.id, { enter: Math.min(order++ * stagger, cap), until: now + hold + cap })
       } else if (running.current.has(row.id) && !isRunning) {
@@ -32,7 +33,7 @@ export function useRowMotion(rows: readonly FlowWaterfallRow[], element: HTMLEle
       }
     }
     known.current = new Set(rows.map(row => row.id))
-    running.current = new Set(rows.filter(row => spanRunning(row.span)).map(row => row.id))
+    running.current = new Set(rows.filter(row => row.span && spanRunning(row.span)).map(row => row.id))
     return new Map(active.current)
 
   }, [rows, expiry, element])
