@@ -4,7 +4,7 @@ import { type FlowMarker, type FlowSpan, type FlowTrace, reportedCount, sumRepor
 import { FlowBody, ROW_HEIGHT } from './flow-waterfall-body.js'
 import { SpanCard } from './flow-waterfall-card.js'
 import { useTraceClock } from './flow-waterfall-clock.js'
-import { ChevronGlyph, FailGlyph, SearchGlyph, TraceGlyph } from './flow-waterfall-icons.js'
+import { FailGlyph, SearchGlyph, TraceGlyph } from './flow-waterfall-icons.js'
 import { PlaybackBar } from './flow-waterfall-playback.js'
 import {
   quietActivity, agentCallouts, agentViewRows, criticalPathIds, defaultOpenFamilies, busyMs, drawnRow, costSummary, type FlowWaterfallRow, flowWaterfallRows, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
@@ -120,16 +120,15 @@ function summaryCells(trace: FlowTrace, at: ReturnType<typeof totalsAt> | undefi
 const TONE_ORDER = ['failed', 'warn', 'live', 'neutral', 'ok']
 function KindLegend({ rows, fill }: { rows: FlowWaterfallRow[]; fill: NonNullable<FlowWaterfallProps['agentFill']> }) {
   const has = (kind: string) => rows.some(row => row.own.some(mark => workKind(mark) === kind) || row.span.kind === kind)
-  const keys: [string, string][] = [['model', 'Model call'], ['tool', 'Tool call'], ['waiting', 'No recorded work'], ['handoff', 'Handoff']]
+  const keys: [string, string][] = [['model', 'Model call'], ['tool', 'Tool call'], ['waiting', 'Waiting / untraced'], ['handoff', 'Handoff']]
   const shown = keys.filter(([kind]) => kind === 'waiting' ? rows.some(row => row.kind === 'pipeline') : kind === 'handoff' ? rows.some(row => row.span.handoffTo || row.hasAgents) : has(kind))
   if (shown.length === 0) return null
   return <ul className="fw-legend fw-kinds" aria-label="Key">
     {shown.map(([kind, name]) => {
       const examples = rows.flatMap(owner => owner.own.flatMap(mark => workKind(mark) === kind ? [{ owner, mark }] : []))
       const example = examples.find(({ mark }) => toneKey(mark.tone) > 0) ?? examples[0]
-      return <li key={kind} data-tone={fill === 'agent' ? toneKey(example?.mark.tone ?? 0) : undefined} data-example={example?.owner.id}><span className={`fw-swatch-${kind === 'waiting' ? 'wait' : kind}`} aria-hidden />{name}{example && <span>({example.owner.name})</span>}</li>
+      return <li key={kind} data-tone={fill === 'agent' ? toneKey(example?.mark.tone ?? 0) : undefined} data-example={example?.owner.id}><span className={`fw-swatch-${kind === 'waiting' ? 'wait' : kind}`} aria-hidden />{name}</li>
     })}
-    <li className="fw-kind-rule">{fill === 'agent' ? 'Hue identifies family; shade identifies work. Rail: recorded elapsed time.' : 'Shade identifies work. Rail: recorded elapsed time.'}</li>
   </ul>
 }
 function MarkerLegend({ markers }: { markers?: FlowMarker[] }) {
@@ -421,7 +420,7 @@ export function FlowWaterfall({
             {view !== 'graph' && quietAgents > 0 && <button type="button" className="fw-text-button fw-quiet" aria-pressed={filter === "__quiet"} onClick={() => applyFilter("__quiet")}>{quietAgents} quiet</button>}
             {isLive && <span className="fw-state fw-state-live" data-motion="essential">Live</span>}
           </div>
-          {view !== 'graph' && <details className="fw-key" open={root.current ? root.current.clientWidth >= 600 : true}><summary>Key<ChevronGlyph /></summary><div className="fw-legends"><OutcomeLegend agents={agents} neutral={visible.some(row => row.kind === "pipeline" && !row.span.outcome && !row.outcomes?.length)} selected={filter} onFilter={applyFilter} />{view === 'agents' && <KindLegend rows={visible} fill={agentFill} />}<MarkerLegend markers={markers} /></div></details>}
+          {view !== 'graph' && <div className="fw-legends" role="region" aria-label="Timeline key" tabIndex={0}><OutcomeLegend agents={agents} neutral={visible.some(row => row.kind === "pipeline" && !row.span.outcome && !row.outcomes?.length)} selected={filter} onFilter={applyFilter} />{view === 'agents' && <KindLegend rows={visible} fill={agentFill} />}<MarkerLegend markers={markers} /></div>}
         </div>
         <div className="fw-tools">
           <ViewControl view={view} graph={graph != null} onChange={option => { setView(option); setNameWidth(NAME_WIDTH[option]); setCard(null) }} />

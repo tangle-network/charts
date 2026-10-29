@@ -63,7 +63,7 @@
 }
 
 .fw-root .fw-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--fw-border); flex-wrap: wrap; }
-.fw-root .fw-title-block { min-width: 0; display: grid; gap: 4px; }
+.fw-root .fw-title-block { flex: 1; min-width: 0; display: grid; gap: 4px; }
 .fw-root .fw-title-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .fw-root .fw-title-glyph { display: inline-flex; color: var(--fw-accent); }
 .fw-root .fw-title { font-size: 14px; line-height: 20px; font-weight: 600; letter-spacing: -.005em; white-space: nowrap; }
@@ -220,10 +220,10 @@
 .fw-root [data-outcome="neutral"] { --outcome-tone: var(--fw-muted); }
 .fw-root [data-outcome], .fw-root [data-outcome] [data-tone] { --tone: var(--outcome-tone); }
 .fw-root.fw-root .fw-agent-dot[data-outcome] { --tone: var(--outcome-tone); }
-.fw-root .fw-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; padding: 0; list-style: none; color: var(--fw-muted); font-size: 14px; line-height: 18px; }
-.fw-root .fw-legend li { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; max-width: 100%; overflow-wrap: anywhere; }
-.fw-root .fw-legends { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 24px; margin-top: 8px; }
-.fw-root .fw-legends .fw-legend { margin: 0; }
+.fw-root .fw-legend { display: flex; flex-wrap: nowrap; gap: 4px 16px; margin: 8px 0 0; padding: 0; list-style: none; color: var(--fw-muted); font-size: 14px; line-height: 18px; }
+.fw-root .fw-legend li { display: inline-flex; align-items: center; gap: 8px; flex: none; white-space: nowrap; }
+.fw-root .fw-legends { display: flex; align-items: center; gap: 24px; max-width: 100%; min-width: 0; overflow-x: auto; margin-top: 8px; }
+.fw-root .fw-legends .fw-legend { flex: none; margin: 0; }
 .fw-root .fw-kinds { margin: 0; padding: 0; justify-content: flex-start; color: var(--fw-muted); }
 .fw-root .fw-kinds .fw-swatch-model { width: 12px; height: 8px; border-radius: 2px; background: var(--fw-kind-model); }
 .fw-root.fw-fill-agent .fw-kinds .fw-swatch-model { background: var(--model-fill); }
@@ -372,9 +372,6 @@
 .fw-root .fw-legend button { display: inline-flex; align-items: center; gap: 8px; border: 0; padding: 0; background: transparent; color: inherit; cursor: pointer; }
 .fw-root .fw-legend button[aria-pressed="true"] { color: var(--fw-text); text-decoration: underline; text-underline-offset: 4px; }
 .fw-root .fw-summary button { appearance: none; background: transparent; border: 0; padding: 0; cursor: pointer; color: inherit; }
-.fw-root .fw-key > summary { display: none; }
-.fw-root .fw-key > summary svg { width: 12px; height: 12px; margin-left: 6px; }
-.fw-root .fw-key[open] > summary svg { transform: rotate(90deg); }
 .fw-root .fw-row-state { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; }
 .fw-root .fw-error-rug { position: relative; height: 10px; margin-left: var(--fw-label-col); overflow: hidden; }
 .fw-root .fw-error-tick { position: absolute; width: 2px; height: 8px; background: var(--fw-failed); left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); }
@@ -394,10 +391,8 @@
   .fw-root .fw-summary::after { content: ""; flex-basis: 100%; }
   .fw-root .fw-summary > div:nth-child(n+3) { order: 1; }
   .fw-root :is(.fw-zoom, .fw-branch-controls, .fw-resize, .fw-links, .fw-gridlayer, .fw-marker-layer, .fw-subtitle, .fw-badge, .fw-icon-tile) { display: none; }
-  .fw-root .fw-key > summary { display: flex; align-items: center; min-height: 32px; cursor: pointer; grid-area: 2 / 2; }
-  .fw-root .fw-key:not([open]) .fw-legends { display: none; }
   .fw-root .fw-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 8px; padding: 8px; }
-  .fw-root .fw-title-block, .fw-root .fw-key { display: contents; }
+  .fw-root .fw-title-block { display: contents; }
   .fw-root .fw-title-line { grid-column: 1 / -1; flex-wrap: wrap; }
   .fw-root .fw-legends { grid-area: 3 / 1 / auto / -1; margin: 4px 0; }
   .fw-root .fw-tools { grid-area: 2 / 1; flex-wrap: wrap; }
