@@ -11,7 +11,7 @@ import { logTicks } from "./scale.js";
 import { circle, hatch, line, type MarkerShape, NARROW, polyline, svgRoot, text, titled, wideWidth } from "./svg.js";
 import { table } from "./table.js";
 import { capitalize, esc, plural, textBlock, textWidth, wrap } from "./text.js";
-import { pointsGap, type TimePoint } from "./time-series.js";
+import { pointsGap, spreadX, type TimePoint } from "./time-series.js";
 import type { Figure, Refusal } from "./types.js";
 
 export interface MultiplePanel {
@@ -182,21 +182,14 @@ function draw(panels: MultiplePanel[], o: SmallMultiplesOptions, width: number, 
     body += drawTargets(panel.targets ?? [], py, left, right, yLabel, false) + targetKey(panel.targets ?? [], ox + 2, oy + 30, panelW - 4);
     if (labelled.length) body += columnLabels(labelled, px, labelFit.fit, left, right, right + 4, xLabel, 10, bottom + 16);
     else body += text(left, bottom + 16, xLabel(o.x.domain[0]), { size: 12, cls: "tgc-ink-muted tgc-num" }) + text(right, bottom + 16, xLabel(o.x.domain[1]), { size: 12, anchor: "end", cls: "tgc-ink-muted tgc-num" });
-    // Points sharing a column are spread across it in input order.
-    const shared = new Map<number, TimePoint[]>();
-    for (const point of panel.points!) if (point.y !== null) shared.set(point.x, [...(shared.get(point.x) ?? []), point]);
-    const xOf = (point: TimePoint) => {
-      const list = shared.get(point.x)!, room = axis.column(point.x);
-      const step = room === null ? 0 : Math.min(9, room / (list.length + 1));
-      return px(point.x) + (list.indexOf(point) - (list.length - 1) / 2) * step;
-    };
+    const xOf = spreadX(panel.points!.filter((point) => point.y !== null), axis, 9);
     const placed: Array<[number, number, number, number]> = [];
     const pending: Array<{ x: number; y: number; r: number; point: TimePoint }> = [];
     let segment: Array<[number, number]> = [];
     const flush = () => { if (segment.length > 1 && o.connect !== false) body += polyline(segment, "tgc-series-line"); segment = []; };
     for (const point of panel.points!) {
       if (point.y === null) { flush(); continue; }
-      const x = xOf(point), y = py(point.y);
+      const x = xOf.get(point)!, y = py(point.y);
       segment.push([x, y]);
       if (!hasPointFields([point]) && point.marker === undefined) {
         body += titled(`${panel.label} · ${o.x.label} ${xLabel(point.x)} · ${yLabel(point.y)} · ${observationLabel(point.observations)}`, circle(x, y, 2.5, "tgc-series-point"));

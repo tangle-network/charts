@@ -1,5 +1,5 @@
 /** Recorded trajectories. Explicit null observations break lines without interpolation. */
-import { categoriesGap, columnLabelFit, columnLabels, drawTargets, logValueGap, targetsTable, type XCategory, xAxis, xTicks, type YScale, yAxisGap, yGridlines, type YTarget, type YTick, yScale } from "./axis.js";
+import { categoriesGap, columnLabelFit, columnLabels, drawTargets, logValueGap, targetsTable, type XAxis, type XCategory, xAxis, xTicks, type YScale, yAxisGap, yGridlines, type YTarget, type YTick, yScale } from "./axis.js";
 import { type ChartBand, type ChartMark, drawBands, drawGroups, drawMarks, EVENTS_READ, eventsGap, eventsTable, groupRowHeight, markLabelRows } from "./events.js";
 import { checkerClass } from "./outcomes.js";
 import { hasPointFields, placeBadges, POINT_COLUMNS, pointCells, pointFacts, type PointFields, pointFieldsGap, pointMark, stripMark, VERDICT_WORD, verdictKey } from "./points.js";
@@ -149,19 +149,8 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
   // Group brackets and their labels go over the event rules, so a ruling's rule never strikes through a run's label.
   const groups = drawGroups(o.bands ?? [], axis.extent, top, bottom, left, right, xLabel);
   if (strip) marks += text(left - 8, bottom + 16, stripName, { anchor: "end", cls: "tgc-ink-muted", size: 12 }) + line(left, bottom + strip, right, bottom + strip, "tgc-gridline");
-  // Several points in one column (a check and a gate, two checkers) are spread across it in input order.
-  const spread = (inStrip: boolean) => {
-    const byX = new Map<number, Array<TimePoint>>();
-    for (const row of rows) for (const point of row.points) if ((point.y === null) === inStrip && (!inStrip || point.verdict !== undefined)) byX.set(point.x, [...(byX.get(point.x) ?? []), point]);
-    const at = new Map<TimePoint, number>();
-    for (const [x, list] of byX) {
-      const room = axis.column(x);
-      const step = room === null ? 0 : Math.min(10, room / (list.length + 1));
-      list.forEach((point, k) => at.set(point, px(x) + (k - (list.length - 1) / 2) * step));
-    }
-    return at;
-  };
-  const plotX = spread(false), stripX = spread(true);
+  const all = rows.flatMap((row) => row.points);
+  const plotX = spreadX(all.filter((point) => point.y !== null), axis, 10), stripX = spreadX(all.filter((point) => point.y === null && point.verdict !== undefined), axis, 10);
   let legendY = bottom + strip + turn + 72;
   let points = "", tips = "", rules = "";
   // Badges are placed after every mark, so a badge never covers a mark drawn later.
@@ -226,6 +215,18 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
   // Rules and heads stop above the group brackets, so a ruling's head never sits on a solved mark.
   const events = drawMarks(o.marks ?? [], px, top - groupRowHeight(o.bands), bottom, left, right, xLabel, 22);
   return `<svg class="tgc-svg tgc-trajectories" xmlns="http://www.w3.org/2000/svg" width="${width}" height="${legendY + 12}" viewBox="0 0 ${width} ${legendY + 12}" role="group" aria-label="${esc(o.y.label)} by ${esc(o.x.label)}"><style>${rules}</style>${marks}${events}${groups}${points}${badges}${tips}</svg>`;
+}
+
+/** Several points in one column (a check and a gate, two checkers) are spread across it in input order. */
+export function spreadX(points: readonly TimePoint[], axis: XAxis, maxStep: number): Map<TimePoint, number> {
+  const byX = new Map<number, TimePoint[]>();
+  for (const point of points) byX.set(point.x, [...(byX.get(point.x) ?? []), point]);
+  const at = new Map<TimePoint, number>();
+  for (const [x, list] of byX) {
+    const room = axis.column(x), step = room === null ? 0 : Math.min(maxStep, room / (list.length + 1));
+    list.forEach((point, k) => at.set(point, axis.px(x) + (k - (list.length - 1) / 2) * step));
+  }
+  return at;
 }
 
 /** Why recorded points cannot be drawn on these axes, or null; `timeSeries` and `smallMultiples` refuse alike. */
