@@ -31,6 +31,7 @@ import type {
   AgentGraphNode,
   AgentGraphStatus,
 } from "./agent-graph-layout";
+import { shortModel } from "./naming";
 import { SELECTION_OUTLINE } from "./canvas-theme";
 import { fmtCost, fmtTokenTotal } from "./format";
 import {
@@ -116,13 +117,15 @@ export function AgentCardView({ agent, selected, direction, now: fixed, onOpen, 
     style={{ boxShadow: RESTING_SHADOW, ...cardBorder(agent.status), ...(selected ? SELECTION_OUTLINE : {}) }}>
     {handles && <Handles direction={direction} />}
     <div className="flex min-w-0 items-center gap-2">
-      <span className="grayscale hover:grayscale-0"><AgentMark agent={agent} layout="tree" size={18} /></span>
+      <AgentMark agent={agent} layout="tree" size={24} />
       <span className="min-w-0 flex-1 truncate text-sm font-semibold leading-[18px]">{parentLabel && <span className="ag-parent-label">{parentLabel} / </span>}{agent.label}</span>
-      <span className="text-xs text-muted-foreground tabular-nums" title={agent.costUsd == null ? "Cost not reported" : "Cost"}>{fmtCost(agent.costUsd ?? undefined) ?? "—"}</span>
+      <span className="text-[13px] text-muted-foreground tabular-nums" title={agent.costUsd == null ? "Cost not reported" : "Cost"}>{fmtCost(agent.costUsd ?? undefined) ?? "—"}</span>
     </div>
-    <p className="m-0 line-clamp-2 min-h-4 text-xs text-foreground leading-4">{(agent.status === "failed" ? agent.result ?? agent.turn : agent.turn) || "—"}</p>
-    <div className="mt-auto flex items-center justify-between gap-1 text-xs" style={{ color: quiet ? "var(--surface-warning-text)" : s.color }}>
+    <p data-agent-identity="" className="m-0 truncate text-[13px] leading-[18px] text-muted-foreground" title={[agent.harness, agent.model].filter(Boolean).join(" · ")}>{[agent.harness, agent.model ? shortModel(agent.model) : null].filter(Boolean).join(" · ") || "Identity not recorded"}</p>
+    {agent.status === "failed" && <p className="m-0 line-clamp-2 text-[13px] leading-4">{agent.result ?? agent.turn ?? "Failure cause not recorded"}</p>}
+    <div className="mt-auto flex items-center justify-between gap-1 text-[13px]" style={{ color: quiet ? "var(--surface-warning-text)" : s.color }}>
       <span className="flex items-center gap-1"><StatusGlyph status={agent.status} size={16} />{quiet?.label ?? s.label}</span>
+      <span data-agent-tokens="" className="text-muted-foreground tabular-nums whitespace-nowrap">{fmtTokenTotal(agent.tokens) ?? "Tokens not recorded"}</span>
       {agent.status === "needs-you" && <button type="button" className="ag-live-respond nodrag nopan" disabled={!onOpen} onClick={event => { event.stopPropagation(); onOpen?.(); }}>Respond</button>}
     </div>
   </div>;
@@ -131,7 +134,7 @@ export function AgentCardView({ agent, selected, direction, now: fixed, onOpen, 
 export function AgentCard({ data }: NodeProps<AgentCardNode>) { return <AgentCardView {...data} handles />; }
 
 export type AgentFrameNode = Node<
-  { frame: AgentFrame; direction: AgentGraphDirection; label: string; onToggle: () => void },
+  { frame: AgentFrame; direction: AgentGraphDirection; label: string; groupParents: boolean; onToggle: () => void },
   "agentFrame"
 >;
 
@@ -139,14 +142,14 @@ export function AgentFrameBox({ data }: NodeProps<AgentFrameNode>) {
   const { frame, direction } = data;
   return (
     <div
-      className="relative h-full w-full rounded-2xl border"
+      className="ag-team-frame relative h-full w-full rounded-2xl border"
       style={{
         background: "color-mix(in srgb, hsl(var(--muted-foreground)) 7%, transparent)",
         borderColor: "hsl(var(--foreground) / 0.08)",
       }}
     >
       <Handles direction={direction} />
-      <button type="button" className="nodrag nopan absolute right-3 top-2 flex h-16 w-8 flex-col items-center justify-center gap-1 rounded text-sm text-muted-foreground hover:bg-muted focus-visible:outline" aria-label={`${frame.collapsed ? "Expand" : "Collapse"} ${data.label} team`} aria-expanded={!frame.collapsed} title={`${data.label} · ${frame.group.memberIds.length} agents`} onClick={event => { event.stopPropagation(); data.onToggle(); }}><ChevronDown size={16} className={frame.collapsed ? "-rotate-90" : undefined} /><span>{frame.group.memberIds.length}</span></button>
+      <button type="button" className={`nodrag nopan absolute top-2 flex h-16 items-center justify-center gap-2 rounded text-sm text-muted-foreground hover:bg-muted focus-visible:outline ${data.groupParents ? "right-3 w-8 flex-col" : "left-3 right-3 justify-start"}`} aria-label={`${frame.collapsed ? "Expand" : "Collapse"} ${data.label} team`} aria-expanded={!frame.collapsed} title={`${data.label} · ${frame.group.memberIds.length} agents`} onClick={event => { event.stopPropagation(); data.onToggle(); }}><ChevronDown size={16} className={frame.collapsed ? "-rotate-90" : undefined} />{!data.groupParents && <strong>{data.label} team</strong>}<span>{frame.group.memberIds.length}</span></button>
     </div>
   );
 }
