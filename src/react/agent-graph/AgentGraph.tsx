@@ -65,7 +65,7 @@ export interface AgentGraphProps extends GraphMarks {
    * their initial attention order. Only the running dot breathes; commands update without routine sliding.
    */
   live?: boolean;
-  /** Host tool identity, such as charts' toolGlyph(event.label). Core graphs need no charts dependency. */
+  /** Optional host tool identity for a recorded event. */
   renderEventIcon?: (event: AgentGraphEvent) => ReactNode;
   /** Live tree activity; false when a shared workspace already supplies its strip. */
   showLatestEvents?: boolean;
