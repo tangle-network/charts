@@ -311,7 +311,7 @@
 .fw-root .fw-icon-button { appearance: none; display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--fw-muted); cursor: pointer; flex-shrink: 0; }
 .fw-root .fw-icon-button:hover:not(:disabled) { background: var(--fw-hover); color: var(--fw-text); }
 .fw-root .fw-card-close { width: 20px; height: 20px; margin-right: -4px; }
-.fw-root .fw-card-table { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; padding-top: 8px; border-top: 1px solid var(--fw-border); font-size: 14px; line-height: 18px; }
+.fw-root .fw-card-table { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); overflow-wrap: anywhere; gap: 6px 16px; padding-top: 8px; border-top: 1px solid var(--fw-border); font-size: 14px; line-height: 18px; }
 .fw-root .fw-card-table > div { display: contents; }
 .fw-root .fw-card-table dt, .fw-root .fw-card-label { font-size: 14px; line-height: 18px; color: var(--fw-muted); }
 .fw-root .fw-card-table dd { min-width: 0; font-weight: 500; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
