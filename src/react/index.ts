@@ -46,3 +46,6 @@ export { criticalPathIds, flowWaterfallRows } from "./flow-waterfall-model.js";
 export type { FlowWaterfallRow } from "./flow-waterfall-model.js";
 
 export { toolGlyph } from './flow-waterfall-icons.js'
+
+export { VersionGraph, layoutVersionGraph } from './version-graph.js'
+export type { VersionGraphModel, VersionGraphNode, VersionGraphLane, VersionGraphChip, VersionGraphTone } from './version-graph.js'
