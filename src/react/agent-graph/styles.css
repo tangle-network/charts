@@ -1,12 +1,9 @@
 @import "tailwindcss" source(none);
 @import "@xyflow/react/dist/style.css";
-@import "@tangle-network/brand/styles/tokens.css" layer(theme.brand);
-@import "@tangle-network/brand/styles/named-themes.css" layer(theme.brand);
 @import "@tangle-network/brand/styles/theme.css" theme(default);
 @source "./*.tsx";
 @source "./motion.ts";
 @source "../../../node_modules/@tangle-network/ui/src/run/status-meta.tsx";
-:is(.dark, .light, [data-theme]) { --foreground: var(--hsl-foreground); --muted-foreground: var(--hsl-muted-foreground); }
 .agent-graph { container-type: inline-size; }
 .ag-live { --ag-fg: hsl(var(--foreground)); --ag-muted: hsl(var(--muted-foreground)); --ag-surface: hsl(var(--card)); --ag-border: hsl(var(--border)); }
 .ag-live-slot { display: flex; align-items: flex-start; width: 100%; height: 100%; }

@@ -40,7 +40,7 @@ export const AGENT_HUB_CSS = `
 .ag-running-dot { display: inline-block; flex-shrink: 0; width: 6px; height: 6px; border-radius: var(--radius-pill); background: var(--surface-info-text); animation: tangle-breathe var(--motion-ambient) infinite; }
 .ag-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; color: var(--ag-muted); }
 .ag-legend-line { width: 14px; height: 2px; border-radius: var(--radius-pill); }
-.ag-popover { overflow: auto; position: absolute; z-index: 5; width: min(280px, calc(100% - 16px)); padding: 12px; border-radius: var(--radius-card); background: var(--bg-elevated); color: var(--ag-fg); border: 1px solid var(--ag-border); box-shadow: var(--shadow-overlay); animation: agent-arrive var(--motion-arrive); }
+.ag-popover { overflow: auto; position: absolute; z-index: 5; width: min(280px, calc(100% - 16px)); padding: 12px; border-radius: var(--radius-card); background: var(--bg-elevated); color: var(--ag-fg); border: 1px solid var(--ag-border); box-shadow: var(--shadow-overlay); animation: tangle-intro-enter var(--motion-arrive); }
 .ag-tile-mini { border-radius: var(--radius-control); box-shadow: none; }
 .ag-tile-micro { border: 0; border-radius: var(--radius-tag); background: none; box-shadow: none; }
 .ag-pop-title { display: flex; flex-direction: column; min-width: 0; flex: 1; }
