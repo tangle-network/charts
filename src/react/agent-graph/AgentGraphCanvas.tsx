@@ -8,7 +8,6 @@ import {
   ReactFlow,
   type ReactFlowInstance,
 } from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
 import {
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,

@@ -1,8 +1,10 @@
 @import "tailwindcss" source(none);
+@import "@xyflow/react/dist/style.css";
 @import "@tangle-network/brand/styles/tokens.css" layer(theme.brand);
 @import "@tangle-network/brand/styles/named-themes.css" layer(theme.brand);
 @import "@tangle-network/brand/styles/theme.css" theme(default);
 @source "./*.tsx";
+@source "./*.ts";
 @source "../../../node_modules/@tangle-network/ui/src/**/*.tsx";
 @source "../../../node_modules/@tangle-network/ui/src/**/*.ts";
 :is(.dark, .light, [data-theme]) { --foreground: var(--hsl-foreground); --muted-foreground: var(--hsl-muted-foreground); }
