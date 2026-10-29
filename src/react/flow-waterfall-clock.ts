@@ -52,7 +52,7 @@ export function useTraceClock(input: TraceClockInput): TraceClock {
     return Math.max(total, origin === undefined ? total + Date.now() - receivedAt.current : Date.now() - origin)
   }
 
-  const paint = (t: number, limit = liveNow(), force = false) => {
+  const paint = (t: number, limit = liveNow()) => {
     const element = root.current
     if (!element) return
     const { startMs, endMs } = latest.current.view(t)
@@ -60,7 +60,7 @@ export function useTraceClock(input: TraceClockInput): TraceClock {
     const following = latest.current.live && !latest.current.playing && latest.current.position === null
     for (const [name, value, scale] of [['--fw-t', t, k], ['--fw-v0', startMs, k], ['--fw-k', k, endMs - startMs]] as const) {
       const distance = Math.abs(value - (geometry.current[name] ?? NaN)) * scale
-      if (following && Number.isFinite(distance) && distance < .25 && !(force && name === '--fw-t')) continue
+      if (following && Number.isFinite(distance) && distance < .25) continue
       element.style.setProperty(name, String(value)); geometry.current[name] = value
     }
     if (slider.current) { slider.current.max = String(Math.max(1, limit, t)); slider.current.value = String(t) }
@@ -71,11 +71,11 @@ export function useTraceClock(input: TraceClockInput): TraceClock {
     if (position !== null) playhead.current = position
     if (!live && !playing) {
       const t = position ?? observedTotal
-      paint(t, undefined, true)
+      paint(t)
       setClockMs(t)
       return
     }
-    paint(playing ? playhead.current : position ?? liveNow(), undefined, true)
+    paint(playing ? playhead.current : position ?? liveNow())
     let frame = 0
     let last = performance.now()
     let lastText = 0
@@ -100,7 +100,7 @@ export function useTraceClock(input: TraceClockInput): TraceClock {
     }
     frame = requestAnimationFrame(step)
     return () => cancelAnimationFrame(frame)
-    // Snapshots, zoom and resize repaint immediately; subpixel live drift does not invalidate every recorded mark.
+    // Fixed marks update with data; following live only repaints perceptible geometry drift.
   }, [live, playing, position, observedTotal, snapshot, view, trackPx])
 
   return { clockMs, limitMs: liveNow, positionMs: () => playhead.current }
