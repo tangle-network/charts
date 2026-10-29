@@ -164,3 +164,7 @@ line.ov-gridline { stroke: color-mix(in srgb, var(--chart-live-faint, #777) 22%,
 
 .tgc-version-graph :is(.vg-title,.vg-detail) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (forced-colors: active) { .tgc-version-graph .vg-chip { forced-color-adjust: none; border: 1px solid CanvasText; } }
+
+.tgc-version-graph .vg-row[data-arriving] { transition: opacity var(--motion-arrive); }
+@starting-style { .tgc-version-graph .vg-row[data-arriving] { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .tgc-version-graph .vg-row[data-arriving] { transition: none; } }

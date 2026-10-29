@@ -1,6 +1,7 @@
 /** Recorded version lanes; callers supply their domain model, filters and selection. */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useWidth } from './live.js'
+import { useRowMotion } from './flow-waterfall-motion.js'
 
 /** `muted` chips sit beside the title; any other tone gets the second line. */
 /** A status tone from `statusOf`, or a non-status chip: `accent` for a series, `info` and `muted` for plain facts. */
@@ -128,6 +129,8 @@ export function VersionGraph({
   }
   const pane = useRef<HTMLDivElement>(null)
   const focusTarget = useRef<string | null>(null)
+  const arrived = useRef(new Set<string>())
+  const motion = useRowMotion(model.nodes, pane.current)
   const [scrollTop, setScrollTop] = useState(0)
   const first = Math.max(0, tops.findIndex(top => top >= scrollTop) - 7)
   const after = tops.findIndex(top => top > scrollTop + maxHeight)
@@ -185,17 +188,18 @@ export function VersionGraph({
             {visible.map((row) => {
               const node = row.node
               const on = selected === node.id
+              const arriving = motion.get(node.id)?.enter !== undefined && !arrived.current.has(node.id)
               const loud = (node.chips ?? []).filter((chip) => chip.tone && chip.tone !== 'muted')
               const quiet = (node.chips ?? []).filter((chip) => !chip.tone || chip.tone === 'muted')
               return (
                 <li key={node.id} aria-posinset={row.row + 1} aria-setsize={laid.rows.length} style={{ height: tops[row.row + 1]! - tops[row.row]! }}>
                   <button
-                    ref={element => { if (element && focusTarget.current === node.id) { focusTarget.current = null; element.focus() } }}
+                    ref={element => { if (!element) return; if (arriving) arrived.current.add(node.id); if (focusTarget.current === node.id) { focusTarget.current = null; element.focus() } }}
                     type="button"
                     className={`vg-row kind-${node.kind} ${on ? 'on' : ''}`}
                     aria-pressed={on}
                     disabled={node.kind === 'ghost'}
-                    data-node={node.id} data-row={row.row}
+                    data-node={node.id} data-row={row.row} data-arriving={arriving || undefined}
                     onClick={() => onSelect(node.id)}
                   >
                     <span className="vg-line">
