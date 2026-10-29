@@ -1,5 +1,5 @@
 /** Reusable, em-scaled charts for live operational series. Values, labels and status colors belong to callers. */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { type ChartBand, type ChartMark, eventsGap, MARK_HEADS, markName } from '../events.js'
 import { hatchPath, type MarkerShape, markerPath } from '../svg.js'
 import type { TimelineLane } from '../timeline.js'
@@ -513,9 +513,11 @@ export function Events({ at, from, to, label, color = LIVE_SERIES[0], ticks = 7,
  * state; hovering a span names it, its state and its span. Times are epoch ms; `axis` labels the time axis.
  * `lanes` give a row several spans (the same shape as the static `timeline`); a span with `end: null` is open and runs
  * to `now`. `marks` draw recorded events across every lane, and states in `hatch` are drawn hatched (no data). */
-export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], now, hatch = ['missing', 'untraced'] }: { rows?: { label: string; start: number; end: number; state: string; note?: string }[]; lanes?: TimelineLane[]; colors: Record<string, string>; axis: (t: number) => string; span: (start: number, end: number) => string; marks?: ChartMark[]; now?: number; hatch?: string[] }) {
+export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], now, hatch = ['missing', 'untraced'], selectedId, onSelect, bestMark, maxHeight }: { selectedId?: string; onSelect?: (id: string) => void; bestMark?: string; maxHeight?: number; rows?: { label: string; start: number; end: number; state: string; note?: string }[]; lanes?: TimelineLane[]; colors: Record<string, string>; axis: (t: number) => string; span: (start: number, end: number) => string; marks?: ChartMark[]; now?: number; hatch?: string[] }) {
   const [ref, width, em] = useWidth<HTMLDivElement>()
   const [tip, setTip] = useState<Tip | null>(null)
+  const scroller = useRef<HTMLDivElement>(null)
+  const [scrollTop, setScrollTop] = useState(0)
   const lanes: TimelineLane[] = laneInput ?? (rows ?? []).map((row, i) => ({ id: `${row.label}-${i}`, label: row.label, spans: [{ start: row.start, end: row.end, state: row.state, note: row.note }] }))
   const gap = eventsGap(marks)
   if (gap) throw new RangeError(gap)
@@ -528,9 +530,10 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
   const spans = lanes.flatMap((lane) => lane.spans)
   if (!spans.length) return <p className="ov-empty">No agent has started.</p>
   const ends = (s: { end: number | null }) => s.end ?? now!
-  const rowH = Math.round(1.25 * em)
-  const labelW = Math.min(Math.round(13 * em), Math.round(width * 0.32))
-  const top = marks.length ? 4 + Math.round(Math.min(3, marks.length) * em + 0.3 * em) : 4
+  const phone = width < 600
+  const rowH = Math.round((phone ? 2.8 : 2.2) * em)
+  const labelW = phone ? 8 : Math.min(Math.round(16 * em), Math.round(width * 0.28))
+  const top = marks.length ? 48 : 8
   const bottom = Math.round(1.8 * em)
   const height = top + lanes.length * rowH + bottom
   const times = [...spans.flatMap((s) => [s.start, ends(s)]), ...marks.map((m) => m.at), ...(now === undefined ? [] : [now])]
@@ -541,29 +544,45 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
   const fallback = colors.unknown ?? 'var(--chart-live-faint, var(--chart-muted))'
   const hatched = new Set(hatch)
   const plotBottom = top + lanes.length * rowH
+  const first = maxHeight && lanes.length > 100 ? Math.max(0, Math.floor((scrollTop - top) / rowH) - 6) : 0
+  const visible = maxHeight && lanes.length > 100 ? lanes.slice(first, first + Math.ceil(maxHeight / rowH) + 14) : lanes
+  const select = (id: string) => onSelect?.(id)
+  const focusLane = (index: number) => {
+    const at = Math.max(0, Math.min(lanes.length - 1, index))
+    if (scroller.current) scroller.current.scrollTop = top + at * rowH - rowH
+    setScrollTop(Math.max(0, top + at * rowH - rowH))
+    requestAnimationFrame(() => scroller.current?.querySelector<SVGGElement>(`[data-lane-index="${at}"]`)?.focus())
+  }
   return (
-    <div ref={ref} className="ov-plot" onMouseLeave={() => setTip(null)}>
+    <div ref={ref} className="ov-plot ov-gantt" data-featured={bestMark ? true : undefined} onMouseLeave={() => setTip(null)}>
+      <div ref={scroller} className="ov-gantt-scroll" style={{ maxHeight, overflow: maxHeight ? 'auto' : undefined }} onScroll={event => setScrollTop(event.currentTarget.scrollTop)}>
       {width > 0 && (
-        <svg width={width} height={height} role="img" aria-label={`${lanes.length} ${laneInput ? 'lanes' : 'agents'} over time`}>
+        <svg width={width} height={height} role="group" aria-label={`${lanes.length} ${laneInput ? 'lanes' : 'agents'} over time`}>
           {[0, 0.25, 0.5, 0.75, 1].map((f) => (
             <g key={f}>
               <line x1={labelW + f * plotW} x2={labelW + f * plotW} y1={top} y2={plotBottom} className="ov-gridline" />
               <text x={labelW + f * plotW} y={height - em * 0.35} className="ov-axis" textAnchor={f === 0 ? 'start' : f === 1 ? 'end' : 'middle'}>{axis(t0 + f * (t1 - t0))}</text>
             </g>
           ))}
-          {lanes.map((lane, i) => {
-            const y = top + i * rowH
+          {visible.map((lane, offset) => {
+            const i = first + offset, y = top + i * rowH
             return (
-              <g key={lane.id} data-lane={lane.id}>
+              <g key={lane.id} data-lane={lane.id} data-lane-index={i} role={onSelect ? 'button' : undefined} tabIndex={onSelect ? 0 : undefined} aria-label={lane.label} aria-pressed={onSelect ? selectedId === lane.id : undefined}
+                onClick={() => select(lane.id)} onKeyDown={event => {
+                  if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(lane.id) }
+                  const next = ({ ArrowDown: i + 1, ArrowUp: i - 1, Home: 0, End: lanes.length - 1 } as Record<string, number>)[event.key]
+                  if (next !== undefined) { event.preventDefault(); focusLane(next) }
+                }}>
+                {selectedId === lane.id && <rect x={0} y={y} width={width} height={rowH} fill="var(--ix-sel-bg)" rx={4} />}
                 {/* The whole row names every span on hover, as single-span rows always did. */}
                 <rect x={0} y={y} width={width} height={rowH} fill="transparent"
                   onMouseEnter={() => setTip({ x: Math.min(x(ends(lane.spans.at(-1) ?? { end: t1 })) + 8, width - em * 16), y: Math.max(0, y - em), title: lane.label, lines: lane.spans.flatMap((s) => [{ label: s.end === null ? `${s.state} (open)` : s.state, value: span(s.start, ends(s)), color: hatched.has(s.state) ? undefined : colors[s.state] ?? fallback }, ...(s.note ? [{ label: s.note, value: '' }] : [])]) })} />
-                <text x={labelW - em * 0.5} y={y + rowH / 2} dominantBaseline="middle" textAnchor="end" className="ov-axis ov-gantt-label">
+                <text x={phone ? 8 : labelW - em * 0.5} y={phone ? y + 13 : y + rowH / 2} dominantBaseline="middle" textAnchor={phone ? 'start' : 'end'} className="ov-axis ov-gantt-label"><title>{lane.label}</title>
                   {lane.label.length > 26 ? `${lane.label.slice(0, 25)}…` : lane.label}
                 </text>
                 {lane.spans.map((s, j) => {
                   const color = colors[s.state] ?? fallback
-                  const bx = x(s.start), bw = Math.max(2, x(ends(s)) - bx), by = y + rowH * 0.18, bh = rowH * 0.64
+                  const bx = x(s.start), bw = Math.max(2, x(ends(s)) - bx), by = y + (phone ? 24 : rowH * 0.25), bh = rowH * 0.5
                   const open = s.end === null
                   return (
                     <g key={j} data-state={s.state} data-open={open ? 'true' : undefined} data-hatched={hatched.has(s.state) ? 'true' : undefined}
@@ -584,10 +603,14 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
           })}
           {now !== undefined && <line x1={x(now)} x2={x(now)} y1={top} y2={plotBottom} className="ov-now" data-now="true" />}
           {[...marks].sort((a, b) => a.at - b.at).map((mark, i) => (
-            <Mark key={`mark-${i}`} mark={mark} x={x(mark.at)} top={4} bottom={plotBottom} row={i % 3} em={em} flip={x(mark.at) > labelW + plotW * 0.62} />
+            <g key={`mark-${i}`} data-best={mark.label === bestMark || undefined}>
+              <Mark mark={mark} x={x(mark.at)} top={4} bottom={plotBottom} row={i % 2} em={em} flip={x(mark.at) > labelW + plotW * 0.62} />
+              {mark.label === bestMark && <circle cx={x(mark.at)} cy={4 + Math.max(3, em / 4)} r={8} fill="none" stroke="var(--accent-text)" strokeWidth={2} />}
+            </g>
           ))}
         </svg>
       )}
+      </div>
       <Tooltip tip={tip} />
       <EventList marks={marks} bands={[]} format={axis} />
     </div>

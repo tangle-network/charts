@@ -31,22 +31,28 @@ const healthy = JSON.parse(readFileSync(join(root,'docs/fixtures/healthy-flow.js
 const app = `
 import React, { useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Sparkline, StackedBarChart, FlowWaterfall } from '@tangle-network/charts/react'
+import { Sparkline, StackedBarChart, FlowWaterfall, Gantt } from '@tangle-network/charts/react'
 function App() {
  const [selectedBucketId, onSelectionChange] = useState(null)
  return <main><h1>Recorded usage</h1><p>Hover, focus, or tap a day to inspect its actual stack.</p><Sparkline values={[2, 0, null, 8, 5]} label="Delta" format={String} /><section className="panel"><StackedBarChart label="Daily spend" maxValue={52} selectedBucketId={selectedBucketId} onSelectionChange={onSelectionChange} formatValue={v => '$' + v.toFixed(2)} series={[{id:'inference',label:'Inference',color:'#5746c3'},{id:'compute',label:'Compute',color:'#2f70aa'}]} buckets={[{id:'sep6',label:'Sep 6',total:52,segments:[{seriesId:'inference',value:42},{seriesId:'compute',value:10}]},{id:'sep7',label:'Sep 7',total:21.6,segments:[{seriesId:'inference',value:16.8},{seriesId:'compute',value:4.8}]},{id:'sep8',label:'Sep 8',total:5.6,segments:[{seriesId:'inference',value:2.8},{seriesId:'compute',value:2.8}]}]} /></section></main>
 }
 const recorded = ${JSON.stringify(recorded)}, healthy = ${JSON.stringify(healthy)}
 ${flowApp}
+function Journey() {
+ const [selectedId, onSelect] = useState(), [now, setNow] = useState(Date.now())
+ const start = useState(() => Date.now() - 60000)[0]
+ useEffect(() => { const clock = setInterval(() => setNow(Date.now()), 100); return () => clearInterval(clock) }, [])
+ return <Gantt lanes={Array.from({length:124},(_,i)=>({id:'agent-'+i,label:'Agent '+i,spans:[{start:start+i*100,end:i%3===0?null:start+30000,state:i%3===0?'running':'shipped'}]}))} selectedId={selectedId} onSelect={onSelect} maxHeight={420} now={now} marks={[{kind:'release',label:'rc1',at:start+10000},{kind:'release',label:'rc2',at:start+20000}]} bestMark="rc2" colors={{running:'var(--accent-text)',shipped:'var(--surface-success-text)'}} axis={t=>new Date(t).toISOString().slice(11,19)} span={(a,b)=>Math.round((b-a)/1000)+'s'}/>
+}
 const params = new URLSearchParams(location.search)
 const name = (params.get('id') ?? '').replace('chatcontrols-flowwaterfall--','')
 document.documentElement.dataset.theme=params.get('globals')?.includes('agent-light')?'light':'dark'
-createRoot(document.getElementById('root')).render(name ? <FlowApp name={name}/> : <App />)
+createRoot(document.getElementById('root')).render(name === 'journey' ? <Journey/> : name ? <FlowApp name={name}/> : <App />)
 `
 writeFileSync(join(dir, 'app.jsx'), app)
 await build({entryPoints:[join(dir,'app.jsx')],bundle:true,outfile:join(dir,'app.js'),jsx:'automatic',alias:{react:dirname(peerRequire.resolve('react/package.json')),'react-dom':dirname(peerRequire.resolve('react-dom/package.json'))}})
 // The trace paints Brand roles only, so the page loads Brand's tokens as every host does.
-const tokens = readFileSync(require.resolve('@tangle-network/brand/styles/tokens.css'),'utf8') + readFileSync(peerRequire.resolve('@tangle-network/charts/react/flow-waterfall.css'),'utf8') + `
+const tokens = readFileSync(require.resolve('@tangle-network/brand/styles/tokens.css'),'utf8') + readFileSync(peerRequire.resolve('@tangle-network/charts/react/flow-waterfall.css'),'utf8') + readFileSync(peerRequire.resolve('@tangle-network/charts/react/live.css'),'utf8') + `
 :root { --foreground:230 20% 12%;--muted-foreground:230 10% 40%;--background:0 0% 100%;--border:230 15% 85%;--secondary:230 15% 95%;--primary:250 65% 45%;--accent:205 70% 40%;--warning-strong:35 85% 35%;--success:145 65% 30%;--destructive:0 70% 45%;--chart-accent:hsl(var(--primary)); }
 :root[data-theme=dark] { --foreground:230 20% 95%;--muted-foreground:230 10% 70%;--background:240 20% 10%;--border:240 15% 25%;--secondary:240 15% 18%;--primary:250 75% 75%;--accent:205 85% 65%;--warning-strong:35 95% 65%;--success:145 60% 65%;--destructive:0 80% 70%; }
 `
