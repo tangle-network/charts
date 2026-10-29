@@ -75,17 +75,10 @@ export function timeSeries(rows: TimeSeriesRow[], o: TimeSeriesOptions): Figure 
   if (gap) return { id, refused: gap };
   if (!rows.length || rows.every((row) => !row.points.length)) return { id, refused: "No trajectory observations recorded." };
   if (new Set(rows.map((row) => row.id)).size !== rows.length) return { id, refused: "Duplicate trajectory ids." };
-  const columns = o.x.categories?.length ? new Set(o.x.categories.map((c) => c.at)) : null;
   for (const row of rows) {
     if (row.colorIndex !== undefined && (!Number.isInteger(row.colorIndex) || row.colorIndex < 0)) return { id, refused: `${row.label}: a colour index is a whole number of at least 0.` };
-    let previous = -Infinity;
-    for (const point of row.points) {
-      // Equal positions are recorded observations (two runs at one time); they share a place and are never shifted.
-      if (!Number.isFinite(point.x) || point.x < previous || (columns && !columns.has(point.x)) || point.x < o.x.domain[0] || point.x > o.x.domain[1]) return { id, refused: columns ? `${row.label}: x values must be categories, in order.` : `${row.label}: x values must be finite, in order and inside the axis domain.` };
-      previous = point.x;
-      const problem = scalarGap(point.y, point.interval, point.observations, o.y.domain) ?? logValueGap(point.y, o.y.scale) ?? logValueGap(point.interval?.lower ?? null, o.y.scale) ?? pointFieldsGap(point);
-      if (problem) return { id, refused: `${row.label} at ${point.x}: ${problem}` };
-    }
+    const problem = pointsGap(row.label, row.points, o.x, o.y.domain, o.y.scale);
+    if (problem) return { id, refused: problem };
   }
   const category = new Map((o.x.categories ?? []).map((c) => [c.at, c.label]));
   const xLabel = (x: number) => o.formatX ? o.formatX(x) : category.get(x) ?? String(x);
@@ -233,6 +226,20 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
   // Rules and heads stop above the group brackets, so a ruling's head never sits on a solved mark.
   const events = drawMarks(o.marks ?? [], px, top - groupRowHeight(o.bands), bottom, left, right, xLabel, 22);
   return `<svg class="tgc-svg tgc-trajectories" xmlns="http://www.w3.org/2000/svg" width="${width}" height="${legendY + 12}" viewBox="0 0 ${width} ${legendY + 12}" role="group" aria-label="${esc(o.y.label)} by ${esc(o.x.label)}"><style>${rules}</style>${marks}${events}${groups}${points}${badges}${tips}</svg>`;
+}
+
+/** Why recorded points cannot be drawn on these axes, or null; `timeSeries` and `smallMultiples` refuse alike. */
+export function pointsGap(label: string, points: readonly TimePoint[], x: { domain: [number, number]; categories?: XCategory[] }, domain: [number, number], scale?: YScale): string | null {
+  const columns = x.categories?.length ? new Set(x.categories.map((c) => c.at)) : null;
+  let previous = -Infinity;
+  for (const point of points) {
+    // Equal positions are recorded observations (two runs at one time); they share a place and are never shifted.
+    if (!Number.isFinite(point.x) || point.x < previous || (columns && !columns.has(point.x)) || point.x < x.domain[0] || point.x > x.domain[1]) return columns ? `${label}: x values must be categories, in order.` : `${label}: x values must be finite, in order and inside the axis domain.`;
+    previous = point.x;
+    const problem = scalarGap(point.y, point.interval, point.observations, domain) ?? logValueGap(point.y, scale) ?? logValueGap(point.interval?.lower ?? null, scale) ?? pointFieldsGap(point);
+    if (problem) return `${label} at ${point.x}: ${problem}`;
+  }
+  return null;
 }
 
 function axisGutter(ticks: readonly YTick[], stripName?: string): number {
