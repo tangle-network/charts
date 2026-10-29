@@ -533,7 +533,7 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
   const phone = width < 600
   const rowH = Math.round((phone ? 2.8 : 2.2) * em)
   const labelW = phone ? 8 : Math.min(Math.round(16 * em), Math.round(width * 0.28))
-  const top = marks.length ? 48 : 8
+  const top = maxHeight ? 4 : marks.length ? 48 : 8
   const bottom = Math.round(1.8 * em)
   const height = top + lanes.length * rowH + bottom
   const times = [...spans.flatMap((s) => [s.start, ends(s)]), ...marks.map((m) => m.at), ...(now === undefined ? [] : [now])]
@@ -549,19 +549,24 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
   const select = (id: string) => onSelect?.(id)
   const focusLane = (index: number) => {
     const at = Math.max(0, Math.min(lanes.length - 1, index))
-    if (scroller.current) scroller.current.scrollTop = top + at * rowH - rowH
-    setScrollTop(Math.max(0, top + at * rowH - rowH))
+    const position = at === 0 ? 0 : top + at * rowH - rowH
+    if (scroller.current) scroller.current.scrollTop = position
+    setScrollTop(Math.max(0, position))
     requestAnimationFrame(() => scroller.current?.querySelector<SVGGElement>(`[data-lane-index="${at}"]`)?.focus())
   }
   return (
     <div ref={ref} className="ov-plot ov-gantt" data-featured={bestMark ? true : undefined} onMouseLeave={() => setTip(null)}>
+      {maxHeight && width > 0 && <svg width={width} height={52} aria-label="Releases and time axis">
+        {marks.map((mark, i) => <g key={i} data-best={mark.label === bestMark || undefined}><Mark mark={mark} x={x(mark.at)} top={10} bottom={28} row={0} em={em} flip={x(mark.at) > width * .62} />{mark.label === bestMark && <circle cx={x(mark.at)} cy={14} r={8} fill="none" stroke="var(--accent-text)" strokeWidth={2} />}</g>)}
+        {[0, .25, .5, .75, 1].map(f => <text key={f} x={labelW + f * plotW} y={46} className="ov-axis" textAnchor={f === 0 ? 'start' : f === 1 ? 'end' : 'middle'}>{axis(t0 + f * (t1 - t0))}</text>)}
+      </svg>}
       <div ref={scroller} className="ov-gantt-scroll" style={{ maxHeight, overflow: maxHeight ? 'auto' : undefined }} onScroll={event => setScrollTop(event.currentTarget.scrollTop)}>
       {width > 0 && (
         <svg width={width} height={height} role="group" aria-label={`${lanes.length} ${laneInput ? 'lanes' : 'agents'} over time`}>
           {[0, 0.25, 0.5, 0.75, 1].map((f) => (
             <g key={f}>
               <line x1={labelW + f * plotW} x2={labelW + f * plotW} y1={top} y2={plotBottom} className="ov-gridline" />
-              <text x={labelW + f * plotW} y={height - em * 0.35} className="ov-axis" textAnchor={f === 0 ? 'start' : f === 1 ? 'end' : 'middle'}>{axis(t0 + f * (t1 - t0))}</text>
+              {!maxHeight && <text x={labelW + f * plotW} y={height - em * 0.35} className="ov-axis" textAnchor={f === 0 ? 'start' : f === 1 ? 'end' : 'middle'}>{axis(t0 + f * (t1 - t0))}</text>}
             </g>
           ))}
           {visible.map((lane, offset) => {
@@ -603,9 +608,9 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
           })}
           {now !== undefined && <line x1={x(now)} x2={x(now)} y1={top} y2={plotBottom} className="ov-now" data-now="true" />}
           {[...marks].sort((a, b) => a.at - b.at).map((mark, i) => (
-            <g key={`mark-${i}`} data-best={mark.label === bestMark || undefined}>
-              <Mark mark={mark} x={x(mark.at)} top={4} bottom={plotBottom} row={i % 2} em={em} flip={x(mark.at) > labelW + plotW * 0.62} />
-              {mark.label === bestMark && <circle cx={x(mark.at)} cy={4 + Math.max(3, em / 4)} r={8} fill="none" stroke="var(--accent-text)" strokeWidth={2} />}
+            <g key={`mark-${i}`} data-best={mark.label === bestMark || undefined} style={maxHeight ? { pointerEvents: 'none' } : undefined}>
+              <line x1={x(mark.at)} x2={x(mark.at)} y1={top} y2={plotBottom} className="ov-mark ov-mark-release" />{!maxHeight && <Mark mark={mark} x={x(mark.at)} top={4} bottom={plotBottom} row={i % 2} em={em} flip={x(mark.at) > labelW + plotW * 0.62} />}
+              {!maxHeight && mark.label === bestMark && <circle cx={x(mark.at)} cy={4 + Math.max(3, em / 4)} r={8} fill="none" stroke="var(--accent-text)" strokeWidth={2} />}
             </g>
           ))}
         </svg>
