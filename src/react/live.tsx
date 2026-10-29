@@ -63,8 +63,8 @@ function Tooltip({ tip }: { tip: Tip | null }) {
   return (
     <div ref={ref} className="ov-tip" role="tooltip" style={position}>
       <strong>{tip.title}</strong>
-      {tip.lines.map((line) => (
-        <span key={line.label} className="ov-tip-line">
+      {tip.lines.map((line, i) => (
+        <span key={`${line.label}:${i}`} className="ov-tip-line">
           <span>{line.color && <i style={{ background: line.color }} />}{line.label}</span>
           <b>{line.value}</b>
         </span>
@@ -601,6 +601,8 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
             const i = first + offset, y = top + i * rowH
             const suffix = typeof lane.count === 'number' && Number.isFinite(lane.count) ? ` · ${lane.count.toLocaleString()}` : ''
             const label = wrap(lane.label, Math.max(40, (phone ? width - 16 : labelW - em) - textWidth(suffix, 13)), 13, 'sans', 1).lines[0]
+            const final = lane.spans.length ? lane.spans.reduce((last, s) => ends(s) >= ends(last) ? s : last) : undefined
+            const endLabel = selectedId === lane.id && final?.endLabel ? wrap(final.endLabel, Math.max(40, plotW - 16), 13, 'sans', 1).lines[0] : undefined
             return (
               <g key={lane.id} data-lane={lane.id} data-lane-index={i} role={onSelect ? 'button' : undefined} tabIndex={onSelect ? 0 : undefined} aria-label={lane.label} aria-pressed={onSelect ? selectedId === lane.id : undefined}
                 onClick={() => select(lane.id)} onKeyDown={event => {
@@ -619,7 +621,6 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
                   const color = colors[s.state] ?? fallback
                   const bx = x(s.start), bw = Math.max(2, x(ends(s)) - bx), by = y + (phone ? 24 : rowH * 0.25), bh = rowH * 0.5
                   const open = s.end === null
-                  const endLabel = selectedId === lane.id && s.endLabel ? wrap(s.endLabel, Math.max(40, plotW - 16), 13, 'sans', 1).lines[0] : undefined
                   return (
                     <g key={j} data-state={s.state} data-open={open ? 'true' : undefined} data-hatched={hatched.has(s.state) ? 'true' : undefined}
                       onMouseEnter={() => setTip({ x: tipX(bx + bw), y: tipY(y), title: lane.label, lines: [{ label: open ? `${s.state} (open)` : s.state, value: span(s.start, ends(s)), color: hatched.has(s.state) ? undefined : color }, ...(s.note ? [{ label: s.note, value: '' }] : []), ...(s.endLabel ? [{ label: 'Duration / cost', value: s.endLabel }] : [])] })}>
@@ -631,10 +632,10 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
                       ) : (
                         <rect x={bx} y={by} width={bw} height={bh} rx={2} fill={color} className={open ? 'ov-gantt-open' : undefined} />
                       )}
-                      {endLabel && <text className="ov-gantt-end" x={Math.max(labelW + 8, Math.min(bx + bw + 8, width - textWidth(endLabel, 13) - 8))} y={by + bh / 2} dominantBaseline="middle"><title>{s.endLabel}</title>{endLabel}</text>}
                     </g>
                   )
                 })}
+                {endLabel && <text className="ov-gantt-end" x={Math.max(labelW + 8, Math.min(x(ends(final!)) + 8, width - textWidth(endLabel, 13) - 8))} y={y + (phone ? 24 : rowH * .25) + rowH * .25} dominantBaseline="middle"><title>{final?.endLabel}</title>{endLabel}</text>}
               </g>
             )
           })}
