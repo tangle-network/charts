@@ -58,7 +58,7 @@ try {
     await page.screenshot({ path: `${output}/metrics-${theme}-${width}.png`, fullPage: true })
     await page.keyboard.press('Escape')
     assert.equal(await card.count(), 0)
-    const known = { Model:'canonical/model',Tokens:'8,000,000 total · split not recorded','Model calls':'731','Model latency':'p50 3 s · p90 11 s · p99 32 s','Tool calls':'9,004',Failures:'127 failed steps',Retries:'44 retries · 8 restarts','Ran for':'23 h 12 m',Cost:'$992.18 list' }
+    const known = { 'Model calls':'731',Model:'canonical/model',Tokens:'8,000,000 total · split not recorded','Model latency':'p50 3 s · p90 11 s · p99 32 s','Tool calls':'9,004',Failures:'127 failed steps',Retries:'44 retries · 8 restarts','Ran for':'23 h 12 m',Cost:'$992.18 list' }
     for (const authority of ['known', 'unknown', 'zero']) {
       await page.goto(`${base}/iframe.html?id=chatcontrols-flowwaterfall--phone-names&globals=agentTheme:agent-${theme}&authority=${authority}`)
       await row.waitFor()
