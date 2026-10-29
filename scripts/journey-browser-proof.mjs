@@ -9,8 +9,7 @@ assert.ok(output, 'CHARTS_PROOF_DIR must retain the evidence outside the gate ca
 await mkdir(output, { recursive: true })
 const server = spawn(process.execPath, ['scripts/charts-browser-smoke.mjs', ...process.argv.slice(2)], { stdio: ['ignore', 'pipe', 'pipe'] })
 const logs = []
-server.stdout.on('data', bytes => logs.push(String(bytes)))
-server.stderr.on('data', bytes => logs.push(String(bytes)))
+for (const stream of [server.stdout, server.stderr]) stream.on('data', bytes => logs.push(String(bytes)))
 let browser
 const checks = []
 try {
@@ -24,6 +23,7 @@ try {
   for (const agents of [100, 124, 1000]) for (const theme of ['light', 'dark']) for (const width of [1512, 390]) {
     const context = await browser.newContext({ viewport: { width, height: 982 }, colorScheme: theme, recordVideo: { dir: output, size: { width, height: 982 } } })
     const page = await context.newPage(), errors = []
+    const currentStyle = (selector, property) => page.evaluate(({selector, property}) => getComputedStyle(document.querySelector(selector))[property], {selector, property})
     page.on('pageerror', error => errors.push(error.message))
     await page.goto(`http://127.0.0.1:46489/?id=journey&globals=agent-${theme}&agents=${agents}`)
     await page.locator('[data-lane="agent-0"]').waitFor()
@@ -41,11 +41,11 @@ try {
     assert.ok(labels.filter(label => label.show === 'true').length > 1, 'more than just the best release is named')
     assert.ok(labels.some(label => label.show === 'false' && label.text === 'none'), 'dense release labels are sparse')
     assert.equal(await page.locator('.ov-gantt > svg [data-labelled][aria-label="rc18"]').getAttribute('data-labelled'), 'true', 'the selected late release keeps a label in the crowded header')
-    const hidden = page.locator('.ov-gantt > svg [data-labelled=false]').first()
+    const hidden = page.locator('.ov-gantt > svg [data-labelled=false]').first(), hiddenId = await hidden.getAttribute('data-mark-id'), hiddenText = '[data-mark-id='+JSON.stringify(hiddenId)+'] text'
     await hidden.hover()
-    assert.notEqual(await hidden.locator('text').evaluate(node => getComputedStyle(node).display), 'none', 'a release reveals its name on hover')
+    assert.notEqual(await currentStyle(hiddenText, 'display'), 'none', 'a release reveals its name on hover')
     await hidden.focus()
-    assert.notEqual(await hidden.locator('text').evaluate(node => getComputedStyle(node).display), 'none', 'keyboard focus reveals a release name')
+    assert.notEqual(await currentStyle(hiddenText, 'display'), 'none', 'keyboard focus reveals a release name')
     await page.getByRole('button', { name: 'Agent 0', exact: true }).press('End')
     await page.getByRole('button', { name: `Agent ${agents - 1}`, exact: true }).waitFor()
     await page.getByRole('button', { name: `Agent ${agents - 1}`, exact: true }).press('Enter')
@@ -64,12 +64,12 @@ try {
     assert.equal(await page.locator('[data-best] circle').count(), 1)
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
     await page.emulateMedia({ reducedMotion: 'reduce' })
-    assert.equal(await page.locator('[data-lane="agent-3"] [data-open] rect').evaluate(el => getComputedStyle(el).animationName), 'none')
-    assert.notEqual(await page.locator('svg[role="group"] .ov-mark-deadline').evaluate(el => getComputedStyle(el).strokeDasharray), 'none')
+    assert.equal(await currentStyle('[data-lane="agent-3"] [data-open] rect', 'animationName'), 'none')
+    assert.notEqual(await currentStyle('svg[role="group"] .ov-mark-deadline', 'strokeDasharray'), 'none')
     await page.goto(`http://127.0.0.1:46489/?id=journey&globals=agent-${theme}&ancestor=1`)
     await page.locator('.ov-axis').first().waitFor()
-    assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('.ov-axis')).fill), 'rgb(17, 109, 91)')
-    assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('.ov-mark-label')).fill), 'rgb(32, 67, 120)')
+    assert.equal(await currentStyle('.ov-axis', 'fill'), 'rgb(17, 109, 91)')
+    assert.equal(await currentStyle('.ov-mark-label', 'fill'), 'rgb(32, 67, 120)')
     assert.deepEqual(errors, [])
     await context.close()
     await page.video().saveAs(`${output}/journey-${agents}-${width}-${theme}.webm`)
