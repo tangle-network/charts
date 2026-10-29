@@ -130,7 +130,8 @@ export function VersionGraph({
   const focusTarget = useRef<string | null>(null)
   const [scrollTop, setScrollTop] = useState(0)
   const first = Math.max(0, tops.findIndex(top => top >= scrollTop) - 7)
-  const end = Math.min(laid.rows.length, Math.max(first + 1, tops.findIndex(top => top > scrollTop + maxHeight)) + 7)
+  const after = tops.findIndex(top => top > scrollTop + maxHeight)
+  const end = after < 0 ? laid.rows.length : Math.min(laid.rows.length, after + 7)
   const visible = laid.rows.slice(first, end)
   const focusRow = (index: number) => {
     const at = Math.max(0, Math.min(laid.rows.length - 1, index)), top = tops[at] ?? 0
