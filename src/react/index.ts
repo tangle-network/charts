@@ -13,14 +13,6 @@ export { StackedBarChart } from "./stacked-bar-chart.js";
 export type {
   StackedBarChartProps, StackedBarBucket, StackedBarSegment, StackedBarSeries,
 } from "./stacked-bar-chart.js";
-export {
-  WaterfallTimeAxis, WaterfallBar, WaterfallRow, WaterfallHeader,
-  waterfallSpanGeometry, waterfallTicks, formatWaterfallDuration,
-} from "./waterfall.js";
-export type {
-  WaterfallWindow, WaterfallSpanGeometry, WaterfallTimeAxisProps,
-  WaterfallBarProps, WaterfallRowProps, WaterfallHeaderProps,
-} from "./waterfall.js";
 export { DayBars, Events, HBars, Histogram, Lines, Meter, Spark, Gantt, LIVE_SERIES, formatCompact } from "./live.js";
 export { Gap } from "./gap.js";
 export type { GapBand, GapProps } from "./gap.js";

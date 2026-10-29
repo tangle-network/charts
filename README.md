@@ -10,8 +10,6 @@ The React entry also exports `DayBars`, `HBars`, `Histogram`, `Lines`, `Meter`, 
 
 `FlowWaterfall` accepts optional `graph` and `latestEvents` React nodes. Supplying `graph` adds Graph to its existing Agents/Steps view control, including `defaultView="graph"`. The trace clock and controlled selection survive switches. Graph hides waterfall-only controls; `latestEvents` stays mounted in the header across all views.
 
-`WaterfallHeader`, `WaterfallTimeAxis`, `WaterfallBar` and `WaterfallRow` remain available for existing consumers that own their own hierarchy and selection. All use the same `waterfallSpanGeometry` and `waterfallTicks`. Existing fixed-width cells, tones, formatting, attribution slots and unordered-time `—` marks are preserved. Optional fluid tracks, inner-bar colour/class, overlay and clipping fields support the shared inspector without changing existing calls. The primitives were extracted from Intelligence under [brand #211](https://github.com/tangle-network/brand/pull/211); the shared inspector extends that presentation ownership while leaving failure interpretation with producers.
-
 Five figures cover the decisions a benchmark reader makes:
 
 | Figure | Question |
