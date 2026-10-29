@@ -376,7 +376,7 @@ try {
     const kinds = await root.locator('.fw-bar').evaluateAll(elements => Object.fromEntries(elements.map(element => {
       const style = getComputedStyle(element)
       const paint = style.backgroundImage !== 'none' ? style.backgroundImage : style.backgroundColor
-      return [element.closest('[data-span-kind]').dataset.spanKind, paint]
+      return [[...element.classList].find(name => name.startsWith('fw-k-')).slice(5), paint]
     })))
     assert.equal(Object.keys(kinds).length, 6)
     assert.equal(new Set(Object.values(kinds)).size, 6)

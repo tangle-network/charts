@@ -41,6 +41,7 @@ export function useTraceClock(input: TraceClockInput): TraceClock {
   const [clockMs, setClockMs] = useState(position ?? observedTotal)
   const receivedAt = useRef(Date.now())
   const playhead = useRef(position ?? observedTotal)
+  const geometry = useRef({ t: NaN, startMs: NaN, endMs: NaN })
   const latest = useRef(input)
   latest.current = input
 
@@ -51,14 +52,16 @@ export function useTraceClock(input: TraceClockInput): TraceClock {
     return Math.max(total, origin === undefined ? total + Date.now() - receivedAt.current : Date.now() - origin)
   }
 
-  const paint = (t: number, limit = liveNow()) => {
+  const paint = (t: number, limit = liveNow(), force = false) => {
     const element = root.current
     if (!element) return
     const { startMs, endMs } = latest.current.view(t)
     const k = Math.max(1e-9, latest.current.trackPx / Math.max(1, endMs - startMs))
-    element.style.setProperty('--fw-t', String(t))
-    element.style.setProperty('--fw-v0', String(startMs))
-    element.style.setProperty('--fw-k', String(k))
+    const previous = geometry.current, distance = Math.max(Math.abs(t - previous.t), Math.abs(startMs - previous.startMs), Math.abs(endMs - previous.endMs)) * k
+    if (force || !latest.current.live || latest.current.playing || latest.current.position !== null || !Number.isFinite(distance) || distance >= .25) {
+      element.style.setProperty('--fw-t', String(t)); element.style.setProperty('--fw-v0', String(startMs)); element.style.setProperty('--fw-k', String(k))
+      geometry.current = { t, startMs, endMs }
+    }
     if (slider.current) { slider.current.max = String(Math.max(1, limit, t)); slider.current.value = String(t) }
     if (timeOutput.current) timeOutput.current.textContent = formatSpanDuration(t)
   }
@@ -68,10 +71,11 @@ export function useTraceClock(input: TraceClockInput): TraceClock {
     const moving = live || playing
     if (!moving) {
       const t = position ?? observedTotal
-      paint(t)
+      paint(t, undefined, true)
       setClockMs(t)
       return
     }
+    paint(playing ? playhead.current : position ?? liveNow(), undefined, true)
     let frame = 0
     let last = performance.now()
     let lastText = 0
@@ -96,11 +100,8 @@ export function useTraceClock(input: TraceClockInput): TraceClock {
     }
     frame = requestAnimationFrame(step)
     return () => cancelAnimationFrame(frame)
-    // paint reads the latest view, width and speed through a ref.
-  }, [live, playing, position, observedTotal, snapshot])
-
-  // A zoom, resize or mode change repaints at the current clock even when time is still.
-  useLayoutEffect(() => { paint(playing ? playhead.current : position ?? (live ? liveNow() : observedTotal)) }, [view, trackPx])
+    // Snapshots, zoom and resize repaint immediately; subpixel live drift does not invalidate every recorded mark.
+  }, [live, playing, position, observedTotal, snapshot, view, trackPx])
 
   return { clockMs, limitMs: liveNow, positionMs: () => playhead.current }
 }
