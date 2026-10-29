@@ -459,6 +459,7 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
     const failed = members.filter(row => row.span.outcome ? row.span.outcome.tone === 'failed' : !row.ok).length
     // A family takes its members' outcome when they share one; mixed outcomes leave it without, drawn neutral.
     const outcome = members.every(row => row.span.outcome && row.span.outcome.tone === members[0]!.span.outcome?.tone && !row.span.outcome.ring === !members[0]!.span.outcome?.ring) ? members[0]!.span.outcome : undefined
+    const facts = members.flatMap(row => row.span.facts ?? []).filter(({ label }) => ['model calls', 'tool calls', 'model latency', 'failures', 'retries'].includes(label.toLowerCase())).map(({ label }) => ({ label, value: 'Not recorded' }))
     out.push({
       // The family hangs off its members' parent, so the spawn elbow reaches it from the agent that started them.
       costFloor: known.length < members.length || members.some(row => row.costFloor),
@@ -470,7 +471,7 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
       own: members.flatMap((row, i) => row.own.map(mark => ({ ...mark, tone, alt: i % 2 === 1 }))).sort((a, b) => a.startMs - b.startMs),
       ...(known.length ? { rollupCostUsd: known.reduce((sum, cost) => sum + cost, 0) } : {}),
       ...mergeStats(members),
-      span: { id, kind: 'pipeline', name: role, startMs, endMs, activityAt: members.flatMap(row => row.span.activityAt ?? row.own.flatMap(mark => [mark.startMs, mark.endMs])), status: running ? 'running' : failed ? 'failed' : 'done', ...(outcome ? { outcome } : {}), detail: members[0]!.span.detail, meta: { failedAgents: failed, costPartial: known.length < members.length, members: members.map(row => row.id) } },
+      span: { id, kind: 'pipeline', name: role, startMs, endMs, activityAt: members.flatMap(row => row.span.activityAt ?? row.own.flatMap(mark => [mark.startMs, mark.endMs])), status: running ? 'running' : failed ? 'failed' : 'done', ...(outcome ? { outcome } : {}), detail: members[0]!.span.detail, facts, meta: { failedAgents: failed, costPartial: known.length < members.length, members: members.map(row => row.id) } },
     })
     if (open.has(id)) out.push(...members.map((row, i) => ({ ...row, family: id, inset: 1, tone, own: row.own.map(mark => ({ ...mark, tone, alt: i % 2 === 1 })) })))
   }
@@ -486,13 +487,12 @@ export function agentSummary(row: FlowWaterfallRow): string[] {
   }
   // A folded run of steps already says its count in its name; its second line says how it ended.
   if (row.id.startsWith('run:')) { const failed = row.own.filter(mark => mark.kind === 'failed').length; return [failed ? `${failed} failed` : 'all done'] }
-  // Counted from the spans, not the display marks: merging short neighbours changes with zoom (Codex review on #30).
-  const calls = row.counts?.model ?? 0
-  const tools = row.counts?.tool ?? 0
+  // Host facts describe the full stream; displayed steps may be bounded. Preserve opaque unknowns and measured zero.
+  const facts = new Map((row.span.facts ?? []).map(({ label, value }) => [label.toLowerCase(), value]))
+  const calls = ([['Model calls', row.counts?.model, 'model'], ['Tool calls', row.counts?.tool, 'tool']] as const).map(([label, count, kind]) => facts.has(label.toLowerCase()) ? `${label}: ${facts.get(label.toLowerCase())}` : count ? `${count} ${kind} ${count === 1 ? 'call' : 'calls'}` : '')
   // An agent without a recorded outcome says only that it runs or failed; a bare "done" read as a verdict the host never gave.
   const state = row.span.outcome?.label ?? (spanRunning(row.span) ? 'running' : !row.ok ? 'failed' : row.kind === 'pipeline' ? '' : 'done')
-  // Model calls, as the summary strip and the card name them; a host's own "turns" can mean harness turns, a different count.
-  return [state, calls ? `${calls} model ${calls === 1 ? 'call' : 'calls'}` : '', tools ? `${tools} tool ${tools === 1 ? 'call' : 'calls'}` : ''].filter(Boolean)
+  return [state, ...calls].filter(Boolean)
 }
 
 /**

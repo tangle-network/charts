@@ -1,3 +1,7 @@
+## 2.0.8
+
+Agent lanes use authoritative Model calls and Tool calls facts as opaque values, preserving explicit unknowns and measured zero when displayed steps are sampled. Families retain their agent/failure summaries and numeric token/cost rollups; synthetic family cards keep opaque counts and percentiles unknown instead of aggregating display samples.
+
 ## 2.0.7
 
 Explicit host facts replace same-label inferred card metrics, case-insensitively. Full-stream counts, tokens, latency and explicit unknowns remain authoritative when the displayed history is bounded or coalesced. Additional host rows retain their labels and order.
