@@ -22,6 +22,12 @@ function FlowApp({ name }) {
    { id:'builder',parentId:'lead',kind:'pipeline',name:name==='phone-names'?'peer-director-1-resume':'builder',detail:'opus-5.5',startMs:60000,endMs:560000,status:'done',outcome:{tone:'ok',label:'Shipped'},marks:[{at:300000,kind:'restart',label:'Restarted'}] },
    ...steps('lead', 2000, 3, ['bash']), ...steps('planner', 12000, 10, ['read', 'grep']), ...steps('builder', 62000, 12, ['bash', 'edit', 'read']),
    { id:'builder-retry',parentId:'builder',kind:'tool',name:'bash · step 2',startMs:540000,endMs:545000,status:'done',retryOf:'builder-t2' }] }
+  if (name === 'phone-names') {
+   trace.totalMs = 86400000
+   Object.assign(trace.spans[0], { name:'proof-verification-running',status:'running',endMs:86400000,activityAt:[1000,2000,3000],medianEventGapMs:1000,outcome:{tone:'live',label:'Running'} })
+   Object.assign(trace.spans[1], { name:'peer-director-2-proof-check',status:'failed',endMs:48431000,outcome:{tone:'failed',label:'Failed'} })
+   Object.assign(trace.spans[2], { endMs:80531000,costUsd:102.70 })
+  }
  }
  if (name === 'empty-flow-trace') trace = { spans: [], totalMs: 0, promptTokens: 0, completionTokens: 0, toolCalls: 0 }
  if (name === 'growing-live-trace') { trace = { spans: [

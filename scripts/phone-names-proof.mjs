@@ -29,18 +29,25 @@ try {
     await row.waitFor()
     await row.scrollIntoViewIfNeeded()
     await page.screenshot({ path: `${output}/names-${theme}-${width}.png`, fullPage: true })
-    const geometry = await row.evaluate(row => {
-      const name = row.querySelector('.fw-name-text'), end = row.querySelector('.fw-end'), status = row.querySelector('.fw-row-state'), bar = row.querySelector('.fw-bar')
+    const geometry = await page.locator('.fw-agent-row').evaluateAll(rows => rows.map(row => {
+      const name = row.querySelector('.fw-name-text'), end = row.querySelector('.fw-end'), status = row.querySelector('.fw-row-state, .fw-quiet'), bar = row.querySelector('.fw-bar')
       const box = element => { const b = element.getBoundingClientRect(); return { top: b.top, bottom: b.bottom, left: b.left, right: b.right } }
       const text = box(name), numbers = box(end), state = box(status), lane = box(bar)
-      return { name: name.textContent, whole: name.scrollWidth <= name.clientWidth, text, numbers, state, lane, row: box(row), status: status.textContent }
-    })
+      return { name: name.textContent, whole: name.scrollWidth <= name.clientWidth, text, numbers, state, lane, row: box(row), status: status.textContent, size: [name, status, end.querySelector('.fw-duration')].map(node => parseFloat(getComputedStyle(node).fontSize)) }
+    }))
     checks.push({ theme, width, geometry })
-    assert.equal(geometry.name, 'peer-director-1-resume')
-    assert.equal(geometry.whole, true, `distinctive agent suffix is truncated at ${width}: ${JSON.stringify(geometry)}`)
-    assert.ok(geometry.text.bottom <= geometry.numbers.top + 1 || geometry.text.right <= geometry.numbers.left, 'name and duration/cost do not overlap')
-    assert.ok(geometry.state.bottom <= geometry.lane.top + 1 || width > 599, 'status remains readable above the work bars')
-    assert.equal(geometry.status, 'Done')
+    assert.equal(geometry.length, 3)
+    if (width === 390) for (const g of geometry) {
+      assert.equal(g.whole, true, `distinctive agent suffix is truncated at ${width}: ${JSON.stringify(g)}`)
+      assert.ok(g.text.bottom <= g.numbers.top + 1, 'name has a full line above duration/cost')
+      assert.ok(g.state.bottom <= g.lane.top + 1, 'status remains above the work bars')
+      assert.ok(g.state.right <= g.numbers.left, 'status and long duration/cost do not overlap')
+      assert.ok(g.size.every(size => size >= 13), 'readable metadata uses at least13px')
+    }
+    assert.ok(geometry[0].status.startsWith('Quiet'))
+    assert.equal(geometry[1].status, 'Failed')
+    assert.equal(geometry[2].status, 'Done')
+    assert.ok((await row.locator('.fw-names').getAttribute('title')).includes('peer-director-1-resume'), 'full identity remains available at desktop reading width')
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
     await row.locator('.fw-bar').click()
     const card = page.locator('.fw-card')
