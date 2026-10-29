@@ -23,11 +23,11 @@ export interface FigureViewProps {
 
 export function FigureView({ figure: given, presentation = 'chart', onPointSelect }: FigureViewProps) {
   const [ref, width] = useWidth<HTMLElement>()
-  // Before measurement the function draws at 720, as a static figure's wide render does.
+  // Before measurement, functions and SSR/print use the 720px wide render.
   const drawn = width >= WIDE ? Math.floor(width / 32) * 32 : WIDE
   const figure = useMemo(() => (typeof given === 'function' ? given(drawn) : given), [given, drawn])
   if (isRefusal(figure)) return <p className="ov-refusal" role="note" data-refused={figure.id}>{figure.refused}</p>
-  // Before measurement (server render, print) the wide render shows, as in renderFigure's print rule.
+  const interactive = Boolean(figure.svg.interactive || onPointSelect)
   const layout = width > 0 && width < WIDE ? (figure.svg.narrow ? 'narrow' : 'table') : 'wide'
   const plot = layout === 'wide' ? figure.svg.wide : layout === 'narrow' ? figure.svg.narrow! : figure.table
   const method = [figure.note.method, figure.note.n, ...figure.note.exclusions].join(' ')
@@ -44,8 +44,8 @@ export function FigureView({ figure: given, presentation = 'chart', onPointSelec
         onPointerLeave={onPointSelect ? event => { for (const old of event.currentTarget.querySelectorAll('[data-near]')) old.removeAttribute('data-near') } : undefined}
         onClick={onPointSelect ? event => { const point = nearestPoint(event.currentTarget, event.clientX, event.clientY); if (point) onPointSelect(Number(point.getAttribute('data-point'))) } : undefined}
         onKeyDown={onPointSelect ? event => { const point = event.target instanceof Element ? event.target.closest('[data-point]') : null; if (point && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onPointSelect(Number(point.getAttribute('data-point'))) } } : undefined}
-        role={figure.svg.interactive ? 'group' : 'img'} aria-label={`${figure.finding} ${figure.lede}`}
-        style={layout === 'narrow' ? { maxWidth: NARROW } : undefined} dangerouslySetInnerHTML={{ __html: plot }} />
+        role={interactive ? 'group' : 'img'} aria-label={`${figure.finding} ${figure.lede}`}
+        style={layout === 'narrow' ? { maxWidth: NARROW } : undefined} dangerouslySetInnerHTML={{ __html: interactive ? plot.replace(' aria-hidden="true" focusable="false"', '') : plot }} />
       <details className="tgc-data">
         <summary>Data and method</summary>
         <p className="tgc-lede">{figure.lede}</p>
