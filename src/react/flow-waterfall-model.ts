@@ -558,6 +558,12 @@ export function quietActivity(row: FlowWaterfallRow, now: number) {
   const observedMedian = gaps.length ? gaps.length % 2 ? gaps[middle]! : (gaps[middle-1]! + gaps[middle]!) / 2 : 0
   const supplied = row.span.medianEventGapMs
   const median = typeof supplied === 'number' && Number.isFinite(supplied) && supplied >= 0 ? supplied : observedMedian
-  const quietMs = Number.isFinite(last) ? Math.max(0, now-last) : 0
-  return { last, quietMs, quiet: spanRunning(row.span) && Number.isFinite(last) && quietMs > Math.max(300000, 3*median) }
+  const gap = quietGap(last, median, now)
+  return { last, ...gap, quiet: spanRunning(row.span) && gap.quiet }
+}
+
+/** The same elapsed-activity rule for graph cards and waterfall rows. */
+export function quietGap(last: number, median: number, now: number) {
+  const quietMs = Number.isFinite(last) ? Math.max(0, now - last) : 0
+  return { quietMs, quiet: Number.isFinite(last) && quietMs > Math.max(300000, 3 * median) }
 }
