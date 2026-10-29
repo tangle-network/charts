@@ -7,7 +7,7 @@ import { chromium } from 'playwright'
 const output = process.env.CHARTS_PROOF_DIR
 assert.ok(output, 'CHARTS_PROOF_DIR must retain the evidence outside the gate cache')
 await mkdir(output, { recursive: true })
-const server = spawn(process.execPath, ['scripts/charts-browser-smoke.mjs'], { stdio: ['ignore', 'pipe', 'pipe'] })
+const server = spawn(process.execPath, ['scripts/charts-browser-smoke.mjs', ...process.argv.slice(2)], { stdio: ['ignore', 'pipe', 'pipe'] })
 const logs = []
 server.stdout.on('data', bytes => logs.push(String(bytes)))
 server.stderr.on('data', bytes => logs.push(String(bytes)))
@@ -21,7 +21,7 @@ try {
     await new Promise(resolve => setTimeout(resolve, 250))
   }
   browser = await chromium.launch({ headless: true })
-  for (const agents of [100, 124]) for (const theme of ['light', 'dark']) for (const width of [1512, 390]) {
+  for (const agents of [100, 124, 1000]) for (const theme of ['light', 'dark']) for (const width of [1512, 390]) {
     const context = await browser.newContext({ viewport: { width, height: 982 }, colorScheme: theme, recordVideo: { dir: output, size: { width, height: 982 } } })
     const page = await context.newPage(), errors = []
     page.on('pageerror', error => errors.push(error.message))
