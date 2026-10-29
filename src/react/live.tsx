@@ -75,7 +75,7 @@ function Tooltip({ tip }: { tip: Tip | null }) {
 
 /** Bars per day (or per any label: `tick` shortens it on the axis), stacked by series, on one axis; hovering a bar lists
  * every series' value for it, and `onOpen` makes a bar a link. */
-export function DayBars({ days, series, format = formatCompact, rows = 13, missing = 'No runs started', tick = (day: string) => day.slice(5), onOpen }: { days: string[]; series: { name: string; color: string; values: (number | null)[] }[]; format?: (v: number) => string; rows?: number; missing?: string; tick?: (day: string) => string; onOpen?: (index: number) => void }) {
+export function DayBars({ days, series, format = formatCompact, rows = 13, missing = 'No runs started', interval = 'day', tick = (day: string) => day.slice(5), onOpen }: { days: string[]; series: { name: string; color: string; values: (number | null)[] }[]; format?: (v: number) => string; rows?: number; missing?: string; interval?: string; tick?: (day: string) => string; onOpen?: (index: number) => void }) {
   const [ref, width, em] = useWidth<HTMLDivElement>()
   const height = Math.round(rows * em)
   const [tip, setTip] = useState<Tip | null>(null)
@@ -93,7 +93,7 @@ export function DayBars({ days, series, format = formatCompact, rows = 13, missi
   return (
     <div ref={ref} className="ov-plot" onMouseLeave={() => setTip(null)}>
       {width > 0 && (
-        <svg width={width} height={height} role="img" aria-label={`${series.map((s) => s.name).join(', ')} per day`}>
+        <svg width={width} height={height} role="img" aria-label={`${series.map((s) => s.name).join(', ')} per ${interval}`}>
           {ticks.map((t) => (
             <g key={t}>
               <line x1={left} x2={width - 8} y1={y(t)} y2={y(t)} className="ov-gridline" />
