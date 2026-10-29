@@ -1,6 +1,6 @@
 {
   "name": "@tangle-network/charts",
-  "version": "2.0.8",
+  "version": "2.0.9",
   "description": "Static SVG and HTML figures for benchmarks and operational timing. Draws from producer data and refuses what it cannot draw honestly.",
   "type": "module",
   "license": "MIT",

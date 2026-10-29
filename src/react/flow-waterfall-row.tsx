@@ -3,7 +3,7 @@ import { type CSSProperties, type ReactNode, memo } from 'react'
 import type { FlowSpan } from '../flow-trace.js'
 import { KIND_LABEL } from './flow-waterfall-card.js'
 import { AlertGlyph, ChevronGlyph, FailGlyph, KindGlyph, RetryGlyph } from './flow-waterfall-icons.js'
-import { type FlowSegment, type FlowWaterfallRow, agentSummary, quietActivity, formatCost, rowCostText, formatSpanDuration, spanRunning, toneKey, workKind } from './flow-waterfall-model.js'
+import { type FlowSegment, type FlowWaterfallRow, agentSummary, quietActivity, formatCost, rowCostText, formatSpanDuration, spanFact, spanRunning, toneKey, workKind } from './flow-waterfall-model.js'
 import type { RowMotion } from './flow-waterfall-motion.js'
 
 export type FlowView = 'spans' | 'agents' | 'graph'
@@ -79,11 +79,10 @@ function endLabel(row: FlowWaterfallRow, clockMs: number): string {
   const span = row.span
   if (row.durationLabel === '—') return '—'
   // A point event (an approximate zero-length span) has no duration to state.
-  if (row.approx && span.endMs === span.startMs && !spanRunning(span)) return span.costUsd === undefined ? '' : rowCostText(row, span.costUsd)
-  if (!spanRunning(span) && clockMs < span.endMs) return `${formatSpanDuration(Math.max(0, clockMs - span.startMs))}${row.approx ? '~' : ''}`
-  const duration = spanRunning(span) ? `${formatSpanDuration(Math.max(span.endMs, clockMs) - span.startMs)}${row.approx ? '~' : ''}` : row.durationLabel
-  const cost = span.costUsd ?? (row.rollupCostUsd ? row.rollupCostUsd : undefined)
-  return cost === undefined ? duration : `${duration} · ${rowCostText(row, cost)}`
+  if (row.approx && span.endMs === span.startMs && !spanRunning(span)) return rowCostText(row, span.costUsd)
+  const duration = spanFact(span, 'Ran for') ?? (!spanRunning(span) && clockMs < span.endMs ? `${formatSpanDuration(Math.max(0, clockMs - span.startMs))}${row.approx ? '~' : ''}` : spanRunning(span) ? `${formatSpanDuration(Math.max(span.endMs, clockMs) - span.startMs)}${row.approx ? '~' : ''}` : row.durationLabel)
+  const cost = !spanRunning(span) && clockMs < span.endMs && spanFact(span, 'Cost') === undefined ? '' : rowCostText(row, span.costUsd ?? row.rollupCostUsd)
+  return [duration, cost].filter(Boolean).join(' · ')
 }
 
 /** One trace row. Geometry comes from CSS variables, so a row re-renders only when its own state changes. */
@@ -181,7 +180,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
           {marks.map((mark, i) => <Segment key={`${mark.id}-${i}`} mark={mark} events={props} agentView={agentView} />)}
           <span className="fw-end" style={at(span.startMs, running ? OPEN_END : span.endMs)}>
             {failedEnd && <span className="fw-outcome-end" title="Recorded end of failed agent; failure instant not reported"><RunStatusIcon status="failed" size={12} /></span>}
-            <span className="fw-duration">{label}</span>
+            <span className="fw-duration" title={label}>{label}</span>
           </span>
         </>}
       </div>
