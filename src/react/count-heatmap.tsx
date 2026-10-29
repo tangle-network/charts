@@ -1,4 +1,4 @@
-import { type CSSProperties, type KeyboardEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { type CSSProperties, type KeyboardEvent, type ReactNode, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { formatCompact, LIVE_SERIES, useWidth } from './live.js'
 
 export interface CountHeatmapColumn { id: string; label: string }
@@ -24,7 +24,8 @@ export interface CountHeatmapProps {
 /** Recorded counts, with failures separate from magnitude. Missing cells remain unknown; large row sets are windowed. */
 export function CountHeatmap({ label, columns, rows, color = LIVE_SERIES[1], format = formatCompact, renderLabel, onSelectRow, onInspect }: CountHeatmapProps) {
   const [measure, width] = useWidth<HTMLDivElement>()
-  const scroll = useRef<HTMLDivElement>(null), focusFrame = useRef(0)
+  const scroll = useRef<HTMLDivElement>(null)
+  const [target, setTarget] = useState<[number, number] | null>(null)
   const [top, setTop] = useState(0)
   const narrow = width > 0 && width < 600, rowHeight = narrow ? 44 : 32, height = 8 * rowHeight
   const fit = Math.max(0, Math.floor(((width || 720) - (narrow ? 120 : 208) - 88) / 76))
@@ -39,7 +40,7 @@ export function CountHeatmap({ label, columns, rows, color = LIVE_SERIES[1], for
   const virtual = rows.length > 100, start = virtual ? Math.max(0, Math.min(rows.length - 1, Math.floor(top / rowHeight) - 4)) : 0
   const visible = virtual ? rows.slice(start, start + 22) : rows
   const grid = { gridTemplateColumns: `minmax(${narrow ? 120 : 208}px, 2fr) repeat(${groups.length}, minmax(60px, 1fr)) 76px` }
-  useEffect(() => () => cancelAnimationFrame(focusFrame.current), [])
+  useLayoutEffect(() => { if (target) scroll.current?.querySelector<HTMLElement>(`[data-heat-row="${target[0]}"][data-heat-column="${target[1]}"]`)?.focus({ preventScroll: true }) }, [target, start])
   const inspect = (row: CountHeatmapRow, group: (typeof groups)[number], element: HTMLElement) => onInspect?.({ rowId: row.id, columns: group.ids, rect: element.getBoundingClientRect() })
   const move = (event: KeyboardEvent, row: number, column: number) => {
     const keys: Record<string, [number, number]> = { ArrowDown: [row + 1, column], ArrowUp: [row - 1, column], ArrowRight: [row, column + 1], ArrowLeft: [row, column - 1], Home: [row, 0], End: [row, groups.length + 1] }
@@ -50,8 +51,7 @@ export function CountHeatmap({ label, columns, rows, color = LIVE_SERIES[1], for
     if (r * rowHeight < pane.scrollTop) pane.scrollTop = r * rowHeight
     else if ((r + 1) * rowHeight > pane.scrollTop + pane.clientHeight) pane.scrollTop = (r + 1) * rowHeight - pane.clientHeight
     setTop(pane.scrollTop)
-    cancelAnimationFrame(focusFrame.current)
-    focusFrame.current = requestAnimationFrame(() => pane.querySelector<HTMLElement>(`[data-heat-row="${r}"][data-heat-column="${c}"]`)?.focus({ preventScroll: true }))
+    setTarget([r, c])
   }
   return <div ref={measure} className="tgc-count-heatmap" role="table" aria-label={label} aria-rowcount={rows.length + 1} aria-colcount={groups.length + 2} style={{ '--heatmap-color': color, '--heatmap-row': `${rowHeight}px` } as CSSProperties}>
     <div className="tgc-count-head" role="row" style={grid} aria-rowindex={1}>
