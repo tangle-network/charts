@@ -36,7 +36,17 @@
       "default": "./dist/react/index.js"
     },
     "./react/flow-waterfall.css": "./dist/react/flow-waterfall.css",
-    "./react/agent-graph.css": "./dist/react/agent-graph.css"
+    "./react/agent-graph.css": "./dist/react/agent-graph.css",
+    "./react/agent-graph": {
+      "types": "./dist/react/agent-graph/index.d.ts",
+      "import": "./dist/react/agent-graph/index.js",
+      "default": "./dist/react/agent-graph/index.js"
+    },
+    "./react/agent-graph/presentation": {
+      "types": "./dist/react/agent-graph/presentation.d.ts",
+      "import": "./dist/react/agent-graph/presentation.js",
+      "default": "./dist/react/agent-graph/presentation.js"
+    }
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",

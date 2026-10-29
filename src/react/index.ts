@@ -46,8 +46,3 @@ export { criticalPathIds, flowWaterfallRows } from "./flow-waterfall-model.js";
 export type { FlowWaterfallRow } from "./flow-waterfall-model.js";
 
 export { toolGlyph } from './flow-waterfall-icons.js'
-
-export { AgentGraph, type AgentGraphProps } from "./agent-graph/AgentGraph";
-export type { AgentGraphNode, AgentGraphEdge, AgentGraphEvent, AgentGraphStatus, AgentGraphDirection, AgentGraphEdgeKind } from "./agent-graph/agent-graph-layout";
-export type { AgentGraphTool, AgentGraphCall, AgentGraphCallKind } from "./agent-graph/agent-hub-layout";
-export * as agentGraph from "./agent-graph/index";
