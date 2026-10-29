@@ -42,7 +42,7 @@ function Journey() {
  const [selectedId, onSelect] = useState(), [now, setNow] = useState(Date.now())
  const start = useState(() => Date.now() - 60000)[0]
  useEffect(() => { const clock = setInterval(() => setNow(Date.now()), 100); return () => clearInterval(clock) }, [])
- return <main><Gantt lanes={Array.from({length:124},(_,i)=>({id:'agent-'+i,label:'Agent '+i,spans:[{start:start+i*100,end:i%3===0?null:start+30000,state:i%3===0?'running':'shipped'}]}))} selectedId={selectedId} onSelect={onSelect} maxHeight={420} now={now} marks={[{kind:'release',label:'rc1',at:start+10000},{kind:'release',label:'rc2',at:start+20000}]} bestMark="rc2" colors={{running:'var(--accent-text)',shipped:'var(--surface-success-text)'}} axis={t=>new Date(t).toISOString().slice(11,19)} span={(a,b)=>Math.round((b-a)/1000)+'s'}/></main>
+ return <main style={params.has('ancestor')?{'--chart-live-muted':'rgb(17, 109, 91)','--chart-live-fg':'rgb(32, 67, 120)'}:undefined}><Gantt lanes={Array.from({length:124},(_,i)=>({id:'agent-'+i,label:'Agent '+i,spans:[{start:start+i*100,end:i%3===0?null:start+30000,state:i%3===0?'running':'shipped'}]}))} selectedId={selectedId} onSelect={onSelect} maxHeight={420} now={now} marks={[{kind:'release',label:'rc1',at:start+10000},{kind:'release',label:'rc2',at:start+20000},{kind:'deadline',label:'Cutoff',at:start+30000}]} bestMark="rc2" colors={{running:'var(--accent-text)',shipped:'var(--surface-success-text)'}} axis={t=>new Date(t).toISOString().slice(11,19)} span={(a,b)=>Math.round((b-a)/1000)+'s'}/></main>
 }
 const params = new URLSearchParams(location.search)
 const name = (params.get('id') ?? '').replace('chatcontrols-flowwaterfall--','')

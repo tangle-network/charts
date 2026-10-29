@@ -559,13 +559,15 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
     setScrollTop(Math.max(0, position))
     requestAnimationFrame(() => scroller.current?.querySelector<SVGGElement>(`[data-lane-index="${at}"]`)?.focus())
   }
+  const tipY = (y: number) => Math.max(0, y - (maxHeight ? scrollTop - 52 : 0) - em)
+  const tipX = (x: number) => Math.max(0, Math.min(x + 8, width - Math.min(240, width)))
   return (
     <div ref={ref} className="ov-plot ov-gantt" data-featured={bestMark ? true : undefined} onMouseLeave={() => setTip(null)}>
       {maxHeight && width > 0 && <svg width={width} height={52} aria-label="Releases and time axis">
         {marks.map((mark, i) => <g key={i} data-best={mark.label === bestMark || undefined}><Mark mark={mark} x={x(mark.at)} top={10} bottom={28} row={0} em={em} flip={x(mark.at) > width * .62} />{mark.label === bestMark && <circle cx={x(mark.at)} cy={14} r={8} fill="none" stroke="var(--accent-text)" strokeWidth={2} />}</g>)}
         {fractions.map(f => <text key={f} x={labelW + f * plotW} y={46} className="ov-axis" textAnchor={f === 0 ? 'start' : f === 1 ? 'end' : 'middle'}>{axis(t0 + f * (t1 - t0))}</text>)}
       </svg>}
-      <div ref={scroller} className="ov-gantt-scroll" style={{ maxHeight, overflow: maxHeight ? 'auto' : undefined }} onScroll={event => setScrollTop(event.currentTarget.scrollTop)}>
+      <div ref={scroller} className="ov-gantt-scroll" style={{ maxHeight, overflow: maxHeight ? 'auto' : undefined }} onScroll={event => { setScrollTop(event.currentTarget.scrollTop); setTip(null) }}>
       {width > 0 && (
         <svg width={width} height={height} role="group" aria-label={`${lanes.length} ${laneInput ? 'lanes' : 'agents'} over time`}>
           {fractions.map((f) => (
@@ -586,7 +588,7 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
                 {selectedId === lane.id && <rect x={0} y={y} width={width} height={rowH} fill="var(--ix-sel-bg)" rx={4} />}
                 {/* The whole row names every span on hover, as single-span rows always did. */}
                 <rect x={0} y={y} width={width} height={rowH} fill="transparent"
-                  onMouseEnter={() => setTip({ x: Math.min(x(ends(lane.spans.at(-1) ?? { end: t1 })) + 8, width - em * 16), y: Math.max(0, y - em), title: lane.label, lines: lane.spans.flatMap((s) => [{ label: s.end === null ? `${s.state} (open)` : s.state, value: span(s.start, ends(s)), color: hatched.has(s.state) ? undefined : colors[s.state] ?? fallback }, ...(s.note ? [{ label: s.note, value: '' }] : [])]) })} />
+                  onMouseEnter={() => setTip({ x: tipX(x(ends(lane.spans.at(-1) ?? { end: t1 }))), y: tipY(y), title: lane.label, lines: lane.spans.flatMap((s) => [{ label: s.end === null ? `${s.state} (open)` : s.state, value: span(s.start, ends(s)), color: hatched.has(s.state) ? undefined : colors[s.state] ?? fallback }, ...(s.note ? [{ label: s.note, value: '' }] : [])]) })} />
                 <text x={phone ? 8 : labelW - em * 0.5} y={phone ? y + 13 : y + rowH / 2} dominantBaseline="middle" textAnchor={phone ? 'start' : 'end'} className="ov-axis ov-gantt-label"><title>{lane.label}</title>
                   {lane.label.length > 26 ? `${lane.label.slice(0, 25)}…` : lane.label}
                 </text>
@@ -596,7 +598,7 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
                   const open = s.end === null
                   return (
                     <g key={j} data-state={s.state} data-open={open ? 'true' : undefined} data-hatched={hatched.has(s.state) ? 'true' : undefined}
-                      onMouseEnter={() => setTip({ x: Math.min(bx + bw + 8, width - em * 16), y: Math.max(0, y - em), title: lane.label, lines: [{ label: open ? `${s.state} (open)` : s.state, value: span(s.start, ends(s)), color: hatched.has(s.state) ? undefined : color }, ...(s.note ? [{ label: s.note, value: '' }] : [])] })}>
+                      onMouseEnter={() => setTip({ x: tipX(bx + bw), y: tipY(y), title: lane.label, lines: [{ label: open ? `${s.state} (open)` : s.state, value: span(s.start, ends(s)), color: hatched.has(s.state) ? undefined : color }, ...(s.note ? [{ label: s.note, value: '' }] : [])] })}>
                       {hatched.has(s.state) ? (
                         <>
                           <rect x={bx} y={by} width={bw} height={bh} className="ov-hatch-bg" />
@@ -613,8 +615,8 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
           })}
           {now !== undefined && <line x1={x(now)} x2={x(now)} y1={top} y2={plotBottom} className="ov-now" data-now="true" />}
           {[...marks].sort((a, b) => a.at - b.at).map((mark, i) => (
-            <g key={`mark-${i}`} data-best={mark.label === bestMark || undefined} style={maxHeight ? { pointerEvents: 'none' } : undefined}>
-              <line x1={x(mark.at)} x2={x(mark.at)} y1={top} y2={plotBottom} className="ov-mark ov-mark-release" />{!maxHeight && <Mark mark={mark} x={x(mark.at)} top={4} bottom={plotBottom} row={i % 2} em={em} flip={x(mark.at) > labelW + plotW * 0.62} />}
+            <g key={`mark-${i}`} className={mark.verdict ? `ov-verdict-${mark.verdict}` : undefined} data-best={mark.label === bestMark || undefined} style={maxHeight ? { pointerEvents: 'none' } : undefined}>
+              <>{maxHeight && <line x1={x(mark.at)} x2={x(mark.at)} y1={top} y2={plotBottom} className={`ov-mark ov-mark-${mark.kind}`} style={{ opacity: mark.label === bestMark ? .8 : .3 }} />}</>{!maxHeight && <Mark mark={mark} x={x(mark.at)} top={4} bottom={plotBottom} row={i % 2} em={em} flip={x(mark.at) > labelW + plotW * 0.62} />}
               {!maxHeight && mark.label === bestMark && <circle cx={x(mark.at)} cy={4 + Math.max(3, em / 4)} r={8} fill="none" stroke="var(--accent-text)" strokeWidth={2} />}
             </g>
           ))}
