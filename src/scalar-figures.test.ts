@@ -101,7 +101,7 @@ describe("recorded scalar trajectories", () => {
     expect(f.svg.wide).not.toContain('<polyline');
     expect(f.svg.wide.match(/class="tgc-series-point"/g)).toHaveLength(2);
   });
-  it.each([[1, 1], [2, 1], [1, Infinity], [0, 2]])("refuses duplicate, nonordered or invalid x %s,%s", (first, second) => {
+  it.each([[2, 1], [1, Infinity], [0, 2]])("refuses nonordered or invalid x %s,%s", (first, second) => {
     expect(isRefusal(timeSeries([{ id: "a", label: "A", points: [first, second].map((x) => ({ x, y: 0.1 })) }], trajectory))).toBe(true);
   });
   it("refuses invalid y and zero-count measured observations", () => {

@@ -138,9 +138,12 @@ const figure = metricBars([
 const html = isRefusal(figure) ? renderRefusals([figure]) : renderFigure(figure, 1, { presentation: "chart" });
 ```
 
-`timeSeries` draws recorded scalar values at strictly increasing, finite positions.
+`timeSeries` draws recorded scalar values at finite positions in order; equal positions, such as two runs recorded at one time, share a place and are never shifted.
 The caller includes every configured position, with null for a missing observation.
 Null breaks the line; the library never interpolates a missing value.
+`secondary: true` de-emphasises a series beside a primary in the same `colorIndex`, such as a max beside its p50.
+`crosshair: true` draws a vertical rule at the point whose tip shows.
+A host with its own pointer rule, such as nearest point within 48 px, sets `data-near` on that `[data-point]` group to show its tip, and sets `pointer-events: none` on `.tgc-series-observation` so hover does not show a second one; keyboard focus still shows each tip.
 
 ```ts
 import { isRefusal, renderFigure, renderRefusals, timeSeries } from "@tangle-network/charts";
