@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 
 const files = ['src/react/agent-graph/agent-live-card.tsx', 'src/react/agent-graph/agent-hub-css.ts']
 // Read nested var() calls so only a real fallback permits a literal.
-function withoutFallbacks(source) {
+export function withoutFallbacks(source) {
   let result = ''
   for (let i = 0; i < source.length; i++) {
     if (!source.startsWith('var(', i)) { result += source[i]; continue }
