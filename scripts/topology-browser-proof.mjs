@@ -11,7 +11,7 @@ const server = spawn(process.execPath, ['scripts/charts-browser-smoke.mjs'], { s
 const logs = [], checks = []
 server.stdout.on('data', bytes => logs.push(String(bytes)))
 server.stderr.on('data', bytes => logs.push(String(bytes)))
-let browser
+let browser, currentPage
 try {
   const deadline = Date.now() + 120000
   while (true) {
@@ -23,6 +23,7 @@ try {
   for (const theme of ['light', 'dark']) for (const width of [1512, 390]) {
     const context = await browser.newContext({ viewport: { width, height: 982 }, reducedMotion: 'reduce', recordVideo: { dir: output, size: { width, height: 982 } } })
     const page = await context.newPage(), errors = []
+    currentPage = page
     page.on('pageerror', error => errors.push(error.message))
     const ready = () => page.locator(`.agent-graph[data-layout="${width < 600 ? 'list' : 'ready'}"]`).waitFor()
     await page.goto(`http://127.0.0.1:46489/?id=topology&globals=agent-${theme}`)
@@ -34,7 +35,10 @@ try {
     await page.screenshot({ path: `${output}/recorded-tree-${width}-${theme}.png` })
     await page.getByRole('button', { name: 'Switch layout', exact: true }).click()
     const hubNode = page.locator('[data-agent-graph-node="agent-1"]')
-    await hubNode.click()
+    await page.getByRole('dialog').waitFor()
+    await page.getByRole('button', { name: 'Close', exact: true }).click()
+    await hubNode.focus()
+    await page.keyboard.press('Enter')
     await page.getByRole('dialog').waitFor()
     assert.equal(await page.getByLabel('Reader selection').textContent(), 'agent-1')
     await page.screenshot({ path: `${output}/recorded-hub-${width}-${theme}.png` })
@@ -62,6 +66,12 @@ try {
     await video.saveAs(`${output}/topology-${width}-${theme}.webm`)
     checks.push({ theme, width, recordedAgents: 2, boundaryAgents: 130, result: 'PASS' })
   }
+} catch (error) {
+  if (currentPage && !currentPage.isClosed()) {
+    await currentPage.screenshot({ path: `${output}/failure.png`, fullPage: true })
+    await writeFile(`${output}/failure.json`, JSON.stringify({ message: String(error), url: currentPage.url(), text: await currentPage.locator('body').innerText() }, null, 2))
+  }
+  throw error
 } finally {
   await browser?.close()
   server.kill('SIGTERM')
