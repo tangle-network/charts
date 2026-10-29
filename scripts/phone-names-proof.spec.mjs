@@ -65,6 +65,7 @@ try {
       await row.locator('.fw-bar').click()
       await card.waitFor()
       const values = await card.evaluate(card => [...card.querySelectorAll('.fw-card-table > div')].map(row => [row.querySelector('dt').textContent, row.querySelector('dd').textContent]))
+      await page.screenshot({ path: `${output}/authority-${authority}-${theme}-${width}.png`, fullPage: true })
       const expected = authority === 'unknown' ? Object.fromEntries(Object.keys(known).map(key => [key, 'Not recorded'])) : authority === 'zero' ? { Tokens:'0','Model calls':'0','Tool calls':'0',Failures:'0',Retries:'0',Cost:'$0.00' } : known
       for (const [label, value] of Object.entries(expected)) {
         const matching = values.filter(([key]) => key.toLowerCase() === label.toLowerCase())
@@ -72,7 +73,6 @@ try {
         assert.equal(matching[0][1], value, `${authority} explicit ${label} overrides the bounded display inference`)
       }
       checks.push({ theme, width, authority, values })
-      await page.screenshot({ path: `${output}/authority-${authority}-${theme}-${width}.png`, fullPage: true })
       await page.keyboard.press('Escape')
       assert.equal(await card.count(), 0)
     }
