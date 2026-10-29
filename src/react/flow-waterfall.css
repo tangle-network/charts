@@ -271,7 +271,7 @@
   left: min(calc(var(--x0) + max(var(--w), 3px) + 4px), calc(100% - var(--fw-end-w, 0px) - 4px)); padding: 0 4px; border-radius: var(--radius-tag);
   background: linear-gradient(var(--fw-tint, transparent) 0 0), var(--fw-surface); white-space: nowrap; pointer-events: none; }
 .fw-root .fw-outcome-end { display: inline-flex; pointer-events: auto; }
-.fw-root .fw-duration { font-size: 14px; color: var(--fw-muted); font-variant-numeric: tabular-nums; }
+.fw-root .fw-duration { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; color: var(--fw-muted); font-variant-numeric: tabular-nums; }
 .fw-root .fw-k-failed ~ .fw-end .fw-duration { color: var(--fw-failed); }
 .fw-root .fw-badge { display: inline-flex; flex: none; height: 18px; padding: 0 6px; border-radius: var(--radius-pill); font-size: 12px; line-height: 18px; font-weight: 500; color: var(--fw-muted); background: transparent; box-shadow: inset 0 0 0 1px var(--fw-border); }
 
@@ -416,7 +416,7 @@
   .fw-root .fw-view-agents :is(.fw-subtitle, .fw-seg-label) { display: none; }
   .fw-root .fw-view-agents .fw-label { padding-left: calc(8px + var(--depth) * 12px); }
   .fw-root .fw-lane { grid-column: 2; }
-  .fw-root .fw-end { top: 20px; height: 18px; left: auto; right: 4px; }
+  .fw-root .fw-end { top: 20px; height: 18px; left: auto; right: 4px; max-width: calc(100% - 144px); }
   .fw-root .fw-time { display: block; grid-column: 2; position: absolute; top: -12px; left: var(--fw-progress); transform: translateX(calc(-1 * var(--fw-progress))); width: max-content; max-width: 100%; background: var(--fw-surface); }
   .fw-root .fw-playback { position: relative; padding: 12px 8px 8px; }
   .fw-root .fw-overview { margin-top: 12px; grid-template-columns: 0 minmax(0, 1fr); column-gap: 0; }

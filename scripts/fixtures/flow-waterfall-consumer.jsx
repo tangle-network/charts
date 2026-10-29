@@ -51,9 +51,16 @@ function FlowApp({ name }) {
  const authority = new URLSearchParams(location.search).get('authority')
  if (authority) {
   const known = { 'Model calls':'731',Model:'canonical/model',Tokens:'8,000,000 total · split not recorded','Model latency':'p50 3 s · p90 11 s · p99 32 s','Tool calls':'9,004',Failures:'127 failed steps',Retries:'44 retries · 8 restarts','Ran for':'23 h 12 m',Cost:'$992.18 list' }
-  const values = authority === 'unknown' ? Object.fromEntries(Object.keys(known).map(key => [key, 'Not recorded'])) : authority === 'zero' ? { Tokens:'0','Model calls':'0','Tool calls':'0',Failures:'0',Retries:'0',Cost:'$0.00' } : known
+  const values = authority === 'long' ? { ...known, Cost:'≥$992,180.00 list (incomplete)' } : authority === 'unknown' ? Object.fromEntries(Object.keys(known).map(key => [key, 'Not recorded'])) : authority === 'zero' ? { Tokens:'0','Model calls':'0','Tool calls':'0',Failures:'0',Retries:'0',Cost:'$0.00' } : known
   trace = { ...trace, spans:trace.spans.filter(span => span.parentId !== 'builder' || ['builder-m0','builder-t2'].includes(span.id)).map(span => span.id === 'builder' ? { ...span,facts:[{label:"MODEL CALLS",value:"999"},...Object.entries(values).map(([label,value]) => ({ label,value }))] } : span) }
-  if (new URLSearchParams(location.search).has('family')) trace = { ...trace, spans:trace.spans.map(span => ['planner','builder'].includes(span.id) ? { ...span,name:span.id==='planner'?'Worker 1':'Worker 2',promptTokens:100,completionTokens:20,cachedTokens:50,costUsd:2 } : span) }
+  const family = new URLSearchParams(location.search).get('family')
+  if (family) trace = { ...trace, spans:trace.spans.map(span => {
+   if (!['planner','builder'].includes(span.id)) return span
+   const full = family === '1' || family === 'partial' && span.id === 'planner'
+   return { ...span,name:span.id==='planner'?'Worker 1':'Worker 2',promptTokens:full?100:undefined,completionTokens:full?20:undefined,cachedTokens:full?50:undefined,costUsd:full?2:undefined,
+    facts:[...(span.facts??[]),{label:'Tokens',value:full?'100 in · 20 out · 50 cached':'Not recorded'},{label:'Cost',value:full?'$2.00 list':'Not recorded'}] }
+  }) }
+
  }
  return <main>{name==='discovery-streaming-replay'&&<p>Recorded Discovery replay ·20x; final totals arrive at settlement</p>}<FlowWaterfall trace={trace} live={live} maxHeight={1800}
   markers={name==='healthy'?[{at:Math.round(trace.totalMs/2),label:'Release v2',tone:'ok'},{at:Math.round(trace.totalMs/2)+50,label:'Release v3'},{at:trace.totalMs-50,label:'Release v4'}]:undefined}

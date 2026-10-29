@@ -80,6 +80,7 @@ export const toneKey = (tone: number): number => tone > 0 && tone <= 5 ? tone : 
 
 export const spanFailed = (span: FlowSpan): boolean => span.status === 'failed'
 export const spanRunning = (span: FlowSpan): boolean => span.status === 'running'
+export const spanFact = (span: FlowSpan, label: string): string | undefined => new Map((span.facts ?? []).map(fact => [fact.label.toLowerCase(), fact.value])).get(label.toLowerCase())
 const ordered = (span: FlowSpan) => Number.isFinite(span.startMs) && Number.isFinite(span.endMs) && span.endMs >= span.startMs
 
 /** 542ms, 6.9s, 23s, 1m 22s, 2h 05m: the precision a reader compares at each scale. */
@@ -150,7 +151,7 @@ export function flowWaterfallRows(trace: FlowTrace, resolutionMs?: number): Flow
       const state = runStatus(recorded.status ?? 'unknown')
       // Adapt the legacy chart tone vocabulary; the owner supplies every state label and colour.
       const outcome: FlowOutcome = { label: statusMeta(state).label, tone: state === 'running' ? 'live' : state === 'done' ? 'ok' : state === 'needs-you' ? 'warn' : state === 'failed' ? 'failed' : 'neutral', ...(state === 'unknown' ? { ring: true } : {}) }
-      const span = recorded.outcome ? recorded : { ...recorded, outcome }
+      const span = { ...recorded, outcome: recorded.outcome ?? outcome, detail: spanFact(recorded, recorded.kind === 'tool' ? 'Provider' : 'Model') ?? recorded.detail }
       return { span, key: span.id ?? `span-${i}` }
     })
     .sort((a, b) => a.span.startMs - b.span.startMs)
@@ -357,9 +358,8 @@ export function agentCallouts(agents: FlowWaterfallRow[], clockMs: number): { sl
     // Only agents compete: a family's bar is its members' extent and its cost their sum, and an opened step is not an agent.
     if (row.durationLabel === '—' || row.span.startMs > clockMs || row.kind !== 'pipeline' || row.hasAgents || row.id.startsWith('family:') || row.id.startsWith('run:')) continue
     const ms = (spanRunning(row.span) ? Math.max(row.span.endMs, clockMs) : Math.min(row.span.endMs, clockMs)) - row.span.startMs
-    timed += 1
-    if (ms > slowestMs) { slowest = row; slowestMs = ms }
-    const cost = row.span.costUsd ?? row.rollupCostUsd
+    if (spanFact(row.span, 'Ran for') === undefined) { timed += 1; if (ms > slowestMs) { slowest = row; slowestMs = ms } }
+    const cost = spanFact(row.span, 'Cost') === undefined ? row.span.costUsd ?? row.rollupCostUsd : undefined
     if (typeof cost !== 'number' || !Number.isFinite(cost)) continue
     priced += 1
     if (cost > top) { costliest = row; top = cost }
@@ -453,13 +453,13 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
     const startMs = Math.min(...members.map(row => row.span.startMs))
     const endMs = Math.max(...members.map(row => row.span.endMs))
     const running = members.some(row => spanRunning(row.span))
-    const costs = members.map(row => row.span.costUsd ?? row.rollupCostUsd)
-    const known = costs.filter((cost): cost is number => cost !== undefined)
+    const costs = members.map(row => row.span.costUsd ?? (spanFact(row.span, 'Cost') === undefined ? row.rollupCostUsd : undefined))
+    const known = costs.filter((cost): cost is number => cost !== undefined && Number.isFinite(cost))
     // Failed means the outcome the host recorded when it gave one (a member can fail a step and still ship); status otherwise.
     const failed = members.filter(row => row.span.outcome ? row.span.outcome.tone === 'failed' : !row.ok).length
     // A family takes its members' outcome when they share one; mixed outcomes leave it without, drawn neutral.
     const outcome = members.every(row => row.span.outcome && row.span.outcome.tone === members[0]!.span.outcome?.tone && !row.span.outcome.ring === !members[0]!.span.outcome?.ring) ? members[0]!.span.outcome : undefined
-    const facts = members.flatMap(row => row.span.facts ?? []).filter(({ label }) => ['model', 'model calls', 'tool calls', 'model latency', 'failures', 'retries'].includes(label.toLowerCase())).map(({ label }) => ({ label, value: 'Not recorded' }))
+    const facts = members.flatMap(row => (row.span.facts ?? []).filter(({ label }) => ['model', 'model calls', 'tool calls', 'model latency', 'failures', 'retries'].includes(label.toLowerCase()) || label.toLowerCase() === 'tokens' && ![row.span.promptTokens, row.span.completionTokens, row.span.cachedTokens].some(Number.isFinite) || label.toLowerCase() === 'cost' && known.length === 0)).map(({ label }) => ({ label, value: 'Not recorded' }))
     out.push({
       // The family hangs off its members' parent, so the spawn elbow reaches it from the agent that started them.
       costFloor: known.length < members.length || members.some(row => row.costFloor),
@@ -547,7 +547,7 @@ export function drawnRow(row: FlowWaterfallRow, visible: readonly FlowWaterfallR
 }
 
 /** A row's cost as printed: "≥" when it is a floor. */
-export const rowCostText = (row: FlowWaterfallRow, cost: number): string => `${row.costFloor ? '≥' : ''}${formatCost(cost)}`
+export const rowCostText = (row: FlowWaterfallRow, cost: number | undefined): string => spanFact(row.span, 'Cost') ?? (cost === undefined ? '' : `${row.costFloor ? '≥' : ''}${formatCost(cost)}`)
 
 /** Quiet is elapsed silence beyond both five minutes and three median event gaps. */
 export function quietActivity(row: FlowWaterfallRow, now: number) {

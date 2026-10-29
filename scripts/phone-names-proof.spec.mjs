@@ -59,14 +59,14 @@ try {
     await page.keyboard.press('Escape')
     assert.equal(await card.count(), 0)
     const known = { 'Model calls':'731',Model:'canonical/model',Tokens:'8,000,000 total · split not recorded','Model latency':'p50 3 s · p90 11 s · p99 32 s','Tool calls':'9,004',Failures:'127 failed steps',Retries:'44 retries · 8 restarts','Ran for':'23 h 12 m',Cost:'$992.18 list' }
-    for (const authority of ['known', 'unknown', 'zero']) {
+    for (const authority of ['known', 'unknown', 'zero', 'long']) {
       await page.goto(`${base}/iframe.html?id=chatcontrols-flowwaterfall--phone-names&globals=agentTheme:agent-${theme}&authority=${authority}`)
       await row.waitFor()
       await row.locator('.fw-bar').click()
       await card.waitFor()
       const values = await card.evaluate(card => [...card.querySelectorAll('.fw-card-table > div')].map(row => [row.querySelector('dt').textContent, row.querySelector('dd').textContent]))
       await page.screenshot({ path: `${output}/authority-${authority}-${theme}-${width}.png`, fullPage: true })
-      const expected = authority === 'unknown' ? Object.fromEntries(Object.keys(known).map(key => [key, 'Not recorded'])) : authority === 'zero' ? { Tokens:'0','Model calls':'0','Tool calls':'0',Failures:'0',Retries:'0',Cost:'$0.00' } : known
+      const expected = authority === 'long' ? { ...known,Cost:'≥$992,180.00 list (incomplete)' } : authority === 'unknown' ? Object.fromEntries(Object.keys(known).map(key => [key, 'Not recorded'])) : authority === 'zero' ? { Tokens:'0','Model calls':'0','Tool calls':'0',Failures:'0',Retries:'0',Cost:'$0.00' } : known
       for (const [label, value] of Object.entries(expected)) {
         const matching = values.filter(([key]) => key.toLowerCase() === label.toLowerCase())
         assert.equal(matching.length, 1, `${authority} keeps exactly one ${label} row`)
@@ -75,26 +75,41 @@ try {
       const summary = await row.locator('.fw-subtitle').textContent()
       for (const label of ['Model calls', 'Tool calls']) assert.ok(summary.includes(`${label}: ${expected[label]}`), `${authority} lane uses the full-stream ${label}: ${summary}`)
       assert.ok(!summary.includes('1 model call') && !summary.includes('1 tool call'), 'sampled display counts cannot contradict the host in the lane')
-      checks.push({ theme, width, authority, values, summary })
+      const endLabel = await row.locator('.fw-duration').textContent()
+      assert.ok(endLabel.includes(expected.Cost), `${authority} end label uses authoritative cost: ${endLabel}`)
+      if (expected['Ran for']) assert.ok(endLabel.includes(expected['Ran for']), `${authority} end label uses authoritative duration: ${endLabel}`)
+      assert.ok(!(await row.locator('.fw-badge').allTextContents()).includes('Costliest leaf'), 'opaque host prices cannot compete in numeric cost rankings')
+      if (expected.Model) assert.ok((await row.locator('.fw-names').getAttribute('title')).includes(expected.Model), 'row identity uses the authoritative model')
+      if (width === 390) {
+        const numbers = await row.locator('.fw-end').boundingBox(), state = await row.locator('.fw-row-state').boundingBox()
+        assert.ok(state.x + state.width <= numbers.x, `${authority} status and opaque duration/cost must not overlap`)
+        assert.equal(await row.locator('.fw-duration').getAttribute('title'), endLabel, 'full opaque label remains accessible when clipped')
+      }
+      checks.push({ theme, width, authority, values, summary, endLabel })
       await page.keyboard.press('Escape')
       assert.equal(await card.count(), 0)
     }
-    await page.goto(`${base}/iframe.html?id=chatcontrols-flowwaterfall--phone-names&globals=agentTheme:agent-${theme}&authority=known&family=1`)
-    const family = page.locator('[data-span-id="family:Worker"]')
-    await family.waitFor()
-    const familySummary = await family.locator('.fw-subtitle').textContent()
-    assert.ok(familySummary.includes('2 agents') && familySummary.includes('1 failed'), `family retains agent/outcome rollup: ${familySummary}`)
-    assert.ok(!familySummary.includes('gpt-6.1') && !familySummary.includes('Model calls') && !familySummary.includes('tool call'), 'family lane does not invent a total from opaque facts')
-    const familyBar = family.locator('.fw-bar'), box = await familyBar.boundingBox()
-    await familyBar.hover({ position: { x: box.width - 4, y: box.height / 2 } })
-    await card.waitFor()
-    assert.equal(await card.locator('.fw-card-who').textContent(), 'Worker')
-    const familyValues = await card.evaluate(card => Object.fromEntries([...card.querySelectorAll('.fw-card-table > div')].map(row => [row.querySelector('dt').textContent, row.querySelector('dd').textContent])))
-    await page.screenshot({ path: `${output}/authority-family-${theme}-${width}.png`, fullPage: true })
-    for (const label of ['Model', 'Model calls', 'Tool calls', 'Model latency', 'Failures', 'Retries']) assert.equal(familyValues[label], 'Not recorded', `family cannot aggregate formatted ${label} facts`)
-    for (const value of ['200 in', '40 out', '100 cached']) assert.ok(familyValues.Tokens.includes(value), `family retains full numeric token rollup: ${familyValues.Tokens}`)
-    assert.equal(familyValues.Cost, '$4.00')
-    checks.push({ theme, width, authority: 'family', familySummary, values: familyValues })
+    for (const mode of ['1', 'opaque', 'partial']) {
+      await page.goto(`${base}/iframe.html?id=chatcontrols-flowwaterfall--phone-names&globals=agentTheme:agent-${theme}&authority=known&family=${mode}`)
+      const family = page.locator('[data-span-id="family:Worker"]')
+      await family.waitFor()
+      const familySummary = await family.locator('.fw-subtitle').textContent()
+      assert.ok(familySummary.includes('2 agents') && familySummary.includes('1 failed'), `family retains agent/outcome rollup: ${familySummary}`)
+      assert.ok(!familySummary.includes('gpt-6.1') && !familySummary.includes('Model calls') && !familySummary.includes('tool call'), 'family lane does not invent model identity or opaque totals')
+      const familyBar = family.locator('.fw-bar'), box = await familyBar.boundingBox()
+      await familyBar.hover({ position: { x: box.width - 4, y: box.height / 2 } })
+      await card.waitFor()
+      assert.equal(await card.locator('.fw-card-who').textContent(), 'Worker')
+      const familyValues = await card.evaluate(card => Object.fromEntries([...card.querySelectorAll('.fw-card-table > div')].map(row => [row.querySelector('dt').textContent, row.querySelector('dd').textContent])))
+      await page.screenshot({ path: `${output}/authority-family-${mode}-${theme}-${width}.png`, fullPage: true })
+      for (const label of ['Model', 'Model calls', 'Tool calls', 'Model latency', 'Failures', 'Retries']) assert.equal(familyValues[label], 'Not recorded', `family cannot aggregate formatted ${label} facts`)
+      if (mode === '1') for (const value of ['200 in', '40 out', '100 cached']) assert.ok(familyValues.Tokens.includes(value), `family retains full numeric token rollup: ${familyValues.Tokens}`)
+      else assert.equal(familyValues.Tokens, 'Not recorded', 'opaque member usage cannot become a family token total')
+      const cost = mode === '1' ? '$4.00' : mode === 'partial' ? '≥$2.00' : 'Not recorded'
+      assert.equal(familyValues.Cost, cost, 'family uses only full numeric prices, retaining incomplete lower bounds')
+      assert.ok((await family.locator('.fw-duration').textContent()).includes(cost), 'family bar and card agree on its known price or floor')
+      checks.push({ theme, width, authority: `family-${mode}`, familySummary, values: familyValues })
+    }
     assert.deepEqual(errors, [])
     await context.close()
   }

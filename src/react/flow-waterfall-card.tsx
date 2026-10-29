@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { runStatus, statusMeta } from '@tangle-network/ui/run'
 import type { FlowSpan } from '../flow-trace.js'
 import { CloseGlyph, KindGlyph } from './flow-waterfall-icons.js'
-import { type FlowWaterfallRow, rowCostText, formatCount, formatSpanDuration, spanRunning, toneKey } from './flow-waterfall-model.js'
+import { type FlowWaterfallRow, rowCostText, formatCount, formatSpanDuration, spanFact, spanRunning, toneKey } from './flow-waterfall-model.js'
 
 
 /** Names wrap between words, never at their hyphens ("memscale-engineer-" / "2" read as two names). */
@@ -77,7 +77,7 @@ function Table({ rows }: { rows: [string, ReactNode][] }) {
 /** The span card: what ran, for how long, on what tokens and at what recorded cost, then its input and output. */
 export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, renderIcon, compact }: SpanCardProps) {
   const span = row.span
-  const failure = span.facts?.find(fact => fact.label.toLowerCase() === 'failure')?.value
+  const failure = spanFact(span, 'Failure')
   const state = runStatus(span.status ?? 'unknown')
   const meta = statusMeta(state)
   const status = meta.label
