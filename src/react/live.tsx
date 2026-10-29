@@ -570,8 +570,8 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
   })
   const hatched = new Set(hatch)
   const plotBottom = top + lanes.length * rowH
-  const first = maxHeight && lanes.length > 100 ? Math.max(0, Math.floor((scrollTop - top) / rowH) - 6) : 0
-  const visible = maxHeight && lanes.length > 100 ? lanes.slice(first, first + Math.ceil(maxHeight / rowH) + 14) : lanes
+  const first = maxHeight ? Math.max(0, Math.floor((scrollTop - top) / rowH) - 6) : 0
+  const visible = maxHeight ? lanes.slice(first, first + Math.ceil(maxHeight / rowH) + 14) : lanes
   const select = (id: string) => onSelect?.(id)
   const focusLane = (index: number) => {
     const at = Math.max(0, Math.min(lanes.length - 1, index))
