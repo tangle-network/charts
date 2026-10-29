@@ -13,7 +13,7 @@ const dir = mkdtempSync(join(tmpdir(), 'charts-browser-'))
 const supplied = process.argv[2]
 const packed = supplied ? resolve(supplied) : join(dir, JSON.parse(execFileSync('npm', ['pack', '--json', '--ignore-scripts', '--pack-destination', dir], { cwd: root, encoding: 'utf8' }))[0].filename)
 writeFileSync(join(dir, 'package.json'), JSON.stringify({ private: true, type: 'module' }))
-execFileSync('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--package-lock=false', packed], { cwd: dir, stdio: 'inherit' })
+execFileSync('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--package-lock=false', packed, '@tangle-network/brand@1.31.2'], { cwd: dir, stdio: 'inherit' })
 let peerRequire = createRequire(join(dir, 'package.json'))
 const reactVersion = process.env.CHARTS_REACT_VERSION ?? '19'
 if (reactVersion) {
@@ -64,7 +64,7 @@ createRoot(document.getElementById('root')).render(name === 'analytics-counts' ?
 writeFileSync(join(dir, 'app.jsx'), app)
 await build({entryPoints:[join(dir,'app.jsx')],bundle:true,outfile:join(dir,'app.js'),jsx:'automatic',alias:{react:dirname(peerRequire.resolve('react/package.json')),'react-dom':dirname(peerRequire.resolve('react-dom/package.json'))}})
 // The trace paints Brand roles only, so the page loads Brand's tokens as every host does.
-const tokens = readFileSync(require.resolve('@tangle-network/brand/styles/tokens.css'),'utf8') + readFileSync(peerRequire.resolve('@tangle-network/charts/figure.css'),'utf8') + readFileSync(peerRequire.resolve('@tangle-network/charts/react/flow-waterfall.css'),'utf8') + readFileSync(peerRequire.resolve('@tangle-network/charts/react/live.css'),'utf8') + `
+const tokens = readFileSync(peerRequire.resolve('@tangle-network/brand/styles/tokens.css'),'utf8') + readFileSync(peerRequire.resolve('@tangle-network/charts/figure.css'),'utf8') + readFileSync(peerRequire.resolve('@tangle-network/charts/react/flow-waterfall.css'),'utf8') + readFileSync(peerRequire.resolve('@tangle-network/charts/react/live.css'),'utf8') + `
 :root { --chart-live-fg:hsl(var(--foreground));--chart-live-muted:hsl(var(--muted-foreground));--chart-live-faint:hsl(var(--muted-foreground));--chart-live-bg:hsl(var(--background));--chart-live-hover:hsl(var(--secondary)); --foreground:230 20% 12%;--muted-foreground:230 10% 40%;--background:0 0% 100%;--border:230 15% 85%;--secondary:230 15% 95%;--primary:250 65% 45%;--accent:205 70% 40%;--warning-strong:35 85% 35%;--success:145 65% 30%;--destructive:0 70% 45%;--chart-accent:hsl(var(--primary)); }
 :root[data-theme=dark] { --foreground:230 20% 95%;--muted-foreground:230 10% 70%;--background:240 20% 10%;--border:240 15% 25%;--secondary:240 15% 18%;--primary:250 75% 75%;--accent:205 85% 65%;--warning-strong:35 95% 65%;--success:145 60% 65%;--destructive:0 80% 70%; }
 `

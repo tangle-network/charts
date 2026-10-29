@@ -41,6 +41,13 @@ try {
   await page.screenshot({path:`${output}/versions-${width}-${theme}.png`})
   await page.getByRole('button',{name:'Load retained history',exact:true}).click()
   await chart.locator('[data-node="commit-0"]').waitFor()
+  const title = chart.locator('[data-node="commit-0"] .vg-title')
+  const bounds = await title.evaluate(node => ({clipped:node.scrollWidth>node.clientWidth,overflow:getComputedStyle(node).textOverflow,size:parseFloat(getComputedStyle(node).fontSize),title:node.title,text:node.textContent,right:node.closest('.vg-row').getBoundingClientRect().right,paneRight:node.closest('.vg-scroll').getBoundingClientRect().right}))
+  assert.equal(bounds.title,bounds.text,'ellipsis retains the complete commit title')
+  assert.ok(bounds.size>=13,'commit labels retain the readable type floor')
+  assert.ok(bounds.right<=bounds.paneRight+1,'29 lanes and metadata fit inside the phone pane')
+  if(width===390) {assert.equal(bounds.clipped,true);assert.equal(bounds.overflow,'ellipsis')}
+  await page.screenshot({path:`${output}/versions-retained-${width}-${theme}.png`})
   assert.ok(await chart.locator('li').count()<100,'205 commits render a bounded row window')
   await chart.locator('[data-node="commit-0"]').focus(); await page.keyboard.press('End')
   await chart.locator('[data-node="commit-204"]').waitFor()
