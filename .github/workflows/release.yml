@@ -50,8 +50,6 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      - name: Check tag and package version
-        run: test "${GITHUB_REF_NAME}" = "v$(node -p 'require("./package.json").version')"
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
@@ -59,9 +57,10 @@ jobs:
       - name: Use npm with trusted publishing support
         run: npm install --global npm@11.5.1
       - name: Admit the release version
-        uses: tangle-network/agent-runtime/.github/actions/admit-release@76b8de28191e31f0c1301a3621bab2188f8695e7
+        uses: tangle-network/agent-runtime/.github/actions/admit-release@db1cc4314c3cfcc287469e0880b37a9bf25a6dbb
         with:
           directories: .
+          consumer: '@tangle-network/sandbox-ui@2.0.19 (Discovery Findings15)'
 
       - name: Publish with provenance
         run: npm publish --access public --provenance --tag legacy
