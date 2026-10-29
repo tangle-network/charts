@@ -195,6 +195,7 @@
 .fw-root .fw-enter > [role="gridcell"] { transition: opacity var(--motion-arrive); transition-delay: var(--fw-enter-delay); }
 .fw-root .fw-enter :is(.fw-bar, .fw-seg) { transition: clip-path var(--motion-grow, var(--motion-stream)); transition-delay: var(--fw-enter-delay); clip-path: inset(0); }
 @starting-style { .fw-root .fw-enter > [role="gridcell"] { opacity: 0; } .fw-root .fw-enter :is(.fw-bar, .fw-seg) { clip-path: inset(0 100% 0 0); } }
+.fw-root[data-follow-live] :is(.fw-seg, .fw-mark), .fw-root[data-follow-live] .fw-row:not([data-running]) .fw-bar { --fw-t: calc(var(--e) + 1); }
 .fw-root .fw-row[data-critical] .fw-bar { box-shadow: inset 0 -2px 0 var(--fw-accent); }
 .fw-root .fw-row[data-search="context"] .fw-label { color: var(--fw-muted); }
 .fw-root .fw-row[data-search="match"] .fw-name-text { font-weight: 600; }
