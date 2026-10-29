@@ -459,7 +459,7 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
     const failed = members.filter(row => row.span.outcome ? row.span.outcome.tone === 'failed' : !row.ok).length
     // A family takes its members' outcome when they share one; mixed outcomes leave it without, drawn neutral.
     const outcome = members.every(row => row.span.outcome && row.span.outcome.tone === members[0]!.span.outcome?.tone && !row.span.outcome.ring === !members[0]!.span.outcome?.ring) ? members[0]!.span.outcome : undefined
-    const facts = members.flatMap(row => row.span.facts ?? []).filter(({ label }) => ['model calls', 'tool calls', 'model latency', 'failures', 'retries'].includes(label.toLowerCase())).map(({ label }) => ({ label, value: 'Not recorded' }))
+    const facts = members.flatMap(row => row.span.facts ?? []).filter(({ label }) => ['model', 'model calls', 'tool calls', 'model latency', 'failures', 'retries'].includes(label.toLowerCase())).map(({ label }) => ({ label, value: 'Not recorded' }))
     out.push({
       // The family hangs off its members' parent, so the spawn elbow reaches it from the agent that started them.
       costFloor: known.length < members.length || members.some(row => row.costFloor),
@@ -471,7 +471,7 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
       own: members.flatMap((row, i) => row.own.map(mark => ({ ...mark, tone, alt: i % 2 === 1 }))).sort((a, b) => a.startMs - b.startMs),
       ...(known.length ? { rollupCostUsd: known.reduce((sum, cost) => sum + cost, 0) } : {}),
       ...mergeStats(members),
-      span: { id, kind: 'pipeline', name: role, startMs, endMs, activityAt: members.flatMap(row => row.span.activityAt ?? row.own.flatMap(mark => [mark.startMs, mark.endMs])), status: running ? 'running' : failed ? 'failed' : 'done', ...(outcome ? { outcome } : {}), detail: members[0]!.span.detail, facts, meta: { failedAgents: failed, costPartial: known.length < members.length, members: members.map(row => row.id) } },
+      span: { id, kind: 'pipeline', name: role, startMs, endMs, activityAt: members.flatMap(row => row.span.activityAt ?? row.own.flatMap(mark => [mark.startMs, mark.endMs])), status: running ? 'running' : failed ? 'failed' : 'done', ...(outcome ? { outcome } : {}), detail: members.every(row => row.span.detail === members[0]!.span.detail) ? members[0]!.span.detail : undefined, facts, meta: { failedAgents: failed, costPartial: known.length < members.length, members: members.map(row => row.id) } },
     })
     if (open.has(id)) out.push(...members.map((row, i) => ({ ...row, family: id, inset: 1, tone, own: row.own.map(mark => ({ ...mark, tone, alt: i % 2 === 1 })) })))
   }
