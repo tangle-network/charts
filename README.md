@@ -58,6 +58,8 @@ An interval whisker is omitted when its bounds exclude the row's rate.
 
 The static root has no runtime dependencies and uses no DOM, so it runs in a Worker, a build step or a browser. The separate opt-in `@tangle-network/charts/react` entrypoint requires React; it is never re-exported by the root.
 
+`AgentGraph` lives at `@tangle-network/charts/react/agent-graph`, with its stylesheet at `@tangle-network/charts/react/agent-graph.css`. It draws agent trees and tool-call hubs, keeps controlled selection across live updates, and pages the attention list on phones. Install the optional `react-dom`, `@xyflow/react` and `elkjs` peers when using the topology entry. Hosts supply identity through `renderAgentMark`, `renderToolMark` and `renderEventIcon`; Charts owns geometry, cards, metrics, activity and interaction. Sandbox UI supplies its model/provider marks around this same renderer. Shared formatting, state, motion and lazy-boundary helpers are available from `@tangle-network/charts/react/agent-graph/presentation` for that composition. The ordinary React entry and static root keep their existing dependency boundaries.
+
 ## Use
 
 ```ts
