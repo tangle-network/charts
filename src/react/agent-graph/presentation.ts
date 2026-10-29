@@ -5,3 +5,4 @@ export * from "./canvas-theme";
 export * from "./graph-style";
 export * from "./graph-lazy";
 export * from "./motion";
+export { loadElk } from "./elk-loader";
