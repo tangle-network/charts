@@ -1,3 +1,4 @@
+import "./check-agent-graph-tokens.mjs"
 import { readFileSync } from 'node:fs'
 import assert from 'node:assert/strict'
 const css = readFileSync('src/react/flow-waterfall.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
