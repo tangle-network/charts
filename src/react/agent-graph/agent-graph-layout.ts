@@ -77,7 +77,7 @@ export interface AgentGraphEdge {
 export type AgentGraphDirection = "TB" | "LR";
 
 /** Every agent card's size. Fixed, so a status or turn update never moves a card. */
-export const AGENT_CARD = { width: 240, height: 88 } as const;
+export const AGENT_CARD = { width: 232, height: 120 } as const;
 /** A live card: room for the header, a two-line thinking line and the last three events. Fixed for the same reason. */
 export const LIVE_AGENT_CARD = { width: 296, height: 164 } as const;
 
@@ -185,33 +185,23 @@ function gridSize(members: number, columns: number, card: CardSize, collapsed = 
   };
 }
 
-interface Unit {
+interface Unit extends CardSize {
   id: string;
-  width: number;
-  height: number;
 }
 
 /** The boxes the layouter places: each ungrouped agent, and each grid as one block. */
-function layoutUnits(topology: AgentTopology, columns: number, card: CardSize, collapsed: ReadonlySet<string>) {
-  const units: Unit[] = [];
-  const ownerGroup = new Map(topology.groups.map(group => [group.parentId, group.id]));
-  for (const id of topology.agentIds) {
-    if (!topology.groupOf.has(id) && !ownerGroup.has(id)) units.push({ id, width: card.width, height: card.height });
-  }
-  for (const g of topology.groups) {
-    units.push({ id: g.id, ...gridSize(g.memberIds.length, columns, card, collapsed.has(g.id)) });
-  }
+function layoutUnits(topology: AgentTopology, columns: number, card: CardSize, collapsed: ReadonlySet<string>, groupParents: boolean) {
+  const ownerGroup = new Map(groupParents ? topology.groups.map(group => [group.parentId, group.id]) : []);
+  const units: Unit[] = topology.agentIds.filter(id => !topology.groupOf.has(id) && !ownerGroup.has(id)).map(id => ({ id, ...card }));
+  units.push(...topology.groups.map(group => ({ id: group.id, ...gridSize(group.memberIds.length, columns, card, collapsed.has(group.id)) })));
   const unitOf = (id: string) => topology.groupOf.get(id) ?? ownerGroup.get(id) ?? id;
   const seen = new Set<string>();
-  const links: { from: string; to: string }[] = [];
-  for (const s of topology.spawns) {
-    const from = unitOf(s.from);
-    const to = unitOf(s.to);
-    const key = `${from}\u0000${to}`;
-    if (from === to || seen.has(key)) continue;
+  const links = topology.spawns.flatMap(spawn => {
+    const from = unitOf(spawn.from), to = unitOf(spawn.to), key = `${from}\u0000${to}`;
+    if (from === to || seen.has(key)) return [];
     seen.add(key);
-    links.push({ from, to });
-  }
+    return [{ from, to }];
+  });
   return { units, links };
 }
 
@@ -296,8 +286,9 @@ export async function layoutAgents(
   columns: number,
   card: CardSize = AGENT_CARD,
   collapsed: ReadonlySet<string> = new Set(),
+  groupParents = true,
 ): Promise<AgentLayout> {
-  const { units, links } = layoutUnits(topology, columns, card, collapsed);
+  const { units, links } = layoutUnits(topology, columns, card, collapsed, groupParents);
   const placed =
     (await placeWithElk(units, links, direction)) ?? placeByDepth(units, links, direction);
   const positions = new Map<string, { x: number; y: number }>();
@@ -316,7 +307,7 @@ export async function layoutAgents(
     const closed = collapsed.has(g.id);
     const size = gridSize(g.memberIds.length, columns, card, closed);
     frames.push({ group: g, ...origin, ...size, collapsed: closed });
-    positions.set(g.parentId, { x: origin.x + FRAME_PAD, y: origin.y + 8 });
+    positions.set(g.parentId, groupParents ? { x: origin.x + FRAME_PAD, y: origin.y + 8 } : { ...positions.get(g.parentId)!, y: origin.y });
     if (closed) continue;
     const cols = Math.max(1, Math.min(columns, g.memberIds.length));
     g.memberIds.forEach((id, i) => {

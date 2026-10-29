@@ -90,11 +90,11 @@ function AgentListFallback({
   return (
     <div className={`agent-graph overflow-auto rounded-lg border border-border bg-background p-2 ${className ?? ""}`}>
       <div className="mb-1 flex items-center justify-between gap-2">
-        <p className="text-muted-foreground text-xs">Couldn't draw the graph — showing the agents.</p>
+        <p className="text-muted-foreground text-[13px]">Couldn't draw the graph — showing the agents.</p>
         <button
           type="button"
           onClick={onRetry}
-          className="shrink-0 rounded border border-border px-1.5 py-0.5 text-muted-foreground text-xs transition hover:text-foreground"
+          className="shrink-0 rounded border border-border px-1.5 py-0.5 text-muted-foreground text-[13px] transition hover:text-foreground"
         >
           Retry
         </button>
@@ -106,7 +106,7 @@ function AgentListFallback({
               type="button"
               aria-pressed={selectedId === n.id}
               onClick={() => onSelect?.(n.id)}
-              className="flex w-full items-center justify-between gap-2 rounded px-2 py-1 text-left text-foreground text-xs hover:bg-muted aria-pressed:bg-muted"
+              className="flex w-full items-center justify-between gap-2 rounded px-2 py-1 text-left text-foreground text-[13px] hover:bg-muted aria-pressed:bg-muted"
             >
               <span className="truncate">{n.label}</span>
               <span className="shrink-0 text-muted-foreground">{n.status}</span>
@@ -138,7 +138,7 @@ function AgentGraphTree(props: AgentGraphProps) {
       <Suspense
         fallback={
           <div
-            className={`agent-graph flex items-center justify-center rounded-lg border border-border border-dashed text-muted-foreground text-xs ${props.className ?? ""}`}
+            className={`agent-graph flex items-center justify-center rounded-lg border border-border border-dashed text-muted-foreground text-[13px] ${props.className ?? ""}`}
           >
             Loading graph…
           </div>
