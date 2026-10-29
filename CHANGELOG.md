@@ -1,6 +1,6 @@
 ## 2.0.8
 
-Agent lanes use authoritative Model calls and Tool calls facts as opaque values, preserving explicit unknowns and measured zero when displayed steps are sampled. Families retain their agent/failure summaries and numeric token/cost rollups; synthetic family cards keep opaque counts and percentiles unknown instead of aggregating display samples.
+Agent lanes use authoritative Model calls and Tool calls facts as opaque values, preserving explicit unknowns and measured zero when displayed steps are sampled. Families retain their agent/failure summaries and numeric token/cost rollups; synthetic family cards now open from the visible family row and keep opaque counts and percentiles unknown instead of aggregating display samples.
 
 ## 2.0.7
 
