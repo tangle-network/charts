@@ -103,7 +103,7 @@ try {
   await story('healthy')
   assert.match(await page.locator('[data-slowest]').innerText(), /sandbox_run_command/)
   // An agent's outcome colors its lane and joins the legend with a count.
-  assert.equal((await page.locator('.fw-legend').innerText()).replace(/\s+/g, ' ').trim(), 'Shipped 1')
+  assert.equal((await page.getByRole('list', { name: 'Outcomes', exact: true }).innerText()).replace(/\s+/g, ' ').trim(), 'Shipped 1')
   // Agent fill (the default) keeps each agent's hue on its bar and puts the outcome on its dot.
   assert.equal(await page.locator('[data-span-kind="pipeline"] .fw-agent-dot[data-outcome="ok"]').count(), 1)
   checks.outcomes = 'PASS'
