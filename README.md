@@ -204,7 +204,7 @@ Lanes form a tree through `parent`: each lane is drawn under its parent with a c
 A mark with a `lane` is drawn on that lane only (a steer to one agent, a wake of the root) instead of across every lane; a lane that is not in the figure is refused.
 `detail` is the caller's facts about a lane (profile, model, status, attempts, cost, top error), one hover line each on the lane's label and every span, and a column of the lanes table.
 `collapsed` folds the named lanes' subtrees: descendants are hidden, the label gains `+N`, and the folded lane's ticks and counts total its subtree. Passing `collapsed`, even empty, makes each parent lane's label a fold toggle (`data-toggle`, a button with `aria-expanded`); `TimelineView` keeps the fold state and wires the toggles to a click, Enter or Space, returning focus to the toggle.
-`Gantt` keeps its single-span `rows` input; `lanes` takes the same shape as `timeline` and draws spans only.
+`Gantt` keeps its single-span `rows` input and producer lane order; `lanes` uses the same prepared plot as `timeline`. The React adapter owns selection, focus and bounded row visibility; report tables are generated only for reports. The live stylesheet includes the shared figure rules.
 
 `Meter` with `segments` draws each recorded part of `total`; the remainder no segment accounts for is hatched and labelled `untraced` (rename it with `untraced`). A null segment is listed as `not recorded` and takes no width; a missing total hatches the whole track. Parts that sum past the total throw.
 

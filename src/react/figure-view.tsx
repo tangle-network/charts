@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { NARROW, WIDE } from '../svg.js'
 import { type Figure, isRefusal, type Refusal } from '../types.js'
-import { useWidth } from './live.js'
+import { useWidth } from './live-presentation.js'
 
 /** A figure drawn for a width: FigureView calls it with its container's measured width (at least 720 px). */
 export type FigureAtWidth = (width: number) => Figure | Refusal

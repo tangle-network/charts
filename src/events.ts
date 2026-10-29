@@ -125,6 +125,8 @@ export interface MarkLabelOptions {
   before?: readonly ChartMark[];
   after?: readonly ChartMark[];
   window?: readonly [number, number];
+  /** A producer-selected release gets first choice of a readable label. */
+  priority?: string;
 }
 
 /**
@@ -208,7 +210,7 @@ export function drawMarks(marks: readonly ChartMark[], px: (x: number) => number
     return titled(members.map((m) => `${markName(m)}: ${format(m.at)}${m.verdict ? ` · ${m.verdict}` : ""}`).join("\n"), `<g data-mark="${mark.kind}"${members.length > 1 ? ` data-merged="${members.length}"` : ""}${verdict}>${glyph}</g>`);
   }).join("");
   // Labels go over every rule, so a later rule never strikes through an earlier label.
-  for (const group of groups) {
+  for (const group of [...groups].sort((a, b) => Number(b.marks.some(mark => mark.label === o.priority)) - Number(a.marks.some(mark => mark.label === o.priority)))) {
     const spot = placed.get(group);
     if (spot) out += text(spot.x, rowY(spot.row), spot.text, { size: 12, anchor: spot.anchor, cls: "tgc-mark-label" });
   }

@@ -1,3 +1,4 @@
+@import "../figure.css";
 /* Shared live charts. Consumers may set --chart-live-* tokens on an ancestor. Sizes are px on the 12/14 type scale and a
    4 px grid, so a host's font size never rescales them. */
 .ov-empty { margin: 0; color: var(--chart-live-faint, #777); font-size: 14px; }
@@ -189,3 +190,5 @@ button.tgc-count-label { cursor: pointer; }
 .tgc-version-graph .vg-row[data-arriving] { transition: opacity var(--motion-arrive); }
 @starting-style { .tgc-version-graph .vg-row[data-arriving] { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .tgc-version-graph .vg-row[data-arriving] { transition: none; } }
+
+.ov-gantt .tgc-gantt-end { dominant-baseline: middle; }
