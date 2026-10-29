@@ -125,14 +125,14 @@ export function AgentGraphCanvas({
   const topology = topologyRef.current;
   const columnKey = `${direction}:${live}:${topology.key}`;
   const columnRef = useRef<{ key: string; columns: number } | null>(null);
-  if (canvas && !narrow && columnRef.current?.key !== columnKey) columnRef.current = { key: columnKey, columns: Math.max(1, Math.min(6, Math.floor((canvas.width - 2 * FIT_PADDING) / (card.width + 10)))) };
+  if (canvas && !narrow && columnRef.current?.key !== columnKey) columnRef.current = { key: columnKey, columns: Math.max(1, Math.min(6, Math.floor((canvas.width - 2 * FIT_PADDING - (!live && direction === "LR" ? card.width + 70 : 0)) / (card.width + 10)))) };
   const columns = columnRef.current?.columns ?? 1;
   const layoutKey = JSON.stringify([direction, live, topology.key, columns, [...collapsed]]);
   const [placed, setPlaced] = useState<{ key: string; layout: AgentLayout } | null>(null);
   useEffect(() => {
     if (narrow) return;
     let active = true;
-    void layoutAgents(topology, direction, columns, card, collapsed).then(layout => { if (active) setPlaced({ key: layoutKey, layout }); });
+    void layoutAgents(topology, direction, columns, card, collapsed, live).then(layout => { if (active) setPlaced({ key: layoutKey, layout }); });
     return () => { active = false; };
   }, [layoutKey, narrow]);
   const layout = placed?.key === layoutKey ? placed.layout : null;
@@ -153,7 +153,7 @@ export function AgentGraphCanvas({
       selectable: false,
       focusable: false,
       draggable: false,
-      data: { frame, direction, label: byId.get(frame.group.parentId)?.label ?? "Agent", onToggle: () => {
+      data: { frame, direction, groupParents: live, label: byId.get(frame.group.parentId)?.label ?? "Agent", onToggle: () => {
         if (!frame.collapsed && selectedId && frame.group.memberIds.includes(selectedId)) onSelect?.(frame.group.parentId);
         setCollapsed(current => { const next = new Set(current); next.has(frame.group.id) ? next.delete(frame.group.id) : next.add(frame.group.id); return next; });
       } },
@@ -163,7 +163,7 @@ export function AgentGraphCanvas({
       const agent = byId.get(id);
       const position = layout.positions.get(id);
       if (!agent || !position) continue;
-      const selected = selectedId === id, owned = layout.frames.find(frame => frame.group.parentId === id);
+      const selected = selectedId === id, owned = live && layout.frames.find(frame => frame.group.parentId === id);
       const width = owned ? owned.width - 64 : card.width, height = owned ? FRAME_CAPTION - 16 : card.height;
       const measured = rfRef.current?.getInternalNode(id)?.measured;
       cards.push({
@@ -186,7 +186,7 @@ export function AgentGraphCanvas({
     const out: Edge[] = [];
     const seen = new Set<string>();
     for (const s of topology.spawns) {
-      const source = topology.groups.find(group => group.parentId === s.from)?.id ?? s.from, target = topology.groupOf.get(s.to) ?? s.to;
+      const source = (live && topology.groups.find(group => group.parentId === s.from)?.id) || s.from, target = topology.groupOf.get(s.to) ?? s.to;
       if (source === target) continue;
       const id = `spawn:${source}:${target}`;
       if (seen.has(id)) continue;
@@ -234,7 +234,7 @@ export function AgentGraphCanvas({
   useEffect(() => { if (narrow) { rfRef.current = null; setReady(false); setShown(false); framed.current = null; } }, [narrow]);
   const layoutIdentity = layout ? `${layoutKey}:${layout.columns}` : null;
   const cameraKey = `${direction}:${topology.key}`;
-  const minZoom = layout && canvas ? Math.max(0.02, Math.min(0.2, (canvas.width - 2 * FIT_PADDING) / layout.width, (canvas.height - 2 * FIT_PADDING) / layout.height)) : 0.2;
+  const minZoom = !live ? 1 : layout && canvas ? Math.max(0.02, Math.min(0.2, (canvas.width - 2 * FIT_PADDING) / layout.width, (canvas.height - 2 * FIT_PADDING) / layout.height)) : 0.2;
   useEffect(() => {
     const inst = rfRef.current;
     if (!ready || !inst || !layoutIdentity || !canvas) return;
@@ -318,7 +318,7 @@ export function AgentGraphCanvas({
         wrapperRef.current = el;
         measureCanvas(el);
       }}
-      className={`agent-graph ag-live relative flex flex-col ${className ?? ""}`}
+      className={`agent-graph ag-live${live ? "" : " ag-topology"} relative flex flex-col ${className ?? ""}`}
       tabIndex={-1}
       onKeyDownCapture={event => { if (event.target instanceof HTMLElement && event.target.closest("[data-agent-metrics]")) return; if (event.key === "Tab" && !event.shiftKey && hovered) { event.preventDefault(); document.getElementById(detailsId)?.focus(); return; } if (event.key === "Escape") hideDetails(); handleKeyDown(event); }}
       onFocusCapture={event => { if (!(event.target instanceof HTMLElement) || returningFocus.current) return; keepDetails(); if (event.target.closest("[data-agent-metrics]")) return; if (!event.target.matches(":focus-visible")) { hideDetails(); return; } const node = event.target.closest<HTMLElement>(".react-flow__node, [data-agent-id]"); const id = node?.dataset.id ?? node?.dataset.agentId; hoverTarget.current = node ?? null; setHovered(id && byId.has(id) ? { id, rect: node!.getBoundingClientRect() } : null); }}
@@ -332,7 +332,7 @@ export function AgentGraphCanvas({
         {phoneNodes.slice(first, first + PHONE_PAGE).map(agent => <li key={agent.id} style={{ ["--depth" as string]: depthOf(agent.id) }}>
           <div role="button" tabIndex={0} aria-pressed={selectedId === agent.id} aria-label={agentDescription(agent)} data-agent-id={agent.id} className="ag-phone-select"
             onClick={() => select(agent.id)} onKeyDown={e => { if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) { e.preventDefault(); select(agent.id); } }}>
-            {live || agent.status === "succeeded" || agent.status === "stopped"
+            {live
               ? <LiveAgentCardView agent={agent} parentLabel={byId.get(parentOf.get(agent.id) ?? "")?.label} selected={selectedId === agent.id} now={clock} renderEventIcon={renderEventIcon} onOpen={onSelect ? () => select(agent.id) : undefined} />
               : <AgentCardView agent={agent} parentLabel={byId.get(parentOf.get(agent.id) ?? "")?.label} selected={selectedId === agent.id} now={clock} direction={direction} onOpen={onSelect ? () => select(agent.id) : undefined} />}
           </div>
@@ -384,7 +384,7 @@ export function AgentGraphCanvas({
         <Controls
           showInteractive={false}
           position="bottom-right"
-          fitViewOptions={{ padding: `${FIT_PADDING}px`, maxZoom: 1 }}
+          fitViewOptions={{ padding: `${FIT_PADDING}px`, minZoom, maxZoom: 1, nodes: live ? undefined : topology.agentIds.slice(0, 2).map(id => ({ id })) }}
         />
       </ReactFlow></div>}
       {hovered && byId.has(hovered.id) && <AgentMetrics anchor={wrapperRef.current} mode={colorMode} id={detailsId} agent={byId.get(hovered.id)!} rect={hovered.rect} onEnter={keepDetails} onLeave={leaveDetails} onClose={() => { hideDetails(); returningFocus.current = true; hoverTarget.current?.focus({ preventScroll: true }); returningFocus.current = false; }} />}
