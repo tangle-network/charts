@@ -4,7 +4,7 @@ Authoritative facts also drive model identity and duration/cost labels; opaque v
 
 ## 2.0.20
 
-- Give host-activated time-series points accessible button semantics without changing passive inspection.
+- Give host-activated time-series points accessible button semantics and shared nearest-mark hover/click and keyboard activation through FigureView, preserving the original point index when hit circles overlap. Passive inspection stays unchanged.
 
 ## 2.0.8
 

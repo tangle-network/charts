@@ -479,3 +479,5 @@
 .tgc-key-filled { fill: var(--chart-ink-muted); stroke: none; }
 .tgc-key-outline { fill: none; stroke: var(--chart-ink-muted); }
 .tgc-key-dashed { fill: none; stroke: var(--chart-ink-muted); stroke-dasharray: 2 1.5; }
+
+.tgc-view-plot[data-point-actions] .tgc-series-observation { pointer-events: none; }

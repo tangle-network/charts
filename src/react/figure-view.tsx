@@ -17,9 +17,11 @@ export interface FigureViewProps {
   figure: Figure | Refusal | FigureAtWidth
   /** `chart` (default) keeps the lede, reading and method in the disclosure; `report` also shows the finding and lede. */
   presentation?: 'chart' | 'report'
+  /** timeSeries valued-point index, in row order. Hover/click choose the nearest mark; Enter/Space activate the focused mark. */
+  onPointSelect?: (index: number) => void
 }
 
-export function FigureView({ figure: given, presentation = 'chart' }: FigureViewProps) {
+export function FigureView({ figure: given, presentation = 'chart', onPointSelect }: FigureViewProps) {
   const [ref, width] = useWidth<HTMLElement>()
   // Before measurement the function draws at 720, as a static figure's wide render does.
   const drawn = width >= WIDE ? Math.floor(width / 32) * 32 : WIDE
@@ -37,7 +39,12 @@ export function FigureView({ figure: given, presentation = 'chart' }: FigureView
           <p className="tgc-lede">{figure.lede}</p>
         </>
       )}
-      <div className={`tgc-view-plot tgc-view-${layout}`} role={figure.svg.interactive ? 'group' : 'img'} aria-label={`${figure.finding} ${figure.lede}`}
+      <div className={`tgc-view-plot tgc-view-${layout}`} data-point-actions={onPointSelect ? '' : undefined}
+        onPointerMove={onPointSelect ? event => { const point = nearestPoint(event.currentTarget, event.clientX, event.clientY); for (const old of event.currentTarget.querySelectorAll('[data-near]')) old.removeAttribute('data-near'); point?.setAttribute('data-near', '') } : undefined}
+        onPointerLeave={onPointSelect ? event => { for (const old of event.currentTarget.querySelectorAll('[data-near]')) old.removeAttribute('data-near') } : undefined}
+        onClick={onPointSelect ? event => { const point = nearestPoint(event.currentTarget, event.clientX, event.clientY); if (point) onPointSelect(Number(point.getAttribute('data-point'))) } : undefined}
+        onKeyDown={onPointSelect ? event => { const point = event.target instanceof Element ? event.target.closest('[data-point]') : null; if (point && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onPointSelect(Number(point.getAttribute('data-point'))) } } : undefined}
+        role={figure.svg.interactive ? 'group' : 'img'} aria-label={`${figure.finding} ${figure.lede}`}
         style={layout === 'narrow' ? { maxWidth: NARROW } : undefined} dangerouslySetInnerHTML={{ __html: plot }} />
       <details className="tgc-data">
         <summary>Data and method</summary>
@@ -48,4 +55,16 @@ export function FigureView({ figure: given, presentation = 'chart' }: FigureView
       </details>
     </figure>
   )
+}
+
+/** Hit circles may overlap on a phone or at zero. Resolve their centres rather than the last painted circle. */
+function nearestPoint(root: HTMLElement, x: number, y: number) {
+  let nearest: Element | undefined, distance = Infinity
+  for (const point of root.querySelectorAll('.tgc-series-observation[data-point]')) {
+    const hit = point.querySelector('.tgc-series-hit')?.getBoundingClientRect()
+    if (!hit?.width || !hit.height) continue
+    const d = Math.hypot(x - hit.x - hit.width / 2, y - hit.y - hit.height / 2)
+    if (d <= Math.max(hit.width, hit.height) / 2 && d < distance) { nearest = point; distance = d }
+  }
+  return nearest
 }
