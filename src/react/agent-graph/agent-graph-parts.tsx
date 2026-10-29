@@ -125,7 +125,7 @@ export function AgentCardView({ agent, selected, direction, now: fixed, onOpen, 
     {agent.status === "failed" && <p className="m-0 line-clamp-2 text-[13px] leading-4">{agent.result ?? agent.turn ?? "Failure cause not recorded"}</p>}
     <div className="mt-auto flex items-center justify-between gap-1 text-[13px]" style={{ color: quiet ? "var(--surface-warning-text)" : s.color }}>
       <span className="flex items-center gap-1"><StatusGlyph status={agent.status} size={16} />{quiet?.label ?? s.label}</span>
-      <span data-agent-tokens="" className="text-muted-foreground tabular-nums whitespace-nowrap">{fmtTokenTotal(agent.tokens) ?? "Tokens not recorded"}</span>
+      <span data-agent-tokens="" title={agent.tokens == null ? "Tokens not recorded" : "Tokens"} className="text-muted-foreground tabular-nums whitespace-nowrap">{fmtTokenTotal(agent.tokens) ?? "—"}</span>
       {agent.status === "needs-you" && <button type="button" className="ag-live-respond nodrag nopan" disabled={!onOpen} onClick={event => { event.stopPropagation(); onOpen?.(); }}>Respond</button>}
     </div>
   </div>;
