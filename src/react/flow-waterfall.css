@@ -375,11 +375,11 @@
 .fw-root .fw-key > summary { display: none; }
 .fw-root .fw-key > summary svg { width: 12px; height: 12px; margin-left: 6px; }
 .fw-root .fw-key[open] > summary svg { transform: rotate(90deg); }
-.fw-root .fw-row-state { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; }
+.fw-root .fw-row-state { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; }
 .fw-root .fw-error-rug { position: relative; height: 10px; margin-left: var(--fw-label-col); overflow: hidden; }
 .fw-root .fw-error-tick { position: absolute; width: 2px; height: 8px; background: var(--fw-failed); left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); }
 .fw-root .fw-error-tick[data-unlocated] { left: auto; right: calc(var(--error-index) * 3px); }
-.fw-root .fw-quiet { display: inline-flex; align-items: center; gap: 4px; color: var(--fw-amber); font-size: 12px; font-weight: 500; white-space: nowrap; }
+.fw-root .fw-quiet { display: inline-flex; align-items: center; gap: 4px; color: var(--fw-amber); font-size: 13px; font-weight: 500; white-space: nowrap; }
 .fw-root .fw-quiet::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
 .fw-root [data-activity="quiet"] :is(.fw-agent-dot[data-outcome="live"], .fw-spinner) { display: none; }
 .fw-root [data-activity="quiet"] :is(.fw-agent-dot, .fw-spinner) { animation: none !important; }
@@ -388,7 +388,7 @@
 .fw-root .fw-card-error { margin-top: 8px; color: var(--fw-failed); font-size: 13px; line-height: 18px; }
 .fw-root .fw-card .fw-agent-dot:not([data-outcome]) { background: transparent; box-shadow: inset 0 0 0 1.5px var(--fw-muted); }
 @container flow-waterfall (max-width: 599px) {
-  .fw-root > * { --fw-label-col: 0px; --fw-bar-shift: 8px; --fw-bar-h: 8px; --fw-row-h: 44px; }
+  .fw-root > * { --fw-label-col: 0px; --fw-bar-shift: 18px; --fw-bar-h: 8px; --fw-row-h: 52px; }
   .fw-root .fw-summary > div:nth-child(-n+2) { flex: 1 0 auto; display: flex; align-items: baseline; gap: 8px; padding: 6px 8px; }
   .fw-root .fw-summary > div:nth-child(-n+2) .fw-value { margin: 0; font-size: 20px; line-height: 28px; }
   .fw-root .fw-summary::after { content: ""; flex-basis: 100%; }
@@ -410,13 +410,13 @@
   .fw-root .fw-tick:is(:nth-child(2), :nth-child(3)) { transform: translate(-50%, -50%); }
   .fw-root .fw-tick:nth-child(4) { transform: translate(calc(-100% - 4px), -50%); }
   .fw-root .fw-row { transform: none; top: var(--row-y); contain: style; }
-  .fw-root .fw-label { position: absolute; z-index: 3; height: 20px; top: 0; left: 0; right: 0; padding: 0 calc(var(--fw-end-w, 0px) + 8px) 0 calc(8px + var(--depth) * 12px); border: 0; gap: 4px; background: transparent; pointer-events: none; }
+  .fw-root .fw-label { position: absolute; z-index: 3; height: 20px; top: 0; left: 0; right: 0; padding: 0 8px 0 calc(8px + var(--depth) * 12px); border: 0; gap: 4px; background: transparent; pointer-events: none; }
+  .fw-root .fw-row :is(.fw-row-state, .fw-quiet) { position: absolute; top: 20px; left: calc(28px + var(--depth) * 12px); height: 18px; }
   .fw-root .fw-view-agents .fw-names { flex-direction: row; font-size: 14px; line-height: 20px; }
   .fw-root .fw-view-agents :is(.fw-subtitle, .fw-seg-label) { display: none; }
   .fw-root .fw-view-agents .fw-label { padding-left: calc(8px + var(--depth) * 12px); }
   .fw-root .fw-lane { grid-column: 2; }
-  .fw-root .fw-end { top: 0; height: 20px; left: auto; right: 4px; }
-  .fw-root .fw-duration { font-size: 12px; }
+  .fw-root .fw-end { top: 20px; height: 18px; left: auto; right: 4px; }
   .fw-root .fw-time { display: block; grid-column: 2; position: absolute; top: -12px; left: var(--fw-progress); transform: translateX(calc(-1 * var(--fw-progress))); width: max-content; max-width: 100%; background: var(--fw-surface); }
   .fw-root .fw-playback { position: relative; padding: 12px 8px 8px; }
   .fw-root .fw-overview { margin-top: 12px; grid-template-columns: 0 minmax(0, 1fr); column-gap: 0; }
