@@ -273,7 +273,7 @@
 .fw-root .fw-outcome-end { display: inline-flex; pointer-events: auto; }
 .fw-root .fw-duration { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; color: var(--fw-muted); font-variant-numeric: tabular-nums; }
 .fw-root .fw-k-failed ~ .fw-end .fw-duration { color: var(--fw-failed); }
-.fw-root .fw-badge { display: inline-flex; flex: none; height: 18px; padding: 0 6px; border-radius: var(--radius-pill); font-size: 12px; line-height: 18px; font-weight: 500; color: var(--fw-muted); background: transparent; box-shadow: inset 0 0 0 1px var(--fw-border); }
+.fw-root .fw-badge { display: inline-flex; flex: none; height: 18px; padding: 0 6px; border-radius: var(--radius-pill); font-size: 13px; line-height: 18px; font-weight: 500; color: var(--fw-muted); background: transparent; box-shadow: inset 0 0 0 1px var(--fw-border); }
 
 .fw-root .fw-links { position: absolute; top: 0; bottom: 0; left: var(--fw-label-col); right: 0; overflow: hidden; pointer-events: none; z-index: 0; }
 .fw-root .fw-link {
@@ -394,7 +394,7 @@
   .fw-root .fw-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 8px; padding: 8px; }
   .fw-root .fw-title-block { display: contents; }
   .fw-root .fw-title-line { grid-column: 1 / -1; flex-wrap: wrap; }
-  .fw-root .fw-legends { grid-area: 3 / 1 / auto / -1; margin: 4px 0; }
+  .fw-root .fw-legends { grid-area: 3 / 1 / auto / -1; margin: 0; }
   .fw-root .fw-tools { grid-area: 2 / 1; flex-wrap: wrap; }
   .fw-root .fw-segmented { padding: 2px; }
   .fw-root .fw-segmented button { min-width: 28px; padding: 0 6px; }

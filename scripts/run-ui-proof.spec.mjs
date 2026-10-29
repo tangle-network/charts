@@ -168,7 +168,7 @@ try {
     if(width===390) {
       check(`${theme}/${width} phone failure label`,await page.locator('[data-span-id="agent-3"] .fw-row-state').isVisible(),true)
       check(`${theme}/${width} phone needs-you label`,await page.locator('[data-span-id="agent-2"] .fw-row-state').evaluateAll(nodes=>nodes[0]?.textContent??null),'Needs you')
-      check(`${theme}/${width} key disclosure cue`,await page.locator('.fw-key summary svg').isVisible(),true)
+      check(`${theme}/${width} key visible without disclosure`,await page.getByRole('region',{name:'Timeline key'}).isVisible(),true)
     }
     for(const [query,id,expected] of [['no-activity','no-clock',0],['duplicate-cadence','agent-1',1]]) {
       await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&${query}=1`)
@@ -206,7 +206,7 @@ try {
     await page.locator('[data-span-id="agent-1"]').waitFor()
     await page.waitForTimeout(1200)
     check(`${theme}/${width} parent excluded from leaf comparisons`,await page.locator('[data-span-id="agent-0"] .fw-badge').count(),0)
-    check(`${theme}/${width} leaf comparison labels`,(await page.locator('[data-span-id="agent-1"] .fw-badge').allTextContents()).toString(),['Longest leaf','Costliest leaf'].toString())
+    check(`${theme}/${width} leaf comparison labels`,(await page.locator('[data-span-id="agent-1"] .fw-badge').allTextContents()).toString(),['Longest · costliest leaf'].toString())
     if(width>=600)check(`${theme}/${width} comparisons stay in label area`,await page.locator('[data-span-id="agent-1"] .fw-badge').evaluateAll(nodes=>nodes.every(node=>{const a=node.getBoundingClientRect(),label=node.closest('.fw-label');if(!label)return false;const b=label.getBoundingClientRect();return a.left>=b.left&&a.right<=b.right&&a.top>=b.top&&a.bottom<=b.bottom})),true)
     if(width===390){check(`${theme}/${width} explicit running label`,await page.locator('[data-span-id="agent-0"] .fw-row-state').evaluateAll(nodes=>nodes[0]?.textContent??null),'Running');check(`${theme}/${width} explicit done label`,await page.locator('[data-span-id="agent-2"] .fw-row-state').evaluateAll(nodes=>nodes[0]?.textContent??null),'Done')}
     await page.screenshot({path:`${out}/leaf-${theme}-${width}.png`,fullPage:true})
@@ -234,7 +234,7 @@ try {
       check(`${theme}/${width} supplied graph visible`,await page.locator('[data-graph]').isVisible(),true)
       check(`${theme}/${width} graph retains cursor`,await page.locator('[data-graph]').getAttribute('data-cursor'),position)
       check(`${theme}/${width} graph retains selection`,await page.locator('[data-graph]').getAttribute('data-selected'),'agent-3')
-      check(`${theme}/${width} graph hides waterfall controls`,await page.locator('.fw-summary,.fw-key,.fw-playback,.fw-canvas').count(),0)
+      check(`${theme}/${width} graph hides waterfall controls`,await page.locator('.fw-summary,.fw-legends,.fw-playback,.fw-canvas').count(),0)
       check(`${theme}/${width} graph keeps feed state`,await page.locator('[data-feed]').getAttribute('data-paused'),'true')
       await page.getByRole('radio',{name:'Steps',exact:true}).click()
       check(`${theme}/${width} steps keeps feed state`,await page.locator('[data-feed]').getAttribute('data-paused'),'true')
