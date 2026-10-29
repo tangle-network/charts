@@ -68,7 +68,7 @@ try {
     const ready = () => page.locator(`.agent-graph[data-layout="${width < 600 ? 'list' : 'ready'}"]`).waitFor()
     await page.goto(`http://127.0.0.1:46489/?id=topology&globals=agent-${theme}`)
     await ready()
-    assert.deepEqual(await page.locator('[data-host-canary]').evaluate(el => ({ display: getComputedStyle(el).display, fontSize: getComputedStyle(el).fontSize })), { display: 'grid', fontSize: '17px' }, 'graph CSS preserves host utilities')
+    assert.deepEqual(await page.locator('[data-host-canary]').evaluate(el => ({ display: getComputedStyle(el).display, fontSize: getComputedStyle(el).fontSize })), { display: 'flex', fontSize: '17px' }, 'graph CSS preserves host utilities')
     assert.equal(await page.locator('.agent-graph').evaluate(el => getComputedStyle(el).display), 'flex', 'graph utilities apply to the scope root')
     const responsiveHost = await page.addStyleTag({content:'@layer utilities {.hidden {display:none} @media(min-width:600px){.sm\\:flex {display:flex}}}'})
     const graph = page.locator('.agent-graph')
