@@ -10,7 +10,7 @@ export default defineConfig({
   format: ["esm"],
   platform: "neutral",
   external: [/^react(?:\/|$)/],
-  noExternal: [/^@tangle-network\/ui(?:\/|$)/],
+  noExternal: [/^@tangle-network\/ui(?:\/|$)/, /^lucide-react(?:\/|$)/],
   dts: true,
   clean: true,
   fixedExtension: false,

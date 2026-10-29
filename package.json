@@ -95,15 +95,13 @@
     "@xyflow/react": "^12.12.0",
     "postcss": "^8.5.31",
     "tailwindcss": "^4.3.3",
-    "@tailwindcss/postcss": "^4.3.3"
+    "@tailwindcss/postcss": "^4.3.3",
+    "lucide-react": "^1.61.0"
   },
   "keywords": [
     "tangle",
     "charts",
     "benchmarks",
     "svg"
-  ],
-  "dependencies": {
-    "lucide-react": "^1.61.0"
-  }
+  ]
 }
