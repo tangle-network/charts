@@ -158,7 +158,7 @@ line.ov-gridline { stroke: color-mix(in srgb, var(--chart-live-faint, #777) 22%,
 .tgc-version-graph .vg-row.kind-ghost .vg-title { font-weight: 400; color: var(--chart-live-faint, var(--text-muted)); }
 .tgc-version-graph .vg-detail { font-size: var(--font-size-sm, 13px); color: var(--chart-live-muted, var(--text-muted)); }
 .tgc-version-graph .vg-chip { display: inline-block; flex: none; margin-left: 4px; padding: 0 8px; border-radius: 4px; font: 600 var(--font-size-sm, 13px)/1.6 var(--font-sans); white-space: nowrap; background: var(--chart-live-raised, var(--bg-elevated)); color: var(--chart-live-muted, var(--text-muted)); }
-.tgc-version-graph .vg-chip.tone-neutral { background: none; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--status-neutral) 55%, transparent); }
+.tgc-version-graph .vg-chip.tone-neutral { background: none; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chart-live-muted, var(--text-muted)) 55%, transparent); }
 .tgc-version-graph .vg-chip.tone-accent { color: var(--chart-live-accent, var(--accent-text)); background: color-mix(in srgb, var(--chart-live-accent, var(--accent-text)) 14%, transparent); }
 .tgc-version-graph .vg-chip.tone-info { color: var(--chart-live-fg, var(--text-primary)); background: var(--chart-live-raised, var(--bg-elevated)); font-weight: 400; }
 

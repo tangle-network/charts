@@ -31,6 +31,7 @@ try {
   await chart.getByRole('button').first().focus(); await page.keyboard.press('Enter')
   assert.equal(await page.getByLabel('Selected commit').innerText(),'e')
   assert.match(await chart.innerText(),/pages v1 ★ picked by rule · not checked/)
+  assert.notEqual(await chart.locator('.vg-chip.tone-neutral').first().evaluate(element => getComputedStyle(element).boxShadow), 'none', 'neutral recorded outcomes retain their visible boundary in the public stylesheet')
   await page.getByLabel('Lane',{exact:true}).selectOption('editor')
   assert.deepEqual(await chart.locator('button[data-node]').evaluateAll(rows=>rows.map(row=>row.dataset.node)),['d','a'])
   assert.deepEqual(await chart.locator('path').evaluateAll(paths=>paths.map(path=>`${path.dataset.from}>${path.dataset.to}`)),['d>a'])
