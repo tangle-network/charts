@@ -83,7 +83,7 @@ function useLaneActions(model: LaneModel | null, plot: ReturnType<LaneModel['plo
   useLayoutEffect(() => {
     const root = scroller.current?.parentElement
     if (!focus.current || !root || (document.activeElement !== document.body && !root.contains(document.activeElement))) return
-    const row = [...root.querySelectorAll<SVGGElement>('[data-lane], [data-labelled]')].find(row => (focus.current!.mark ? row.getAttribute('aria-label') : row.dataset.lane) === focus.current!.id)
+    const row = [...root.querySelectorAll<SVGGElement>(focus.current.mark ? '[data-mark-id]' : '[data-lane]')].find(row => row.getAttribute(focus.current!.mark ? 'data-mark-id' : 'data-lane') === focus.current!.id)
     if (row && row !== document.activeElement) { focus.current.restoring = true; row.focus({ preventScroll: true }); focus.current.restoring = false }
   }, [plot?.body])
   const hover = (event: SyntheticEvent<HTMLDivElement>) => {
@@ -113,8 +113,8 @@ function useLaneActions(model: LaneModel | null, plot: ReturnType<LaneModel['plo
   }
   const captureFocus = (event: FocusEvent<HTMLDivElement>) => {
     if (focus.current?.restoring) return
-    const node = event.target.closest('[data-lane], [data-labelled]')
-    if (node) focus.current = { id: node.getAttribute('data-lane') ?? node.getAttribute('aria-label')!, mark: node.hasAttribute('data-labelled') }
+    const node = event.target.closest('[data-lane], [data-mark-id]')
+    if (node) focus.current = { id: node.getAttribute('data-lane') ?? node.getAttribute('data-mark-id')!, mark: node.hasAttribute('data-mark-id') }
     hover(event)
   }
   return { hover, key, captureFocus }
