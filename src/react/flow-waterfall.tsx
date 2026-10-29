@@ -230,8 +230,8 @@ export function FlowWaterfall({
     if (view !== 'agents' || resized.current || !root.current) return
     let widest = 0
     for (const text of root.current.querySelectorAll<HTMLElement>('.fw-view-agents .fw-row:not(.fw-sticky-row) .fw-name-text')) {
-      const label = text.closest<HTMLElement>('.fw-label')
-      if (label) widest = Math.max(widest, text.scrollWidth + label.clientWidth - text.clientWidth)
+      const label = text.closest<HTMLElement>('.fw-label'), name = text.parentElement!
+      if (label) widest = Math.max(widest, name.getBoundingClientRect().right - label.getBoundingClientRect().left + text.scrollWidth - text.clientWidth)
     }
     if (widest > 0) setNameWidth(Math.max(140, Math.min(560, Math.ceil(widest) + 16)))
   }, [view, agents])
