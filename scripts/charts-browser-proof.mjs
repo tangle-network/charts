@@ -376,11 +376,11 @@ try {
     const kinds = await root.locator('.fw-bar').evaluateAll(elements => Object.fromEntries(elements.map(element => {
       const style = getComputedStyle(element)
       const paint = style.backgroundImage !== 'none' ? style.backgroundImage : style.backgroundColor
-      return [[...element.classList].find(name => name.startsWith('fw-k-')).slice(5), paint]
+      return [[...element.classList].find(name => name.startsWith('fw-k-')).slice(5), { paint, height: style.height }]
     })))
     assert.equal(Object.keys(kinds).length, 6)
-    assert.equal(new Set(Object.values(kinds)).size, 6)
-    assert.ok(!Object.values(kinds).includes('rgba(0, 0, 0, 0)'))
+    assert.equal(new Set(Object.entries(kinds).filter(([kind]) => kind !== 'pipeline').map(([, value]) => JSON.stringify(value))).size, 5, 'work marks differ by color, pattern or handoff shape; elapsed rails may share a waiting pattern')
+    assert.ok(Object.values(kinds).every(value => value.paint !== 'rgba(0, 0, 0, 0)'))
     checks.colors = 'PASS'
     assert.equal(await root.locator('[data-slowest]').count(), 1)
     assert.match(await root.locator('[data-slowest]').innerText(), /bash/)

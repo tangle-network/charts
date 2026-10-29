@@ -420,7 +420,7 @@ export function FlowWaterfall({
             {view !== 'graph' && quietAgents > 0 && <button type="button" className="fw-text-button fw-quiet" aria-pressed={filter === "__quiet"} onClick={() => applyFilter("__quiet")}>{quietAgents} quiet</button>}
             {isLive && <span className="fw-state fw-state-live" data-motion="essential">Live</span>}
           </div>
-          {view !== 'graph' && <div className="fw-legends" role="region" aria-label="Timeline key" tabIndex={0}><OutcomeLegend agents={agents} neutral={visible.some(row => row.kind === "pipeline" && !row.span.outcome && !row.outcomes?.length)} selected={filter} onFilter={applyFilter} />{view === 'agents' && <KindLegend rows={visible} fill={agentFill} />}<MarkerLegend markers={markers} /></div>}
+          {view !== 'graph' && <div className="fw-legends" role="region" aria-label="Timeline key" tabIndex={0}>{view === 'agents' && <KindLegend rows={visible} fill={agentFill} />}<OutcomeLegend agents={agents} neutral={visible.some(row => row.kind === "pipeline" && !row.span.outcome && !row.outcomes?.length)} selected={filter} onFilter={applyFilter} /><MarkerLegend markers={markers} /></div>}
         </div>
         <div className="fw-tools">
           <ViewControl view={view} graph={graph != null} onChange={option => { setView(option); setNameWidth(NAME_WIDTH[option]); setCard(null) }} />
