@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { type ChartBand, type ChartMark, eventsGap, MARK_HEADS, markName } from '../events.js'
 import { hatchPath, type MarkerShape, markerPath } from '../svg.js'
+import { textWidth, wrap } from '../text.js'
 import type { TimelineLane } from '../timeline.js'
 
 // Defaults for consumers that do not pass a series color.
@@ -394,7 +395,7 @@ const SEGMENT_TONES = ['var(--chart-accent)', 'var(--chart-tier-c)', 'var(--char
 export function Meter({ used, total, format = formatCompact, tone, text, segments, steps, untraced = 'untraced' }: { steps?: { label: string; state: 'pass' | 'fail' | 'undecided' | 'unrun' }[]; used?: number | null | undefined; total: number | null | undefined; format?: (v: number) => string; tone?: string; text?: string; segments?: MeterSegment[]; untraced?: string }) {
   if (steps) {
     const current = steps.findIndex(step => step.state !== 'pass')
-    return <ol className="ov-meter-steps" aria-label={text ?? 'Check steps'}>{steps.map((step, i) => <li key={i} data-state={step.state} aria-current={i === current ? 'step' : undefined}><strong>{i + 1}</strong><span>{step.label}</span></li>)}</ol>
+    return <ol className="ov-meter-steps" aria-label={text ?? 'Check steps'}>{steps.map((step, i) => <li key={i} data-state={step.state} aria-current={i === current ? 'step' : undefined}><div className="ov-step-head"><strong>{i + 1}</strong><small className="ov-step-state">{step.state === 'pass' ? 'Pass' : step.state === 'fail' ? 'Stuck' : 'Unchecked'}</small></div><span>{step.label}</span></li>)}</ol>
   }
   if (segments) return <SegmentMeter segments={segments} total={total} format={format} text={text} untraced={untraced} />
   const share = used !== null && used !== undefined && total ? Math.min(1, used / total) : null
@@ -547,6 +548,13 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
   const plotW = Math.max(0, width - labelW - 10)
   const x = (t: number) => labelW + ((t - t0) / (t1 - t0)) * plotW
   const fallback = colors.unknown ?? 'var(--chart-live-faint, var(--chart-muted))'
+  const orderedMarks = [...marks].sort((a, b) => a.at - b.at)
+  const best = orderedMarks.find(mark => mark.label === bestMark)
+  const labelled = new Set(best ? [best] : []), positions = best ? [x(best.at)] : []
+  const every = Math.max(1, Math.ceil(marks.length / Math.max(1, Math.floor(plotW / (6 * em)))))
+  orderedMarks.forEach((mark, i) => {
+    if (i % every === 0 && positions.every(at => Math.abs(at - x(mark.at)) >= 5 * em)) { labelled.add(mark); positions.push(x(mark.at)) }
+  })
   const hatched = new Set(hatch)
   const plotBottom = top + lanes.length * rowH
   const first = maxHeight && lanes.length > 100 ? Math.max(0, Math.floor((scrollTop - top) / rowH) - 6) : 0
@@ -564,7 +572,7 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
   return (
     <div ref={ref} className="ov-plot ov-gantt" data-featured={bestMark ? true : undefined} onMouseLeave={() => setTip(null)}>
       {maxHeight && width > 0 && <svg width={width} height={52} aria-label="Releases and time axis">
-        {marks.map((mark, i) => <g key={i} data-best={mark.label === bestMark || undefined}><Mark mark={mark} x={x(mark.at)} top={10} bottom={28} row={0} em={em} flip={x(mark.at) > width * .62} />{mark.label === bestMark && <circle cx={x(mark.at)} cy={14} r={8} fill="none" stroke="var(--accent-text)" strokeWidth={2} />}</g>)}
+        {orderedMarks.map((mark, i) => <g key={i} tabIndex={0} role="img" aria-label={markName(mark)} data-labelled={bestMark ? labelled.has(mark) : undefined} data-best={mark.label === bestMark || undefined}><Mark mark={mark} x={x(mark.at)} top={10} bottom={28} row={0} em={em} flip={x(mark.at) > width * .62} />{mark.label === bestMark && <circle cx={x(mark.at)} cy={14} r={8} fill="none" stroke="var(--accent-text)" strokeWidth={2} />}</g>)}
         {fractions.map(f => <text key={f} x={labelW + f * plotW} y={46} className="ov-axis" textAnchor={f === 0 ? 'start' : f === 1 ? 'end' : 'middle'}>{axis(t0 + f * (t1 - t0))}</text>)}
       </svg>}
       <div ref={scroller} className="ov-gantt-scroll" style={{ maxHeight, overflow: maxHeight ? 'auto' : undefined }} onScroll={event => { setScrollTop(event.currentTarget.scrollTop); setTip(null) }}>
@@ -578,6 +586,8 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
           ))}
           {visible.map((lane, offset) => {
             const i = first + offset, y = top + i * rowH
+            const suffix = typeof lane.count === 'number' && Number.isFinite(lane.count) ? ` · ${lane.count.toLocaleString()}` : ''
+            const label = wrap(lane.label, Math.max(40, (phone ? width - 16 : labelW - em) - textWidth(suffix, 13)), 13, 'sans', 1).lines[0]
             return (
               <g key={lane.id} data-lane={lane.id} data-lane-index={i} role={onSelect ? 'button' : undefined} tabIndex={onSelect ? 0 : undefined} aria-label={lane.label} aria-pressed={onSelect ? selectedId === lane.id : undefined}
                 onClick={() => select(lane.id)} onKeyDown={event => {
@@ -588,17 +598,18 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
                 {selectedId === lane.id && <rect x={0} y={y} width={width} height={rowH} fill="var(--ix-sel-bg)" rx={4} />}
                 {/* The whole row names every span on hover, as single-span rows always did. */}
                 <rect x={0} y={y} width={width} height={rowH} fill="transparent"
-                  onMouseEnter={() => setTip({ x: tipX(x(ends(lane.spans.at(-1) ?? { end: t1 }))), y: tipY(y), title: lane.label, lines: lane.spans.flatMap((s) => [{ label: s.end === null ? `${s.state} (open)` : s.state, value: span(s.start, ends(s)), color: hatched.has(s.state) ? undefined : colors[s.state] ?? fallback }, ...(s.note ? [{ label: s.note, value: '' }] : [])]) })} />
-                <text x={phone ? 8 : labelW - em * 0.5} y={phone ? y + 13 : y + rowH / 2} dominantBaseline="middle" textAnchor={phone ? 'start' : 'end'} className="ov-axis ov-gantt-label"><title>{lane.label}</title>
-                  {lane.label.length > 26 ? `${lane.label.slice(0, 25)}…` : lane.label}
+                  onMouseEnter={() => setTip({ x: tipX(x(ends(lane.spans.at(-1) ?? { end: t1 }))), y: tipY(y), title: lane.label, lines: lane.spans.flatMap((s) => [{ label: s.end === null ? `${s.state} (open)` : s.state, value: span(s.start, ends(s)), color: hatched.has(s.state) ? undefined : colors[s.state] ?? fallback }, ...(s.note ? [{ label: s.note, value: '' }] : []), ...(s.endLabel ? [{ label: 'Duration / cost', value: s.endLabel }] : [])]) })} />
+                <text x={phone ? 8 : labelW - em * 0.5} y={phone ? y + 13 : y + rowH / 2} dominantBaseline="middle" textAnchor={phone ? 'start' : 'end'} className="ov-axis ov-gantt-label"><title>{lane.label}{suffix}{suffix && lane.countLabel ? ` ${lane.countLabel}` : ''}</title>
+                  {label}{suffix && <tspan className="ov-gantt-count">{suffix}</tspan>}
                 </text>
                 {lane.spans.map((s, j) => {
                   const color = colors[s.state] ?? fallback
                   const bx = x(s.start), bw = Math.max(2, x(ends(s)) - bx), by = y + (phone ? 24 : rowH * 0.25), bh = rowH * 0.5
                   const open = s.end === null
+                  const endLabel = selectedId === lane.id && s.endLabel ? wrap(s.endLabel, Math.max(40, plotW - 16), 13, 'sans', 1).lines[0] : undefined
                   return (
                     <g key={j} data-state={s.state} data-open={open ? 'true' : undefined} data-hatched={hatched.has(s.state) ? 'true' : undefined}
-                      onMouseEnter={() => setTip({ x: tipX(bx + bw), y: tipY(y), title: lane.label, lines: [{ label: open ? `${s.state} (open)` : s.state, value: span(s.start, ends(s)), color: hatched.has(s.state) ? undefined : color }, ...(s.note ? [{ label: s.note, value: '' }] : [])] })}>
+                      onMouseEnter={() => setTip({ x: tipX(bx + bw), y: tipY(y), title: lane.label, lines: [{ label: open ? `${s.state} (open)` : s.state, value: span(s.start, ends(s)), color: hatched.has(s.state) ? undefined : color }, ...(s.note ? [{ label: s.note, value: '' }] : []), ...(s.endLabel ? [{ label: 'Duration / cost', value: s.endLabel }] : [])] })}>
                       {hatched.has(s.state) ? (
                         <>
                           <rect x={bx} y={by} width={bw} height={bh} className="ov-hatch-bg" />
@@ -607,6 +618,7 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
                       ) : (
                         <rect x={bx} y={by} width={bw} height={bh} rx={2} fill={color} className={open ? 'ov-gantt-open' : undefined} />
                       )}
+                      {endLabel && <text className="ov-gantt-end" x={Math.max(labelW + 8, Math.min(bx + bw + 8, width - textWidth(endLabel, 13) - 8))} y={by + bh / 2} dominantBaseline="middle"><title>{s.endLabel}</title>{endLabel}</text>}
                     </g>
                   )
                 })}
@@ -614,8 +626,8 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
             )
           })}
           {now !== undefined && <line x1={x(now)} x2={x(now)} y1={top} y2={plotBottom} className="ov-now" data-now="true" />}
-          {[...marks].sort((a, b) => a.at - b.at).map((mark, i) => (
-            <g key={`mark-${i}`} className={mark.verdict ? `ov-verdict-${mark.verdict}` : undefined} data-best={mark.label === bestMark || undefined} style={maxHeight ? { pointerEvents: 'none' } : undefined}>
+          {orderedMarks.map((mark, i) => (
+            <g key={`mark-${i}`} className={mark.verdict ? `ov-verdict-${mark.verdict}` : undefined} data-labelled={!maxHeight && bestMark ? labelled.has(mark) : undefined} data-best={mark.label === bestMark || undefined} style={maxHeight ? { pointerEvents: 'none' } : undefined}>
               {maxHeight && <line x1={x(mark.at)} x2={x(mark.at)} y1={top} y2={plotBottom} className={`ov-mark ov-mark-${mark.kind}`} style={{ opacity: mark.label === bestMark ? .8 : .3 }} />}{!maxHeight && <Mark mark={mark} x={x(mark.at)} top={4} bottom={plotBottom} row={i % 2} em={em} flip={x(mark.at) > labelW + plotW * 0.62} />}
               {!maxHeight && mark.label === bestMark && <circle cx={x(mark.at)} cy={4 + Math.max(3, em / 4)} r={8} fill="none" stroke="var(--accent-text)" strokeWidth={2} />}
             </g>

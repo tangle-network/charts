@@ -11,13 +11,16 @@ import { capitalize, esc, plural, textWidth, wrap } from "./text.js";
 import type { Figure, Refusal } from "./types.js";
 
 /** Epoch milliseconds. `end: null` is an open span; it needs the figure's `now`. */
-export interface TimelineSpan { start: number; end: number | null; state: string; note?: string }
+export interface TimelineSpan { start: number; end: number | null; state: string; note?: string; endLabel?: string }
 export type { TickOutcome } from "./outcomes.js";
 /** One recorded attempt on a lane, such as a driver turn, at the time it ended. `note` (an error line) shows on hover. */
 export interface TimelineTick { at: number; outcome: TickOutcome; note?: string }
 export interface TimelineLane {
   id: string;
   label: string;
+  /** Optional recorded total beside the React Gantt label; its unit is named on hover. */
+  count?: number;
+  countLabel?: string;
   spans: TimelineSpan[];
   /** The lane that started this one. The lane is drawn under its parent with a tree connector. */
   parent?: string;
