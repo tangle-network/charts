@@ -18,7 +18,7 @@ try {
    await page.goto(`${url}/?id=analytics-counts&globals=theme:agent-${theme}`)
    const table=page.getByRole('table',{name:'Tool calls'})
    await table.waitFor()
-   assert.equal(await table.getAttribute('aria-rowcount'),'141')
+   assert.equal(await table.getAttribute('aria-rowcount'),'141'); await page.getByRole('img',{name:'Recorded calls per 4 h',exact:true}).waitFor()
    assert.ok(await table.getByRole('row').count()<=23,'140 rows remain windowed')
    assert.match(await table.getByRole('row').nth(1).innerText(),/—/,'missing cells stay unknown')
    assert.match(await table.getByRole('row').nth(2).innerText(),/\b0\b/,'recorded zero is visible')
