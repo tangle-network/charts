@@ -10,7 +10,7 @@ function FlowApp({ name }) {
  let trace = recorded, live
  if (name === 'healthy') trace = { ...healthy, spans: healthy.spans.map(s => s.kind === 'pipeline' ? { ...s, outcome: { tone: 'ok', label: 'Shipped' } } : s) }
  // Three agents whose calls carry tokens in, out and cached and a cost; named tools, a failed step and its retry, a restart.
- if (name === 'agent-metrics') {
+ if (name === 'agent-metrics' || name === 'phone-names') {
   const steps = (parent, start, n, tool) => Array.from({ length: n }, (_, i) => {
    const at = start + i * 20000
    return [{ id:`${parent}-m${i}`,parentId:parent,kind:'model',name:'thinking',startMs:at,endMs:at+8000+i*500,status:'done',promptTokens:20000+i*1000,completionTokens:900,cachedTokens:15000,costUsd:0.06 },
@@ -19,7 +19,7 @@ function FlowApp({ name }) {
   trace = { totalMs:600000,promptTokens:0,completionTokens:0, spans:[
    { id:'lead',kind:'pipeline',name:'lead',detail:'opus-5.5',startMs:0,endMs:600000,status:'done',outcome:{tone:'ok',label:'Shipped'} },
    { id:'planner',parentId:'lead',kind:'pipeline',name:'planner',detail:'gpt-6.1',startMs:10000,endMs:250000,status:'done',outcome:{tone:'neutral',label:'Nothing shipped'} },
-   { id:'builder',parentId:'lead',kind:'pipeline',name:'builder',detail:'opus-5.5',startMs:60000,endMs:560000,status:'done',outcome:{tone:'ok',label:'Shipped'},marks:[{at:300000,kind:'restart',label:'Restarted'}] },
+   { id:'builder',parentId:'lead',kind:'pipeline',name:name==='phone-names'?'peer-director-1-resume':'builder',detail:'opus-5.5',startMs:60000,endMs:560000,status:'done',outcome:{tone:'ok',label:'Shipped'},marks:[{at:300000,kind:'restart',label:'Restarted'}] },
    ...steps('lead', 2000, 3, ['bash']), ...steps('planner', 12000, 10, ['read', 'grep']), ...steps('builder', 62000, 12, ['bash', 'edit', 'read']),
    { id:'builder-retry',parentId:'builder',kind:'tool',name:'bash · step 2',startMs:540000,endMs:545000,status:'done',retryOf:'builder-t2' }] }
  }
@@ -46,6 +46,6 @@ function FlowApp({ name }) {
   markers={name==='healthy'?[{at:Math.round(trace.totalMs/2),label:'Release v2',tone:'ok'},{at:Math.round(trace.totalMs/2)+50,label:'Release v3'},{at:trace.totalMs-50,label:'Release v4'}]:undefined}
   onSelect={span=>{window.__fwSelected=[...(window.__fwSelected??[]),span.id??span.name]}}
   onTimeChange={t=>{window.__fwTime=t}}
-  defaultView={name==='host-marks'||name==='agent-metrics'?'agents':undefined} selectedId={name==='agent-metrics'?'builder':undefined}
+  defaultView={name==='host-marks'||name==='agent-metrics'||name==='phone-names'?'agents':undefined} selectedId={name==='agent-metrics'||name==='phone-names'?'builder':undefined}
   renderIcon={name==='host-marks'?(span=>span.kind==='pipeline'?<span data-host-mark style={{display:'inline-flex',width:16,height:16,borderRadius:8,background:'currentColor'}}/>:undefined):undefined} /></main>
 }
