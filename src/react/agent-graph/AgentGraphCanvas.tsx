@@ -233,15 +233,17 @@ export function AgentGraphCanvas({
   const framed = useRef<string | null>(null);
   useEffect(() => { if (narrow) { rfRef.current = null; setReady(false); setShown(false); framed.current = null; } }, [narrow]);
   const layoutIdentity = layout ? `${layoutKey}:${layout.columns}` : null;
+  const cameraKey = `${direction}:${topology.key}`;
   const minZoom = layout && canvas ? Math.max(0.02, Math.min(0.2, (canvas.width - 2 * FIT_PADDING) / layout.width, (canvas.height - 2 * FIT_PADDING) / layout.height)) : 0.2;
   useEffect(() => {
     const inst = rfRef.current;
     if (!ready || !inst || !layoutIdentity || !canvas) return;
-    const relayout = framed.current !== layoutIdentity;
+    // Settling changes card geometry; it does not replace the reader's view.
+    const relayout = framed.current !== cameraKey;
     const preserveView = !relayout;
     if (preserveView && !selection.current) return;
     const animate = framed.current !== null && relayout && animateMotion;
-    framed.current = layoutIdentity;
+    framed.current = cameraKey;
     const frame = requestAnimationFrame(() => {
       if (preserveView) revealSelection(inst, wrapperRef.current, selection.current!);
       else {
@@ -253,7 +255,7 @@ export function AgentGraphCanvas({
       setShown(true);
     });
     return () => cancelAnimationFrame(frame);
-  }, [ready, layoutIdentity, canvas, minZoom, animateMotion, selectedId]);
+  }, [ready, layoutIdentity, cameraKey, canvas, minZoom, animateMotion, selectedId]);
   const select = useCallback(
     (id: string) => {
       if (byId.has(id)) { onSelect?.(id); wrapperRef.current?.querySelector<HTMLElement>(`[data-agent-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" }); }

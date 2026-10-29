@@ -84,6 +84,8 @@ try {
       })
       assert.ok(zooms.every(zoom => Math.abs(zoom - beforeZoom) < .001), `settling preserves reader zoom ${beforeZoom}; observed ${zooms}`)
       assert.equal(await page.getByLabel('Reader selection').textContent(), 'agent-129')
+      const selectedBox = await last.boundingBox(), viewport = await page.locator('.ag-graph-viewport').boundingBox()
+      assert.ok(selectedBox.x >= viewport.x - 1 && selectedBox.y >= viewport.y - 1 && selectedBox.x + selectedBox.width <= viewport.x + viewport.width + 1 && selectedBox.y + selectedBox.height <= viewport.y + viewport.height + 1, 'settling keeps the selected agent inside its viewport')
       await page.screenshot({ path: `${output}/settled-camera-${width}-${theme}.png` })
     }
     assert.deepEqual(errors, [])
