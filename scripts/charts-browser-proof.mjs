@@ -294,7 +294,7 @@ try {
     await page.mouse.move(pointer.x, pointer.y)
     await page.locator('.fw-card-table').waitFor()
     const table = await page.locator('.fw-card-table > div').evaluateAll(rows => Object.fromEntries(rows.map(row => [row.querySelector('dt').textContent, row.querySelector('dd').textContent])))
-    assert.deepEqual(Object.keys(table), ['Model', 'Duration', 'Tokens', 'Model latency', 'Cost', 'Model calls', 'Tool calls', 'Failures', 'Retries'], JSON.stringify(table))
+    assert.deepEqual(Object.keys(table), ['Model', 'Ran for', 'Tokens', 'Model latency', 'Cost', 'Model calls', 'Tool calls', 'Failures', 'Retries'], JSON.stringify(table))
     assert.match(table.Tokens, /^[\d.]+K in[\d.]+K out[\d.]+K cached$/)
     assert.match(table['Model latency'], /^[\d.]+s median[\d.]+s p95$/)
     assert.match(table.Cost, /^\$\d+\.\d\d$/)
