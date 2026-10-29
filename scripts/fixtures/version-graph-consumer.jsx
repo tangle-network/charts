@@ -9,7 +9,7 @@ const versionNodes = [
 ].map(node=>({...node,at:'2026-10-07T03:00:00Z'}))
 function Versions() {
  const [selected,onSelect]=useState(null), [filter,setFilter]=useState('all'), [large,setLarge]=useState(false), [extra,setExtra]=useState(false)
- const nodes=large?Array.from({length:205},(_,i)=>({id:'commit-'+i,lane:'main',parents:i<204?['commit-'+(i+1)]:[],kind:'write',title:'Recorded commit '+i,at:'2026-10-07T03:00:00Z'})):versionNodes
+ const nodes=large?Array.from({length:205},(_,i)=>({id:'commit-'+i,lane:'lane-'+i%29,parents:i<204?['commit-'+(i+1)]:[],kind:'write',title:'Recorded commit '+i+' with full retained ancestry and release notes for Discovery',detail:'root',chips:[{label:'4d',tone:'muted'}],at:'2026-10-07T03:00:00Z'})):versionNodes
  const model={lanes:[{id:'main',label:'main'},{id:'editor',label:'editor'},{id:'finance',label:'finance'}],nodes:extra?[{id:'new',lane:'main',parents:[nodes[0].id],kind:'write',title:'New recorded commit',at:'2026-10-07T03:01:00Z'},...nodes]:nodes}
  return <main><h1>Recorded versions</h1>
   <label>Lane <select aria-label="Lane" value={filter} onChange={event=>setFilter(event.target.value)}><option value="all">All lanes</option><option value="editor">Editor</option><option value="writes">Hide merges</option></select></label>

@@ -9,7 +9,7 @@ function Topology() {
  const nodes = boundary ? Array.from({ length: 130 }, (_, i) => ({
    id: 'agent-' + i, label: 'Agent ' + i, status: i === 1 ? 'failed' : settled ? 'succeeded' : i === 2 ? 'needs-you' : i % 3 === 0 ? 'running' : 'succeeded',
    turn: 'Recorded boundary task ' + tick, costUsd: i === 3 ? null : i / 100, tokens: i * 1000 + tick * 1000, model: 'glm-5.3', harness: 'opencode',
-   events: [{ id: 'event-' + i, label: 'Read source ' + tick, at: Date.now() }],
+   events: [{ id: 'event-' + i, label: 'Read source ' + tick, at: Date.now() - (params.has('quiet') && i === 0 ? 5166 * 60000 : 0) }],
  })) : recorded.spans.filter(span => span.kind === 'pipeline').map(span => ({
    id: span.id, label: span.name, status: span.status === 'done' ? 'succeeded' : 'unknown',
    turn: 'Imported from discovery-waterfall.json',
