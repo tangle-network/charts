@@ -51,7 +51,7 @@ function FlowApp({ name }) {
  const authority = new URLSearchParams(location.search).get('authority')
  if (authority) {
   const known = { 'Model calls':'731',Model:'canonical/model',Tokens:'8,000,000 total · split not recorded','Model latency':'p50 3 s · p90 11 s · p99 32 s','Tool calls':'9,004',Failures:'127 failed steps',Retries:'44 retries · 8 restarts','Ran for':'23 h 12 m',Cost:'$992.18 list' }
-  const values = authority === 'long' ? { ...known, Cost:'≥$992,180.00 list (incomplete)' } : authority === 'unknown' ? Object.fromEntries(Object.keys(known).map(key => [key, 'Not recorded'])) : authority === 'zero' ? { Tokens:'0','Model calls':'0','Tool calls':'0',Failures:'0',Retries:'0',Cost:'$0.00' } : known
+  const values = authority === 'long' ? { ...known, Cost:'≥$992,180.00 list (incomplete)', 'agent-runtime-coordination_knowledge_record':'42 calls · 1 failure · p50/p90/p99 not recorded' } : authority === 'unknown' ? Object.fromEntries(Object.keys(known).map(key => [key, 'Not recorded'])) : authority === 'zero' ? { Tokens:'0','Model calls':'0','Tool calls':'0',Failures:'0',Retries:'0',Cost:'$0.00' } : known
   trace = { ...trace, spans:trace.spans.filter(span => span.parentId !== 'builder' || ['builder-m0','builder-t2'].includes(span.id)).map(span => span.id === 'builder' ? { ...span,facts:[{label:"MODEL CALLS",value:"999"},...Object.entries(values).map(([label,value]) => ({ label,value }))] } : span) }
   const family = new URLSearchParams(location.search).get('family')
   if (family) trace = { ...trace, spans:trace.spans.map(span => {

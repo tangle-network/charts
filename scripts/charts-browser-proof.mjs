@@ -285,7 +285,6 @@ try {
   }
   await page.setViewportSize({ width: 1100, height: 900 })
   checks.endLabelsFit = 'PASS'
-  // The card tables what the agent recorded, each value with its unit, and opens at the pointer beside the row.
   for (const theme of ['agent-light', 'agent-dark']) {
     await story('agent-metrics', theme)
     await page.waitForFunction(() => !document.querySelector('.fw-row.fw-enter'), null, { timeout: 3000 })
@@ -313,7 +312,8 @@ try {
     await page.mouse.move(1, 1)
   }
   checks.metricsCard = 'PASS'
-  // On a phone each agent is a name strip over its bar: name, duration and bars never overlap, and nothing leaves the page.
+  await (await import('../tests/integration/waterfall-card.browser.mjs')).default(page, base, output)
+  checks.longFactColumns = 'PASS'
   await page.setViewportSize({ width: 390, height: 844 })
   for (const theme of ['agent-light', 'agent-dark']) {
     await story('agent-metrics', theme)
