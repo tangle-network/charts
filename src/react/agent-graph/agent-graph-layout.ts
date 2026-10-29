@@ -77,7 +77,7 @@ export interface AgentGraphEdge {
 export type AgentGraphDirection = "TB" | "LR";
 
 /** Every agent card's size. Fixed, so a status or turn update never moves a card. */
-export const AGENT_CARD = { width: 232, height: 112 } as const;
+export const AGENT_CARD = { width: 232, height: 120 } as const;
 /** A live card: room for the header, a two-line thinking line and the last three events. Fixed for the same reason. */
 export const LIVE_AGENT_CARD = { width: 296, height: 164 } as const;
 
