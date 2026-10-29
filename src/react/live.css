@@ -6,8 +6,8 @@
 line.ov-gridline { stroke: color-mix(in srgb, var(--chart-live-faint, #777) 22%, transparent); stroke-width: 1; }
 .ov-axis { fill: var(--chart-live-muted, #666); font-size: 14px; line-height: 20px; font-family: inherit; font-variant-numeric: tabular-nums; }
 .ov-crosshair { stroke: var(--chart-live-faint, #777); stroke-dasharray: 3 3; }
-.ov-tip { position: absolute; z-index: 4; display: grid; gap: 4px; min-width: 160px; max-width: 240px; padding: 8px 12px; background: var(--chart-live-raised, #fff); border: 1px solid var(--chart-live-border, #aaa); border-radius: 8px; box-shadow: 0 10px 24px -12px #000; font-size: 14px; line-height: 20px; pointer-events: none; }
-.ov-tip-line { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; color: var(--chart-live-muted, #666); }
+.ov-tip { position: absolute; z-index: 4; display: grid; gap: 4px; width: max-content; min-width: min(160px, 100%); max-width: min(240px, 100%); padding: 8px 12px; background: var(--chart-live-raised, #fff); border: 1px solid var(--chart-live-border, #aaa); border-radius: 8px; box-shadow: 0 10px 24px -12px #000; font-size: 14px; line-height: 20px; pointer-events: none; }
+.ov-tip-line { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: center; overflow-wrap: anywhere; color: var(--chart-live-muted, #666); }
 .ov-tip-line b { color: var(--chart-live-fg, #222); font-variant-numeric: tabular-nums; }
 .ov-hbars { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, max-content) minmax(33%, 1fr) max-content; gap: 4px 12px; }
 .ov-hbars li { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; }
@@ -108,17 +108,24 @@ line.ov-gridline { stroke: color-mix(in srgb, var(--chart-live-faint, #777) 22%,
 .ov-gantt [role='button']:focus-visible > rect:first-child { stroke: var(--accent-text); stroke-width: 2; }
 .ov-gantt [data-state] rect { transition: width var(--motion-stream), fill var(--motion-control); }
 .ov-gantt [data-open='true'] rect { animation: ov-gantt-live var(--motion-ambient) infinite; }
-.ov-gantt[data-featured] [data-mark] text { display: none; }
-.ov-gantt[data-featured] [data-best] text { display: block; }
+.ov-gantt [data-labelled="false"] text { display: none; }
+.ov-gantt [data-labelled]:is(:hover, :focus) text { display: block; }
+.ov-gantt [data-labelled]:focus { outline: none; }
+.ov-gantt-count { fill: var(--chart-live-fg, var(--chart-ink)); }
+.ov-gantt-end { fill: var(--chart-live-fg, var(--chart-ink)); font-size: 13px; paint-order: stroke; stroke: var(--chart-live-surface, var(--chart-canvas)); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
 .ov-gantt[data-featured] .ov-events { display: none; }
 @keyframes ov-gantt-live { 50% { opacity: .55; } }
 @media (prefers-reduced-motion: reduce) { .ov-gantt [data-state] rect { transition: none; animation: none; } }
 
 .ov-meter-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; padding: 0; margin: 0; list-style: none; }
 .ov-meter-steps li { display: flex; flex-direction: column; justify-content: space-between; gap: 12px; min-height: 104px; padding: 16px; border-radius: var(--radius-lg); background: var(--bg-elevated); }
+.ov-step-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px; }
+.ov-step-state { font-size: 13px; line-height: 18px; color: var(--text-muted); }
+.ov-meter-steps [data-state="pass"] .ov-step-state { color: var(--surface-success-text); }
+.ov-meter-steps [data-state="fail"] .ov-step-state { color: var(--surface-warning-text); }
 .ov-meter-steps strong { font-size: 26px; line-height: 30px; }
 .ov-meter-steps [data-state='pass'] { background: var(--surface-success-bg); }
-.ov-meter-steps [aria-current='step'] { background: var(--surface-warning-bg); color: var(--surface-warning-text); }
+.ov-meter-steps [data-state='fail'] { background: var(--surface-warning-bg); color: var(--surface-warning-text); }
 
 .ov-meter-steps span { overflow-wrap: anywhere; }
 @media (max-width: 720px) { .ov-meter-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ov-meter-steps li { padding: 12px; min-height: 94px; } }
