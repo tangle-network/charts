@@ -40,7 +40,7 @@ export function CountHeatmap({ label, columns, rows, color = LIVE_SERIES[1], for
   const virtual = rows.length > 100, start = virtual ? Math.max(0, Math.min(rows.length - 1, Math.floor(top / rowHeight) - 4)) : 0
   const visible = virtual ? rows.slice(start, start + 22) : rows
   const grid = { gridTemplateColumns: `minmax(${narrow ? 120 : 208}px, 2fr) repeat(${groups.length}, minmax(60px, 1fr)) 76px` }
-  useLayoutEffect(() => { if (target) scroll.current?.querySelector<HTMLElement>(`[data-heat-row="${target[0]}"][data-heat-column="${target[1]}"]`)?.focus({ preventScroll: true }) }, [target, start])
+  useLayoutEffect(() => { if (target) scroll.current?.querySelector<HTMLElement>(`[data-heat-row="${target[0]}"][data-heat-column="${target[1]}"]`)?.focus({ preventScroll: true }); if (target) setTarget(null) }, [target, start])
   const inspect = (row: CountHeatmapRow, group: (typeof groups)[number], element: HTMLElement) => onInspect?.({ rowId: row.id, columns: group.ids, rect: element.getBoundingClientRect() })
   const move = (event: KeyboardEvent, row: number, column: number) => {
     const keys: Record<string, [number, number]> = { ArrowDown: [row + 1, column], ArrowUp: [row - 1, column], ArrowRight: [row, column + 1], ArrowLeft: [row, column - 1], Home: [row, 0], End: [row, groups.length + 1] }
