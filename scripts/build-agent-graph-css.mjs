@@ -7,7 +7,7 @@ const result = await postcss([tailwindcss()]).process(await readFile(from, "utf8
 const brand = postcss.parse(await readFile(new URL(import.meta.resolve("@tangle-network/brand/styles/presentation.css")), "utf8"));
 brand.walkAtRules("keyframes", rule => { if (rule.params === "tangle-intro-enter") result.root.append(rule.clone()); });
 // A compiled component sheet must not override its host's responsive utilities.
-// Scoped resets stay before utilities regardless of the host layer order.
+// Component sublayers order resets before utilities; flat host utilities win.
 result.root.walkAtRules("layer", layer => {
   if (layer.params !== "utilities" && layer.params !== "base") return;
   const scope = postcss.atRule({ name: "scope", params: "(.agent-graph, .ag-root, .ag-latest, [data-agent-metrics])" });
@@ -20,7 +20,7 @@ result.root.walkAtRules("layer", layer => {
     rule.selectors = rule.selectors.flatMap(selector => [selector, `:scope:is(${selector})`]);
   });
   scope.append(...layer.nodes);
-  layer.replaceWith(scope);
+  layer.params = `utilities.agent-graph-${layer.params}`; layer.append(scope);
 });
 const css = result.root.toString();
 if (/@import\s/.test(css)) throw new Error("Unresolved graph stylesheet import");
