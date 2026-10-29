@@ -569,7 +569,7 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
       </svg>}
       <div ref={scroller} className="ov-gantt-scroll" style={{ maxHeight, overflow: maxHeight ? 'auto' : undefined }} onScroll={event => { setScrollTop(event.currentTarget.scrollTop); setTip(null) }}>
       {width > 0 && (
-        <svg width={width} height={height} role="group" aria-label={`${lanes.length} ${laneInput ? 'lanes' : 'agents'} over time`}>
+        <svg width={width} height={height} role={onSelect ? 'group' : 'img'} aria-label={`${lanes.length} ${laneInput ? 'lanes' : 'agents'} over time`}>
           {fractions.map((f) => (
             <g key={f}>
               <line x1={labelW + f * plotW} x2={labelW + f * plotW} y1={top} y2={plotBottom} className="ov-gridline" />
@@ -616,7 +616,7 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
           {now !== undefined && <line x1={x(now)} x2={x(now)} y1={top} y2={plotBottom} className="ov-now" data-now="true" />}
           {[...marks].sort((a, b) => a.at - b.at).map((mark, i) => (
             <g key={`mark-${i}`} className={mark.verdict ? `ov-verdict-${mark.verdict}` : undefined} data-best={mark.label === bestMark || undefined} style={maxHeight ? { pointerEvents: 'none' } : undefined}>
-              <>{maxHeight && <line x1={x(mark.at)} x2={x(mark.at)} y1={top} y2={plotBottom} className={`ov-mark ov-mark-${mark.kind}`} style={{ opacity: mark.label === bestMark ? .8 : .3 }} />}</>{!maxHeight && <Mark mark={mark} x={x(mark.at)} top={4} bottom={plotBottom} row={i % 2} em={em} flip={x(mark.at) > labelW + plotW * 0.62} />}
+              {maxHeight && <line x1={x(mark.at)} x2={x(mark.at)} y1={top} y2={plotBottom} className={`ov-mark ov-mark-${mark.kind}`} style={{ opacity: mark.label === bestMark ? .8 : .3 }} />}{!maxHeight && <Mark mark={mark} x={x(mark.at)} top={4} bottom={plotBottom} row={i % 2} em={em} flip={x(mark.at) > labelW + plotW * 0.62} />}
               {!maxHeight && mark.label === bestMark && <circle cx={x(mark.at)} cy={4 + Math.max(3, em / 4)} r={8} fill="none" stroke="var(--accent-text)" strokeWidth={2} />}
             </g>
           ))}
