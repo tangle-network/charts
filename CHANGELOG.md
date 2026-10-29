@@ -2,6 +2,10 @@
 
 Authoritative facts also drive model identity and duration/cost labels; opaque values do not compete in numeric superlatives. Mixed family identity and opaque token/cost aggregates remain unknown; full numeric family measurements retain their totals and lower bounds. Long phone metadata clips with its full value retained in the title and card.
 
+## 2.0.20
+
+- Give host-activated time-series points accessible button semantics and shared nearest-mark hover/click and keyboard activation through FigureView, preserving the original point index when hit circles overlap. Passive inspection stays unchanged.
+
 ## 2.0.8
 
 Agent lanes use authoritative Model calls and Tool calls facts as opaque values, preserving explicit unknowns and measured zero when displayed steps are sampled. Families retain their agent/failure summaries and numeric token/cost rollups; synthetic family cards now open from the visible family row and keep opaque counts and percentiles unknown instead of aggregating display samples.

@@ -66,6 +66,8 @@ export interface TimeSeriesOptions {
   legend?: boolean;
   /** Draw a vertical rule at the x of the point whose tip shows. */
   crosshair?: boolean;
+  /** Host-owned point actions use the stable data-point index; Enter/Space and click remain with the host. */
+  selectable?: boolean;
   id?: string;
 }
 
@@ -189,7 +191,7 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
       // The first series keeps a circle; later series add a shape as well as a dash, so identity survives without colour.
       let dot = circle(x, y, 10, "tgc-series-hit") + (recorded ? pointMark(x, y, shape, r, point) : seriesIndex === 0 && ord === 0 ? circle(x, y, 3.5, "tgc-series-point") : `<path class="tgc-series-point" d="${markerPath(shape, x, y, 3.5)}"/>`);
       if (point.interval) dot += line(x, py(point.interval.lower), x, py(point.interval.upper), "tgc-whisker") + line(x - 4, py(point.interval.lower), x + 4, py(point.interval.lower), "tgc-whisker") + line(x - 4, py(point.interval.upper), x + 4, py(point.interval.upper), "tgc-whisker");
-      own += `<g class="tgc-series-observation" data-point="${key}" tabindex="0" role="img" aria-label="${esc(pointFacts.join(" · "))}"><title>${esc(pointFacts.join(" · "))}</title>${dot}</g>`;
+      own += `<g class="tgc-series-observation" data-point="${key}" tabindex="0" role="${o.selectable ? "button" : "img"}" aria-label="${esc(pointFacts.join(" · "))}"><title>${esc(pointFacts.join(" · "))}</title>${dot}</g>`;
       placed.push([x - r, x + r, y - r, y + r]);
       if (recorded) pending.push({ x, y, r, point });
       const tipWidth = Math.min(280, width - 24), tipX = Math.max(12, Math.min(width - tipWidth - 12, x - tipWidth / 2));
