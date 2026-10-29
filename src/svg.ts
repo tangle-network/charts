@@ -59,7 +59,7 @@ export function hatch(x: number, y: number, w: number, h: number, cls: string): 
 }
 
 export function line(x1: number, y1: number, x2: number, y2: number, cls: string, attributes = ""): string {
-  return `<line class="${cls}" x1="${r2(x1)}" y1="${r2(y1)}" x2="${r2(x2)}" y2="${r2(y2)}"/>`;
+  return `<line class="${cls}" x1="${r2(x1)}" y1="${r2(y1)}" x2="${r2(x2)}" y2="${r2(y2)}"${attributes ? ` ${attributes}` : ""}/>`;
 }
 
 export function circle(cx: number, cy: number, r: number, cls: string): string {
