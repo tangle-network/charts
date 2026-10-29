@@ -33,7 +33,7 @@ const healthy = JSON.parse(readFileSync(join(root,'docs/fixtures/healthy-flow.js
 const app = `
 import React, { useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Sparkline, StackedBarChart, FlowWaterfall, Gantt, Meter, VersionGraph } from '@tangle-network/charts/react'
+import { Sparkline, StackedBarChart, FlowWaterfall, Gantt, Meter, VersionGraph, CountHeatmap, HBars } from '@tangle-network/charts/react'
 import { AgentGraph } from '@tangle-network/charts/react/agent-graph'
 function App() {
  const [selectedBucketId, onSelectionChange] = useState(null)
@@ -50,10 +50,16 @@ function Journey() {
  useEffect(() => { const clock = setInterval(() => setNow(Date.now()), 100); return () => clearInterval(clock) }, [])
  return <main style={params.has('ancestor')?{'--chart-live-muted':'rgb(17, 109, 91)','--chart-live-fg':'rgb(32, 67, 120)'}:undefined}><Meter total={3} used={1} steps={[{label:"Manifest",state:"pass"},{label:"Offline build",state:"fail"},{label:"Hidden test",state:"unrun"}]} text="Best checked release"/><Gantt lanes={Array.from({length:Number(params.get('agents')||124)},(_,i)=>({id:'agent-'+i,label:'Agent '+i,count:i===0?190:i,countLabel:'commits',spans:[{start:start+i*100,end:i%3===0?null:start+30000,state:i===0?'lead':i===2?'failed':i===4?'idle':i%3===0?'running':'shipped',endLabel:Math.round((now-start)/1000)+'s · ≥$12,345.67 list · — billed'},...(i===0?[{start,end:start+30000,state:'shipped',endLabel:'30s · ≥$12,345.67 list · — billed'}]:[])]}))} selectedId={selectedId} onSelect={onSelect} maxHeight={420} now={now} marks={[...Array.from({length:20},(_,i)=>({kind:'release',label:'rc'+(i+1),at:start+10000+i*2000})),{kind:'deadline',label:'Cutoff',at:start+55000}]} bestMark="rc2" colors={{running:ENDING_COLORS.live,shipped:ENDING_COLORS.solved,failed:ENDING_COLORS.died,idle:ENDING_COLORS.cancelled,lead:ENDING_COLORS.cancelled}} axis={t=>new Date(t).toISOString().slice(11,19)} span={(a,b)=>Math.round((b-a)/1000)+'s'}/></main>
 }
+function AnalyticsCounts() {
+ const [extra,setExtra]=useState(0),[selected,onSelectRow]=useState('')
+ const columns=['read','write','shell','fetch','check','search'].map(id=>({id,label:id}))
+ const rows=Array.from({length:140},(_,i)=>({id:'agent-'+i,label:'Agent '+i,total:i===0?null:i+extra,cells:Object.fromEntries(columns.map((c,j)=>[c.id,i===0?null:{value:i===1?0:i+extra,failures:j===0&&i===2?2:0}]))}))
+ return <main><h1>Recorded tool calls</h1><button onClick={()=>setExtra(n=>n+100)}>Append counts</button><output>{selected}</output><CountHeatmap label="Tool calls" columns={columns} rows={rows} onSelectRow={onSelectRow}/><HBars rows={[{label:'Recorded',value:10+extra},{label:'Zero',value:0}]} max={110}/></main>
+}
 const params = new URLSearchParams(location.search)
 const name = (params.get('id') ?? '').replace('chatcontrols-flowwaterfall--','')
 document.documentElement.dataset.theme=params.get('globals')?.includes('agent-light')?'light':'dark'
-createRoot(document.getElementById('root')).render(name === 'versions' ? <Versions/> : name === 'topology' ? <Topology/> : name === 'journey' ? <Journey/> : name ? <FlowApp name={name}/> : <App />)
+createRoot(document.getElementById('root')).render(name === 'analytics-counts' ? <AnalyticsCounts/> : name === 'versions' ? <Versions/> : name === 'topology' ? <Topology/> : name === 'journey' ? <Journey/> : name ? <FlowApp name={name}/> : <App />)
 `
 writeFileSync(join(dir, 'app.jsx'), app)
 await build({entryPoints:[join(dir,'app.jsx')],bundle:true,outfile:join(dir,'app.js'),jsx:'automatic',alias:{react:dirname(peerRequire.resolve('react/package.json')),'react-dom':dirname(peerRequire.resolve('react-dom/package.json'))}})

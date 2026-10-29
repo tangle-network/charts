@@ -5,6 +5,7 @@
  * These components share one window: offsets are never replaced by durations.
  */
 import type { CSSProperties, ReactNode } from "react";
+import { duration } from '../format.js';
 
 export interface WaterfallWindow {
   readonly startMs: number;
@@ -79,6 +80,7 @@ export function waterfallTicks(windowMs: number, widthPx = 208, minLabelGapPx = 
 }
 
 export function formatWaterfallDuration(ms: number): string {
+  if (ms >= 86_400_000) return duration(ms);
   if (ms < 1000) return `${Math.round(ms)}ms`;
   if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
   if (ms < 3_600_000) return `${(ms / 60_000).toFixed(1)}m`;
