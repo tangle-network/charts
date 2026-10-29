@@ -5,8 +5,9 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
 
 async function proveCompactTopology(page, width, theme, output) {
-  await page.goto(`http://127.0.0.1:46489/?id=topology&compact=1&large=1&globals=agent-${theme}`)
+  await page.goto(`http://127.0.0.1:46489/?id=topology&compact=1&large=1&quiet=1&globals=agent-${theme}`)
   await page.locator(`.ag-topology[data-layout="${width < 600 ? 'list' : 'ready'}"]`).waitFor()
+  await page.locator('.ag-agent-card[data-activity="quiet"]').getByText('Quiet 3d 14h',{exact:true}).waitFor()
   if (width > 600) {
     const root = await page.locator('.react-flow__node[data-id="agent-0"]').boundingBox()
     const team = await page.locator('.react-flow__node-agentFrame').boundingBox()
