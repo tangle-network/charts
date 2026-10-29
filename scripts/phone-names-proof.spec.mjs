@@ -37,12 +37,12 @@ try {
     }))
     checks.push({ theme, width, geometry })
     assert.equal(geometry.length, 3)
+    assert.ok(geometry.every(g => g.size.every(size => size >= 13)), 'readable metadata uses at least13px in both compositions')
     if (width === 390) for (const g of geometry) {
       assert.equal(g.whole, true, `distinctive agent suffix is truncated at ${width}: ${JSON.stringify(g)}`)
       assert.ok(g.text.bottom <= g.numbers.top + 1, 'name has a full line above duration/cost')
       assert.ok(g.state.bottom <= g.lane.top + 1, 'status remains above the work bars')
       assert.ok(g.state.right <= g.numbers.left, 'status and long duration/cost do not overlap')
-      assert.ok(g.size.every(size => size >= 13), 'readable metadata uses at least13px')
     }
     assert.ok(geometry[0].status.startsWith('Quiet'))
     assert.ok(await page.locator('.fw-heading .fw-quiet').evaluateAll(nodes => nodes.every(node => getComputedStyle(node).position !== 'absolute')), 'header attention counts retain their normal inline layout')

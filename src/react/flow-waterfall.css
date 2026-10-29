@@ -375,11 +375,11 @@
 .fw-root .fw-key > summary { display: none; }
 .fw-root .fw-key > summary svg { width: 12px; height: 12px; margin-left: 6px; }
 .fw-root .fw-key[open] > summary svg { transform: rotate(90deg); }
-.fw-root .fw-row-state { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; }
+.fw-root .fw-row-state { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; }
 .fw-root .fw-error-rug { position: relative; height: 10px; margin-left: var(--fw-label-col); overflow: hidden; }
 .fw-root .fw-error-tick { position: absolute; width: 2px; height: 8px; background: var(--fw-failed); left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); }
 .fw-root .fw-error-tick[data-unlocated] { left: auto; right: calc(var(--error-index) * 3px); }
-.fw-root .fw-quiet { display: inline-flex; align-items: center; gap: 4px; color: var(--fw-amber); font-size: 12px; font-weight: 500; white-space: nowrap; }
+.fw-root .fw-quiet { display: inline-flex; align-items: center; gap: 4px; color: var(--fw-amber); font-size: 13px; font-weight: 500; white-space: nowrap; }
 .fw-root .fw-quiet::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
 .fw-root [data-activity="quiet"] :is(.fw-agent-dot[data-outcome="live"], .fw-spinner) { display: none; }
 .fw-root [data-activity="quiet"] :is(.fw-agent-dot, .fw-spinner) { animation: none !important; }
@@ -411,7 +411,7 @@
   .fw-root .fw-tick:nth-child(4) { transform: translate(calc(-100% - 4px), -50%); }
   .fw-root .fw-row { transform: none; top: var(--row-y); contain: style; }
   .fw-root .fw-label { position: absolute; z-index: 3; height: 20px; top: 0; left: 0; right: 0; padding: 0 8px 0 calc(8px + var(--depth) * 12px); border: 0; gap: 4px; background: transparent; pointer-events: none; }
-  .fw-root .fw-row :is(.fw-row-state, .fw-quiet) { position: absolute; top: 20px; left: calc(28px + var(--depth) * 12px); height: 18px; font-size: 13px; }
+  .fw-root .fw-row :is(.fw-row-state, .fw-quiet) { position: absolute; top: 20px; left: calc(28px + var(--depth) * 12px); height: 18px; }
   .fw-root .fw-view-agents .fw-names { flex-direction: row; font-size: 14px; line-height: 20px; }
   .fw-root .fw-view-agents :is(.fw-subtitle, .fw-seg-label) { display: none; }
   .fw-root .fw-view-agents .fw-label { padding-left: calc(8px + var(--depth) * 12px); }
