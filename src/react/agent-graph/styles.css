@@ -11,7 +11,7 @@
 .ag-live { --ag-fg: hsl(var(--foreground)); --ag-muted: hsl(var(--muted-foreground)); --ag-surface: hsl(var(--card)); --ag-border: hsl(var(--border)); }
 .ag-live-slot { display: flex; align-items: flex-start; width: 100%; height: 100%; }
 .ag-live-card { position: relative; display: flex; flex-direction: column; gap: 4px; box-sizing: border-box; width: 100%; height: 100%; padding: 8px; border: 1px solid var(--ag-border);
-  border-radius: var(--radius-card); animation: agent-arrive var(--motion-arrive) both; background: var(--ag-surface); color: var(--ag-fg); overflow: hidden;
+  border-radius: var(--radius-card); animation: tangle-intro-enter var(--motion-arrive) both; background: var(--ag-surface); color: var(--ag-fg); overflow: hidden;
   transition: height var(--motion-surface), border-radius var(--motion-surface), border-color var(--motion-control), box-shadow var(--motion-control); }
 .ag-live-head { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; column-gap: 8px; min-width: 0; }
 .ag-live-head > :first-child { grid-column: 1; grid-row: 1 / 3; }

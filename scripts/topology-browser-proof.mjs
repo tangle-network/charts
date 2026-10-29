@@ -44,6 +44,7 @@ try {
     assert.equal(await page.getByLabel('Reader selection').textContent(), 'agent-1')
     await page.screenshot({ path: `${output}/recorded-hub-${width}-${theme}.png` })
     await page.getByRole('button', { name: 'Close', exact: true }).click()
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
     await page.goto(`http://127.0.0.1:46489/?id=topology&large=1&globals=agent-${theme}`)
     await ready()
     const count = () => page.locator(width < 600 ? '.ag-phone-select' : '.react-flow__node-agent,.react-flow__node-liveAgent').count()
@@ -51,6 +52,12 @@ try {
     await page.getByRole('button', { name: 'Select last agent', exact: true }).click()
     const last = page.locator(width < 600 ? '[data-agent-id="agent-129"]' : '.react-flow__node[data-id="agent-129"]')
     await last.waitFor({ state: 'visible' })
+    const motion = await last.locator('.ag-live-card').evaluate(card => ({
+      arrival: card.getAnimations().map(animation => animation.animationName),
+      pulse: card.querySelector('.ag-running-dot').getAnimations().map(animation => animation.animationName),
+    }))
+    assert.ok(motion.arrival.includes('tangle-intro-enter'), 'Brand arrival has a real animation effect')
+    assert.ok(motion.pulse.includes('tangle-breathe'), 'running status pulses through Brand motion')
     await last.focus()
     await page.keyboard.press('Enter')
     assert.equal(await page.getByLabel('Reader selection').textContent(), 'agent-129')
