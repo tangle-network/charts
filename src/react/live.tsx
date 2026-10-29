@@ -2,8 +2,8 @@
 import { useRef, useState } from 'react'
 import { useWidth, Tooltip, EventList, type Tip } from './live-presentation.js'
 export { useWidth } from './live-presentation.js'
-import { type ChartBand, type ChartMark, eventsGap, MARK_HEADS, markName } from '../events.js'
-import { type MarkerShape, markerPath } from '../svg.js'
+import { type ChartBand, type ChartMark, drawMarks, eventsGap } from '../events.js'
+import { hatchPath, type MarkerShape, markerPath } from '../svg.js'
 import { textWidth, wrap } from '../text.js'
 
 // Defaults for consumers that do not pass a series color.
@@ -308,20 +308,10 @@ function Band({ band, x, y, width, height }: { band: ChartBand; x: number; y: nu
 /** A vertical event rule with its label; kinds differ by stroke pattern, the died cross and the release, steer, ruling
  * and wake head shapes as well as colour, and a recorded verdict colours the rule. */
 function Mark({ mark, x, top, bottom, row, em, flip }: { mark: ChartMark; x: number; top: number; bottom: number; row: number; em: number; flip: boolean }) {
-  const s = Math.max(3, em / 4)
-  const head = MARK_HEADS[mark.kind]
-  return (
-    <g data-mark={mark.kind} data-verdict={mark.verdict} className={mark.verdict ? `ov-verdict-${mark.verdict}` : undefined}>
-      <title>{markName(mark)}</title>
-      <line x1={x} x2={x} y1={top} y2={bottom} className={`ov-mark ov-mark-${mark.kind}`} />
-      {mark.kind === 'died' && <path d={`M${x - s} ${bottom - 2 * s}L${x + s} ${bottom}M${x - s} ${bottom}L${x + s} ${bottom - 2 * s}`} className="ov-mark ov-mark-died" />}
-      {head && <path d={markerPath(head, x, top + s, s)} className="ov-mark-head" />}
-      <text x={flip ? x - em * 0.3 : x + em * 0.3} y={top + em * (0.9 + row)} textAnchor={flip ? 'end' : 'start'} className="ov-mark-label">{markName(mark)}</text>
-    </g>
-  )
+  const room = Math.max(240, em * 6)
+  return <g dangerouslySetInnerHTML={{ __html: drawMarks([mark], () => x, top, bottom, flip ? x - room : x, flip ? x : x + room, () => '', top + em * (.9 + row) - 12, { live: true, rows: 1 }) }} />
 }
 
-/** Every mark and band as text, in time order: the table form of the events drawn on the plot. */
 /** One part of a whole. A null value is listed as not recorded and takes no width; `untraced` parts are hatched. */
 export interface MeterSegment {
   label: string

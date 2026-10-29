@@ -184,16 +184,16 @@ export function prepareTimeline(lanes: TimelineLane[], o: TimelineOptions, prese
     const best = marks.find(mark => mark.label === view.bestMark);
     const emphasis = best ? `<g data-best="true"><circle cx="${px(best.at)}" cy="${head - 4}" r="8" fill="none" stroke="var(--accent-text)" stroke-width="2"/></g>` : "";
     if (view.header) {
-      const body = emphasis + drawMarks(wide, px, head - 8, head + 5, left, right, fmt, 4, { priority: view.bestMark }) + axis.map(t => text(px(t), height - 6, axisLabel(t), { size: 12, cls: "tgc-ink-muted tgc-num", anchor: t === t0 ? "start" : t === t1 ? "end" : "middle" })).join("");
+      const body = emphasis + drawMarks(wide, px, head - 8, head + 5, left, right, fmt, 4, { priority: view.bestMark, live: presentation.gantt }) + axis.map(t => text(px(t), height - 6, axisLabel(t), { size: 12, cls: presentation.gantt ? "tgc-ink-muted tgc-num ov-axis" : "tgc-ink-muted tgc-num", anchor: t === t0 ? "start" : t === t1 ? "end" : "middle" })).join("");
       return { body, height, rowHeight: rowH, top };
     }
     let body = drawBands(bands, px, top, bottom, fmt, [t0, t1]) + drawGroups(bands, (from, to) => [px(from), px(to)], top, bottom, left, right, fmt, [t0, t1]);
     for (const t of axis) {
-      body += line(px(t), top, px(t), bottom, "tgc-gridline") + (view.maxHeight ? "" : text(px(t), bottom + 16, axisLabel(t), { size: 12, cls: "tgc-ink-muted tgc-num", anchor: "middle" }));
+      body += line(px(t), top, px(t), bottom, "tgc-gridline") + (view.maxHeight ? "" : text(px(t), bottom + 16, axisLabel(t), { size: 12, cls: presentation.gantt ? "tgc-ink-muted tgc-num ov-axis" : "tgc-ink-muted tgc-num", anchor: "middle" }));
     }
     if (!view.maxHeight) body += emphasis;
     // Run-wide rules go under the lanes: bars, labels and counts stay readable where many events cross them.
-    body += drawMarks(wide, px, top - 8, bottom, left, right, fmt, 4, { before, after, window: [t0, t1], rows: view.maxHeight ? 0 : undefined, priority: view.bestMark });
+    body += drawMarks(wide, px, top - 8, bottom, left, right, fmt, 4, { before, after, window: [t0, t1], rows: view.maxHeight ? 0 : undefined, priority: view.bestMark, live: presentation.gantt });
     const first = view.maxHeight ? Math.max(0, Math.floor(((view.scrollTop ?? 0) - top) / rowH) - 6) : 0;
     const shown = view.maxHeight ? rows.slice(first, first + Math.ceil(view.maxHeight / rowH) + 14) : rows;
     shown.forEach((row, offset) => {
@@ -218,14 +218,14 @@ export function prepareTimeline(lanes: TimelineLane[], o: TimelineOptions, prese
       body += `<g data-lane="${esc(lane.id)}" data-depth="${row.depth}"${action}${row.folded ? ` data-folded="${row.hidden}"` : ""}>${selection}${presentation.gantt ? rect(0, y, width, rowH, "tgc-lane-hit") : ""}<g${toggle}><title>${esc(facts)}</title>${hit}${caret}${name}</g>`;
       for (const [spanIndex, span] of lane.spans.entries()) {
         const x = px(span.start), w = Math.max(1, px(ends(span)) - x);
-        const color = view.colors ? `style="fill:${esc(view.colors[span.state] ?? view.colors.unknown ?? "var(--chart-muted)")}"` : "";
-        const mark = hatched.has(span.state) ? hatch(x, barTop(y), w, barH, "tgc-span tgc-span-missing") : rect(x, barTop(y), w, barH, `tgc-span${muted.has(span.state) ? " tgc-span-muted" : ""}${span.end === null ? " tgc-span-open" : ""}`, color ? `rx="2" ${color}` : 'rx="2"');
+        const color = view.colors ? `style="fill:${esc(view.colors[span.state] ?? view.colors.unknown ?? "var(--chart-live-faint, var(--chart-muted))")}"` : "";
+        const mark = hatched.has(span.state) ? hatch(x, barTop(y), w, barH, "tgc-span tgc-span-missing") : rect(x, barTop(y), w, barH, `tgc-span${muted.has(span.state) ? " tgc-span-muted" : ""}${span.end === null ? ` tgc-span-open${presentation.gantt ? " ov-gantt-open" : ""}` : ""}`, color ? `rx="2" ${color}` : 'rx="2"');
         body += titled(spanLabel(lane, span), `<g${presentation.gantt ? ` data-span-index="${spanIndex}"` : ""} data-state="${span.state.replace(/[^a-z0-9-]/gi, "")}"${span.end === null ? ' data-open="true"' : ""}${presentation.gantt && hatched.has(span.state) ? ' data-hatched="true"' : ""}>${mark}</g>`);
       }
       const last = lane.spans.reduce<TimelineSpan | undefined>((a, b) => !a || ends(b) >= ends(a) ? b : a, undefined);
       if (presentation.gantt && view.selectedId === lane.id && last?.endLabel) {
         const label = wrap(last.endLabel, Math.max(40, right - left - 16), 12, 'sans', 1).lines[0]!;
-        body += titled(last.endLabel, text(Math.max(left + 8, Math.min(px(ends(last)) + 8, width - textWidth(label, 12) - 8)), barTop(y) + barH / 2, label, { size: 12, cls: "tgc-ink tgc-num tgc-gantt-end" }));
+        body += titled(last.endLabel, text(Math.max(left + 8, Math.min(px(ends(last)) + 8, width - textWidth(label, 12) - 8)), barTop(y) + barH / 2, label, { size: 12, cls: "tgc-ink tgc-num tgc-gantt-end" }), 'class="ov-gantt-end"');
       }
       if (row.ticks?.length) body += drawTicks(row.ticks, lane.label, px, barTop(y), barH, fmt);
       if (countText) {
@@ -241,8 +241,8 @@ export function prepareTimeline(lanes: TimelineLane[], o: TimelineOptions, prese
       body += titled(`${markName(mark)}: ${fmt(mark.at)}${mark.verdict ? ` · ${mark.verdict}` : ""}`, `<g data-mark="${mark.kind}" data-lane-mark="${esc(mark.lane!)}"${verdict}>${glyph}</g>`);
     }
     if (o.now !== undefined) {
-      const rule = line(px(o.now), top, px(o.now), bottom, "tgc-now");
-      body += (presentation.gantt ? `<g data-now="true">${rule}</g>` : rule) + (view.maxHeight ? "" : text(px(o.now), bottom + 30, `now ${fmt(o.now)}`, { size: 12, cls: "tgc-ink tgc-num", anchor: px(o.now) > (left + right) / 2 ? "end" : "start" }));
+      const rule = line(px(o.now), top, px(o.now), bottom, "tgc-now", presentation.gantt ? 'data-now="true"' : '');
+      body += rule + (view.maxHeight ? "" : text(px(o.now), bottom + 30, `now ${fmt(o.now)}`, { size: 12, cls: "tgc-ink tgc-num", anchor: px(o.now) > (left + right) / 2 ? "end" : "start" }));
     }
     return { body, height, rowHeight: rowH, top };
   };

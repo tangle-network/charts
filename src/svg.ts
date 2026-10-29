@@ -58,7 +58,7 @@ export function hatch(x: number, y: number, w: number, h: number, cls: string): 
   return `<g class="${cls}" data-hatched="true">${rect(x, y, w, h, "tgc-hatch-bg")}<path class="tgc-hatch" d="${hatchPath(x, y, w, h)}"/></g>`;
 }
 
-export function line(x1: number, y1: number, x2: number, y2: number, cls: string): string {
+export function line(x1: number, y1: number, x2: number, y2: number, cls: string, attributes = ""): string {
   return `<line class="${cls}" x1="${r2(x1)}" y1="${r2(y1)}" x2="${r2(x2)}" y2="${r2(y2)}"/>`;
 }
 
@@ -97,6 +97,6 @@ export function text(x: number, y: number, value: string, o: TextOptions = {}): 
 }
 
 /** A group whose `<title>` is the hover text for everything inside it. */
-export function titled(title: string, inner: string): string {
-  return `<g><title>${esc(title)}</title>${inner}</g>`;
+export function titled(title: string, inner: string, attributes = ""): string {
+  return `<g${attributes ? ` ${attributes}` : ""}><title>${esc(title)}</title>${inner}</g>`;
 }
