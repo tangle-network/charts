@@ -29,7 +29,7 @@ try {
     await bar.waitFor()
     await page.evaluate(() => document.fonts.ready)
     const column = () => row.locator('.fw-label').evaluate(el => el.getBoundingClientRect().width)
-    const resize = page.getByRole('separator', { name: 'Resize the step column' })
+    const resize = page.locator('.fw-resize')
     const preferred = async () => Number(await resize.getAttribute('aria-valuenow'))
     const initial = await column(), initialPreferred = await preferred(), samples = [], check = { theme, width, initial, initialPreferred, samples }
     checks.push(check)
