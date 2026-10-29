@@ -330,6 +330,7 @@ try {
   }
   await page.setViewportSize({ width: 1100, height: 900 })
   checks.phoneLanes = 'PASS'
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
   await story('recorded-discovery')
   const root = page.locator('[data-flow-waterfall]')
   assert.equal(await root.locator('[data-span-id]').count(), 53)
