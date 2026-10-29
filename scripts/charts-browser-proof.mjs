@@ -103,7 +103,7 @@ try {
   await story('healthy')
   assert.match(await page.locator('[data-slowest]').innerText(), /sandbox_run_command/)
   // An agent's outcome colors its lane and joins the legend with a count.
-  assert.equal((await page.locator('.fw-legend').innerText()).replace(/\s+/g, ' ').trim(), 'Shipped 1')
+  assert.equal((await page.getByRole('list', { name: 'Outcomes', exact: true }).innerText()).replace(/\s+/g, ' ').trim(), 'Shipped 1')
   // Agent fill (the default) keeps each agent's hue on its bar and puts the outcome on its dot.
   assert.equal(await page.locator('[data-span-kind="pipeline"] .fw-agent-dot[data-outcome="ok"]').count(), 1)
   checks.outcomes = 'PASS'
@@ -294,7 +294,7 @@ try {
     await page.mouse.move(pointer.x, pointer.y)
     await page.locator('.fw-card-table').waitFor()
     const table = await page.locator('.fw-card-table > div').evaluateAll(rows => Object.fromEntries(rows.map(row => [row.querySelector('dt').textContent, row.querySelector('dd').textContent])))
-    assert.deepEqual(Object.keys(table), ['Model', 'Duration', 'Tokens', 'Model latency', 'Cost', 'Model calls', 'Tool calls', 'Failures', 'Retries'], JSON.stringify(table))
+    assert.deepEqual(Object.keys(table), ['Model', 'Ran for', 'Tokens', 'Model latency', 'Cost', 'Model calls', 'Tool calls', 'Failures', 'Retries'], JSON.stringify(table))
     assert.match(table.Tokens, /^[\d.]+K in[\d.]+K out[\d.]+K cached$/)
     assert.match(table['Model latency'], /^[\d.]+s median[\d.]+s p95$/)
     assert.match(table.Cost, /^\$\d+\.\d\d$/)
@@ -330,6 +330,7 @@ try {
   }
   await page.setViewportSize({ width: 1100, height: 900 })
   checks.phoneLanes = 'PASS'
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
   await story('recorded-discovery')
   const root = page.locator('[data-flow-waterfall]')
   assert.equal(await root.locator('[data-span-id]').count(), 53)
@@ -365,21 +366,21 @@ try {
     checks.motion = 'PASS'
     checks.nesting = 'PASS'
     checks.collapseExpand = 'PASS'
-    const terms = await root.locator('dt').allTextContents()
-    // This trace has no cost source, so the Cost tile is left out rather than printed as a dash.
-    assert.deepEqual(terms, ['Duration', 'Tokens', 'Model calls', 'Tool calls', 'Errors'])
-    assert.deepEqual(await root.locator('dd').allTextContents(), ['7m 11s', '754.4k', '—', '35', '3'])
-    assert.equal(await root.locator('dd').nth(1).getAttribute('title'), '754,448 tokens')
+    const summary = root.locator('.fw-summary'), terms = await summary.locator('dt').allTextContents()
+    // Missing prices remain explicit and explain why no total can be reported.
+    assert.deepEqual(terms, ['Duration', 'Cost', 'Tokens', 'Model calls', 'Tool calls', 'Errors'])
+    assert.deepEqual(await summary.locator('dd').allTextContents(), ['7m 11s', '—', '754.4K', '—', '35', '3'])
+    assert.match(await summary.locator('dd').nth(1).getAttribute('title'), /^No cost source/); assert.equal(await summary.locator('dd').nth(2).getAttribute('title'), '754,448 tokens')
     checks.summary = 'PASS'
     // Each kind is painted distinctly: a fill colour, or a pattern (hatched waiting) in background-image.
     const kinds = await root.locator('.fw-bar').evaluateAll(elements => Object.fromEntries(elements.map(element => {
       const style = getComputedStyle(element)
       const paint = style.backgroundImage !== 'none' ? style.backgroundImage : style.backgroundColor
-      return [element.closest('[data-span-kind]').dataset.spanKind, paint]
+      return [[...element.classList].find(name => name.startsWith('fw-k-')).slice(5), { paint, height: style.height }]
     })))
     assert.equal(Object.keys(kinds).length, 6)
-    assert.equal(new Set(Object.values(kinds)).size, 6)
-    assert.ok(!Object.values(kinds).includes('rgba(0, 0, 0, 0)'))
+    assert.equal(new Set(Object.entries(kinds).filter(([kind]) => kind !== 'pipeline').map(([, value]) => JSON.stringify(value))).size, 5, 'work marks differ by color, pattern or handoff shape; elapsed rails may share a waiting pattern')
+    assert.ok(Object.values(kinds).every(value => value.paint !== 'rgba(0, 0, 0, 0)'))
     checks.colors = 'PASS'
     assert.equal(await root.locator('[data-slowest]').count(), 1)
     assert.match(await root.locator('[data-slowest]').innerText(), /bash/)

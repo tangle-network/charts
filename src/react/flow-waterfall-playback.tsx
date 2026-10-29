@@ -49,9 +49,9 @@ export function PlaybackBar({ view, playing, limit, clockMs, speed, zoom, marks,
         </label>}
       <div className="fw-overview" style={{ '--fw-progress': `${clockMs / Math.max(1, limit) * 100}%` } as CSSProperties}>
         <div className="fw-overview-marks" aria-hidden>
-          {marks.map((mark, i) => <span key={i} className={`fw-ov fw-seg-${mark.kind}`} data-tone={toneKey(mark.tone)}
+          {view !== 'agents' && marks.map((mark, i) => <span key={i} className={`fw-ov fw-seg-${mark.kind}`} data-tone={toneKey(mark.tone)}
             style={{ left: `${mark.startMs / Math.max(1, limit) * 100}%`, width: `${Math.max(0.15, (Math.min(mark.endMs, limit) - mark.startMs) / Math.max(1, limit) * 100)}%` }} />)}
-          {zoom && <span className="fw-brush" style={{ left: `${zoom.startMs / limit * 100}%`, width: `${(zoom.endMs - zoom.startMs) / limit * 100}%` }} />}
+          {view !== 'agents' && zoom && <span className="fw-brush" style={{ left: `${zoom.startMs / limit * 100}%`, width: `${(zoom.endMs - zoom.startMs) / limit * 100}%` }} />}
         </div>
         <input ref={slider} aria-label="Playback position" type="range" min={0} max={Math.max(1, limit)} step="any" defaultValue={clockMs}
           disabled={limit === 0} className="fw-slider"

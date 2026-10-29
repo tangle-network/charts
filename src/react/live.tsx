@@ -570,8 +570,8 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
   })
   const hatched = new Set(hatch)
   const plotBottom = top + lanes.length * rowH
-  const first = maxHeight && lanes.length > 100 ? Math.max(0, Math.floor((scrollTop - top) / rowH) - 6) : 0
-  const visible = maxHeight && lanes.length > 100 ? lanes.slice(first, first + Math.ceil(maxHeight / rowH) + 14) : lanes
+  const first = maxHeight ? Math.max(0, Math.floor((scrollTop - top) / rowH) - 6) : 0
+  const visible = maxHeight ? lanes.slice(first, first + Math.ceil(maxHeight / rowH) + 14) : lanes
   const select = (id: string) => onSelect?.(id)
   const focusLane = (index: number) => {
     const at = Math.max(0, Math.min(lanes.length - 1, index))
@@ -605,6 +605,7 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
             const endLabel = selectedId === lane.id && final?.endLabel ? wrap(final.endLabel, Math.max(40, plotW - 16), 13, 'sans', 1).lines[0] : undefined
             return (
               <g key={lane.id} data-lane={lane.id} data-lane-index={i} role={onSelect ? 'button' : undefined} tabIndex={onSelect ? 0 : undefined} aria-label={lane.label} aria-pressed={onSelect ? selectedId === lane.id : undefined}
+                onMouseEnter={() => setTip({ x: tipX(x(ends(lane.spans.at(-1) ?? { end: t1 }))), y: tipY(y), title: lane.label, lines: lane.spans.flatMap((s) => [{ label: s.end === null ? `${s.state} (open)` : s.state, value: span(s.start, ends(s)), color: hatched.has(s.state) ? undefined : colors[s.state] ?? fallback }, ...(s.note ? [{ label: s.note, value: '' }] : []), ...(s.endLabel ? [{ label: 'Duration / cost', value: s.endLabel }] : [])]) })}
                 onClick={() => select(lane.id)} onKeyDown={event => {
                   if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(lane.id) }
                   const next = ({ ArrowDown: i + 1, ArrowUp: i - 1, Home: 0, End: lanes.length - 1 } as Record<string, number>)[event.key]
@@ -612,8 +613,7 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], 
                 }}>
                 {selectedId === lane.id && <rect x={0} y={y} width={width} height={rowH} fill="var(--ix-sel-bg)" rx={4} />}
                 {/* The whole row names every span on hover, as single-span rows always did. */}
-                <rect x={0} y={y} width={width} height={rowH} fill="transparent"
-                  onMouseEnter={() => setTip({ x: tipX(x(ends(lane.spans.at(-1) ?? { end: t1 }))), y: tipY(y), title: lane.label, lines: lane.spans.flatMap((s) => [{ label: s.end === null ? `${s.state} (open)` : s.state, value: span(s.start, ends(s)), color: hatched.has(s.state) ? undefined : colors[s.state] ?? fallback }, ...(s.note ? [{ label: s.note, value: '' }] : []), ...(s.endLabel ? [{ label: 'Duration / cost', value: s.endLabel }] : [])]) })} />
+                <rect x={0} y={y} width={width} height={rowH} fill="transparent" />
                 <text x={phone ? 8 : labelW - em * 0.5} y={phone ? y + 13 : y + rowH / 2} dominantBaseline="middle" textAnchor={phone ? 'start' : 'end'} className="ov-axis ov-gantt-label"><title>{lane.label}{suffix}{suffix && lane.countLabel ? ` ${lane.countLabel}` : ''}</title>
                   {label}{suffix && <tspan className="ov-gantt-count">{suffix}</tspan>}
                 </text>

@@ -41,6 +41,7 @@ export function useTraceClock(input: TraceClockInput): TraceClock {
   const [clockMs, setClockMs] = useState(position ?? observedTotal)
   const receivedAt = useRef(Date.now())
   const playhead = useRef(position ?? observedTotal)
+  const geometry = useRef<Partial<Record<'--fw-t' | '--fw-v0' | '--fw-k', number>>>({})
   const latest = useRef(input)
   latest.current = input
 
@@ -56,22 +57,25 @@ export function useTraceClock(input: TraceClockInput): TraceClock {
     if (!element) return
     const { startMs, endMs } = latest.current.view(t)
     const k = Math.max(1e-9, latest.current.trackPx / Math.max(1, endMs - startMs))
-    element.style.setProperty('--fw-t', String(t))
-    element.style.setProperty('--fw-v0', String(startMs))
-    element.style.setProperty('--fw-k', String(k))
+    const following = latest.current.live && !latest.current.playing && latest.current.position === null
+    for (const [name, value, scale] of [['--fw-t', t, k], ['--fw-v0', startMs, k], ['--fw-k', k, endMs - startMs]] as const) {
+      const distance = Math.abs(value - (geometry.current[name] ?? NaN)) * scale
+      if (following && Number.isFinite(distance) && distance < .25) continue
+      element.style.setProperty(name, String(value)); geometry.current[name] = value
+    }
     if (slider.current) { slider.current.max = String(Math.max(1, limit, t)); slider.current.value = String(t) }
     if (timeOutput.current) timeOutput.current.textContent = formatSpanDuration(t)
   }
 
   useLayoutEffect(() => {
     if (position !== null) playhead.current = position
-    const moving = live || playing
-    if (!moving) {
+    if (!live && !playing) {
       const t = position ?? observedTotal
       paint(t)
       setClockMs(t)
       return
     }
+    paint(playing ? playhead.current : position ?? liveNow())
     let frame = 0
     let last = performance.now()
     let lastText = 0
@@ -96,11 +100,8 @@ export function useTraceClock(input: TraceClockInput): TraceClock {
     }
     frame = requestAnimationFrame(step)
     return () => cancelAnimationFrame(frame)
-    // paint reads the latest view, width and speed through a ref.
-  }, [live, playing, position, observedTotal, snapshot])
-
-  // A zoom, resize or mode change repaints at the current clock even when time is still.
-  useLayoutEffect(() => { paint(playing ? playhead.current : position ?? (live ? liveNow() : observedTotal)) }, [view, trackPx])
+    // Fixed marks update with data; following live only repaints perceptible geometry drift.
+  }, [live, playing, position, observedTotal, snapshot, view, trackPx])
 
   return { clockMs, limitMs: liveNow, positionMs: () => playhead.current }
 }

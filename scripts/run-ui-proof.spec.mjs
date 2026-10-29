@@ -100,7 +100,9 @@ try {
     if(width===390) {
       check(`${theme}/${width} four ticks`,await page.locator('.fw-axis .fw-tick').count(),4)
       check(`${theme}/${width} 52px rows`,await page.locator('.fw-agent-row').first().evaluate(el=>el.getBoundingClientRect().height),52)
-      await page.locator('.fw-key summary').click()
+      await page.locator('.fw-legends').hover();await page.mouse.wheel(1800,0)
+      await page.waitForFunction(()=>document.querySelector('.fw-legends').scrollLeft>0)
+      check(`${theme}/${width} legend scroll stays inside page`,await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true)
     }
     const palette=await page.evaluate(paletteAudit)
     console.log('PALETTE',theme,palette)
@@ -166,7 +168,7 @@ try {
     if(width===390) {
       check(`${theme}/${width} phone failure label`,await page.locator('[data-span-id="agent-3"] .fw-row-state').isVisible(),true)
       check(`${theme}/${width} phone needs-you label`,await page.locator('[data-span-id="agent-2"] .fw-row-state').evaluateAll(nodes=>nodes[0]?.textContent??null),'Needs you')
-      check(`${theme}/${width} key disclosure cue`,await page.locator('.fw-key summary svg').isVisible(),true)
+      check(`${theme}/${width} key visible without disclosure`,await page.getByRole('region',{name:'Timeline key'}).isVisible(),true)
     }
     for(const [query,id,expected] of [['no-activity','no-clock',0],['duplicate-cadence','agent-1',1]]) {
       await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&${query}=1`)
@@ -204,7 +206,7 @@ try {
     await page.locator('[data-span-id="agent-1"]').waitFor()
     await page.waitForTimeout(1200)
     check(`${theme}/${width} parent excluded from leaf comparisons`,await page.locator('[data-span-id="agent-0"] .fw-badge').count(),0)
-    check(`${theme}/${width} leaf comparison labels`,(await page.locator('[data-span-id="agent-1"] .fw-badge').allTextContents()).toString(),['Longest leaf','Costliest leaf'].toString())
+    check(`${theme}/${width} leaf comparison labels`,(await page.locator('[data-span-id="agent-1"] .fw-badge').allTextContents()).toString(),['Longest · costliest leaf'].toString())
     if(width>=600)check(`${theme}/${width} comparisons stay in label area`,await page.locator('[data-span-id="agent-1"] .fw-badge').evaluateAll(nodes=>nodes.every(node=>{const a=node.getBoundingClientRect(),label=node.closest('.fw-label');if(!label)return false;const b=label.getBoundingClientRect();return a.left>=b.left&&a.right<=b.right&&a.top>=b.top&&a.bottom<=b.bottom})),true)
     if(width===390){check(`${theme}/${width} explicit running label`,await page.locator('[data-span-id="agent-0"] .fw-row-state').evaluateAll(nodes=>nodes[0]?.textContent??null),'Running');check(`${theme}/${width} explicit done label`,await page.locator('[data-span-id="agent-2"] .fw-row-state').evaluateAll(nodes=>nodes[0]?.textContent??null),'Done')}
     await page.screenshot({path:`${out}/leaf-${theme}-${width}.png`,fullPage:true})
@@ -232,7 +234,7 @@ try {
       check(`${theme}/${width} supplied graph visible`,await page.locator('[data-graph]').isVisible(),true)
       check(`${theme}/${width} graph retains cursor`,await page.locator('[data-graph]').getAttribute('data-cursor'),position)
       check(`${theme}/${width} graph retains selection`,await page.locator('[data-graph]').getAttribute('data-selected'),'agent-3')
-      check(`${theme}/${width} graph hides waterfall controls`,await page.locator('.fw-summary,.fw-key,.fw-playback,.fw-canvas').count(),0)
+      check(`${theme}/${width} graph hides waterfall controls`,await page.locator('.fw-summary,.fw-legends,.fw-playback,.fw-canvas').count(),0)
       check(`${theme}/${width} graph keeps feed state`,await page.locator('[data-feed]').getAttribute('data-paused'),'true')
       await page.getByRole('radio',{name:'Steps',exact:true}).click()
       check(`${theme}/${width} steps keeps feed state`,await page.locator('[data-feed]').getAttribute('data-paused'),'true')
@@ -254,16 +256,18 @@ try {
     await page.goto(`http://127.0.0.1:${server.address().port}/?theme=${theme}&grammar=1`)
     await page.locator('.fw-summary').waitFor()
     await page.waitForTimeout(1200)
-    if(width===390)await page.locator('.fw-key summary').click()
-    check(`${theme}/${width} bar grammar explanation`,await page.locator('.fw-kind-rule').isVisible(),true)
+    check(`${theme}/${width} legend has no explanatory boilerplate`,await page.locator('.fw-kind-rule').count(),0)
+    check(`${theme}/${width} one legend row`,await page.locator('.fw-legends li').evaluateAll(nodes=>{const tops=nodes.map(el=>el.getBoundingClientRect().top);return Math.max(...tops)-Math.min(...tops)<2}),true)
     check(`${theme}/${width} kind key prefers actual colored family`,await page.locator('.fw-swatch-model').evaluate(el=>el.parentElement.dataset.example),'agent-1')
     check(`${theme}/${width} lifecycle not repeated in subtitle`,await page.locator('[data-span-id="agent-3"] .fw-subtitle').evaluate(el=>!el.textContent.includes('Failed')),true)
     check(`${theme}/${width} waiting key uses actual hatch`,await page.locator('.fw-swatch-wait').evaluate(el=>getComputedStyle(el).backgroundImage.includes('repeating-linear-gradient')),true)
     check(`${theme}/${width} kind key matches drawn model`,await page.evaluate(()=>{const swatch=document.querySelector('.fw-swatch-model'),owner=swatch.closest('[data-example]').dataset.example;return getComputedStyle(swatch).backgroundColor===getComputedStyle(document.querySelector('[data-span-id="'+owner+'"] .fw-seg[data-model]')).backgroundColor}),true)
     if(width===390) {
       await page.screenshot({path:`${out}/grammar-key-${theme}-${width}.png`,fullPage:true})
-      check(`${theme}/${width} open key fits card`,await page.locator('.fw-legends').evaluate(el=>{const box=el.getBoundingClientRect(),root=el.closest('[data-flow-waterfall]').getBoundingClientRect();return box.left>=root.left&&box.right<=root.right&&el.scrollWidth<=el.clientWidth}),true)
-      await page.locator('.fw-key summary').click()
+      check(`${theme}/${width} open key fits card`,await page.locator('.fw-legends').evaluate(el=>{const box=el.getBoundingClientRect(),root=el.closest('[data-flow-waterfall]').getBoundingClientRect();return box.left>=root.left&&box.right<=root.right}),true)
+      await page.locator('.fw-legends').hover();await page.mouse.wheel(1800,0)
+      await page.waitForFunction(()=>document.querySelector('.fw-legends').scrollLeft>0)
+      check(`${theme}/${width} legend scroll stays inside page`,await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true)
       const hierarchy=await summaryGeometry(page)
       check(`${theme}/${width} compact summary hierarchy`,hierarchy.hero,20)
       check(`${theme}/${width} secondary metrics one line`,hierarchy.oneLine,true)

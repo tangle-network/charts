@@ -109,7 +109,9 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   const opens = family || (agentView && isAgent && row.own.length > 0)
   const outcomes = row.outcomes ?? (span.outcome ? [span.outcome] : [])
   const failedEnd = isAgent && !family && state === "failed" && Number.isFinite(span.endMs) && span.endMs <= clockMs
-  const callouts = <>{slowest && <span className="fw-badge" title={agentView ? 'Longest elapsed leaf agent' : 'Longest elapsed leaf step'}>{agentView ? 'Longest leaf' : 'Longest step'}</span>}{costliest && <span className="fw-badge" title="Highest reported cost among priced leaf agents">Costliest leaf</span>}</>
+  const callouts = (slowest || costliest) && <span className="fw-badge" title={costliest ? `${slowest ? 'Longest elapsed; ' : ''}highest reported cost among priced leaf agents` : agentView ? 'Longest elapsed leaf agent' : 'Longest elapsed leaf step'}>
+    {slowest ? agentView ? costliest ? 'Longest · costliest leaf' : 'Longest leaf' : 'Longest step' : 'Costliest leaf'}
+  </span>
 
   return (
     <div role="row" data-span-id={row.id} data-span-kind={kind} data-slowest={slowest || undefined} data-critical={critical || undefined} data-search={searching ? (matched ? 'match' : 'context') : undefined} data-running={running || undefined} data-activity={activity.quiet ? "quiet" : undefined}

@@ -63,7 +63,7 @@
 }
 
 .fw-root .fw-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--fw-border); flex-wrap: wrap; }
-.fw-root .fw-title-block { min-width: 0; display: grid; gap: 4px; }
+.fw-root .fw-title-block { flex: 1; min-width: 0; display: grid; gap: 4px; }
 .fw-root .fw-title-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .fw-root .fw-title-glyph { display: inline-flex; color: var(--fw-accent); }
 .fw-root .fw-title { font-size: 14px; line-height: 20px; font-weight: 600; letter-spacing: -.005em; white-space: nowrap; }
@@ -195,6 +195,8 @@
 .fw-root .fw-enter > [role="gridcell"] { transition: opacity var(--motion-arrive); transition-delay: var(--fw-enter-delay); }
 .fw-root .fw-enter :is(.fw-bar, .fw-seg) { transition: clip-path var(--motion-grow, var(--motion-stream)); transition-delay: var(--fw-enter-delay); clip-path: inset(0); }
 @starting-style { .fw-root .fw-enter > [role="gridcell"] { opacity: 0; } .fw-root .fw-enter :is(.fw-bar, .fw-seg) { clip-path: inset(0 100% 0 0); } }
+.fw-root[data-follow-live] .fw-row[data-running] .fw-bar { --on: 1; }
+.fw-root[data-follow-live] :is(.fw-seg, .fw-mark), .fw-root[data-follow-live] .fw-row:not([data-running]) .fw-bar { --fw-t: calc(var(--e) + 1); }
 .fw-root .fw-row[data-critical] .fw-bar { box-shadow: inset 0 -2px 0 var(--fw-accent); }
 .fw-root .fw-row[data-search="context"] .fw-label { color: var(--fw-muted); }
 .fw-root .fw-row[data-search="match"] .fw-name-text { font-weight: 600; }
@@ -220,10 +222,10 @@
 .fw-root [data-outcome="neutral"] { --outcome-tone: var(--fw-muted); }
 .fw-root [data-outcome], .fw-root [data-outcome] [data-tone] { --tone: var(--outcome-tone); }
 .fw-root.fw-root .fw-agent-dot[data-outcome] { --tone: var(--outcome-tone); }
-.fw-root .fw-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; padding: 0; list-style: none; color: var(--fw-muted); font-size: 14px; line-height: 18px; }
-.fw-root .fw-legend li { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; max-width: 100%; overflow-wrap: anywhere; }
-.fw-root .fw-legends { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 24px; margin-top: 8px; }
-.fw-root .fw-legends .fw-legend { margin: 0; }
+.fw-root .fw-legend { display: flex; flex-wrap: nowrap; gap: 4px 16px; margin: 8px 0 0; padding: 0; list-style: none; color: var(--fw-muted); font-size: 14px; line-height: 18px; }
+.fw-root .fw-legend li { display: inline-flex; align-items: center; gap: 8px; flex: none; white-space: nowrap; }
+.fw-root .fw-legends { display: flex; align-items: center; gap: 24px; max-width: 100%; min-width: 0; overflow-x: auto; margin-top: 8px; }
+.fw-root .fw-legends .fw-legend { flex: none; margin: 0; }
 .fw-root .fw-kinds { margin: 0; padding: 0; justify-content: flex-start; color: var(--fw-muted); }
 .fw-root .fw-kinds .fw-swatch-model { width: 12px; height: 8px; border-radius: 2px; background: var(--fw-kind-model); }
 .fw-root.fw-fill-agent .fw-kinds .fw-swatch-model { background: var(--model-fill); }
@@ -273,7 +275,7 @@
 .fw-root .fw-outcome-end { display: inline-flex; pointer-events: auto; }
 .fw-root .fw-duration { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; color: var(--fw-muted); font-variant-numeric: tabular-nums; }
 .fw-root .fw-k-failed ~ .fw-end .fw-duration { color: var(--fw-failed); }
-.fw-root .fw-badge { display: inline-flex; flex: none; height: 18px; padding: 0 6px; border-radius: var(--radius-pill); font-size: 12px; line-height: 18px; font-weight: 500; color: var(--fw-muted); background: transparent; box-shadow: inset 0 0 0 1px var(--fw-border); }
+.fw-root .fw-badge { display: inline-flex; flex: none; height: 18px; padding: 0 6px; border-radius: var(--radius-pill); font-size: 13px; line-height: 18px; font-weight: 500; color: var(--fw-muted); background: transparent; box-shadow: inset 0 0 0 1px var(--fw-border); }
 
 .fw-root .fw-links { position: absolute; top: 0; bottom: 0; left: var(--fw-label-col); right: 0; overflow: hidden; pointer-events: none; z-index: 0; }
 .fw-root .fw-link {
@@ -372,9 +374,6 @@
 .fw-root .fw-legend button { display: inline-flex; align-items: center; gap: 8px; border: 0; padding: 0; background: transparent; color: inherit; cursor: pointer; }
 .fw-root .fw-legend button[aria-pressed="true"] { color: var(--fw-text); text-decoration: underline; text-underline-offset: 4px; }
 .fw-root .fw-summary button { appearance: none; background: transparent; border: 0; padding: 0; cursor: pointer; color: inherit; }
-.fw-root .fw-key > summary { display: none; }
-.fw-root .fw-key > summary svg { width: 12px; height: 12px; margin-left: 6px; }
-.fw-root .fw-key[open] > summary svg { transform: rotate(90deg); }
 .fw-root .fw-row-state { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; }
 .fw-root .fw-error-rug { position: relative; height: 10px; margin-left: var(--fw-label-col); overflow: hidden; }
 .fw-root .fw-error-tick { position: absolute; width: 2px; height: 8px; background: var(--fw-failed); left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); }
@@ -394,12 +393,10 @@
   .fw-root .fw-summary::after { content: ""; flex-basis: 100%; }
   .fw-root .fw-summary > div:nth-child(n+3) { order: 1; }
   .fw-root :is(.fw-zoom, .fw-branch-controls, .fw-resize, .fw-links, .fw-gridlayer, .fw-marker-layer, .fw-subtitle, .fw-badge, .fw-icon-tile) { display: none; }
-  .fw-root .fw-key > summary { display: flex; align-items: center; min-height: 32px; cursor: pointer; grid-area: 2 / 2; }
-  .fw-root .fw-key:not([open]) .fw-legends { display: none; }
   .fw-root .fw-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 8px; padding: 8px; }
-  .fw-root .fw-title-block, .fw-root .fw-key { display: contents; }
+  .fw-root .fw-title-block { display: contents; }
   .fw-root .fw-title-line { grid-column: 1 / -1; flex-wrap: wrap; }
-  .fw-root .fw-legends { grid-area: 3 / 1 / auto / -1; margin: 4px 0; }
+  .fw-root .fw-legends { grid-area: 3 / 1 / auto / -1; margin: 0; }
   .fw-root .fw-tools { grid-area: 2 / 1; flex-wrap: wrap; }
   .fw-root .fw-segmented { padding: 2px; }
   .fw-root .fw-segmented button { min-width: 28px; padding: 0 6px; }
