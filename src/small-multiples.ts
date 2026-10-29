@@ -3,15 +3,15 @@
  * hatched "no data: <reason>" panel, never a zero line; a panel that stopped
  * early ends at its recorded end mark.
  */
-import { categoriesGap, columnLabelFit, columnLabels, drawTargets, logValueGap, targetKey, targetsTable, type XCategory, xAxis, type YScale, yAxisGap, type YTarget, yScale } from "./axis.js";
+import { categoriesGap, columnLabelFit, columnLabels, drawTargets, targetKey, targetsTable, type XCategory, xAxis, type YScale, yAxisGap, type YTarget, yScale } from "./axis.js";
 import { type ChartMark, drawMarks, eventsGap, eventsTable, type MarkKind } from "./events.js";
-import { hasPointFields, placeBadges, POINT_COLUMNS, pointCells, pointFacts, pointFieldsGap, pointMark, verdictKey } from "./points.js";
-import { domainGap, observationLabel, scalarGap, scalarLabel } from "./scalar.js";
+import { hasPointFields, placeBadges, POINT_COLUMNS, pointCells, pointFacts, pointMark, verdictKey } from "./points.js";
+import { domainGap, observationLabel, scalarLabel } from "./scalar.js";
 import { logTicks } from "./scale.js";
 import { circle, hatch, line, type MarkerShape, NARROW, polyline, svgRoot, text, titled, wideWidth } from "./svg.js";
 import { table } from "./table.js";
 import { capitalize, esc, plural, textBlock, textWidth, wrap } from "./text.js";
-import type { TimePoint } from "./time-series.js";
+import { pointsGap, spreadX, type TimePoint } from "./time-series.js";
 import type { Figure, Refusal } from "./types.js";
 
 export interface MultiplePanel {
@@ -65,7 +65,6 @@ export function smallMultiples(panels: MultiplePanel[], o: SmallMultiplesOptions
   const axis = domainGap(o.x.domain) ?? domainGap(o.y.domain) ?? categoriesGap(o.x.categories, o.x.domain);
   if (axis) return { id, refused: axis };
   if (o.columns !== undefined && (!Number.isInteger(o.columns) || o.columns < 1)) return { id, refused: "Columns must be a whole number of at least 1." };
-  const columns = o.x.categories?.length ? new Set(o.x.categories.map((c) => c.at)) : null;
   if (!panels.length) return { id, refused: "No panels recorded." };
   if (new Set(panels.map((p) => p.id)).size !== panels.length) return { id, refused: "Duplicate panel ids." };
   const ownUnits = o.shared === "x";
@@ -85,18 +84,12 @@ export function smallMultiples(panels: MultiplePanel[], o: SmallMultiplesOptions
     if (!domain) return { id, refused: `${panel.label}: an x-only shared figure needs each panel's y domain.` };
     const own = domainGap(domain) ?? yAxisGap({ domain, scale: panel.scale, targets: panel.targets }, panel.label);
     if (own) return { id, refused: `${panel.label}: ${own}` };
-    let previous = -Infinity;
-    for (const point of panel.points) {
-      const ordered = columns ? point.x >= previous && columns.has(point.x) : point.x > previous;
-      if (!Number.isFinite(point.x) || !ordered || point.x < o.x.domain[0] || point.x > o.x.domain[1]) return { id, refused: columns ? `${panel.label}: x values must be categories, in order.` : `${panel.label}: x values must be finite, strictly increasing and inside the shared domain.` };
-      previous = point.x;
-      const problem = scalarGap(point.y, point.interval, point.observations, domain) ?? logValueGap(point.y, panel.scale) ?? pointFieldsGap(point);
-      if (problem) return { id, refused: `${panel.label} at ${point.x}: ${problem}` };
-    }
+    const problem = pointsGap(panel.label, panel.points, o.x, domain, panel.scale);
+    if (problem) return { id, refused: problem };
     if (panel.end) {
       const endGap = eventsGap([{ at: panel.end.at, kind: panel.end.kind, label: panel.end.label ?? panel.end.kind }], [], o.x.domain);
       if (endGap) return { id, refused: `${panel.label}: ${endGap}` };
-      if (previous > panel.end.at) return { id, refused: `${panel.label}: points are recorded after the panel's end.` };
+      if (panel.points.at(-1)!.x > panel.end.at) return { id, refused: `${panel.label}: points are recorded after the panel's end.` };
     }
     const markGap = eventsGap(panel.marks, [], o.x.domain);
     if (markGap) return { id, refused: `${panel.label}: ${markGap}` };
@@ -189,21 +182,14 @@ function draw(panels: MultiplePanel[], o: SmallMultiplesOptions, width: number, 
     body += drawTargets(panel.targets ?? [], py, left, right, yLabel, false) + targetKey(panel.targets ?? [], ox + 2, oy + 30, panelW - 4);
     if (labelled.length) body += columnLabels(labelled, px, labelFit.fit, left, right, right + 4, xLabel, 10, bottom + 16);
     else body += text(left, bottom + 16, xLabel(o.x.domain[0]), { size: 12, cls: "tgc-ink-muted tgc-num" }) + text(right, bottom + 16, xLabel(o.x.domain[1]), { size: 12, anchor: "end", cls: "tgc-ink-muted tgc-num" });
-    // Points sharing a column are spread across it in input order.
-    const shared = new Map<number, TimePoint[]>();
-    for (const point of panel.points!) if (point.y !== null) shared.set(point.x, [...(shared.get(point.x) ?? []), point]);
-    const xOf = (point: TimePoint) => {
-      const list = shared.get(point.x)!, room = axis.column(point.x);
-      const step = room === null ? 0 : Math.min(9, room / (list.length + 1));
-      return px(point.x) + (list.indexOf(point) - (list.length - 1) / 2) * step;
-    };
+    const xOf = spreadX(panel.points!.filter((point) => point.y !== null), axis, 9);
     const placed: Array<[number, number, number, number]> = [];
     const pending: Array<{ x: number; y: number; r: number; point: TimePoint }> = [];
     let segment: Array<[number, number]> = [];
     const flush = () => { if (segment.length > 1 && o.connect !== false) body += polyline(segment, "tgc-series-line"); segment = []; };
     for (const point of panel.points!) {
       if (point.y === null) { flush(); continue; }
-      const x = xOf(point), y = py(point.y);
+      const x = xOf.get(point)!, y = py(point.y);
       segment.push([x, y]);
       if (!hasPointFields([point]) && point.marker === undefined) {
         body += titled(`${panel.label} · ${o.x.label} ${xLabel(point.x)} · ${yLabel(point.y)} · ${observationLabel(point.observations)}`, circle(x, y, 2.5, "tgc-series-point"));

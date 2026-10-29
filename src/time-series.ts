@@ -1,5 +1,5 @@
 /** Recorded trajectories. Explicit null observations break lines without interpolation. */
-import { categoriesGap, columnLabelFit, columnLabels, drawTargets, logValueGap, targetsTable, type XCategory, xAxis, xTicks, type YScale, yAxisGap, yGridlines, type YTarget, type YTick, yScale } from "./axis.js";
+import { categoriesGap, columnLabelFit, columnLabels, drawTargets, logValueGap, targetsTable, type XAxis, type XCategory, xAxis, xTicks, type YScale, yAxisGap, yGridlines, type YTarget, type YTick, yScale } from "./axis.js";
 import { type ChartBand, type ChartMark, drawBands, drawGroups, drawMarks, EVENTS_READ, eventsGap, eventsTable, groupRowHeight, markLabelRows } from "./events.js";
 import { checkerClass } from "./outcomes.js";
 import { hasPointFields, placeBadges, POINT_COLUMNS, pointCells, pointFacts, type PointFields, pointFieldsGap, pointMark, stripMark, VERDICT_WORD, verdictKey } from "./points.js";
@@ -24,6 +24,8 @@ export interface TimeSeriesRow {
   points: TimePoint[];
   /** Draw this series in checker `colorIndex`'s hue (0 is the current checker); past the fourth hue it is muted. */
   colorIndex?: number;
+  /** De-emphasise this series beside a primary in the same hue, such as a max beside its p50. */
+  secondary?: boolean;
 }
 
 export interface TimeSeriesOptions {
@@ -62,40 +64,30 @@ export interface TimeSeriesOptions {
   width?: number;
   /** false leaves out the series legend under the plot, for a caller that names its series itself. The verdict key stays. */
   legend?: boolean;
+  /** Draw a vertical rule at the x of the point whose tip shows. */
+  crosshair?: boolean;
   id?: string;
 }
 
 export function timeSeries(rows: TimeSeriesRow[], o: TimeSeriesOptions): Figure | Refusal {
   const id = o.id ?? "time-series";
-  const gap = domainGap(o.x.domain) ?? domainGap(o.y.domain) ?? categoriesGap(o.x.categories, o.x.domain) ?? yAxisGap(o.y);
+  const gap = domainGap(o.x.domain) ?? domainGap(o.y.domain) ?? categoriesGap(o.x.categories, o.x.domain) ?? yAxisGap(o.y) ?? eventsGap(o.marks, o.bands, o.x.domain);
   if (gap) return { id, refused: gap };
-  const events = eventsGap(o.marks, o.bands, o.x.domain);
-  if (events) return { id, refused: events };
   if (!rows.length || rows.every((row) => !row.points.length)) return { id, refused: "No trajectory observations recorded." };
   if (new Set(rows.map((row) => row.id)).size !== rows.length) return { id, refused: "Duplicate trajectory ids." };
-  const columns = o.x.categories?.length ? new Set(o.x.categories.map((c) => c.at)) : null;
   for (const row of rows) {
     if (row.colorIndex !== undefined && (!Number.isInteger(row.colorIndex) || row.colorIndex < 0)) return { id, refused: `${row.label}: a colour index is a whole number of at least 0.` };
-    let previous = -Infinity;
-    for (const point of row.points) {
-      const ordered = columns ? point.x >= previous && columns.has(point.x) : point.x > previous;
-      if (!Number.isFinite(point.x) || !ordered || point.x < o.x.domain[0] || point.x > o.x.domain[1]) return { id, refused: columns ? `${row.label}: x values must be categories, in order.` : `${row.label}: x values must be finite, strictly increasing and inside the axis domain.` };
-      previous = point.x;
-      const problem = scalarGap(point.y, point.interval, point.observations, o.y.domain) ?? logValueGap(point.y, o.y.scale) ?? logValueGap(point.interval?.lower ?? null, o.y.scale) ?? pointFieldsGap(point);
-      if (problem) return { id, refused: `${row.label} at ${point.x}: ${problem}` };
-    }
+    const problem = pointsGap(row.label, row.points, o.x, o.y.domain, o.y.scale);
+    if (problem) return { id, refused: problem };
   }
   const category = new Map((o.x.categories ?? []).map((c) => [c.at, c.label]));
   const xLabel = (x: number) => o.formatX ? o.formatX(x) : category.get(x) ?? String(x);
   const yLabel = (y: number) => scalarLabel(y, o.y.unit, o.formatY);
   const grid = yGridlines(o.y, yLabel);
   const flat = rows.flatMap((row) => row.points.map((point) => ({ row, point })));
-  const measured = flat.filter(({ point }) => point.y !== null);
   const stripped = flat.filter(({ point }) => point.y === null && point.verdict !== undefined);
   const recorded = hasPointFields(flat.map(({ point }) => point));
   const marks = o.marks ?? [], bands = o.bands ?? [];
-  const hasEvents = marks.length + bands.length > 0;
-  const groups = bands.some((band) => band.kind === "group");
   const stripName = o.y.strip?.trim() || "no value";
   // Keep 32px for the legend stroke/offset and at least 32px for its text.
   if (axisGutter(grid) >= NARROW - 24 - 64) return { id, refused: "Formatted y-axis labels leave no room for the phone chart. Use a shorter formatter or unit." };
@@ -114,8 +106,8 @@ export function timeSeries(rows: TimeSeriesRow[], o: TimeSeriesOptions): Figure 
   return {
     id,
     finding: `${capitalize(o.y.label)} by ${o.x.label}.`,
-    lede: `${measured.length} of ${flat.length} positions have a recorded value.${stripped.length ? ` ${stripped.length} recorded ${plural(stripped.length, "verdict")} without a value ${stripped.length === 1 ? "sits" : "sit"} in the strip under the plot.` : ""}`,
-    read: `Points show recorded values. Lines connect adjacent measured positions; missing positions break the line. Whiskers show recorded intervals.${recorded ? " A filled mark is a pass, an outline a fail, a dashed outline undecided; * is not comparable with the goal and ? of unknown comparability; ×n counts the recorded rows a mark stands for." : ""}${stripped.length ? ` Hatched squares under the plot are verdicts recorded without a value (${stripName}).` : ""}${o.y.targets?.length ? " Shaded bands are recorded targets; dashed bands are stretch targets." : ""}${groups ? " Brackets above the plot group positions, such as one run's releases." : ""}${hasEvents ? ` ${EVENTS_READ}` : ""}`,
+    lede: `${flat.filter(({ point }) => point.y !== null).length} of ${flat.length} positions have a recorded value.${stripped.length ? ` ${stripped.length} recorded ${plural(stripped.length, "verdict")} without a value ${stripped.length === 1 ? "sits" : "sit"} in the strip under the plot.` : ""}`,
+    read: `Points show recorded values. Lines connect adjacent measured positions; missing positions break the line. Whiskers show recorded intervals.${recorded ? " A filled mark is a pass, an outline a fail, a dashed outline undecided; * is not comparable with the goal and ? of unknown comparability; ×n counts the recorded rows a mark stands for." : ""}${stripped.length ? ` Hatched squares under the plot are verdicts recorded without a value (${stripName}).` : ""}${o.y.targets?.length ? " Shaded bands are recorded targets; dashed bands are stretch targets." : ""}${bands.some((band) => band.kind === "group") ? " Brackets above the plot group positions, such as one run's releases." : ""}${marks.length + bands.length ? ` ${EVENTS_READ}` : ""}`,
     svg: { wide: plot(rows, o, wideWidth(o.width), xLabel, yLabel, grid, facts, stripName), narrow: plot(rows, o, NARROW, xLabel, yLabel, grid, facts, stripName), interactive: true },
     table: table(`${capitalize(o.y.label)} by ${o.x.label}`, head, flat.map(({ row, point }) => cells(row, point))).replace('class="tgc-table"', 'class="tgc-table tgc-scalar-table"') + targetsTable(o.y.targets ?? [], yLabel) + eventsTable(marks, bands, o.x.label, xLabel),
     note: { method: "Recorded scalar observations. Missing positions are not interpolated; no uncertainty or statistical comparison is inferred.", n: "Observation counts are recorded separately at each position.", exclusions: [
@@ -157,19 +149,8 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
   // Group brackets and their labels go over the event rules, so a ruling's rule never strikes through a run's label.
   const groups = drawGroups(o.bands ?? [], axis.extent, top, bottom, left, right, xLabel);
   if (strip) marks += text(left - 8, bottom + 16, stripName, { anchor: "end", cls: "tgc-ink-muted", size: 12 }) + line(left, bottom + strip, right, bottom + strip, "tgc-gridline");
-  // Several points in one column (a check and a gate, two checkers) are spread across it in input order.
-  const spread = (inStrip: boolean) => {
-    const byX = new Map<number, Array<TimePoint>>();
-    for (const row of rows) for (const point of row.points) if ((point.y === null) === inStrip && (!inStrip || point.verdict !== undefined)) byX.set(point.x, [...(byX.get(point.x) ?? []), point]);
-    const at = new Map<TimePoint, number>();
-    for (const [x, list] of byX) {
-      const room = axis.column(x);
-      const step = room === null ? 0 : Math.min(10, room / (list.length + 1));
-      list.forEach((point, k) => at.set(point, px(x) + (k - (list.length - 1) / 2) * step));
-    }
-    return at;
-  };
-  const plotX = spread(false), stripX = spread(true);
+  const all = rows.flatMap((row) => row.points);
+  const plotX = spreadX(all.filter((point) => point.y !== null), axis, 10), stripX = spreadX(all.filter((point) => point.y === null && point.verdict !== undefined), axis, 10);
   let legendY = bottom + strip + turn + 72;
   let points = "", tips = "", rules = "";
   // Badges are placed after every mark, so a badge never covers a mark drawn later.
@@ -180,7 +161,7 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
   for (const [seriesIndex, row] of rows.entries()) {
     const ord = row.colorIndex ?? seriesIndex;
     const dash = ord === 0 ? "" : `${2 + ord * 2} 3`;
-    const group = checkerClass(row.colorIndex);
+    const group = `${checkerClass(row.colorIndex)}${row.secondary ? " tgc-series-secondary" : ""}`.trim();
     const wrapSeries = (inner: string) => group ? `<g class="${group}">${inner}</g>` : inner;
     let segment: Array<[number, number]> = [];
     let lines = "";
@@ -212,9 +193,10 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
       placed.push([x - r, x + r, y - r, y + r]);
       if (recorded) pending.push({ x, y, r, point });
       const tipWidth = Math.min(280, width - 24), tipX = Math.max(12, Math.min(width - tipWidth - 12, x - tipWidth / 2));
-      const tipLines = pointFacts.flatMap((fact) => wrap(fact, tipWidth - 24, 12, "sans", 8).lines);
-      tips += `<g class="tgc-series-tip" data-series-tip="${key}" aria-hidden="true">${rect(tipX, top, tipWidth, tipLines.length * 17 + 24, "tgc-tip-bg", 'rx="7"')}${textBlock(tipLines, tipX + 12, top + 20, 17, 'class="tgc-tip-ink" font-size="12"')}</g>`;
-      rules += `.tgc-trajectories:has([data-point="${key}"]:hover) [data-series-tip="${key}"],.tgc-trajectories:not(:has(.tgc-series-observation:hover)):has([data-point="${key}"]:focus-visible) [data-series-tip="${key}"]{opacity:1}`;
+      // Measured at 14px, the size the plot presentation draws tip text, so no line runs past the tip.
+      const tipLines = pointFacts.flatMap((fact) => wrap(fact, tipWidth - 24, 14, "sans", 8).lines);
+      tips += `<g class="tgc-series-tip" data-series-tip="${key}" aria-hidden="true">${o.crosshair ? line(x, top, x, bottom, "tgc-crosshair") : ""}${rect(tipX, top, tipWidth, tipLines.length * 17 + 24, "tgc-tip-bg", 'rx="7"')}${textBlock(tipLines, tipX + 12, top + 20, 17, 'class="tgc-tip-ink" font-size="12"')}</g>`;
+      rules += `.tgc-trajectories:has([data-point="${key}"]:is(:hover,[data-near])) [data-series-tip="${key}"],.tgc-trajectories:not(:has(.tgc-series-observation:hover)):has([data-point="${key}"]:focus-visible) [data-series-tip="${key}"]{opacity:1}`;
     }
     flush();
     marks += wrapSeries(lines);
@@ -233,6 +215,32 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
   // Rules and heads stop above the group brackets, so a ruling's head never sits on a solved mark.
   const events = drawMarks(o.marks ?? [], px, top - groupRowHeight(o.bands), bottom, left, right, xLabel, 22);
   return `<svg class="tgc-svg tgc-trajectories" xmlns="http://www.w3.org/2000/svg" width="${width}" height="${legendY + 12}" viewBox="0 0 ${width} ${legendY + 12}" role="group" aria-label="${esc(o.y.label)} by ${esc(o.x.label)}"><style>${rules}</style>${marks}${events}${groups}${points}${badges}${tips}</svg>`;
+}
+
+/** Several points in one column (a check and a gate, two checkers) are spread across it in input order. */
+export function spreadX(points: readonly TimePoint[], axis: XAxis, maxStep: number): Map<TimePoint, number> {
+  const byX = new Map<number, TimePoint[]>();
+  for (const point of points) byX.set(point.x, [...(byX.get(point.x) ?? []), point]);
+  const at = new Map<TimePoint, number>();
+  for (const [x, list] of byX) {
+    const room = axis.column(x), step = room === null ? 0 : Math.min(maxStep, room / (list.length + 1));
+    list.forEach((point, k) => at.set(point, axis.px(x) + (k - (list.length - 1) / 2) * step));
+  }
+  return at;
+}
+
+/** Why recorded points cannot be drawn on these axes, or null; `timeSeries` and `smallMultiples` refuse alike. */
+export function pointsGap(label: string, points: readonly TimePoint[], x: { domain: [number, number]; categories?: XCategory[] }, domain: [number, number], scale?: YScale): string | null {
+  const columns = x.categories?.length ? new Set(x.categories.map((c) => c.at)) : null;
+  let previous = -Infinity;
+  for (const point of points) {
+    // Equal positions are recorded observations (two runs at one time); they share a place and are never shifted.
+    if (!Number.isFinite(point.x) || point.x < previous || (columns && !columns.has(point.x)) || point.x < x.domain[0] || point.x > x.domain[1]) return columns ? `${label}: x values must be categories, in order.` : `${label}: x values must be finite, in order and inside the axis domain.`;
+    previous = point.x;
+    const problem = scalarGap(point.y, point.interval, point.observations, domain) ?? logValueGap(point.y, scale) ?? logValueGap(point.interval?.lower ?? null, scale) ?? pointFieldsGap(point);
+    if (problem) return `${label} at ${point.x}: ${problem}`;
+  }
+  return null;
 }
 
 function axisGutter(ticks: readonly YTick[], stripName?: string): number {

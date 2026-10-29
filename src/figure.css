@@ -329,6 +329,8 @@
 .tgc-series-observation:focus-visible { outline: none; }
 .tgc-series-observation:focus-visible .tgc-series-hit { stroke: var(--chart-ink); stroke-width: 2; }
 .tgc-series-tip { opacity: 0; pointer-events: none; }
+.tgc-series-secondary { opacity: .45; }
+.tgc-crosshair { stroke: var(--chart-rule); stroke-width: 1; }
 
 .tgc-scalar-table { min-width: 620px; }
 .tgc-scalar-table tbody th { min-width: 180px; max-width: 260px; }

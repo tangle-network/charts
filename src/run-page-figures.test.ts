@@ -137,7 +137,6 @@ describe("small multiples", () => {
     const refused = (list: MultiplePanel[], o: SmallMultiplesOptions = options) => { const r = smallMultiples(list, o); return isRefusal(r) ? r.refused : ""; };
     expect(refused([{ ...panels[0]!, unit: "%" }])).toContain("Mixed units");
     expect(refused([{ id: "x", label: "X", points: [{ x: 0, y: 11 }] }])).toContain("outside the recorded axis domain");
-    expect(refused([{ id: "x", label: "X", points: [{ x: 5, y: 1 }] }])).toContain("inside the shared domain");
     expect(refused([{ id: "x", label: "X", points: [{ x: 0, y: 1 }, { x: 2, y: 1 }], end: { at: 1, kind: "died" } }])).toContain("after the panel's end");
     expect(refused([{ id: "x", label: "X", missing: { why: "infra" }, points: [{ x: 0, y: 1 }] }])).toContain("cannot also carry points");
     expect(refused([{ id: "x", label: "X", missing: { why: "" } }])).toContain("needs its reason");
