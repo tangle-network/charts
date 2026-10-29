@@ -66,8 +66,8 @@ function metrics(row: FlowWaterfallRow, clockMs: number, full: boolean): [string
   if (counts?.retried || restarts) out.push(['Retries', [counts?.retried ? plural(counts.retried, 'step retried', 'steps retried') : '', restarts ? plural(restarts, 'restart') : ''].filter(Boolean).join(' · ')])
   if (full && row.hasChildren) out.push(['Steps', row.descendants.toLocaleString()])
 
-  for (const fact of span.facts ?? []) if (!out.some(([label]) => label.toLowerCase() === fact.label.toLowerCase())) out.push([fact.label, fact.value])
-  return out
+  const facts = (span.facts ?? []).map(({ label, value }): [string, ReactNode] => [label, value])
+  return [...new Map([...out, ...facts].map(row => [row[0].toLowerCase(), row])).values()]
 }
 
 function Table({ rows }: { rows: [string, ReactNode][] }) {

@@ -1,3 +1,7 @@
+## 2.0.7
+
+Explicit host facts replace same-label inferred card metrics, case-insensitively. Full-stream counts, tokens, latency and explicit unknowns remain authoritative when the displayed history is bounded or coalesced. Additional host rows retain their labels and order.
+
 ## 2.0.6
 
 Keep long agent names on their own phone line, with status and duration/cost below and work bars underneath. Preserve the full metric card, failure and quiet evidence, compact Key and desktop layout. Phone rows remain virtualized at the measured height.
