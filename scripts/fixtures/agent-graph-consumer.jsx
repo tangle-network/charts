@@ -3,10 +3,11 @@
 function Topology() {
  const [selectedId, onSelect] = useState(null), [layout, setLayout] = useState('tree')
  const [tick, setTick] = useState(0)
- useEffect(() => { const timer = setInterval(() => setTick(t => t + 1), 1000); return () => clearInterval(timer) }, [])
+ const [settled, setSettled] = useState(false)
+ useEffect(() => { if (settled) return; const timer = setInterval(() => setTick(t => t + 1), 1000); return () => clearInterval(timer) }, [settled])
  const boundary = params.has('large')
  const nodes = boundary ? Array.from({ length: 130 }, (_, i) => ({
-   id: 'agent-' + i, label: 'Agent ' + i, status: i === 1 ? 'failed' : i === 2 ? 'needs-you' : i % 3 === 0 ? 'running' : 'succeeded',
+   id: 'agent-' + i, label: 'Agent ' + i, status: i === 1 ? 'failed' : settled ? 'succeeded' : i === 2 ? 'needs-you' : i % 3 === 0 ? 'running' : 'succeeded',
    turn: 'Recorded boundary task ' + tick, costUsd: i === 3 ? null : i / 100, tokens: i * 1000,
    events: [{ id: 'event-' + i, label: 'Read source ' + tick, at: Date.now() }],
  })) : recorded.spans.filter(span => span.kind === 'pipeline').map(span => ({
@@ -20,9 +21,10 @@ function Topology() {
    <h1>Recorded agent topology</h1>
    <button onClick={() => setLayout(layout === 'tree' ? 'hub' : 'tree')}>Switch layout</button>
    <button onClick={() => onSelect(nodes.at(-1).id)}>Select last agent</button>
+   <button onClick={() => setSettled(true)}>Settle run</button>
    <output aria-label="Reader selection">{selectedId ?? 'No selection'}</output>
    <output aria-label="Stream update">{tick}</output>
-   <AgentGraph nodes={nodes} edges={edges} layout={layout} live now={Date.now()}
+   <AgentGraph nodes={nodes} edges={edges} layout={layout} live={!settled} now={Date.now()}
      selectedId={selectedId} onSelect={onSelect} tools={[]} calls={[]}
      className="topology-pane" renderAgentMark={node => <span data-host-mark={node.id}>A</span>} />
  </main>

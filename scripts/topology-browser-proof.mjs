@@ -68,6 +68,24 @@ try {
     assert.ok(await count() < 100)
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
     await page.screenshot({ path: `${output}/boundary-tree-${width}-${theme}.png` })
+    if (width > 600) {
+      await page.locator('.react-flow__controls-zoomin').click()
+      await page.waitForFunction(() => new DOMMatrixReadOnly(getComputedStyle(document.querySelector('.react-flow__viewport')).transform).a >= 1.199)
+      const beforeZoom = await page.locator('.react-flow__viewport').evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).a)
+      await page.getByRole('button', { name: 'Settle run', exact: true }).click()
+      await page.locator('.react-flow__node-agent[data-id="agent-129"]').waitFor()
+      const zooms = await page.evaluate(async () => {
+        const values = []
+        for (let frame = 0; frame < 12; frame++) {
+          await new Promise(resolve => requestAnimationFrame(resolve))
+          values.push(new DOMMatrixReadOnly(getComputedStyle(document.querySelector('.react-flow__viewport')).transform).a)
+        }
+        return values
+      })
+      assert.ok(zooms.every(zoom => Math.abs(zoom - beforeZoom) < .001), `settling preserves reader zoom ${beforeZoom}; observed ${zooms}`)
+      assert.equal(await page.getByLabel('Reader selection').textContent(), 'agent-129')
+      await page.screenshot({ path: `${output}/settled-camera-${width}-${theme}.png` })
+    }
     assert.deepEqual(errors, [])
     const video = page.video()
     await context.close()
