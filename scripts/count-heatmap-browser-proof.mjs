@@ -6,16 +6,16 @@ import { resolve } from 'node:path'
 import { chromium } from 'playwright'
 const out = resolve(process.env.COUNT_HEATMAP_EVIDENCE ?? '/tmp/count-heatmap-proof')
 await mkdir(out,{recursive:true})
-const child=spawn(process.execPath,['scripts/charts-browser-smoke.mjs',...process.argv.slice(2)],{env:{...process.env,PORT:'46492'},stdio:['ignore','pipe','inherit']})
-let output=''
-await new Promise((done,reject)=>{child.stdout.on('data',data=>{output+=data;if(output.includes('"url":'))done()});child.on('exit',code=>reject(new Error(`consumer exited ${code}: ${output}`)))})
+const child=spawn(process.execPath,['scripts/charts-browser-smoke.mjs',...process.argv.slice(2)],{env:{...process.env,PORT:'0'},stdio:['ignore','pipe','inherit']})
+let output='', url=''
+await new Promise((done,reject)=>{child.stdout.on('data',data=>{output+=data;const row=output.trim().split('\n').findLast(line=>line.startsWith('{')&&line.includes('"url":'));if(row){url=JSON.parse(row).url;done()}});child.on('exit',code=>reject(new Error(`consumer exited ${code}: ${output}`)))})
 const browser=await chromium.launch({headless:true}), checks=[]
 try {
  for(const theme of ['light','dark'])for(const width of [1512,390]){
   const context=await browser.newContext({viewport:{width,height:900},colorScheme:theme,recordVideo:{dir:out,size:{width,height:900}}}),page=await context.newPage(),errors=[]
   page.on('pageerror',error=>errors.push(error.message))
   try{
-   await page.goto(`http://127.0.0.1:46492/?id=analytics-counts&globals=theme:agent-${theme}`)
+   await page.goto(`${url}/?id=analytics-counts&globals=theme:agent-${theme}`)
    const table=page.getByRole('table',{name:'Tool calls'})
    await table.waitFor()
    assert.equal(await table.getAttribute('aria-rowcount'),'141')
