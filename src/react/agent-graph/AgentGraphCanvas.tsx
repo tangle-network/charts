@@ -304,7 +304,7 @@ export function AgentGraphCanvas({
   if (nodes.length === 0) {
     return (
       <div
-        className={`flex items-center justify-center rounded-lg border border-border border-dashed p-4 text-center text-muted-foreground text-xs ${className ?? ""}`}
+        className={`agent-graph flex items-center justify-center rounded-lg border border-border border-dashed p-4 text-center text-muted-foreground text-xs ${className ?? ""}`}
       >
         {emptyState ?? "No agents yet"}
       </div>

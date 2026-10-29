@@ -16,6 +16,7 @@ function Topology() {
  const edges = boundary ? nodes.slice(1).map(node => ({ from: nodes[0].id, to: node.id, kind: 'spawn' }))
    : recorded.spans.filter(span => span.kind === 'pipeline' && span.parentId).map(span => ({ from: span.parentId, to: span.id, kind: 'spawn' }))
  return <main>
+   <aside data-host-canary className="flex text-xs">Host controls</aside>
    <h1>Recorded agent topology</h1>
    <button onClick={() => setLayout(layout === 'tree' ? 'hub' : 'tree')}>Switch layout</button>
    <button onClick={() => onSelect(nodes.at(-1).id)}>Select last agent</button>

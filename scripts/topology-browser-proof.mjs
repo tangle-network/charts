@@ -28,6 +28,7 @@ try {
     const ready = () => page.locator(`.agent-graph[data-layout="${width < 600 ? 'list' : 'ready'}"]`).waitFor()
     await page.goto(`http://127.0.0.1:46489/?id=topology&globals=agent-${theme}`)
     await ready()
+    assert.deepEqual(await page.locator('[data-host-canary]').evaluate(el => ({ display: getComputedStyle(el).display, fontSize: getComputedStyle(el).fontSize })), { display: 'grid', fontSize: '17px' }, 'graph CSS preserves host utilities')
     assert.match(await page.locator('.agent-graph').innerText(), /2 agents/)
     assert.ok(await page.locator('[data-host-mark]').count() > 0, 'host identity reaches the canonical renderer')
     await page.getByRole('button', { name: 'Select last agent', exact: true }).click()

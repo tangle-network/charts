@@ -88,7 +88,7 @@ function AgentListFallback({
   onRetry,
 }: AgentGraphProps & { onRetry: () => void }) {
   return (
-    <div className={`overflow-auto rounded-lg border border-border bg-background p-2 ${className ?? ""}`}>
+    <div className={`agent-graph overflow-auto rounded-lg border border-border bg-background p-2 ${className ?? ""}`}>
       <div className="mb-1 flex items-center justify-between gap-2">
         <p className="text-muted-foreground text-xs">Couldn't draw the graph — showing the agents.</p>
         <button
@@ -138,7 +138,7 @@ function AgentGraphTree(props: AgentGraphProps) {
       <Suspense
         fallback={
           <div
-            className={`flex items-center justify-center rounded-lg border border-border border-dashed text-muted-foreground text-xs ${props.className ?? ""}`}
+            className={`agent-graph flex items-center justify-center rounded-lg border border-border border-dashed text-muted-foreground text-xs ${props.className ?? ""}`}
           >
             Loading graph…
           </div>

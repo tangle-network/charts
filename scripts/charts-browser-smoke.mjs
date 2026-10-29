@@ -65,6 +65,6 @@ body{margin:0;background:hsl(var(--background));color:hsl(var(--foreground));fon
 main{max-width:1000px;margin:16px auto;padding:16px;min-width:0;box-sizing:border-box}h1{font-size:26px}.panel{background:var(--md3-surface-container-lowest,#fff);padding:24px;border-radius:12px;border:1px solid var(--md3-outline-variant,#ddd);transform:translateX(12px);contain:paint}
 [data-chart-tooltip]{box-shadow:0 4px 16px #0002}table{border-collapse:collapse;width:100%;text-align:left}th,td{padding:8px;border-bottom:1px solid #8884}details{margin-top:16px}
 </style><div id="root"></div><script type="module" src="/app.js"></script></html>`
-const graphCss = readFileSync(peerRequire.resolve('@tangle-network/charts/react/agent-graph.css'),'utf8') + '.topology-pane{height:680px}';
+const graphCss = '@layer utilities {.flex{display:grid}.text-xs{font-size:17px}}' + readFileSync(peerRequire.resolve('@tangle-network/charts/react/agent-graph.css'),'utf8') + '.topology-pane{height:680px}';
 const server=createServer((req,res)=>{res.setHeader('Content-Type', req.url==='/app.js'?'text/javascript':'text/html');res.end(req.url==='/app.js'?readFileSync(join(dir,'app.js')):req.url.includes('id=topology')?html.replace('</style>',graphCss+'</style>'):html)})
 server.listen(Number(process.env.PORT || 46489),'127.0.0.1',()=>console.log(JSON.stringify({consumer:dir,tarball:packed,react:JSON.parse(readFileSync(peerRequire.resolve('react/package.json'),'utf8')).version,url:'http://127.0.0.1:'+server.address().port})))
