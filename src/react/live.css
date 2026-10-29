@@ -97,3 +97,27 @@ line.ov-gridline { stroke: color-mix(in srgb, var(--chart-live-faint, #777) 22%,
 .ov-gap-stretch { fill: none; stroke: var(--chart-live-pass, #2f9e6e); stroke-width: 1; stroke-dasharray: 3 3; }
 .ov-gap-span { stroke-width: 2; stroke-dasharray: 2 4; stroke-linecap: round; }
 .ov-gap-value { cursor: default; }
+
+.ov-gantt { --chart-live-fg: var(--text-primary); --chart-live-muted: var(--text-muted); --chart-live-faint: var(--text-dim); --chart-live-raised: var(--bg-elevated); --chart-live-border: var(--border-color); font: 14px/20px var(--font-sans, sans-serif); }
+.ov-gantt .ov-mark-label { fill: var(--text-primary); font-size: 13px; }
+.ov-gantt-scroll { overscroll-behavior: contain; }
+.ov-gantt .ov-axis { font-size: 13px; }
+.ov-gantt [role='button'] { cursor: pointer; outline: none; }
+.ov-gantt [role='button']:hover > rect:first-child { fill: var(--ix-hover-bg); }
+.ov-gantt [role='button']:focus-visible > rect:first-child { stroke: var(--accent-text); stroke-width: 2; }
+.ov-gantt [data-state] rect { transition: width var(--motion-stream), fill var(--motion-control); }
+.ov-gantt [data-open='true'] rect { animation: ov-gantt-live 2s ease-in-out infinite; }
+.ov-gantt[data-featured] [data-mark] text { display: none; }
+.ov-gantt[data-featured] [data-best] text { display: block; }
+.ov-gantt[data-featured] .ov-events { display: none; }
+@keyframes ov-gantt-live { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .ov-gantt [data-state] rect { transition: none; animation: none; } }
+
+.ov-meter-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; padding: 0; margin: 0; list-style: none; }
+.ov-meter-steps li { display: flex; flex-direction: column; justify-content: space-between; gap: 12px; min-height: 104px; padding: 16px; border-radius: var(--radius-lg); background: var(--bg-elevated); }
+.ov-meter-steps strong { font-size: 26px; line-height: 30px; }
+.ov-meter-steps [data-state='pass'] { background: var(--surface-success-bg); }
+.ov-meter-steps [aria-current='step'] { background: var(--surface-warning-bg); color: var(--surface-warning-text); }
+
+.ov-meter-steps span { overflow-wrap: anywhere; }
+@media (max-width: 720px) { .ov-meter-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ov-meter-steps li { padding: 12px; min-height: 94px; } }
