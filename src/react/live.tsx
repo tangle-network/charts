@@ -1,5 +1,5 @@
 /** Reusable, em-scaled charts for live operational series. Values, labels and status colors belong to callers. */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { type ChartBand, type ChartMark, eventsGap, MARK_HEADS, markName } from '../events.js'
 import { hatchPath, type MarkerShape, markerPath } from '../svg.js'
 import { textWidth, wrap } from '../text.js'
@@ -45,14 +45,27 @@ interface Tip {
 }
 
 function Tooltip({ tip }: { tip: Tip | null }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [position, setPosition] = useState({ left: 0, top: 0 })
+  useLayoutEffect(() => {
+    const node = ref.current, parent = node?.parentElement
+    if (!tip || !node || !parent) return
+    const place = () => {
+      const next = { left: Math.max(0, Math.min(tip.x, parent.clientWidth - node.offsetWidth)), top: Math.max(0, Math.min(tip.y, parent.clientHeight - node.offsetHeight)) }
+      setPosition(old => old.left === next.left && old.top === next.top ? old : next)
+    }
+    place()
+    const observer = new ResizeObserver(place)
+    observer.observe(node); observer.observe(parent)
+    return () => observer.disconnect()
+  }, [tip])
   if (!tip) return null
   return (
-    <div className="ov-tip" role="tooltip" style={{ left: tip.x, top: tip.y }}>
+    <div ref={ref} className="ov-tip" role="tooltip" style={position}>
       <strong>{tip.title}</strong>
       {tip.lines.map((line) => (
         <span key={line.label} className="ov-tip-line">
-          {line.color && <i style={{ background: line.color }} />}
-          <span>{line.label}</span>
+          <span>{line.color && <i style={{ background: line.color }} />}{line.label}</span>
           <b>{line.value}</b>
         </span>
       ))}
