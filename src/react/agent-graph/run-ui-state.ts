@@ -1,4 +1,4 @@
-import { quietGap } from "../flow-waterfall-model";
+import { formatSpanDuration, quietGap } from "../flow-waterfall-model";
 import { statusMeta } from "@tangle-network/ui/run";
 import { type AnimationEvent, type CSSProperties, type RefObject, useEffect, useSyncExternalStore } from "react";
 import type { AgentGraphNode } from "./agent-graph-layout";
@@ -56,7 +56,7 @@ export function agentQuietActivity(agent: AgentGraphNode, now: number) {
   const { lastActivityAt, medianEventGapMs } = activityTiming(agent);
   if (lastActivityAt == null || !Number.isFinite(lastActivityAt)) return null;
   const { quietMs, quiet } = quietGap(lastActivityAt, medianEventGapMs, now);
-  return quiet ? { quietMs, label: `Quiet ${Math.floor(quietMs / 60_000)}m` } : null;
+  return quiet ? { quietMs, label: `Quiet ${formatSpanDuration(quietMs)}` } : null;
 }
 /** Attention is finite and state changes work without animation completion. */
 export function useAttention(ref: RefObject<HTMLElement | null>, status: string) {

@@ -1,4 +1,5 @@
 import { runStatus, statusMeta } from '@tangle-network/ui/run'
+import { duration } from '../format.js'
 import { type FlowOutcome, type FlowSpan, type FlowTrace, finiteNumber, reportedCount, sumReportedCounts } from '../flow-trace.js'
 
 /** A minimap mark on a parent row: merged descendant activity of one kind. */
@@ -86,6 +87,7 @@ const ordered = (span: FlowSpan) => Number.isFinite(span.startMs) && Number.isFi
 /** 542ms, 6.9s, 23s, 1m 22s, 2h 05m: the precision a reader compares at each scale. */
 export function formatSpanDuration(ms: number): string {
   if (!Number.isFinite(ms) || ms < 0) return '—'
+  if (ms >= 86_400_000) return duration(ms)
   if (ms < 1000) return `${Math.round(ms)}ms`
   if (ms < 10_000) return `${(ms / 1000).toFixed(1)}s`
   if (ms < 60_000) return `${Math.round(ms / 1000)}s`

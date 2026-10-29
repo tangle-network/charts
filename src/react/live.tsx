@@ -162,7 +162,7 @@ export function HBars({ rows, format = formatCompact, color = LIVE_SERIES[0], ma
           <>
             <span className="ov-hbar-label">{row.label}</span>
             <span className="ov-hbar-track">
-              <span style={{ width: `${Math.max(1, (row.value / top) * 100)}%`, background: row.color ?? color }} />
+              <span style={{ width: '100%', transform: `scaleX(${Math.max(0, Math.min(1, row.value / top))})`, background: row.color ?? color }} />
             </span>
             <span className="ov-hbar-value">{format(row.value)}</span>
             {row.note && <span className="ov-hbar-note">{row.note}</span>}

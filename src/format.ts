@@ -30,6 +30,7 @@ export function usdTick(value: number): string {
 }
 
 export function duration(ms: number): string {
+  if (ms >= 86_400_000) { const days = Math.floor(ms / 86_400_000), hours = Math.floor(ms % 86_400_000 / 3_600_000); return `${days}d${hours ? ` ${hours}h` : ''}`; }
   const s = ms / 1000;
   if (s < 60) return `${Math.round(s)} s`;
   if (s < 3600) return `${(s / 60).toFixed(1)} min`;

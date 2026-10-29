@@ -16,7 +16,28 @@ line.ov-gridline { stroke: color-mix(in srgb, var(--chart-live-faint, #777) 22%,
 .ov-hbars li > a:hover, .ov-hbars li > div:hover { background: var(--chart-live-hover, #eee); text-decoration: none; }
 .ov-hbar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; line-height: 20px; color: var(--chart-live-fg, #222); }
 .ov-hbar-track { height: 8px; border-radius: 3px; background: color-mix(in srgb, var(--chart-live-faint, #777) 14%, transparent); overflow: hidden; }
-.ov-hbar-track > span { display: block; height: 100%; border-radius: 3px; }
+.ov-hbar-track > span { display: block; height: 100%; border-radius: 3px; transform-origin: left center; transition: transform var(--motion-stream, 160ms ease-out); }
+.tgc-count-heatmap { min-width: 0; color: var(--chart-live-fg, #222); font: inherit; font-size: max(13px, 1em); }
+.tgc-count-head, .tgc-count-row { display: grid; align-items: center; gap: 4px; min-width: 0; }
+.tgc-count-head { min-height: 44px; font-size: 13px; color: var(--chart-live-muted, #666); text-align: center; overflow-y: auto; scrollbar-gutter: stable; }
+.tgc-count-head > span { min-width: 0; overflow-wrap: anywhere; }
+.tgc-count-head > span:first-child { text-align: left; }
+.tgc-count-scroll { overflow: auto; scrollbar-gutter: stable; }
+.tgc-count-row { height: var(--heatmap-row, 32px); }
+.tgc-count-row > [role='rowheader'] { min-width: 0; }
+.tgc-count-label { display: flex; align-items: center; gap: 8px; max-width: 100%; min-width: 0; padding: 4px 6px 4px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: inherit; color: inherit; border: 0; background: transparent; text-align: left; }
+button.tgc-count-label { cursor: pointer; }
+.tgc-count-cell, .tgc-count-total { min-width: 0; display: flex; align-items: center; justify-content: center; gap: 4px; min-height: calc(var(--heatmap-row, 32px) - 4px); border-radius: 4px; font-variant-numeric: tabular-nums; }
+.tgc-count-cell { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chart-live-border, #aaa) 25%, transparent); transition: background-color var(--motion-stream, 160ms ease-out); }
+.tgc-count-cell.zero, .tgc-count-cell.missing { color: var(--chart-live-faint, #777); }
+.tgc-count-cell.missing { background: repeating-linear-gradient(135deg, transparent 0 4px, color-mix(in srgb, var(--chart-live-faint, #777) 8%, transparent) 4px 5px); }
+.tgc-count-failed { color: var(--surface-danger-text, #b01919); }
+.tgc-count-row :focus-visible { outline: 2px solid var(--focus-border, #8b7cf6); outline-offset: -2px; }
+.tgc-count-row:hover { background: var(--chart-live-hover, #eee); }
+.tgc-count-key { display: flex; align-items: center; gap: 8px; padding-top: 12px; font-size: 13px; color: var(--chart-live-muted, #666); }
+.tgc-count-key > i { width: 64px; height: 8px; border-radius: 3px; background: linear-gradient(90deg, transparent, var(--heatmap-color)); }
+.tgc-count-key > span:last-child { margin-left: auto; }
+@media (prefers-reduced-motion: reduce) { .ov-hbar-track > span, .tgc-count-cell { transition: none; } }
 .ov-hbar-value { font-size: 14px; line-height: 20px; font-family: inherit; font-variant-numeric: tabular-nums; text-align: right; color: var(--chart-live-fg, #222); }
 .ov-hbar-note { grid-column: 1 / -1; font-size: 14px; color: var(--chart-live-faint, #777); }
 .ov-meter { display: grid; gap: 4px; min-width: 0; }
