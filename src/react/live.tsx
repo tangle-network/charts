@@ -391,7 +391,11 @@ const SEGMENT_TONES = ['var(--chart-accent)', 'var(--chart-tier-c)', 'var(--char
 
 /** A used-of-total meter with its numbers. With `segments` it is a part-of-whole bar: the remainder of `total` that no
  * segment accounts for is drawn hatched and labelled `untraced`, and a missing total hatches the whole track. */
-export function Meter({ used, total, format = formatCompact, tone, text, segments, untraced = 'untraced' }: { used?: number | null | undefined; total: number | null | undefined; format?: (v: number) => string; tone?: string; text?: string; segments?: MeterSegment[]; untraced?: string }) {
+export function Meter({ used, total, format = formatCompact, tone, text, segments, steps, untraced = 'untraced' }: { steps?: { label: string; state: 'pass' | 'fail' | 'undecided' | 'unrun' }[]; used?: number | null | undefined; total: number | null | undefined; format?: (v: number) => string; tone?: string; text?: string; segments?: MeterSegment[]; untraced?: string }) {
+  if (steps) {
+    const current = steps.findIndex(step => step.state !== 'pass')
+    return <ol className="ov-meter-steps" aria-label={text ?? 'Check steps'}>{steps.map((step, i) => <li key={i} data-state={step.state} aria-current={i === current ? 'step' : undefined}><strong>{i + 1}</strong><span>{step.label}</span></li>)}</ol>
+  }
   if (segments) return <SegmentMeter segments={segments} total={total} format={format} text={text} untraced={untraced} />
   const share = used !== null && used !== undefined && total ? Math.min(1, used / total) : null
   return (

@@ -112,3 +112,12 @@ line.ov-gridline { stroke: color-mix(in srgb, var(--chart-live-faint, #777) 22%,
 .ov-gantt[data-featured] .ov-events { display: none; }
 @keyframes ov-gantt-live { 50% { opacity: .55; } }
 @media (prefers-reduced-motion: reduce) { .ov-gantt [data-state] rect { transition: none; animation: none; } }
+
+.ov-meter-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; padding: 0; margin: 0; list-style: none; }
+.ov-meter-steps li { display: flex; flex-direction: column; justify-content: space-between; gap: 12px; min-height: 104px; padding: 16px; border-radius: var(--radius-lg); background: var(--bg-elevated); }
+.ov-meter-steps strong { font-size: 26px; line-height: 30px; }
+.ov-meter-steps [data-state='pass'] { background: var(--surface-success-bg); }
+.ov-meter-steps [aria-current='step'] { background: var(--surface-warning-bg); color: var(--surface-warning-text); }
+
+.ov-meter-steps span { overflow-wrap: anywhere; }
+@media (max-width: 720px) { .ov-meter-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ov-meter-steps li { padding: 12px; min-height: 94px; } }
