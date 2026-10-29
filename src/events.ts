@@ -7,7 +7,7 @@
 import { duration } from "./format.js";
 import { hatch, line, markerPath, type MarkerShape, rect, text, titled } from "./svg.js";
 import { table } from "./table.js";
-import { textWidth, wrap } from "./text.js";
+import { esc, textWidth, wrap } from "./text.js";
 
 /**
  * `pass` is solid, `deadline` dashed, `died` ends in a cross and `event` is dotted. `release`, `steer`, `ruling` and
