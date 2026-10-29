@@ -53,7 +53,7 @@ function Journey() {
 function AnalyticsCounts() {
  const [extra,setExtra]=useState(0),[selected,onSelectRow]=useState('')
  const columns=['read','write','shell','fetch','check','search'].map(id=>({id,label:id}))
- const rows=Array.from({length:140},(_,i)=>({id:'agent-'+i,label:'Agent '+i,total:i===0?null:i+extra,cells:Object.fromEntries(columns.map((c,j)=>[c.id,i===0?null:{value:i===1?0:i+extra,failures:j===0&&i===2?2:0}]))}))
+ const rows=Array.from({length:140},(_,i)=>({id:'agent-'+i,label:'Agent '+i,total:i===0?null:(i+extra)*columns.length,cells:Object.fromEntries(columns.map((c,j)=>[c.id,i===0?null:{value:i===1?0:i+extra,failures:j===0&&i===2?2:0}]))}))
  return <main><h1>Recorded tool calls</h1><button onClick={()=>setExtra(n=>n+100)}>Append counts</button><output>{selected}</output><CountHeatmap label="Tool calls" columns={columns} rows={rows} onSelectRow={onSelectRow}/><HBars rows={[{label:'Recorded',value:10+extra},{label:'Zero',value:0}]} max={110}/></main>
 }
 const params = new URLSearchParams(location.search)
@@ -65,7 +65,7 @@ writeFileSync(join(dir, 'app.jsx'), app)
 await build({entryPoints:[join(dir,'app.jsx')],bundle:true,outfile:join(dir,'app.js'),jsx:'automatic',alias:{react:dirname(peerRequire.resolve('react/package.json')),'react-dom':dirname(peerRequire.resolve('react-dom/package.json'))}})
 // The trace paints Brand roles only, so the page loads Brand's tokens as every host does.
 const tokens = readFileSync(require.resolve('@tangle-network/brand/styles/tokens.css'),'utf8') + readFileSync(peerRequire.resolve('@tangle-network/charts/figure.css'),'utf8') + readFileSync(peerRequire.resolve('@tangle-network/charts/react/flow-waterfall.css'),'utf8') + readFileSync(peerRequire.resolve('@tangle-network/charts/react/live.css'),'utf8') + `
-:root { --foreground:230 20% 12%;--muted-foreground:230 10% 40%;--background:0 0% 100%;--border:230 15% 85%;--secondary:230 15% 95%;--primary:250 65% 45%;--accent:205 70% 40%;--warning-strong:35 85% 35%;--success:145 65% 30%;--destructive:0 70% 45%;--chart-accent:hsl(var(--primary)); }
+:root { --chart-live-fg:hsl(var(--foreground));--chart-live-muted:hsl(var(--muted-foreground));--chart-live-faint:hsl(var(--muted-foreground));--chart-live-bg:hsl(var(--background));--chart-live-hover:hsl(var(--secondary)); --foreground:230 20% 12%;--muted-foreground:230 10% 40%;--background:0 0% 100%;--border:230 15% 85%;--secondary:230 15% 95%;--primary:250 65% 45%;--accent:205 70% 40%;--warning-strong:35 85% 35%;--success:145 65% 30%;--destructive:0 70% 45%;--chart-accent:hsl(var(--primary)); }
 :root[data-theme=dark] { --foreground:230 20% 95%;--muted-foreground:230 10% 70%;--background:240 20% 10%;--border:240 15% 25%;--secondary:240 15% 18%;--primary:250 75% 75%;--accent:205 85% 65%;--warning-strong:35 95% 65%;--success:145 60% 65%;--destructive:0 80% 70%; }
 `
 const html = `<!doctype html><html lang="en" data-theme="light"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Packed chart consumer</title><style>${tokens}
