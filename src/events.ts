@@ -212,14 +212,15 @@ export function drawMarks(marks: readonly ChartMark[], px: (x: number) => number
     return titled(members.map((m) => `${markName(m)}: ${format(m.at)}${m.verdict ? ` · ${m.verdict}` : ""}`).join("\n"), `<g data-mark="${mark.kind}"${members.length > 1 ? ` data-merged="${members.length}"` : ""}${verdict}>${glyph}</g>`);
   }).join("");
   // Labels go over every rule, so a later rule never strikes through an earlier label.
-  for (const group of groups) {
+  for (const [index, group] of groups.entries()) {
     const spot = placed.get(group);
     const lead = group.marks.find(mark => mark.label === o.priority) ?? group.marks[0]!;
     if (o.live && o.rows !== 0) {
       const label = spot?.text ?? wrap(markName(lead), Math.max(48, Math.min(200, right - left)), 12, 'sans', 1).lines[0]!;
       const x = spot?.x ?? Math.max(left, Math.min(group.x + 4, right - textWidth(label, 12)));
+      const radius = Math.max(.5, Math.min(5, (group.x - (groups[index - 1]?.x ?? -Infinity)) / 2, ((groups[index + 1]?.x ?? Infinity) - group.x) / 2));
       const caption = text(x, rowY(spot?.row ?? 0), label, { size: 12, anchor: spot?.anchor ?? 'start', cls: cls("tgc-mark-label") });
-      out += titled(markName(lead), rect(group.x - 5, Math.min(top, labelTop), 10, Math.max(12, bottom - Math.min(top, labelTop)), "tgc-lane-hit") + caption, `data-labelled="${Boolean(spot)}" tabindex="0" role="img" aria-label="${esc(markName(lead))}"`);
+      out += titled(markName(lead), rect(group.x - radius, Math.min(top, labelTop), radius * 2, Math.max(12, bottom - Math.min(top, labelTop)), "tgc-lane-hit") + caption, `data-labelled="${Boolean(spot)}" tabindex="0" role="img" aria-label="${esc(markName(lead))}"`);
     } else if (spot) out += text(spot.x, rowY(spot.row), spot.text, { size: 12, anchor: spot.anchor, cls: "tgc-mark-label" });
   }
   for (const edge of edges) out += `<g data-edge="${edge.anchor === "end" ? "after" : "before"}">${text(edge.x, rowY(edge.row), edge.text, { size: 12, anchor: edge.anchor, cls: "tgc-mark-label tgc-mark-edge" })}</g>`;

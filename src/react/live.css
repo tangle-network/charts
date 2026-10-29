@@ -122,7 +122,7 @@ button.tgc-count-label { cursor: pointer; }
 
 .ov-gantt { font: 14px/20px var(--font-sans, sans-serif); }
 .ov-gantt .ov-axis { fill: var(--chart-live-muted, var(--text-muted, #666)); font-size: 13px; }
-.ov-gantt .ov-mark-label { fill: var(--chart-live-fg, var(--text-primary, currentColor)); font-size: 13px; }
+.ov-gantt .ov-mark-label { fill: var(--chart-live-fg, var(--text-primary, currentColor)); font-size: 13px; pointer-events: none; }
 .ov-gantt .ov-tip { background: var(--chart-live-raised, var(--bg-elevated, #fff)); border-color: var(--chart-live-border, var(--border-color, #aaa)); max-width: min(240px, 100%); box-sizing: border-box; }
 .ov-gantt-scroll { overscroll-behavior: contain; }
 .ov-gantt [role='button'] { cursor: pointer; outline: none; }
@@ -156,7 +156,7 @@ button.tgc-count-label { cursor: pointer; }
 .tgc-version-graph { min-width: 0; font: 14px/1.4 var(--font-sans, sans-serif); color: var(--chart-live-fg, var(--text-primary));
   --vg-c0: var(--chart-live-accent, var(--accent-text)); --vg-c1: light-dark(#2a7fa8, #6cc0e8); --vg-c2: light-dark(#7b4fc0, #b99af0); --vg-c3: light-dark(#1f7f88, #5fc2c9); --vg-c4: light-dark(#a8418f, #e58ccf); --vg-c5: light-dark(#5a6ad8, #8fa4ff); --vg-c6: light-dark(#45507a, #c0c4dc); --vg-c7: var(--chart-live-muted, var(--text-muted));
 }
-.tgc-version-graph .vg-host { position: relative; min-width: max-content; }
+.tgc-version-graph .vg-host { position: relative; }
 .tgc-version-graph .vg-lines { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
 .tgc-version-graph .vg-lines path { fill: none; stroke: currentColor; stroke-width: 2; opacity: .55; }
 .tgc-version-graph .vg-lines path.hot { opacity: 1; stroke-width: 2.5; }
