@@ -48,6 +48,12 @@ function FlowApp({ name }) {
  // A pause band and a restart mark, as a Discovery run records them (spawn journal: host guard pause, driver restart).
  if (name === 'healthy') trace = { ...trace, pauses:[{startMs:Math.round(trace.totalMs*.62),endMs:Math.round(trace.totalMs*.72),label:'Paused: host guard'}],
   spans:trace.spans.map((s,i)=>i===1?{...s,marks:[{at:Math.round((s.startMs+s.endMs)/2),kind:'restart',label:'Restarted'}]}:s) }
+ const authority = new URLSearchParams(location.search).get('authority')
+ if (authority) {
+  const known = { 'Model calls':'731',Model:'canonical/model',Tokens:'8,000,000 total · split not recorded','Model latency':'p50 3 s · p90 11 s · p99 32 s','Tool calls':'9,004',Failures:'127 failed steps',Retries:'44 retries · 8 restarts','Ran for':'23 h 12 m',Cost:'$992.18 list' }
+  const values = authority === 'unknown' ? Object.fromEntries(Object.keys(known).map(key => [key, 'Not recorded'])) : authority === 'zero' ? { Tokens:'0','Model calls':'0','Tool calls':'0',Failures:'0',Retries:'0',Cost:'$0.00' } : known
+  trace = { ...trace, spans:trace.spans.filter(span => span.parentId !== 'builder' || ['builder-m0','builder-t2'].includes(span.id)).map(span => span.id === 'builder' ? { ...span,facts:Object.entries(values).map(([label,value]) => ({ label,value })) } : span) }
+ }
  return <main>{name==='discovery-streaming-replay'&&<p>Recorded Discovery replay ·20x; final totals arrive at settlement</p>}<FlowWaterfall trace={trace} live={live} maxHeight={1800}
   markers={name==='healthy'?[{at:Math.round(trace.totalMs/2),label:'Release v2',tone:'ok'},{at:Math.round(trace.totalMs/2)+50,label:'Release v3'},{at:trace.totalMs-50,label:'Release v4'}]:undefined}
   onSelect={span=>{window.__fwSelected=[...(window.__fwSelected??[]),span.id??span.name]}}
