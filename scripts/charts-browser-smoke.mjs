@@ -53,7 +53,7 @@ function Journey() {
 function AnalyticsCounts() {
  const [extra,setExtra]=useState(0),[selected,onSelectRow]=useState('')
  const columns=['read','write','shell','fetch','check','search'].map(id=>({id,label:id}))
- const rows=Array.from({length:140},(_,i)=>({id:'agent-'+i,label:'Agent '+i,total:i===0?null:(i+extra)*columns.length,cells:Object.fromEntries(columns.map((c,j)=>[c.id,i===0?null:{value:i===1?0:i+extra,failures:j===0&&i===2?2:0}]))}))
+ const rows=Array.from({length:140},(_,i)=>({id:'agent-'+i,label:'Agent '+i,total:i===0?null:i===1?0:(i+extra)*columns.length,cells:Object.fromEntries(columns.map((c,j)=>[c.id,i===0?null:{value:i===1?0:i+extra,failures:j===0&&i===2?2:0}]))}))
  return <main><h1>Recorded tool calls</h1><button onClick={()=>setExtra(n=>n+100)}>Append counts</button><output>{selected}</output><CountHeatmap label="Tool calls" columns={columns} rows={rows} onSelectRow={onSelectRow}/><HBars rows={[{label:'Recorded',value:10+extra},{label:'Zero',value:0}]} max={110}/></main>
 }
 const params = new URLSearchParams(location.search)
