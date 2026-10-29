@@ -29,7 +29,8 @@ try {
     await bar.waitFor()
     await page.evaluate(() => document.fonts.ready)
     const column = () => row.locator('.fw-label').evaluate(el => el.getBoundingClientRect().width)
-    const initial = await column(), samples = []
+    const initial = await column(), samples = [], check = { theme, width, initial, samples }
+    checks.push(check)
     const target = await bar.boundingBox()
     await page.mouse.move(target.x + 6, target.y + target.height / 2)
     await card.waitFor()
@@ -57,7 +58,7 @@ try {
     }
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
     assert.deepEqual(errors, [])
-    checks.push({ theme, width, initial, renamed, samples })
+    check.renamed = renamed
     await context.close()
   }
   console.log(JSON.stringify({ result: 'PASS', states: checks.length, output }))
