@@ -4,6 +4,41 @@ import { spawn } from 'node:child_process'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
 
+async function proveCompactTopology(page, width, theme, output) {
+  await page.goto(`http://127.0.0.1:46489/?id=topology&compact=1&large=1&globals=agent-${theme}`)
+  await page.locator(`.ag-topology[data-layout="${width < 600 ? 'list' : 'ready'}"]`).waitFor()
+  if (width > 600) {
+    const root = await page.locator('.react-flow__node[data-id="agent-0"]').boundingBox()
+    const team = await page.locator('.react-flow__node-agentFrame').boundingBox()
+    assert.ok(root.x + root.width < team.x, 'the root is separate to the left of its team')
+    assert.equal(await page.locator('.react-flow__viewport').evaluate(node => new DOMMatrixReadOnly(getComputedStyle(node).transform).a), 1)
+    await page.getByRole('button', { name: 'Fit View', exact: true }).click()
+    assert.equal(await page.locator('.react-flow__viewport').evaluate(node => new DOMMatrixReadOnly(getComputedStyle(node).transform).a), 1, 'fit never shrinks readable card text')
+    const colors = await page.evaluate(() => ({frame:getComputedStyle(document.querySelector('.ag-team-frame')).backgroundColor, card:getComputedStyle(document.querySelector('.ag-agent-card')).backgroundColor}))
+    assert.notEqual(colors.frame, colors.card, 'raised cards have a distinct surface from the team')
+  }
+  const cards = page.locator('.ag-agent-card')
+  assert.ok(await cards.count() < 100, '130 topology agents render a bounded window')
+  const sizes = await cards.evaluateAll(nodes => nodes.flatMap(node => [...node.querySelectorAll('span,p')].filter(child => child.textContent.trim()).map(child => parseFloat(getComputedStyle(child).fontSize))))
+  assert.ok(sizes.length && sizes.every(size => size >= 13), `topology text floor: ${sizes}`)
+  await page.screenshot({ path: `${output}/compact-tree-${width}-${theme}.png` })
+  await page.getByRole('button', { name: 'Select last agent', exact: true }).click()
+  const last = page.locator(width < 600 ? '[data-agent-id="agent-129"] .ag-agent-card' : '.react-flow__node[data-id="agent-129"] .ag-agent-card')
+  await last.waitFor({state:'visible'})
+  const identity = await last.locator('[data-agent-identity]').innerText()
+  assert.equal(identity.match(/opencode/g)?.length, 1); assert.equal(identity.match(/glm-5.3/g)?.length, 1)
+  assert.equal(await last.locator('[data-host-mark]').count(), 1, 'settled agents retain their mark')
+  const tokens = await last.locator('[data-agent-tokens]').innerText(), before = await last.boundingBox()
+  await page.waitForFunction(before => document.querySelector('[data-id="agent-129"] [data-agent-tokens], [data-agent-id="agent-129"] [data-agent-tokens]')?.textContent !== before, tokens)
+  const after = await last.boundingBox()
+  assert.ok(Math.abs(after.x-before.x)<1 && Math.abs(after.y-before.y)<1, 'live token updates preserve the selected card position')
+  assert.equal(await page.getByLabel('Reader selection').textContent(), 'agent-129')
+  const selectedColor = await last.evaluate(node=>getComputedStyle(node).backgroundColor)
+  assert.notEqual(selectedColor, await page.locator('.ag-agent-card:not([data-selected])').first().evaluate(node=>getComputedStyle(node).backgroundColor), 'selected and raised cards have distinct surfaces')
+  await page.screenshot({ path: `${output}/compact-selected-${width}-${theme}.png` })
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false)
+}
+
 const output = process.env.CHARTS_PROOF_DIR
 assert.ok(output, 'Retain topology evidence outside the gate cache')
 await mkdir(output, { recursive: true })
@@ -89,6 +124,7 @@ try {
       assert.ok(selectedBox.x >= viewport.x - 1 && selectedBox.y >= viewport.y - 1 && selectedBox.x + selectedBox.width <= viewport.x + viewport.width + 1 && selectedBox.y + selectedBox.height <= viewport.y + viewport.height + 1, 'settling keeps the selected agent inside its viewport')
       await page.screenshot({ path: `${output}/settled-camera-${width}-${theme}.png` })
     }
+    await proveCompactTopology(page, width, theme, output)
     assert.deepEqual(errors, [])
     const video = page.video()
     await context.close()
