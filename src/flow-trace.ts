@@ -36,7 +36,7 @@ export interface FlowSpan {
   handoffTo?: string
   /** The host's verdict on an agent span, such as shipped or crashed: colors its lane and joins the legend. */
   outcome?: FlowOutcome
-  /** Authoritative host rows: replace same-label inferred card metrics, case-insensitively; explicit unknowns remain unknown. */
+  /** Authoritative host rows: replace same-label inferred card metrics and lane call counts, case-insensitively; unknowns stay unknown. */
   facts?: readonly { label: string; value: string }[]
   /** Moments on this span's own bar, such as a restart: a notch at `at`, the state stays the span's. */
   marks?: readonly FlowSpanMark[]

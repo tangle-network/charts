@@ -391,7 +391,7 @@ export function FlowWaterfall({
   const errorEnds = Array.from({ length: errors ?? 0 }, (_, index) => Number.isFinite(errorSpans[index]?.endMs) ? errorSpans[index]!.endMs : undefined)
   const done = !isLive && !trace.spans.some(spanRunning)
   const shown = (row?: FlowWaterfallRow) => row && drawnRow(row, visible)
-  const cardRow = shown(card ? byId.get(card.target) : undefined)
+  const cardRow = shown(card ? byId.get(card.target) ?? visible.find(row => row.id === card.target) : undefined)
   const cardAgent = cardRow && (() => {
     for (let cursor: FlowWaterfallRow | undefined = cardRow; cursor; cursor = cursor.parentId ? byId.get(cursor.parentId) : undefined) if (cursor.kind === 'pipeline') return shown(cursor)
     return undefined
