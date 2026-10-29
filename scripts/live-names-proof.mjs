@@ -30,7 +30,8 @@ try {
     await page.evaluate(() => document.fonts.ready)
     const column = () => row.locator('.fw-label').evaluate(el => el.getBoundingClientRect().width)
     const initial = await column(), samples = []
-    await bar.hover({ position: { x: 6, y: (await bar.boundingBox()).height / 2 } })
+    const target = await bar.boundingBox()
+    await page.mouse.move(target.x + 6, target.y + target.height / 2)
     await card.waitFor()
     const start = Date.now()
     do {
