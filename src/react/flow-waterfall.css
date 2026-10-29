@@ -411,7 +411,7 @@
   .fw-root .fw-tick:nth-child(4) { transform: translate(calc(-100% - 4px), -50%); }
   .fw-root .fw-row { transform: none; top: var(--row-y); contain: style; }
   .fw-root .fw-label { position: absolute; z-index: 3; height: 20px; top: 0; left: 0; right: 0; padding: 0 8px 0 calc(8px + var(--depth) * 12px); border: 0; gap: 4px; background: transparent; pointer-events: none; }
-  .fw-root :is(.fw-row-state, .fw-quiet) { position: absolute; top: 20px; left: calc(28px + var(--depth) * 12px); height: 18px; font-size: 13px; }
+  .fw-root .fw-row :is(.fw-row-state, .fw-quiet) { position: absolute; top: 20px; left: calc(28px + var(--depth) * 12px); height: 18px; font-size: 13px; }
   .fw-root .fw-view-agents .fw-names { flex-direction: row; font-size: 14px; line-height: 20px; }
   .fw-root .fw-view-agents :is(.fw-subtitle, .fw-seg-label) { display: none; }
   .fw-root .fw-view-agents .fw-label { padding-left: calc(8px + var(--depth) * 12px); }

@@ -45,6 +45,7 @@ try {
       assert.ok(g.size.every(size => size >= 13), 'readable metadata uses at least13px')
     }
     assert.ok(geometry[0].status.startsWith('Quiet'))
+    assert.ok(await page.locator('.fw-heading .fw-quiet').evaluateAll(nodes => nodes.every(node => getComputedStyle(node).position !== 'absolute')), 'header attention counts retain their normal inline layout')
     assert.equal(geometry[1].status, 'Failed')
     assert.equal(geometry[2].status, 'Done')
     assert.ok((await row.locator('.fw-names').getAttribute('title')).includes('peer-director-1-resume'), 'full identity remains available at desktop reading width')
