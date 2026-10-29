@@ -369,7 +369,7 @@ try {
     const summary = root.locator('.fw-summary'), terms = await summary.locator('dt').allTextContents()
     // Missing prices remain explicit and explain why no total can be reported.
     assert.deepEqual(terms, ['Duration', 'Cost', 'Tokens', 'Model calls', 'Tool calls', 'Errors'])
-    assert.deepEqual(await summary.locator('dd').allTextContents(), ['7m 11s', '—', '754.4k', '—', '35', '3'])
+    assert.deepEqual(await summary.locator('dd').allTextContents(), ['7m 11s', '—', '754.4K', '—', '35', '3'])
     assert.match(await summary.locator('dd').nth(1).getAttribute('title'), /^No cost source/); assert.equal(await summary.locator('dd').nth(2).getAttribute('title'), '754,448 tokens')
     checks.summary = 'PASS'
     // Each kind is painted distinctly: a fill colour, or a pattern (hatched waiting) in background-image.
