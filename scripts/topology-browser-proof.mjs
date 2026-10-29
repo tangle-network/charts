@@ -7,7 +7,7 @@ import { chromium } from 'playwright'
 const output = process.env.CHARTS_PROOF_DIR
 assert.ok(output, 'Retain topology evidence outside the gate cache')
 await mkdir(output, { recursive: true })
-const server = spawn(process.execPath, ['scripts/charts-browser-smoke.mjs'], { stdio: ['ignore', 'pipe', 'pipe'] })
+const server = spawn(process.execPath, ['scripts/charts-browser-smoke.mjs', ...process.argv.slice(2)], { stdio: ['ignore', 'pipe', 'pipe'] })
 const logs = [], checks = []
 server.stdout.on('data', bytes => logs.push(String(bytes)))
 server.stderr.on('data', bytes => logs.push(String(bytes)))
@@ -29,6 +29,7 @@ try {
     await page.goto(`http://127.0.0.1:46489/?id=topology&globals=agent-${theme}`)
     await ready()
     assert.deepEqual(await page.locator('[data-host-canary]').evaluate(el => ({ display: getComputedStyle(el).display, fontSize: getComputedStyle(el).fontSize })), { display: 'grid', fontSize: '17px' }, 'graph CSS preserves host utilities')
+    assert.equal(await page.locator('.agent-graph').evaluate(el => getComputedStyle(el).display), 'flex', 'graph utilities apply to the scope root')
     assert.match(await page.locator('.agent-graph').innerText(), /2 agents/)
     assert.ok(await page.locator('[data-host-mark]').count() > 0, 'host identity reaches the canonical renderer')
     await page.getByRole('button', { name: 'Select last agent', exact: true }).click()
