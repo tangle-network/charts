@@ -384,7 +384,7 @@ export function AgentGraphCanvas({
         <Controls
           showInteractive={false}
           position="bottom-right"
-          fitViewOptions={{ padding: `${FIT_PADDING}px`, minZoom, maxZoom: 1 }}
+          fitViewOptions={{ padding: `${FIT_PADDING}px`, minZoom, maxZoom: 1, nodes: live ? undefined : topology.agentIds.slice(0, 2).map(id => ({ id })) }}
         />
       </ReactFlow></div>}
       {hovered && byId.has(hovered.id) && <AgentMetrics anchor={wrapperRef.current} mode={colorMode} id={detailsId} agent={byId.get(hovered.id)!} rect={hovered.rect} onEnter={keepDetails} onLeave={leaveDetails} onClose={() => { hideDetails(); returningFocus.current = true; hoverTarget.current?.focus({ preventScroll: true }); returningFocus.current = false; }} />}
