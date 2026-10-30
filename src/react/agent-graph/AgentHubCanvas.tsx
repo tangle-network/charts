@@ -85,7 +85,6 @@ export function AgentHubCanvas(props: AgentHubCanvasProps) {
   const [hover, setHover] = useState<string | null>(null);
   const [selection, setSelection] = useState<{ id: string; invoker?: HTMLButtonElement } | null>(selectedId ? { id: selectedId } : null);
   const open = selection?.id ?? null;
-  const setOpen = (id: string | null) => setSelection(id ? { id } : null);
   const buttons = useRef(new Map<string, HTMLButtonElement>());
   const buttonRef = (id: string) => (element: HTMLButtonElement | null) => { if (element) buttons.current.set(id, element); else buttons.current.delete(id); };
   const animate = useMotionAllowed();
@@ -174,7 +173,7 @@ export function AgentHubCanvas(props: AgentHubCanvasProps) {
   const keydown = (id: string) => (event: KeyboardEvent<HTMLButtonElement>) => {
     const dirs: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
     const dir = dirs[event.key];
-    if (event.key === "Escape") { setOpen(null); buttons.current.get(id)?.focus(); return; }
+    if (event.key === "Escape") { setSelection(null); buttons.current.get(id)?.focus(); return; }
     if (event.key === "Home") { event.preventDefault(); nodes[0] && buttons.current.get(nodes[0].id)?.focus(); return; }
     if (!dir) return;
     event.preventDefault();
@@ -196,8 +195,8 @@ export function AgentHubCanvas(props: AgentHubCanvasProps) {
   const popover = openEntity && (() => {
     const summary = openEntity.kind === "you" ? (typeof you === "object" ? you.summary : undefined)
       : openEntity.agent?.turn ?? openEntity.sub ?? undefined;
-    return <HubPopover key={openEntity.id} entity={openEntity} entities={entities} calls={props.calls === undefined ? undefined : visibleCalls} now={now} container={wrap.current} summary={summary}
-      onClose={() => setOpen(null)} />;
+    return <HubPopover key={openEntity.id} entity={openEntity} entities={entities} calls={props.calls === undefined ? undefined : visibleCalls} now={now} container={wrap.current} side={list ? "bottom" : "right"} summary={summary}
+      onClose={() => setSelection(null)} />;
   })();
 
 
@@ -206,7 +205,7 @@ export function AgentHubCanvas(props: AgentHubCanvasProps) {
       <style>{AGENT_HUB_CSS}</style>
       <header className="ag-head">
         <span className="ag-title"><span className="ag-title-mark" aria-hidden />{title}</span>
-        {chips.map(n => <button type="button" key={n.id} className={`ag-chip ag-chip-${n.status}`} onClick={() => openNode(n.id)}><RunStatusIcon status={agentQuietActivity(n, now) ? "waiting" : n.status} aria-hidden />{n.label} {agentQuietActivity(n, now)?.label ?? statusMeta(n.status).label}</button>)}
+        {chips.map(n => <button type="button" key={n.id} className={`ag-chip ag-chip-${n.status}`} onClick={event => openNode(n.id, event.currentTarget)}><RunStatusIcon status={agentQuietActivity(n, now) ? "waiting" : n.status} aria-hidden />{n.label} {agentQuietActivity(n, now)?.label ?? statusMeta(n.status).label}</button>)}
         <span className="ag-stats">
           <span><b>{nodes.length}</b> {nodes.length === 1 ? "agent" : "agents"}</span>
           <span title={props.tools === undefined ? "Tool history not reported" : undefined}><b>{props.tools?.length ?? "—"}</b> {tools.length === 1 ? "tool" : "tools"}</span>
@@ -214,7 +213,7 @@ export function AgentHubCanvas(props: AgentHubCanvasProps) {
           <span title={cost === undefined ? "Not every agent recorded its cost" : "Total recorded agent cost"}><b>{cost === undefined ? "—" : fmtCost(cost)}</b> cost</span>
         </span>
       </header>
-      <div ref={wrap} className={`ag-canvas-wrap${list ? " ag-list-mode" : ""}`} style={list ? undefined : { height: h * scale }} onKeyDown={(e) => { if (e.key === "Escape") setOpen(null); }}>
+      <div ref={wrap} className={`ag-canvas-wrap${list ? " ag-list-mode" : ""}`} style={list ? undefined : { height: h * scale }} onKeyDown={(e) => { if (e.key === "Escape") setSelection(null); }}>
         {list ? <><ul className="ag-mobile">{[...entities.values()].filter(e => e.agent).sort((a, b) => {
           const rank = (e: HubEntity) => e.status === "needs-you" ? 0 : e.status === "failed" ? 1 : e.quiet ? 2 : e.status === "waiting" ? 3 : e.status === "running" ? 4 : 5;
           return rank(a) - rank(b);

@@ -103,19 +103,20 @@ export interface HubPopoverProps {
   calls?: readonly AgentGraphCall[];
   now: number;
   container: HTMLElement | null;
+  side: "bottom" | "right";
   summary?: ReactNode;
   onClose: () => void;
 }
 
 /** A node's recent calls: who it called or was called by, what for, how long, and what failed. */
-export function HubPopover({ entity, entities, calls, now, container, summary, onClose }: HubPopoverProps) {
+export function HubPopover({ entity, entities, calls, now, container, side, summary, onClose }: HubPopoverProps) {
   const mine = (calls ?? []).filter((c) => (c.from === entity.id || c.to === entity.id) && c.startedAt <= now).sort((a, b) => b.startedAt - a.startedAt);
   const recent = mine.slice(0, 5);
   const lastMinute = mine.filter((c) => now - c.startedAt <= 60_000).length;
   const status = entity.status ? statusMeta(entity.status).label : undefined;
   const cost = entity.agent?.costUsd;
   return (
-    <HoverCardContent container={container} side="right" align="start" collisionPadding={8} role="dialog" aria-label={`${entity.label} calls`} className="ag-popover" onOpenAutoFocus={event => { (event.target as HTMLElement).querySelector<HTMLButtonElement>(".ag-close")?.focus({ preventScroll: true }); }} onEscapeKeyDown={event => { event.preventDefault(); onClose(); }}>
+    <HoverCardContent container={container} side={side} align="start" collisionPadding={8} role="dialog" aria-label={`${entity.label} calls`} className="ag-popover" onOpenAutoFocus={event => { (event.target as HTMLElement).querySelector<HTMLButtonElement>(".ag-close")?.focus({ preventScroll: true }); }} onEscapeKeyDown={event => { event.preventDefault(); onClose(); }}>
       <div className="ag-pop-head">
         <span className="ag-tile ag-tile-mini" style={{ "--ag-tile": "28px" } as CSSProperties}><NodeIcon entity={entity} size={28} /></span>
         <span className="ag-pop-title">
