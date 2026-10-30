@@ -115,15 +115,16 @@ try {
     await ready()
     const count = () => page.locator(width < 600 ? '.ag-phone-select' : '.react-flow__node-agent,.react-flow__node-liveAgent').count()
     assert.ok(await count() < 100, '130 agents render a bounded window')
+    const running = page.locator('.ag-live-card[data-status="running"] .ag-running-dot').first()
+    await running.waitFor({ state: 'visible' })
+    assert.ok((await running.evaluate(element => element.getAnimations().map(animation => animation.animationName))).includes('tangle-breathe'), 'an actual running status pulses through Brand motion')
+
     await page.getByRole('button', { name: 'Select last agent', exact: true }).click()
     const last = page.locator(width < 600 ? '[data-agent-id="agent-129"]' : '.react-flow__node[data-id="agent-129"]')
     await last.waitFor({ state: 'visible' })
-    const motion = await last.locator('.ag-live-card').evaluate(card => ({
-      arrival: card.getAnimations().map(animation => animation.animationName),
-      pulse: card.querySelector('.ag-running-dot').getAnimations().map(animation => animation.animationName),
-    }))
-    assert.ok(motion.arrival.includes('tangle-intro-enter'), 'Brand arrival has a real animation effect')
-    assert.ok(motion.pulse.includes('tangle-breathe'), 'running status pulses through Brand motion')
+    const arrival = await last.locator('.ag-live-card').evaluate(card => card.getAnimations().map(animation => animation.animationName))
+    assert.ok(arrival.includes('tangle-intro-enter'), 'Brand arrival has a real animation effect')
+    assert.equal(await last.locator('.ag-live-card').getAttribute('data-status'), 'stopped', 'the selected last agent retains its recorded terminal state')
     await last.focus()
     await page.keyboard.press('Enter')
     assert.equal(await page.getByLabel('Reader selection').textContent(), 'agent-129')
