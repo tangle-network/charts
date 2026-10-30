@@ -1,3 +1,7 @@
+## 2.0.26
+
+Expose the existing strict reported-count boundary and sum from the public entrypoint so retained record consumers share the same unknown and measured-zero semantics.
+
 ## 2.0.9
 
 Authoritative facts also drive model identity and duration/cost labels; opaque values do not compete in numeric superlatives. Mixed family identity and opaque token/cost aggregates remain unknown; full numeric family measurements retain their totals and lower bounds. Long phone metadata clips with its full value retained in the title and card.
