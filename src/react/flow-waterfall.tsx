@@ -282,7 +282,7 @@ export function FlowWaterfall({
   const toggle = useCallback((row: FlowWaterfallRow) => latest.current.toggle(row), [])
   const place = (target: string, element: HTMLElement, pinned: boolean, x?: number) => setCard({ target, pinned, anchor: {
     contextElement: element,
-    getBoundingClientRect: () => { const rect = element.getBoundingClientRect(); return DOMRect.fromRect({ x: (x ?? rect.left + 24) - 24, y: rect.top, width: 0, height: rect.height }) },
+    getBoundingClientRect: () => { const rect = element.getBoundingClientRect(), row = element.closest(".fw-row")?.getBoundingClientRect() ?? rect; return DOMRect.fromRect({ x: (x ?? rect.left + 24) - 24, y: row.top, width: 0, height: row.height }) },
   } })
   latest.current.inspect = (target, element, x) => { if (!card?.pinned) place(target, element, false, x) }
   const inspect = useCallback((target: string, element: HTMLElement, x?: number) => latest.current.inspect(target, element, x), [])
