@@ -1,3 +1,7 @@
+## 4.0.1
+
+Keep recorded completed and stopped outcomes visible in topology cards, including the phone overview.
+
 ## 4.0.0
 
 - React charts use the shared UI package directly, including one run clock for graph age and quiet-time readers. Install the UI peer named by package.json when using React charts; static Figures remain independent of React and UI. This replaces the bundled UI copy and preserves fixed replay. Agent status uses canonical UI RunStatus (`done` replaces `succeeded`); import the shared clock from UI/hooks.

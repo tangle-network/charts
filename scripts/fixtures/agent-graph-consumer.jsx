@@ -1,3 +1,4 @@
+import { runStatus } from '@tangle-network/ui/run/status-meta'
 // Recorded agents exercise the format boundary; the explicit 130-agent case
 // exercises windowing, selection and updates beyond the initial viewport.
 function Topology() {
@@ -7,11 +8,11 @@ function Topology() {
  useEffect(() => { if (settled) return; const timer = setInterval(() => setTick(t => t + 1), 1000); return () => clearInterval(timer) }, [settled])
  const boundary = params.has('large'), compact = params.has('compact')
  const nodes = boundary ? Array.from({ length: 130 }, (_, i) => ({
-   id: 'agent-' + i, label: 'Agent ' + i, status: i === 1 ? 'failed' : settled ? 'succeeded' : i === 2 ? 'needs-you' : i % 3 === 0 ? 'running' : 'succeeded',
+   id: 'agent-' + i, label: 'Agent ' + i, status: i === 1 ? 'failed' : i === 129 ? 'stopped' : settled ? 'done' : i === 2 ? 'needs-you' : i % 3 === 0 ? 'running' : 'done',
    turn: 'Recorded boundary task ' + tick, costUsd: i === 3 ? null : i / 100, tokens: i * 1000 + tick * 1000, model: 'glm-5.3', harness: 'opencode',
    events: [{ id: 'event-' + i, label: 'Read source ' + tick, at: Date.now() - (params.has('quiet') && i === 0 ? 5166 * 60000 : 0) }],
  })) : recorded.spans.filter(span => span.kind === 'pipeline').map(span => ({
-   id: span.id, label: span.name, status: span.status === 'done' ? 'succeeded' : 'unknown',
+   id: span.id, label: span.name, status: runStatus(span.status),
    turn: 'Imported from discovery-waterfall.json',
  }))
  const edges = boundary ? nodes.slice(1).map(node => ({ from: nodes[0].id, to: node.id, kind: 'spawn' }))
