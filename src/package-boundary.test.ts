@@ -115,11 +115,12 @@ it("packs an isolated static root and optional React entrypoint", () => {
     const tsc = join(dirname(typescriptManifestPath), typescriptManifest.bin.tsc);
     execFileSync(process.execPath, [tsc, "-p", "tsconfig.json"], { cwd: consumer, stdio: "pipe", timeout: 30_000 });
 
-    // Supply the declared real UI/React feature peers only after the isolated static proofs.
+    // Supply the declared React/graph feature peers only after the isolated static proofs.
     const reactPeers = ["react", "react-dom", "@types/react", "@types/react-dom"].map(name =>
       `${name}@${JSON.parse(readFileSync(require.resolve(`${name}/package.json`), "utf8")).version}`);
     execFileSync("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", "--package-lock=false",
-      ...reactPeers, `@tangle-network/ui@${manifest.peerDependencies["@tangle-network/ui"]}`], {
+      ...reactPeers, ...["@tangle-network/ui", "@xyflow/react", "elkjs", "@tangle-network/brand"].map(name =>
+        `${name}@${manifest.peerDependencies[name]}`)], {
       cwd: consumer, stdio: "pipe", timeout: 60_000,
     });
     writeFileSync(join(consumer, "react.mjs"), `
