@@ -60,13 +60,13 @@ function AnalyticsCounts() {
 function ProgressLines() {
  const [extra,setExtra]=useState(false)
  const start=Date.parse('2026-10-28T00:00:00Z'), values=extra?[1,2,1,3]:[1,2,1]
- const points=values.map((v,i)=>[start+i*3600000,v])
+ const points=values.map((v,i)=>[start+Math.max(0,i-1)*3600000,v])
  let best=0
  return <main><button onClick={()=>setExtra(true)}>Append release</button><output>{params.get('release')||'No release selected'}</output>
  <Lines rows={22} ticks={[{value:1,label:'1 · Manifest'},{value:2,label:'2 · Offline build'},{value:3,label:'3 · Hidden test set'}]}
   axis={t=>new Date(t).toISOString().slice(11,16)} series={[
    {name:'Best so far',color:'var(--chart-series-1)',interpolation:'step',points:points.map(([t,v])=>[t,best=Math.max(best,v)])},
-   {name:'Checked releases',color:'var(--chart-series-2)',dots:true,points,label:(t,i)=>'rc'+(i+1),href:(t,i)=>'?id=progress-lines&release=rc'+(i+1),highlight:(t,i)=>i=== (extra?3:1)}]}/></main>
+   {name:'Checked releases',color:'var(--chart-series-2)',dots:true,points,id:(t,i)=>'rc'+(i+1),label:(t,i)=>'rc'+(i+1),href:(t,i)=>'?id=progress-lines&release=rc'+(i+1),highlight:(t,i)=>i=== (extra?3:1)}]}/></main>
 }
 function RecordedTimeline() {
  const start=Date.parse('2026-10-28T00:00:00Z')

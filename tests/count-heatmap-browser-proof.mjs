@@ -64,6 +64,8 @@ try {
    assert.equal(vertices[0][1],vertices[1][1],'prior level holds until the next recorded release')
    assert.equal(vertices[1][0],vertices[2][0],'step gain is vertical at the release time')
    await lines.getByRole('link',{name:'rc2: 2',exact:true}).focus()
+   assert.match(await page.getByRole('tooltip').innerText(),/rc2\s+2/,'simultaneous release readout keeps the focused observation')
+   assert.equal(await lines.locator('circle:not(.ov-line-point)').count(),0,'a crosshair marker never covers keyboard focus')
    await page.keyboard.press('Enter')
    await page.waitForURL(/release=rc2/)
    assert.equal(await page.locator('output').innerText(),'rc2')

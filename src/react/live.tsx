@@ -225,7 +225,7 @@ export function Lines({ series, format = formatCompact, rows = 13, axis, marks =
         </g>)}
         {[...marks].sort((a, b) => a.at - b.at).map((mark, i) => <Mark key={`mark-${i}`} mark={mark} x={x(mark.at)} top={8} bottom={8 + plotH} row={i % 3} em={em} flip={x(mark.at) > left + plotW * .62} />)}
         {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={8} y2={8 + plotH} className="ov-crosshair" />}
-        {hover !== null && series.filter(s => s.points.length && cursor?.series !== s.name).map(s => {
+        {hover !== null && !cursor?.series && series.filter(s => s.points.length).map(s => {
           const p = s.points[nearest(s)]!
           return <circle key={s.name} cx={x(p[0])} cy={y(p[1])} r={Math.max(4, em / 4)} fill={s.color} stroke="var(--chart-live-surface, var(--bg-card))" strokeWidth={2} pointerEvents="none" />
         })}
