@@ -18,8 +18,6 @@ export function pts(value: number): string {
   return `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n)} pts`;
 }
 
-export const usd = formatCost;
-
 /** Axis ticks: "$30", "$2.5", "$0.05". */
 export function usdTick(value: number): string {
   return `$${Number(value.toPrecision(2)).toLocaleString("en-US", { maximumFractionDigits: 4 })}`;
@@ -87,7 +85,7 @@ export function costText(cost: { perSolvedUsd: number | null; basis: CostBasis }
   if (solved === 0) return "no pass";
   const value = perPass(cost);
   if (value === null) return "unknown";
-  return cost.basis === "receipts" ? usd(value) : `${usd(value)} est.`;
+  return cost.basis === "receipts" ? formatCost(value) : `${formatCost(value)} est.`;
 }
 
 /** Wilson can describe an eligible rate; clustered bootstrap needs the producer's bootstrap class. */
@@ -178,14 +176,13 @@ export function formatCount(n: number): string {
 
 /** 0s, 500ms, 20s, 1m 30s, 2h, 1h 15m: an axis label at the step's own precision. */
 export function formatClock(ms: number): string {
-  if (!Number.isFinite(ms) || ms < 0) return '—'
-  if (ms === 0) return '0s'
-  if (ms < 1000) return `${Math.round(ms)}ms`
-  if (ms < 60_000) return `${+(ms / 1000).toFixed(1)}s`
-  if (ms < 3_600_000) {
-    const m = Math.floor(ms / 60_000), s = Math.round((ms % 60_000) / 1000)
-    return s ? `${m}m ${s}s` : `${m}m`
-  }
-  const h = Math.floor(ms / 3_600_000), m = Math.round((ms % 3_600_000) / 60_000)
-  return m ? `${h}h ${m}m` : `${h}h`
+  return ms === 0 ? '0s' : formatSpanDuration(ms).replace(/\.0s$/, 's').replace(/ 00m$/, '')
+}
+
+/** Normalize labels to UTC without rewriting the source timestamp. */
+export function formatUtcTime(value: string, includeDate = false) {
+  const date = new Date(value)
+  if (!Number.isFinite(date.valueOf())) return 'Unknown time'
+  const iso = date.toISOString()
+  return `${includeDate ? iso.slice(0, 19).replace('T', ' ') : iso.slice(11, 19)} UTC`
 }

@@ -6,7 +6,7 @@ export { phaseWaterfall, type PhaseWaterfallOptions, type WaterfallPhase } from 
 export { type ComparisonIntervalsOptions, comparisonIntervals } from "./comparison-intervals.js";
 export { type CostFrontierOptions, costFrontier } from "./cost-frontier.js";
 export { chartTokensCss, figureCss } from "./css.generated.js";
-export { duration, formatSpanDuration, formatCost, formatCount, formatCompact, formatClock, rateOrder } from "./format.js";
+export { duration, formatSpanDuration, formatCost, formatCount, formatCompact, formatClock, formatUtcTime, rateOrder } from "./format.js";
 export { type RateIdentity } from "./identity.js";
 export { type RankedRatesOptions, rankedRates } from "./ranked-rates.js";
 export { type TaskMatrixOptions, taskMatrix } from "./task-matrix.js";
