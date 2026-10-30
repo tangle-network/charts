@@ -76,7 +76,7 @@ try {
     checks.push({ theme, width, result: 'PASS', agents })
   }
 } finally {
-  await browser?.close()
+  await Promise.all((browser?.contexts() ?? []).map(context => context.close())); await browser?.close()
   server.kill('SIGTERM')
   await writeFile(`${output}/consumer.log`, logs.join(''))
   await writeFile(`${output}/checks.json`, JSON.stringify(checks, null, 2))
