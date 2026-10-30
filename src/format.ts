@@ -150,22 +150,14 @@ export const formatCompact = (value: number | null | undefined) =>
 export function formatSpanDuration(ms: number): string {
   if (!Number.isFinite(ms) || ms < 0) return '—'
   if (ms >= 86_400_000) return duration(ms)
-  if (ms < 1000) return `${Math.round(ms)}ms`
-  if (ms < 10_000) return `${(ms / 1000).toFixed(1)}s`
-  if (ms < 60_000) return `${Math.round(ms / 1000)}s`
-  if (ms < 3_600_000) {
-    const m = Math.floor(ms / 60_000), s = Math.round((ms % 60_000) / 1000)
-    return s === 60 ? `${m + 1}m` : s ? `${m}m ${s}s` : `${m}m`
-  }
-  const h = Math.floor(ms / 3_600_000), m = Math.round((ms % 3_600_000) / 60_000)
-  return m === 60 ? `${h + 1}h` : `${h}h ${String(m).padStart(2, '0')}m`
+  return ms < 1000 ? `${Math.round(ms)}ms` : formatClock(Math.round(ms / 100) * 100)
 }
 
 /** $0.12, $0.005, $12.40; never rounds a recorded nonzero cost to $0.00. */
 export function formatCost(usd: number): string {
   if (finiteNumber(usd) === undefined || usd < 0) return '—'
   if (usd === 0) return '$0.00'
-  if (usd < 0.01) return `$${usd.toPrecision(1).replace(/0+$/, '')}`
+  if (usd < 0.01) return `$${usd.toPrecision(1)}`
   return `$${usd.toFixed(2)}`
 }
 
@@ -176,7 +168,10 @@ export function formatCount(n: number): string {
 
 /** 0s, 500ms, 20s, 1m 30s, 2h, 1h 15m: an axis label at the step's own precision. */
 export function formatClock(ms: number): string {
-  return ms === 0 ? '0s' : formatSpanDuration(ms).replace(/\.0s$/, 's').replace(/ 00m$/, '')
+  if (!Number.isFinite(ms) || ms < 0) return '—'
+  const seconds = Math.round(ms) / 1000
+  const hours = Math.floor(seconds / 3600), minutes = Math.floor(seconds % 3600 / 60), rest = Number((seconds % 60).toFixed(3))
+  return [hours ? `${hours}h` : '', minutes ? `${minutes}m` : '', rest ? `${rest}s` : ''].filter(Boolean).join(' ') || '0s'
 }
 
 /** Normalize labels to UTC without rewriting the source timestamp. */
