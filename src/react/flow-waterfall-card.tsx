@@ -18,8 +18,8 @@ export interface SpanCardProps {
   /** The agent that owns the span, for the agent-level header. */
   agent?: FlowWaterfallRow
   clockMs: number
-  /** Pinned cards take focus, close on Escape and return focus to the row. */
-  pinned: boolean
+  /** `pinned` cards take focus, close on Escape and return focus to the row; a `docked` card is a host's inspector panel. */
+  mode: 'hover' | 'pinned' | 'docked'
   onClose: () => void
   renderIcon?: (span: FlowSpan) => ReactNode
   /** The agent timeline's card: the agent and its outcome, its table, then the step under the pointer. */
@@ -73,18 +73,17 @@ function Table({ rows }: { rows: [string, ReactNode][] }) {
 }
 
 /** The span card: what ran, for how long, on what tokens and at what recorded cost, then its input and output. */
-export function SpanCard({ id, row, agent, clockMs, pinned, onClose, renderIcon, compact }: SpanCardProps) {
+export function SpanCard({ id, row, agent, clockMs, mode, onClose, renderIcon, compact }: SpanCardProps) {
   const span = row.span
   const failure = spanFact(span, 'Failure')
   const state = runStatus(span.status ?? 'unknown')
   const meta = statusMeta(state)
-  const status = meta.label
   const owner = agent && agent.id !== row.id ? agent : undefined
   const frame = {
-    id, role: pinned ? 'dialog' : 'tooltip', 'aria-label': pinned ? `${span.name} details` : undefined, style: { '--fw-status': `var(${meta.token})` } as CSSProperties,
+    id, role: { hover: 'tooltip', pinned: 'dialog', docked: 'region' }[mode], 'aria-label': mode === 'hover' ? undefined : `${span.name} details`, style: { '--fw-status': `var(${meta.token})` } as CSSProperties,
     onKeyDown: (event: { key: string; stopPropagation: () => void }) => { if (event.key === 'Escape') { event.stopPropagation(); onClose() } },
   }
-  const close = pinned && <button type="button" className="fw-icon-button fw-card-close" aria-label="Close details" onClick={onClose} autoFocus><CloseGlyph /></button>
+  const close = mode === 'pinned' && <button type="button" className="fw-icon-button fw-card-close" aria-label="Close details" onClick={onClose} autoFocus><CloseGlyph /></button>
   if (compact) {
 
     const who = owner ?? row
@@ -102,7 +101,7 @@ export function SpanCard({ id, row, agent, clockMs, pinned, onClose, renderIcon,
         <div className="fw-card-agent">{outcomes.length ? outcomes.map(state => <span key={`${state.label}:${state.tone}:${state.ring}`} className="fw-agent-dot" data-tone="0" data-outcome={state.tone} data-ring={state.ring || undefined} aria-hidden />) : <span className="fw-agent-dot" aria-hidden />}<span className="fw-card-who">{keepWords(who.name)}</span>
           {outcome
             ? <span className="fw-pill fw-pill-outcome" data-tone="0" data-outcome={outcome.tone}>{outcome.label}</span>
-            : <span className={`fw-pill fw-pill-${state}`}>{status}</span>}
+            : <span className={`fw-pill fw-pill-${state}`}>{meta.label}</span>}
           {close}
         </div>
         <Table rows={metrics(who, clockMs, false).filter(([label]) => label.toLowerCase() !== 'failure')} />
@@ -118,7 +117,7 @@ export function SpanCard({ id, row, agent, clockMs, pinned, onClose, renderIcon,
       <div className="fw-card-head">
         <span className="fw-icon-tile" aria-hidden>{renderIcon?.(span) ?? <KindGlyph kind={span.kind} name={span.name} />}</span>
         <div className="fw-card-name">{keepWords(span.name)}</div>
-        <span className={`fw-pill fw-pill-${state}`}>{status}</span>
+        <span className={`fw-pill fw-pill-${state}`}>{meta.label}</span>
         {close}
       </div>
       <Table rows={metrics(row, clockMs, true)} />
