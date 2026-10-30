@@ -13,12 +13,12 @@ const dir = mkdtempSync(join(tmpdir(), 'charts-browser-'))
 const supplied = process.argv[2]
 const packed = supplied ? resolve(supplied) : join(dir, JSON.parse(execFileSync('npm', ['pack', '--json', '--ignore-scripts', '--pack-destination', dir], { cwd: root, encoding: 'utf8' }))[0].filename)
 writeFileSync(join(dir, 'package.json'), JSON.stringify({ private: true, type: 'module' }))
-const brandRange=JSON.parse(execFileSync('tar',['-xOf',packed,'package/package.json'],{encoding:'utf8'})).peerDependencies['@tangle-network/brand']
-execFileSync('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--package-lock=false', packed, '@tangle-network/brand@'+brandRange], { cwd: dir, stdio: 'inherit' })
+const featurePeers=JSON.parse(execFileSync('tar',['-xOf',packed,'package/package.json'],{encoding:'utf8'})).peerDependencies
+execFileSync('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--package-lock=false', packed, '@tangle-network/brand@'+featurePeers['@tangle-network/brand']], { cwd: dir, stdio: 'inherit' })
 let peerRequire = createRequire(join(dir, 'package.json'))
 const reactVersion = process.env.CHARTS_REACT_VERSION ?? '19'
 if (reactVersion) {
- execFileSync('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--package-lock=false', 'react@' + reactVersion, 'react-dom@' + reactVersion, '@types/react@' + reactVersion, '@xyflow/react@12', 'elkjs@0.12'], { cwd: dir, stdio: 'inherit' })
+ execFileSync('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--package-lock=false', 'react@' + reactVersion, 'react-dom@' + reactVersion, '@types/react@' + reactVersion, '@xyflow/react@'+featurePeers['@xyflow/react'], 'elkjs@'+featurePeers.elkjs, '@tangle-network/ui@'+featurePeers['@tangle-network/ui']], { cwd: dir, stdio: 'inherit' })
  peerRequire = createRequire(join(dir, 'package.json'))
  writeFileSync(join(dir, 'types.tsx'), `import {Sparkline, StackedBarChart, FlowWaterfall} from '@tangle-network/charts/react'; import type {FlowTrace} from '@tangle-network/charts'; const glyph=<Sparkline label="History" values={[0,null,2]}/>; const chart=<StackedBarChart label="Units" series={[{id:'a',label:'A',color:'currentColor'}]} buckets={[{id:'one',label:'One',total:1,segments:[{seriesId:'a',value:1}]}]} maxValue={1} selectedBucketId={null} onSelectionChange={() => {}} formatValue={String}/>; const trace:FlowTrace={spans:[],totalMs:0,promptTokens:0,completionTokens:0,toolCalls:0}; const flow=<FlowWaterfall trace={trace}/>; void flow; void glyph; void chart;`)
  writeFileSync(join(dir, 'tsconfig.json'), JSON.stringify({compilerOptions:{target:'ES2022',module:'NodeNext',moduleResolution:'NodeNext',lib:['ES2022','DOM','DOM.Iterable'],jsx:'react-jsx',strict:true,skipLibCheck:false,noEmit:true,types:[]},files:['types.tsx']}))
