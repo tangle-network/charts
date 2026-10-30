@@ -218,7 +218,7 @@ A mark with a `lane` is drawn on that lane only (a steer to one agent, a wake of
 
 `node scripts/capture-run-page.mjs [dir]` (after `npm run build`) captures each addition at 1440 px light and 390 px dark; the reviewed images are `docs/screenshots/run-page-*.png`.
 
-`Lines` accepts named `ticks: [{value, label}]` and per-series `interpolation: "step"`. A dot series may provide `label(t, index)`, `href(t, index)` and `highlight(t, index)` for distinct, keyboard-accessible observations (including equal timestamps). New points use Brand arrival motion; reduced motion stays still. Producers own release identity and best selection.
+`Lines` accepts named `ticks: [{value, label}]` and per-series `interpolation: "step"`. A dot series may provide `label(t, index)`, `href(t, index)` and `highlight(t, index)` for distinct, keyboard-accessible observations (including equal timestamps). New points use Brand arrival motion; reduced motion stays still. Producers own release identity and best selection. `strip: {label, series?, points: [{at, id, label, href?}]}` places unscored observations below the numeric plot. Use the same series name and point id when an observation gains a score to retain keyboard focus; missing values never occupy zero.
 
 ### Release checks: the climb and the bar
 

@@ -1,5 +1,5 @@
 /** Reusable, em-scaled charts for live operational series. Values, labels and status colors belong to callers. */
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { formatCompact } from '../format.js'
 import { useWidth, Tooltip, EventList, type Tip } from './live-presentation.js'
 export { useWidth } from './live-presentation.js'
@@ -18,6 +18,13 @@ function ticksFor(max: number) {
   const step = [1, 2, 2.5, 5, 10].map((m) => m * power).find((s) => s * 4 >= max) ?? power * 10
   const top = Math.ceil(max / step) * step
   return { top, ticks: [0, top / 2, top] }
+}
+
+function Grid({ ticks, left, right, em, y }: { ticks: { value: number; label: string }[]; left: number; right: number; em: number; y: (value: number) => number }) {
+  return ticks.map(t => <g key={t.value}>
+    <line x1={left} x2={right} y1={y(t.value)} y2={y(t.value)} className="ov-gridline" />
+    <text x={left - em * .4} y={y(t.value)} dominantBaseline="middle" className="ov-axis" textAnchor="end">{t.label}</text>
+  </g>)
 }
 
 /** Bars per day (or per any label: `tick` shortens it on the axis), stacked by series, on one axis; hovering a bar lists
@@ -41,12 +48,7 @@ export function DayBars({ days, series, format = formatCompact, rows = 13, missi
     <div ref={ref} className="ov-plot" onMouseLeave={() => setTip(null)}>
       {width > 0 && (
         <svg width={width} height={height} role="img" aria-label={`${series.map((s) => s.name).join(', ')} per ${interval}`}>
-          {ticks.map((t) => (
-            <g key={t}>
-              <line x1={left} x2={width - 8} y1={y(t)} y2={y(t)} className="ov-gridline" />
-              <text x={left - em * 0.4} y={y(t)} dominantBaseline="middle" className="ov-axis" textAnchor="end">{format(t)}</text>
-            </g>
-          ))}
+          <Grid ticks={ticks.map(value => ({ value, label: format(value) }))} left={left} right={width - 8} em={em} y={y} />
           {days.map((day, i) => {
             let base = 0
             const x = left + i * slot + (slot - bar) / 2
@@ -143,12 +145,7 @@ export function Histogram({ bins, format = formatCompact, color = LIVE_SERIES[0]
     <div ref={ref} className="ov-plot" onMouseLeave={() => setTip(null)}>
       {width > 0 && (
         <svg width={width} height={height} role="img" aria-label={`Distribution of ${unit}`}>
-          {ticks.map((t) => (
-            <g key={t}>
-              <line x1={left} x2={width - 8} y1={y(t)} y2={y(t)} className="ov-gridline" />
-              <text x={left - em * 0.4} y={y(t)} dominantBaseline="middle" className="ov-axis" textAnchor="end">{formatCompact(t)}</text>
-            </g>
-          ))}
+          <Grid ticks={ticks.map(value => ({ value, label: formatCompact(value) }))} left={left} right={width - 8} em={em} y={y} />
           {shown.map((bin, i) => (
             <g key={i}>
               <rect x={left + i * slot + 2} y={y(bin.n)} width={Math.max(3, slot - 4)} height={Math.max(bin.n ? 2 : 0, 8 + plotH - y(bin.n))} rx={2} fill={color} />
@@ -172,60 +169,63 @@ export function Histogram({ bins, format = formatCompact, color = LIVE_SERIES[0]
   )
 }
 
-/** Lines and recorded points share one time axis. Named ticks preserve a discrete ladder; step interpolation
- * holds the prior observation until the next one. Producers own point labels, destinations and highlights. */
-export function Lines({ series, format = formatCompact, rows = 13, axis, marks = [], bands = [], ticks: namedTicks }: {
+/** Recorded values and unscored observations share a time axis. Missing values occupy a labelled strip, never zero. */
+export function Lines({ series, format = formatCompact, rows = 13, axis, marks = [], bands = [], ticks: namedTicks, strip }: {
   series: LineSeries[]; format?: (v: number) => string; rows?: number; axis?: (t: number) => string
   marks?: ChartMark[]; bands?: ChartBand[]; ticks?: { value: number; label: string }[]
+  strip?: { label: string; series?: string; points: { at: number; id: string; label: string; href?: string }[] }
 }) {
   const [ref, width, em] = useWidth<HTMLDivElement>()
-  const [cursor, setCursor] = useState<{ at: number; series?: string; id?: string } | null>(null)
-  const hover = cursor?.at ?? null
+  const [cursor, setCursor] = useState<{ at: number; key?: string } | null>(null)
   const gap = eventsGap(marks, bands)
   if (gap) throw new RangeError(gap)
-  const all = series.flatMap(s => s.points)
-  if (!all.length) return <p className="ov-empty">No history yet.</p>
-  const times = [...all.map(p => p[0]), ...marks.map(m => m.at), ...bands.flatMap(b => [b.from, b.to])]
-  const t0 = Math.min(...times), t1 = Math.max(...times)
-  const automatic = ticksFor(Math.max(...all.map(p => p[1])))
-  const ticks = namedTicks?.length ? namedTicks : automatic.ticks.map(value => ({ value, label: format(value) }))
+  const all = series.flatMap(s => s.points), missing = strip?.points ?? []
+  if (!all.length && !missing.length) return <p className="ov-empty">No history yet.</p>
+  const times = [...all.map(p => p[0]), ...missing.map(p => p.at), ...marks.map(m => m.at), ...bands.flatMap(b => [b.from, b.to])]
+  const t0 = Math.min(...times), t1 = Math.max(...times), automatic = ticksFor(Math.max(...all.map(p => p[1])))
+  const ticks = !all.length ? [] : namedTicks?.length ? namedTicks : automatic.ticks.map(value => ({ value, label: format(value) }))
   const top = namedTicks?.length ? Math.max(1, ...ticks.map(t => t.value), ...all.map(p => p[1])) : automatic.top
-  const left = Math.round(namedTicks?.length ? Math.min(width * .48, Math.max(3.4, ...ticks.map(t => t.label.length * .56 + .8)) * em) : 3.4 * em)
-  const height = Math.round(rows * em), plotW = Math.max(0, width - left - 10), plotH = height - Math.round(1.8 * em) - 8
-  const x = (t: number) => left + (t1 > t0 ? (t - t0) / (t1 - t0) * plotW : 0)
+  const left = Math.round(Math.min(width * .48, Math.max(3.4, ...[...ticks.map(t => t.label), ...(missing.length ? [strip!.label] : [])].map(label => label.length * .56 + .8)) * em))
+  const height = Math.round((all.length ? rows : 5) * em), plotW = Math.max(0, width - left - 10)
+  const plotH = all.length ? Math.max(0, height - Math.round((missing.length ? 4.6 : 1.8) * em) - 8) : 0
+  const stripY = height - em * 2.4, x = (t: number) => left + (t1 > t0 ? (t - t0) / (t1 - t0) * plotW : 0)
   const y = (v: number) => 8 + plotH - v / top * plotH
-  const identity = (s: LineSeries, i: number) => s.id?.(s.points[i]![0], i) ?? `${s.points[i]![0]}:${i}`
-  const nearest = (s: LineSeries) => cursor?.series === s.name ? Math.max(0, s.points.findIndex((_, i) => identity(s, i) === cursor.id)) : s.points.reduce((best, p, i) => Math.abs(p[0] - hover!) < Math.abs(s.points[best]![0] - hover!) ? i : best, 0)
+  const key = (name: string, id: string) => JSON.stringify([name, id])
+  const points = series.flatMap(s => s.points.flatMap((p, i) => s.dots || s.marker && (s.points.length <= 30 || i === s.points.length - 1) ? [{
+    key: key(s.name, s.id?.(p[0], i) ?? `${p[0]}:${i}`), at: p[0], value: p[1] as number | null, label: s.label?.(p[0], i) ?? s.name,
+    color: s.color, href: s.href?.(p[0], i), highlight: s.highlight?.(p[0], i), marker: s.dots ? undefined : s.marker,
+  }] : []))
+  points.push(...missing.map(p => ({ ...p, key: key(strip!.series ?? strip!.label, p.id), value: null, href: p.href, color: 'var(--chart-live-muted, var(--text-muted))', highlight: false, marker: undefined })))
+  const focused = points.find(p => p.key === cursor?.key), hover = focused?.at ?? cursor?.at ?? null
+  const nearest = (s: LineSeries) => s.points.reduce((best, p, i) => Math.abs(p[0] - hover!) < Math.abs(s.points[best]![0] - hover!) ? i : best, 0)
   const day = (t: number) => new Date(t).toISOString().slice(5, 16).replace('T', ' ')
-  const readout = hover === null ? [] : series.filter(s => s.points.length).map(s => {
+  const readout = focused ? [{ label: focused.label, value: focused.value === null ? strip!.label : format(focused.value), color: focused.color }] : hover === null ? [] : series.filter(s => s.points.length).map(s => {
     const i = nearest(s), p = s.points[i]!
     return { label: s.label?.(p[0], i) ?? s.name, value: format(p[1]), color: s.color }
   })
   return (
-    <div ref={ref} className="ov-plot" onMouseLeave={() => setCursor(current => current?.series ? current : null)} onMouseMove={event => {
+    <div ref={ref} className="ov-plot" onMouseLeave={() => setCursor(current => current?.key ? current : null)} onMouseMove={event => {
       const px = event.clientX - event.currentTarget.getBoundingClientRect().left
-      setCursor(current => current?.series ? current : px >= left ? { at: t0 + (px - left) / Math.max(1, plotW) * (t1 - t0) } : null)
+      setCursor(current => current?.key ? current : px >= left ? { at: t0 + (px - left) / Math.max(1, plotW) * (t1 - t0) } : null)
     }}>
-      {width > 0 && <svg width={width} height={height} role={series.some(s => s.href) ? 'group' : 'img'} aria-label={series.map(s => s.name).join(', ')}>
-        {ticks.map(t => <g key={t.value}>
-          <line x1={left} x2={width - 10} y1={y(t.value)} y2={y(t.value)} className="ov-gridline" />
-          <text x={left - em * .4} y={y(t.value)} dominantBaseline="middle" className="ov-axis" textAnchor="end">{t.label}</text>
-        </g>)}
-        {[t0, (t0 + t1) / 2, t1].map((t, i) => <text key={i} x={x(t)} y={height - em * .35} className="ov-axis" textAnchor={i === 0 ? 'start' : i === 2 ? 'end' : 'middle'}>{axis ? axis(t) : day(t).slice(0, 5)}</text>)}
+      {width > 0 && <svg width={width} height={height} role={points.some(p => p.href) ? 'group' : 'img'} aria-label={series.map(s => s.name).join(', ') || strip?.label}>
+        <Grid ticks={ticks} left={left} right={width - 10} em={em} y={y} />
+        {(t0 === t1 ? [t0] : [t0, (t0 + t1) / 2, t1]).map((t, i) => <text key={i} x={x(t)} y={height - em * .35} className="ov-axis" textAnchor={i === 0 ? 'start' : i === 2 ? 'end' : 'middle'}>{axis ? axis(t) : day(t).slice(0, 5)}</text>)}
+        {missing.length > 0 && <Grid ticks={[{ value: 0, label: strip!.label }]} left={left} right={width - 10} em={em} y={() => stripY} />}
         {bands.map((band, i) => <Band key={`band-${i}`} band={band} x={x(band.from)} y={8} width={x(band.to) - x(band.from)} height={plotH} />)}
-        {series.map(s => <g key={s.name} data-series={s.name} data-dash={s.dash ?? 'solid'} data-marker={s.marker}>
-          {!s.dots && <polyline fill="none" stroke={s.color} strokeWidth={Math.max(2, em / 8)} strokeLinejoin="round" strokeLinecap={s.dash === 'dot' ? 'round' : undefined} strokeDasharray={dashArray(s.dash, em)} points={s.points.flatMap((p, i) => s.interpolation === 'step' && i ? [[p[0], s.points[i - 1]![1]], p] : [p]).map(p => `${x(p[0]!)},${y(p[1]!)}`).join(' ')} />}
-          {(s.dots ? s.points : s.marker ? s.points.length <= 30 ? s.points : s.points.slice(-1) : []).map((p, i) => {
-            const label = `${s.label?.(p[0], i) ?? s.name}: ${format(p[1])}`, highlighted = s.highlight?.(p[0], i)
-            const point = s.dots
-              ? <circle className="ov-line-point" data-highlight={highlighted || undefined} cx={x(p[0])} cy={y(p[1])} r={highlighted ? 6 : Math.max(3, em / 5)} fill={highlighted ? 'var(--chart-live-surface, var(--bg-card))' : s.color} stroke={highlighted ? s.color : 'var(--chart-live-surface, var(--bg-card))'} strokeWidth={highlighted ? 2.5 : 1.5}><title>{label}</title></circle>
-              : <path d={markerPath(s.marker!, x(p[0]), y(p[1]), Math.max(3, em / 5))} fill={s.color} stroke="var(--chart-live-surface, var(--chart-canvas))" strokeWidth={1.5} />
-            return <a key={identity(s, i)} href={s.href?.(p[0], i)} aria-label={s.href ? label : undefined} onFocus={() => setCursor({ at: p[0], series: s.name, id: identity(s, i) })} onBlur={() => setCursor(null)}>{point}</a>
-          })}
-        </g>)}
+        {series.filter(s => !s.dots).map(s => <polyline key={s.name} data-series={s.name} data-dash={s.dash ?? 'solid'} fill="none" stroke={s.color} strokeWidth={Math.max(2, em / 8)} strokeLinejoin="round" strokeLinecap={s.dash === 'dot' ? 'round' : undefined} strokeDasharray={dashArray(s.dash, em)} points={s.points.flatMap((p, i) => s.interpolation === 'step' && i ? [[p[0], s.points[i - 1]![1]], p] : [p]).map(p => `${x(p[0]!)},${y(p[1]!)}`).join(' ')} />)}
+        {points.map(p => {
+          const label = `${p.label}: ${p.value === null ? strip!.label : format(p.value)}`, cy = p.value === null ? stripY : y(p.value)
+          return <a key={p.key} href={p.href} aria-label={p.href ? label : undefined} onFocus={() => setCursor({ at: p.at, key: p.key })} onBlur={() => setCursor(null)}
+            onMouseEnter={event => { if (!event.currentTarget.closest('svg')?.contains(document.activeElement)) setCursor({ at: p.at, key: p.key }) }}
+            onMouseLeave={event => { if (!event.currentTarget.closest('svg')?.contains(document.activeElement)) setCursor(null) }}>
+            {p.marker ? <path d={markerPath(p.marker, x(p.at), cy, Math.max(3, em / 5))} fill={p.color} /> :
+              <circle className="ov-line-point" data-unscored={p.value === null || undefined} data-highlight={p.highlight || undefined} cx={x(p.at)} cy={cy} r={p.highlight ? 6 : Math.max(3, em / 5)} fill={p.highlight || p.value === null ? 'var(--chart-live-surface, var(--bg-card))' : p.color} stroke={p.highlight || p.value === null ? p.color : 'var(--chart-live-surface, var(--bg-card))'} strokeWidth={p.highlight ? 2.5 : 1.5} strokeDasharray={p.value === null ? '2 2' : undefined}><title>{label}</title></circle>}
+          </a>
+        })}
         {[...marks].sort((a, b) => a.at - b.at).map((mark, i) => <Mark key={`mark-${i}`} mark={mark} x={x(mark.at)} top={8} bottom={8 + plotH} row={i % 3} em={em} flip={x(mark.at) > left + plotW * .62} />)}
-        {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={8} y2={8 + plotH} className="ov-crosshair" />}
-        {hover !== null && !cursor?.series && series.filter(s => s.points.length).map(s => {
+        {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={8} y2={missing.length ? stripY : 8 + plotH} className="ov-crosshair" />}
+        {hover !== null && !cursor?.key && series.filter(s => s.points.length).map(s => {
           const p = s.points[nearest(s)]!
           return <circle key={s.name} cx={x(p[0])} cy={y(p[1])} r={Math.max(4, em / 4)} fill={s.color} stroke="var(--chart-live-surface, var(--bg-card))" strokeWidth={2} pointerEvents="none" />
         })}
@@ -369,9 +369,7 @@ export function Spark({ points, max = 1, color = LIVE_SERIES[0], label, format =
       onMouseMove={label ? (event) => {
         const box = event.currentTarget.getBoundingClientRect()
         const t = t0 + ((event.clientX - box.left) / Math.max(1, box.width)) * (t1 - t0)
-        let best = 0
-        for (let i = 1; i < points.length; i++) if (Math.abs(points[i]![0] - t) < Math.abs(points[best]![0] - t)) best = i
-        setHover(best)
+        setHover(points.reduce((best, p, i) => Math.abs(p[0] - t) < Math.abs(points[best]![0] - t) ? i : best, 0))
       } : undefined}>
       {label && <title>{reading ?? label}</title>}
       <polyline fill="none" stroke={color} strokeWidth={1.6} points={d} />
