@@ -14,7 +14,7 @@
  * but the given rank.
  */
 
-import { kn, TIERS_BEST_FIRST, tierAtLeast, tierSummary, tierTotal, usd } from "./format.js";
+import { kn, TIERS_BEST_FIRST, tierAtLeast, tierSummary, tierTotal, formatCost } from "./format.js";
 import { circle, hbar, line, NARROW, rect, svgRoot, text, titled, WIDE } from "./svg.js";
 import { table } from "./table.js";
 import { capitalize, listJoin, plural, textBlock, textWidth, wrap } from "./text.js";
@@ -117,7 +117,7 @@ function describe(task: string, setup: Setup, cell: MatrixCell | undefined, mean
   else parts.push(`${cell.attempts} ${plural(cell.attempts!, "attempt")}`);
   const tiers = tierSummary(cell.tiers, cell.unmeasured, cell.flagged);
   if (tiers) parts.push(tiers);
-  if (cell.costUsd !== null) parts.push(cell.costUsd > 0 ? usd(cell.costUsd) : "cost unknown");
+  if (cell.costUsd !== null) parts.push(cell.costUsd > 0 ? formatCost(cell.costUsd) : "cost unknown");
   return parts.join(" · ").replace(`${setup.label} · `, `${setup.label}: `);
 }
 
@@ -266,7 +266,7 @@ export function taskMatrix(
         const extra =
           !means && cell && cell.solved !== null && (cell.tiers || cell.unmeasured || cell.flagged)
             ? ` · ${tierSummary(cell.tiers, cell.unmeasured, cell.flagged)}` : "";
-        const cost = cell && cell.costUsd !== null ? ` · ${usd(cell.costUsd)}` : "";
+        const cost = cell && cell.costUsd !== null ? ` · ${formatCost(cell.costUsd)}` : "";
         return main === "·" ? "not run" : `${main}${extra}${cost}`;
       }),
     ]),

@@ -1,3 +1,4 @@
+@import "../figure.css";
 /* Shared live charts. Consumers may set --chart-live-* tokens on an ancestor. Sizes are px on the 12/14 type scale and a
    4 px grid, so a host's font size never rescales them. */
 .ov-empty { margin: 0; color: var(--chart-live-faint, #777); font-size: 14px; }
@@ -121,7 +122,7 @@ button.tgc-count-label { cursor: pointer; }
 
 .ov-gantt { font: 14px/20px var(--font-sans, sans-serif); }
 .ov-gantt .ov-axis { fill: var(--chart-live-muted, var(--text-muted, #666)); font-size: 13px; }
-.ov-gantt .ov-mark-label { fill: var(--chart-live-fg, var(--text-primary, currentColor)); font-size: 13px; }
+.ov-gantt .ov-mark-label { fill: var(--chart-live-fg, var(--text-primary, currentColor)); font-size: 13px; pointer-events: none; }
 .ov-gantt .ov-tip { background: var(--chart-live-raised, var(--bg-elevated, #fff)); border-color: var(--chart-live-border, var(--border-color, #aaa)); max-width: min(240px, 100%); box-sizing: border-box; }
 .ov-gantt-scroll { overscroll-behavior: contain; }
 .ov-gantt [role='button'] { cursor: pointer; outline: none; }
@@ -131,7 +132,7 @@ button.tgc-count-label { cursor: pointer; }
 .ov-gantt [data-open='true'] rect { animation: ov-gantt-live var(--motion-ambient) infinite; }
 .ov-gantt [data-labelled="false"] text { display: none; }
 .ov-gantt [data-labelled]:is(:hover, :focus) text { display: block; }
-.ov-gantt [data-labelled]:focus { outline: none; }
+.ov-gantt [data-labelled]:focus { outline: auto; }
 .ov-gantt-count { fill: var(--chart-live-fg, var(--chart-ink)); }
 .ov-gantt-end { fill: var(--chart-live-fg, var(--chart-ink)); font-size: 13px; paint-order: stroke; stroke: var(--chart-live-surface, var(--chart-canvas)); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
 .ov-gantt[data-featured] .ov-events { display: none; }
@@ -189,3 +190,5 @@ button.tgc-count-label { cursor: pointer; }
 .tgc-version-graph .vg-row[data-arriving] { transition: opacity var(--motion-arrive); }
 @starting-style { .tgc-version-graph .vg-row[data-arriving] { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .tgc-version-graph .vg-row[data-arriving] { transition: none; } }
+
+.ov-gantt .tgc-gantt-end { dominant-baseline: middle; }

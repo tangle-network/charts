@@ -1,4 +1,5 @@
-/** Time-axis geometry for the trace inspector: clock-aligned steps, labels and the zoom window. */
+/** Time-axis geometry for the trace inspector: clock-aligned steps and the zoom window. */
+export { formatClock } from '../format.js'
 
 const STEPS = [
   1, 2, 5, 10, 20, 50, 100, 200, 500,
@@ -20,19 +21,6 @@ export function clockTicks(startMs: number, endMs: number, widthPx: number, minG
   const ticks: number[] = []
   for (let t = Math.ceil(startMs / step) * step; t <= endMs && ticks.length < 400; t += step) ticks.push(t)
   return ticks
-}
-
-/** 0s, 500ms, 20s, 1m 30s, 2h, 1h 15m: an axis label at the step's own precision. */
-export function formatClock(ms: number): string {
-  if (ms === 0) return '0s'
-  if (ms < 1000) return `${Math.round(ms)}ms`
-  if (ms < 60_000) return `${+(ms / 1000).toFixed(1)}s`
-  if (ms < 3_600_000) {
-    const m = Math.floor(ms / 60_000), s = Math.round((ms % 60_000) / 1000)
-    return s ? `${m}m ${s}s` : `${m}m`
-  }
-  const h = Math.floor(ms / 3_600_000), m = Math.round((ms % 3_600_000) / 60_000)
-  return m ? `${h}h ${m}m` : `${h}h`
 }
 
 export interface ViewWindow { startMs: number; endMs: number }
