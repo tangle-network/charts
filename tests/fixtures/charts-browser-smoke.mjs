@@ -34,7 +34,7 @@ const healthy = JSON.parse(readFileSync(join(root,'docs/fixtures/healthy-flow.js
 const app = `
 import React, { useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Sparkline, StackedBarChart, FlowWaterfall, Gantt, Meter, VersionGraph, CountHeatmap, HBars, DayBars, TimelineView, Gap, DotMap } from '@tangle-network/charts/react'
+import { Sparkline, StackedBarChart, FlowWaterfall, Gantt, Meter, VersionGraph, CountHeatmap, HBars, DayBars, TimelineView, Gap, DotMap, Lines } from '@tangle-network/charts/react'
 import { AgentGraph } from '@tangle-network/charts/react/agent-graph'
 function App() {
  const [selectedBucketId, onSelectionChange] = useState(null)
@@ -57,6 +57,17 @@ function AnalyticsCounts() {
  const rows=Array.from({length:140},(_,i)=>({id:'agent-'+i,label:'Agent '+i,total:i===0?null:i===1?0:(i+extra)*columns.length,cells:Object.fromEntries(columns.map((c,j)=>[c.id,i===0?null:{value:i===1?0:i+extra,failures:j===0&&i===2?2:0}]))}))
  return <main><h1>Recorded tool calls</h1><button onClick={()=>setExtra(n=>n+100)}>Append counts</button><output>{selected}</output><CountHeatmap label="Tool calls" columns={columns} rows={rows} onSelectRow={onSelectRow}/><DayBars interval="4 h" days={["2026-10-29T00:00:00Z"]} series={[{name:"Recorded calls",color:"#8b7cf6",values:[210]}]}/><HBars rows={[{label:'Recorded',value:10+extra},{label:'Zero',value:0}]} max={110}/></main>
 }
+function ProgressLines() {
+ const [extra,setExtra]=useState(false)
+ const start=Date.parse('2026-10-28T00:00:00Z'), values=extra?[1,2,1,3]:[1,2,1]
+ const points=values.map((v,i)=>[start+Math.max(0,i-1)*3600000,v])
+ let best=0
+ return <main><button onClick={()=>setExtra(true)}>Append release</button><output>{params.get('release')||'No release selected'}</output>
+ <Lines rows={22} ticks={[{value:1,label:'1 · Manifest'},{value:2,label:'2 · Offline build'},{value:3,label:'3 · Hidden test set'}]}
+  axis={t=>new Date(t).toISOString().slice(11,16)} series={[
+   {name:'Best so far',color:'var(--chart-series-1)',interpolation:'step',points:points.map(([t,v])=>[t,best=Math.max(best,v)])},
+   {name:'Checked releases',color:'var(--chart-series-2)',dots:true,points,id:(t,i)=>'rc'+(i+1),label:(t,i)=>'rc'+(i+1),href:(t,i)=>'?id=progress-lines&release=rc'+(i+1)+'&globals='+encodeURIComponent(params.get('globals')||''),highlight:(t,i)=>i=== (extra?3:1)}]}/></main>
+}
 function RecordedTimeline() {
  const start=Date.parse('2026-10-28T00:00:00Z')
  return <main><TimelineView options={{measure:'Recorded work',now:start+60000}} lanes={[{id:'lead',label:'Recorded lead',spans:[{start,end:null,state:'running'}],ticks:[{at:start+1000,outcome:'ok'}]},{id:'worker',parent:'lead',label:'Recorded worker',spans:[{start:start+1000,end:start+2000,state:'missing'}],ticks:[{at:start+2000,outcome:'oom'}]}]}/></main>
@@ -67,7 +78,7 @@ function PaletteContracts() {
 const params = new URLSearchParams(location.search)
 const name = (params.get('id') ?? '').replace('chatcontrols-flowwaterfall--','')
 document.documentElement.dataset.theme=params.get('globals')?.includes('agent-light')?'light':'dark'
-createRoot(document.getElementById('root')).render(name === 'palette-contracts' ? <PaletteContracts/> : name === 'timeline-tree' ? <RecordedTimeline/> : name === 'analytics-counts' ? <AnalyticsCounts/> : name === 'versions' ? <Versions/> : name === 'topology' ? <Topology/> : name === 'journey' ? <Journey/> : name ? <FlowApp name={name}/> : <App />)
+createRoot(document.getElementById('root')).render(name === 'progress-lines' ? <ProgressLines/> : name === 'palette-contracts' ? <PaletteContracts/> : name === 'timeline-tree' ? <RecordedTimeline/> : name === 'analytics-counts' ? <AnalyticsCounts/> : name === 'versions' ? <Versions/> : name === 'topology' ? <Topology/> : name === 'journey' ? <Journey/> : name ? <FlowApp name={name}/> : <App />)
 `
 writeFileSync(join(dir, 'app.jsx'), app)
 await build({entryPoints:[join(dir,'app.jsx')],bundle:true,outfile:join(dir,'app.js'),jsx:'automatic',alias:{react:dirname(peerRequire.resolve('react/package.json')),'react-dom':dirname(peerRequire.resolve('react-dom/package.json'))}})
