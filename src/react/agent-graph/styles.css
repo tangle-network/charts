@@ -4,6 +4,8 @@
 @source "./*.tsx";
 @source "./motion.ts";
 @source "../../../node_modules/@tangle-network/ui/src/run/status-meta.tsx";
+@source "../../../node_modules/@tangle-network/ui/src/primitives/{hover-card,popover}.tsx";
+@source "../../../node_modules/@tangle-network/ui/src/lib/motion.ts";
 .agent-graph { container-type: inline-size; }
 .ag-live { --ag-fg: hsl(var(--foreground)); --ag-muted: hsl(var(--muted-foreground)); --ag-surface: hsl(var(--card)); --ag-border: hsl(var(--border)); }
 .ag-live-slot { display: flex; align-items: flex-start; width: 100%; height: 100%; }

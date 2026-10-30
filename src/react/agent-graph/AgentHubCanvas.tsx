@@ -1,3 +1,4 @@
+import { HoverCard } from "@tangle-network/ui/primitives/hover-card";
 /** The hub presents agent and tool calls on a stable canvas or a readable list. */
 
 import { type KeyboardEvent, type ReactNode, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -192,19 +193,15 @@ export function AgentHubCanvas(props: AgentHubCanvasProps) {
 
   const openEntity = open ? entities.get(open) : undefined;
   const popover = openEntity && (() => {
-    const p = at(openEntity.id);
-    const right = (p.x + 140 + 280) * scale < (width || w);
-    const left = right ? (p.x + 40) * scale : Math.max(8, (p.x - 40) * scale - 280);
-    const top = list ? 8 : Math.max(8, (p.y - metrics.hubTile / 2 - 8) * scale);
     const summary = openEntity.kind === "you" ? (typeof you === "object" ? you.summary : undefined)
       : openEntity.agent?.turn ?? openEntity.sub ?? undefined;
-    return <HubPopover entity={openEntity} entities={entities} calls={props.calls === undefined ? undefined : visibleCalls} now={now} left={left} top={top} summary={summary}
+    return <HubPopover entity={openEntity} entities={entities} calls={props.calls === undefined ? undefined : visibleCalls} now={now} container={wrap.current} summary={summary}
       closeRef={closeRef} onClose={() => { const id = open!; setOpen(null); buttons.current.get(id)?.focus(); }} />;
   })();
 
 
   return (
-    <section className={`ag-root ${className ?? ""}`} aria-label={typeof title === "string" ? title : "Agent graph"}>
+    <HoverCard anchor={open ? buttons.current.get(open) : null} open={!!openEntity}><section className={`ag-root ${className ?? ""}`} aria-label={typeof title === "string" ? title : "Agent graph"}>
       <style>{AGENT_HUB_CSS}</style>
       <header className="ag-head">
         <span className="ag-title"><span className="ag-title-mark" aria-hidden />{title}</span>
@@ -255,6 +252,6 @@ export function AgentHubCanvas(props: AgentHubCanvasProps) {
       {!list && <ul className="ag-legend" aria-label="Edge colours">
         {(["call", "answer", "needs-you", "failed"] as const).map((k) => <li key={k}><span className="ag-legend-line" style={{ background: CALL_COLOR[k] }} />{CALL_LABEL[k]}</li>)}
       </ul>}
-    </section>
+    </section></HoverCard>
   );
 }

@@ -292,15 +292,12 @@
 .fw-root .fw-link-down::before { left: -3.25px; }
 .fw-root .fw-link-up::before { right: -3.25px; }
 
-.fw-root .fw-card-anchor { display: contents; }
 .fw-root .fw-seg-alt { filter: brightness(.78); }
 .fw-root.fw-root-agents .fw-slider { background: linear-gradient(90deg, color-mix(in oklab, var(--fw-text) 32%, transparent) var(--fw-progress), var(--fw-well) var(--fw-progress)) 0 50% / 100% 4px no-repeat; }
 .fw-root.fw-root-agents .fw-slider::-webkit-slider-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--fw-text); box-shadow: 0 0 0 3px var(--fw-surface); }
 .fw-root.fw-root-agents .fw-slider::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--fw-text); box-shadow: 0 0 0 3px var(--fw-surface); }
-.fw-root .fw-card { position: absolute; z-index: 20; width: min(320px, calc(100% - 16px)); max-height: min(60vh, 560px); overflow-y: auto; overscroll-behavior: contain; padding: 12px; border-radius: var(--radius-card); background: var(--fw-raised); border: 1px solid var(--fw-border);
-  box-shadow: var(--shadow-dropdown); transition: left var(--motion-surface), top var(--motion-surface), opacity var(--motion-control); }
-.fw-root .fw-card[role="tooltip"] { pointer-events: none; }
-.fw-root .fw-card-above .fw-card { transform: translateY(-100%);  }
+.fw-root .fw-card { position: relative; width: 100%; max-height: min(60vh, 560px); overflow-y: auto; overscroll-behavior: contain; padding: 12px; border-radius: var(--radius-card); background: var(--fw-raised); border: 1px solid var(--fw-border);
+  box-shadow: var(--shadow-dropdown); transition: opacity var(--motion-control); }
 .fw-root .fw-card-agent { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 14px; font-weight: 600; }
 .fw-root .fw-card-agent .fw-agent-dot { align-self: center; }
 .fw-root .fw-card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }

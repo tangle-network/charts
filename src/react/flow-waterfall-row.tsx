@@ -17,7 +17,6 @@ export interface RowEvents {
   onToggle: (row: FlowWaterfallRow) => void
   /** Hover of a mark: the card shows `target` (a span id) anchored to `element`, at the pointer's `x`. */
   onInspect: (target: string, element: HTMLElement, x?: number) => void
-  onLeave: () => void
   onPin: (target: string, element: HTMLElement, x?: number) => void
   onActivate: (row: FlowWaterfallRow) => void
 }
@@ -173,7 +172,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
           {span.marks?.map(mark => <span key={`m-${mark.at}-${mark.label}`} className="fw-mark" data-mark={mark.kind} style={at(mark.at, mark.at)} title={mark.label} aria-label={mark.label} role="img" />)}
           <span className={`fw-bar fw-k-${isAgent ? 'pipeline' : kind}${row.approx ? ' fw-approx' : ''}${marks.length ? ' fw-has-marks' : ''}${row.hasAgents ? ' fw-has-agents' : ''}`}
             data-tone={toneKey(row.tone)} style={at(span.startMs, running ? OPEN_END : span.endMs)}
-            onPointerEnter={inspect} onPointerLeave={props.onLeave}
+            onPointerEnter={inspect}
             onClick={event => { event.stopPropagation(); if (family) props.onToggle(row); else props.onPin(row.id, event.currentTarget, event.clientX) }}>
             {!isAgent && !row.ok && <span className="fw-glyph"><FailGlyph /></span>}
             {!isAgent && row.ok && row.retry && <span className="fw-glyph"><RetryGlyph /></span>}

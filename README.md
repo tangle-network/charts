@@ -362,3 +362,7 @@ CHARTS_REACT_VERSION=19 CHARTS_PROOF_DIR=/tmp/charts-react19 node scripts/charts
 
 Consumers: agent-record adapts record provenance; agent-app supplies application trace producers; Creative consumes both. Intelligence already uses the row/axis primitives with its controlled virtualized tree. Tangle Website’s `RecordedRunWaterfall` uses the Header/Row primitives; Blueprint Agent’s execution timeline is a separately owned follow-up. Keep these existing primitives exported. Agent-record’s earlier agent-app dependency increased its installed graph from 134 to 256 package versions (tangle-tools #1674); adopting the lower chart owner removes that framework dependency, with the actual new graph measured by the deployment owner.
 
+
+Record duration, clock, compact counts, USD and UTC helpers are re-exported from `@tangle-network/ui/utils/format`. The pure formatter leaf is bundled into static figures and declarations, so a static-only consumer needs neither UI nor React. React clocks remain external to preserve their single physical binding.
+
+Topology metrics, Hub details and waterfall cards use UI's shared HoverCard/Popover intent, positioning and focus lifecycle. Delegated DOM and measured pointer anchors preserve the original row/keyboard semantics; local portal containers retain theme variables without copying computed styles. Waterfall playback and zoom commands live with their clock/window owners, including cancellation when a reader unmounts.

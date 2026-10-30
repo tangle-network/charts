@@ -9,19 +9,17 @@ import {
   type ReactFlowInstance,
 } from "@xyflow/react";
 import {
-  type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   useCallback,
   useEffect,
   useId,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
 import type { AgentGraphProps } from "./AgentGraph";
-import { createPortal } from "react-dom";
+import { HoverCard, HoverCardContent } from "@tangle-network/ui/primitives/hover-card";
 import { fmtCost, fmtTokenTotal } from "./format";
 import { LatestEvents } from "./latest-events";
 import {
@@ -106,14 +104,10 @@ export function AgentGraphCanvas({
   const clock = useRunNow(now);
   const animateMotion = useMotionAllowed();
   const detailsId = useId();
-  const hoverTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const hoverTarget = useRef<HTMLElement | null>(null);
   const returningFocus = useRef(false);
-  const keepDetails = () => clearTimeout(hoverTimer.current);
-  const hideDetails = () => { keepDetails(); setHovered(null); };
-  const leaveDetails = () => { keepDetails(); hoverTimer.current = setTimeout(() => setHovered(null), tokenMilliseconds("--duration-fast", wrapperRef.current)); };
-  useEffect(() => () => clearTimeout(hoverTimer.current), []);
-  const [hovered, setHovered] = useState<{ id: string; rect: DOMRect } | null>(null);
+  const [hovered, setHovered] = useState<{ id: string; anchor: HTMLElement } | null>(null);
+  const hideDetails = () => setHovered(null);
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const [phonePage, setPhonePage] = useState(0);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -314,7 +308,7 @@ export function AgentGraphCanvas({
     );
   }
   return (
-    <div
+    <HoverCard anchor={hovered?.anchor} open={!!hovered} onOpenChange={open => { if (!open) hideDetails(); }}><div
       ref={(el) => {
         wrapperRef.current = el;
         measureCanvas(el);
@@ -322,7 +316,7 @@ export function AgentGraphCanvas({
       className={`agent-graph ag-live${live ? "" : " ag-topology"} relative flex flex-col ${className ?? ""}`}
       tabIndex={-1}
       onKeyDownCapture={event => { if (event.target instanceof HTMLElement && event.target.closest("[data-agent-metrics]")) return; if (event.key === "Tab" && !event.shiftKey && hovered) { event.preventDefault(); document.getElementById(detailsId)?.focus(); return; } if (event.key === "Escape") hideDetails(); handleKeyDown(event); }}
-      onFocusCapture={event => { if (!(event.target instanceof HTMLElement) || returningFocus.current) return; keepDetails(); if (event.target.closest("[data-agent-metrics]")) return; if (!event.target.matches(":focus-visible")) { hideDetails(); return; } const node = event.target.closest<HTMLElement>(".react-flow__node, [data-agent-id]"); const id = node?.dataset.id ?? node?.dataset.agentId; hoverTarget.current = node ?? null; setHovered(id && byId.has(id) ? { id, rect: node!.getBoundingClientRect() } : null); }}
+      onFocusCapture={event => { if (!(event.target instanceof HTMLElement) || returningFocus.current) return; if (event.target.closest("[data-agent-metrics]")) return; if (!event.target.matches(":focus-visible")) { hideDetails(); return; } const node = event.target.closest<HTMLElement>(".react-flow__node, [data-agent-id]"); const id = node?.dataset.id ?? node?.dataset.agentId; hoverTarget.current = node ?? null; setHovered(id && byId.has(id) ? { id, anchor: node! } : null); }}
       onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget) && (event.relatedTarget as HTMLElement | null)?.id !== detailsId) hideDetails(); }}
       data-layout={narrow ? "list" : layout && shown ? "ready" : "pending"}
       data-columns={layout?.columns}
@@ -352,8 +346,7 @@ export function AgentGraphCanvas({
           setReady(true);
         }}
         onNodeClick={handleNodeClick}
-        onNodeMouseEnter={(event, node) => { keepDetails(); hoverTarget.current = (event.target as HTMLElement).closest<HTMLElement>(".react-flow__node"); if (hoverTarget.current) setHovered({ id: node.id, rect: hoverTarget.current.getBoundingClientRect() }); }}
-        onNodeMouseLeave={leaveDetails}
+        onNodeMouseEnter={(event, node) => { hoverTarget.current = (event.target as HTMLElement).closest<HTMLElement>(".react-flow__node"); if (hoverTarget.current) setHovered({ id: node.id, anchor: hoverTarget.current }); }}
         proOptions={{ hideAttribution: true }}
         onlyRenderVisibleElements
         nodesDraggable={false}
@@ -388,31 +381,20 @@ export function AgentGraphCanvas({
           fitViewOptions={{ padding: `${FIT_PADDING}px`, minZoom, maxZoom: 1, nodes: live ? undefined : topology.agentIds.slice(0, 2).map(id => ({ id })) }}
         />
       </ReactFlow></div>}
-      {hovered && byId.has(hovered.id) && <AgentMetrics anchor={wrapperRef.current} mode={colorMode} id={detailsId} agent={byId.get(hovered.id)!} rect={hovered.rect} onEnter={keepDetails} onLeave={leaveDetails} onClose={() => { hideDetails(); returningFocus.current = true; hoverTarget.current?.focus({ preventScroll: true }); returningFocus.current = false; }} />}
-    </div>
+      {hovered && byId.has(hovered.id) && <AgentMetrics anchor={wrapperRef.current} mode={colorMode} id={detailsId} agent={byId.get(hovered.id)!} onClose={() => { hideDetails(); returningFocus.current = true; hoverTarget.current?.focus({ preventScroll: true }); returningFocus.current = false; }} />}
+    </div></HoverCard>
   );
 }
 
 /** Metrics stay at reading size outside the zoomed canvas and its clipping container. */
-function AgentMetrics({ anchor, mode, id, agent, rect, onEnter, onLeave, onClose }: { anchor: HTMLElement | null; mode: string; id: string; agent: AgentGraphProps["nodes"][number]; rect: DOMRect; onEnter: () => void; onLeave: () => void; onClose: () => void }) {
-  const [theme, setTheme] = useState<CSSProperties>({});
-  useLayoutEffect(() => {
-    if (!anchor) return;
-    const read = () => { const css = getComputedStyle(anchor); setTheme(Object.fromEntries(Array.from(css).filter(name => name.startsWith("--") && !name.startsWith("--tw-")).map(name => [name, css.getPropertyValue(name)])) as CSSProperties); };
-    read();
-    const observer = new MutationObserver(read);
-    for (let el: HTMLElement | null = anchor; el; el = el.parentElement) observer.observe(el, { attributes: true, attributeFilter: ["class", "style", "data-theme", "data-sandbox-theme"] });
-    return () => observer.disconnect();
-  }, [anchor]);
+function AgentMetrics({ anchor, mode, id, agent, onClose }: { anchor: HTMLElement | null; mode: string; id: string; agent: AgentGraphProps["nodes"][number]; onClose: () => void }) {
   const facts = new Map([{ label: "Tokens", value: fmtTokenTotal(agent.tokens) ?? "Not recorded" }, { label: "Cost", value: fmtCost(agent.costUsd ?? undefined) ?? "Not recorded" }, ...(agent.facts ?? [])].map(fact => [fact.label.toLowerCase(), fact]));
-  const width = Math.min(420, window.innerWidth - 24), height = Math.min(560, window.innerHeight - 24);
-  const left = Math.max(12, Math.min(rect.right + 12 + width <= window.innerWidth ? rect.right + 12 : rect.left - width - 12, window.innerWidth - width - 12));
-  return createPortal(<div id={id} data-agent-metrics data-theme={anchor?.closest("[data-theme]")?.getAttribute("data-theme") ?? mode} role="tooltip" tabIndex={0} onMouseEnter={onEnter} onMouseLeave={onLeave} onWheel={event => event.stopPropagation()} onBlur={onLeave} onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); onClose(); } }} className={`${mode} rounded-xl border border-border bg-card p-4 text-sm text-foreground shadow-xl`} style={{ ...theme, colorScheme: mode, position: "fixed", zIndex: 1000, width, maxHeight: height, overflow: "auto", left, top: Math.max(12, Math.min(rect.top, window.innerHeight - height - 12)) }}>
+  return <HoverCardContent container={anchor} side="right" align="start" collisionPadding={12} id={id} data-agent-metrics role="tooltip" tabIndex={0} onWheel={event => event.stopPropagation()} onEscapeKeyDown={event => { event.preventDefault(); onClose(); }} className={`${mode} rounded-xl border border-border bg-card p-4 text-sm text-foreground shadow-xl`} style={{ colorScheme: mode, width: "min(420px, calc(100vw - 24px))", maxHeight: "min(560px, calc(100vh - 24px))", overflow: "auto" }}>
     <div className="mb-2 flex items-center justify-between gap-3"><strong>{agent.label}</strong><span>{agentStatus(agent.status).label}</span></div>
     <p className="mb-3 text-muted-foreground">{[agent.model, agent.harness, agent.role].filter(Boolean).join(" · ")}</p>
     <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-5 gap-y-1.5">
       {[...facts.values()].map(fact => <div key={fact.label} className="contents"><dt className="min-w-0 break-words text-muted-foreground">{fact.label}</dt><dd className="m-0 min-w-0 max-w-64 whitespace-normal break-words text-right tabular-nums">{fact.value}</dd></div>)}
     </dl>
     {agent.status === "failed" && <p className="mt-3 whitespace-pre-wrap break-words text-[var(--surface-danger-text)]">{agent.result ?? agent.turn ?? "Failure cause not recorded"}</p>}
-  </div>, document.body);
+  </HoverCardContent>;
 }

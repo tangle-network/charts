@@ -1,4 +1,5 @@
-import { finiteNumber, reportedCount } from './flow-trace.js';
+import { formatCost } from '@tangle-network/ui/utils/format';
+export { formatAxisDuration as duration, formatCompact, formatSpanDuration, formatCost, formatCount, formatClock, formatUtcTime } from '@tangle-network/ui/utils/format';
 import type { CostBasis, Estimate, Interval, IntervalMethod, RateRow, Tier, TierCounts } from "./types.js";
 
 export const TIERS_BEST_FIRST: Tier[] = ["S", "A", "B", "C", "F"];
@@ -21,14 +22,6 @@ export function pts(value: number): string {
 /** Axis ticks: "$30", "$2.5", "$0.05". */
 export function usdTick(value: number): string {
   return value < 0.01 ? formatCost(value) : `$${Number(value.toPrecision(2)).toLocaleString("en-US", { maximumFractionDigits: 4 })}`;
-}
-
-export function duration(ms: number): string {
-  if (ms >= 86_400_000) { const days = Math.floor(ms / 86_400_000), hours = Math.floor(ms % 86_400_000 / 3_600_000); return `${days}d${hours ? ` ${hours}h` : ''}`; }
-  const s = ms / 1000;
-  if (s < 60) return `${Math.round(s)} s`;
-  if (s < 3600) return `${(s / 60).toFixed(1)} min`;
-  return `${(s / 3600).toFixed(1)} h`;
 }
 
 export function kn(k: number, n: number): string {
@@ -143,41 +136,3 @@ export function tierTotal(tiers: TierCounts | null): number {
   return tiers ? LADDER.reduce((sum, t) => sum + tiers[t], 0) : 0;
 }
 
-export const formatCompact = (value: number | null | undefined) =>
-  value === null || value === undefined || !Number.isFinite(value) ? '—' : new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
-
-/** Span milliseconds, tenths below ten seconds, then seconds/minutes; days stay compact. */
-export function formatSpanDuration(ms: number): string {
-  if (!Number.isFinite(ms) || ms < 0) return '—'
-  const precision = ms < 10_000 ? 100 : ms < 3_600_000 ? 1000 : 60_000
-  return ms >= 86_400_000 ? duration(ms) : ms < 1000 ? `${Math.round(ms)}ms` : formatClock(Math.round(ms / precision) * precision)
-}
-
-/** $0.12, $0.005, $12.40; never rounds a recorded nonzero cost to $0.00. */
-export function formatCost(usd: number): string {
-  if (finiteNumber(usd) === undefined || usd < 0) return '—'
-  if (usd === 0) return '$0.00'
-  if (usd < 0.01) return `$${usd.toPrecision(1)}`
-  return `$${usd.toFixed(2)}`
-}
-
-/** 9.8k, 754.4k, 1.2M with the exact count left to a title. */
-export function formatCount(n: number): string {
-  return reportedCount(n) === undefined ? '—' : formatCompact(n)
-}
-
-/** Elapsed clock at millisecond precision, so zoomed axis ticks keep distinct labels. */
-export function formatClock(ms: number): string {
-  if (!Number.isFinite(ms) || ms < 0) return '—'
-  const seconds = Math.round(ms) / 1000
-  const hours = Math.floor(seconds / 3600), minutes = Math.floor(seconds % 3600 / 60), rest = Number((seconds % 60).toFixed(3))
-  return [hours ? `${hours}h` : '', minutes ? `${minutes}m` : '', rest ? `${rest}s` : ''].filter(Boolean).join(' ') || '0s'
-}
-
-/** Normalize labels to UTC without rewriting the source timestamp. */
-export function formatUtcTime(value: string, includeDate = false) {
-  const date = new Date(value)
-  if (!Number.isFinite(date.valueOf())) return 'Unknown time'
-  const iso = date.toISOString()
-  return `${includeDate ? iso.slice(0, 19).replace('T', ' ') : iso.slice(11, 19)} UTC`
-}
