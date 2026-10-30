@@ -51,6 +51,7 @@ try {
    await page.screenshot({path:`${out}/${theme}-${width}.png`,fullPage:true})
    await page.emulateMedia({reducedMotion:'reduce'})
    assert.equal(await track.evaluate(node=>getComputedStyle(node).transitionDuration),'0s')
+   checks.push({theme,width,result:'PASS',rows:140,mountedRows:await table.getByRole('row').count(),selected:'agent-120',before:old,after:await table.locator('[data-heat-row="120"][data-heat-column="1"]').innerText(),motion:during})
    await page.emulateMedia({reducedMotion:'no-preference'})
    await page.goto(`${url}/?id=progress-lines&globals=theme:agent-${theme}`)
    const lines=page.locator('svg[aria-label="Best so far, Checked releases"]')
@@ -76,7 +77,6 @@ try {
    assert.equal(await page.locator('.ov-line-point').last().evaluate(n=>getComputedStyle(n).animationName),'none')
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false)
    assert.deepEqual(errors,[])
-   checks.push({theme,width,result:'PASS',rows:140,mountedRows:await table.getByRole('row').count(),selected:'agent-120',before:old,after:await table.locator('[data-heat-row="120"][data-heat-column="1"]').innerText(),motion:during})
   } finally {await context.close()}
  }
  await writeFile(`${out}/checks.json`,JSON.stringify(checks,null,2)+'\n')

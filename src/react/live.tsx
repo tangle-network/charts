@@ -179,8 +179,8 @@ export function Lines({ series, format = formatCompact, rows = 13, axis, marks =
   marks?: ChartMark[]; bands?: ChartBand[]; ticks?: { value: number; label: string }[]
 }) {
   const [ref, width, em] = useWidth<HTMLDivElement>()
-  const height = Math.round(rows * em)
-  const [hover, setHover] = useState<number | null>(null)
+  const [cursor, setCursor] = useState<{ at: number; series?: string; id?: string } | null>(null)
+  const hover = cursor?.at ?? null
   const gap = eventsGap(marks, bands)
   if (gap) throw new RangeError(gap)
   const all = series.flatMap(s => s.points)
@@ -191,19 +191,20 @@ export function Lines({ series, format = formatCompact, rows = 13, axis, marks =
   const ticks = namedTicks?.length ? namedTicks : automatic.ticks.map(value => ({ value, label: format(value) }))
   const top = namedTicks?.length ? Math.max(1, ...ticks.map(t => t.value), ...all.map(p => p[1])) : automatic.top
   const left = Math.round(namedTicks?.length ? Math.min(width * .48, Math.max(3.4, ...ticks.map(t => t.label.length * .56 + .8)) * em) : 3.4 * em)
-  const plotW = Math.max(0, width - left - 10), plotH = height - Math.round(1.8 * em) - 8
+  const height = Math.round(rows * em), plotW = Math.max(0, width - left - 10), plotH = height - Math.round(1.8 * em) - 8
   const x = (t: number) => left + (t1 > t0 ? (t - t0) / (t1 - t0) * plotW : 0)
   const y = (v: number) => 8 + plotH - v / top * plotH
-  const nearest = (s: LineSeries) => s.points.reduce((best, p, i) => Math.abs(p[0] - hover!) < Math.abs(s.points[best]![0] - hover!) ? i : best, 0)
+  const identity = (s: LineSeries, i: number) => s.id?.(s.points[i]![0], i) ?? `${s.points[i]![0]}:${i}`
+  const nearest = (s: LineSeries) => cursor?.series === s.name ? Math.max(0, s.points.findIndex((_, i) => identity(s, i) === cursor.id)) : s.points.reduce((best, p, i) => Math.abs(p[0] - hover!) < Math.abs(s.points[best]![0] - hover!) ? i : best, 0)
   const day = (t: number) => new Date(t).toISOString().slice(5, 16).replace('T', ' ')
   const readout = hover === null ? [] : series.filter(s => s.points.length).map(s => {
     const i = nearest(s), p = s.points[i]!
     return { label: s.label?.(p[0], i) ?? s.name, value: format(p[1]), color: s.color }
   })
   return (
-    <div ref={ref} className="ov-plot" onMouseLeave={() => setHover(null)} onMouseMove={event => {
+    <div ref={ref} className="ov-plot" onMouseLeave={() => setCursor(current => current?.series ? current : null)} onMouseMove={event => {
       const px = event.clientX - event.currentTarget.getBoundingClientRect().left
-      setHover(px >= left ? t0 + (px - left) / Math.max(1, plotW) * (t1 - t0) : null)
+      setCursor(current => current?.series ? current : px >= left ? { at: t0 + (px - left) / Math.max(1, plotW) * (t1 - t0) } : null)
     }}>
       {width > 0 && <svg width={width} height={height} role={series.some(s => s.href) ? 'group' : 'img'} aria-label={series.map(s => s.name).join(', ')}>
         {ticks.map(t => <g key={t.value}>
@@ -219,12 +220,12 @@ export function Lines({ series, format = formatCompact, rows = 13, axis, marks =
             const point = s.dots
               ? <circle className="ov-line-point" data-highlight={highlighted || undefined} cx={x(p[0])} cy={y(p[1])} r={highlighted ? 6 : Math.max(3, em / 5)} fill={highlighted ? 'var(--chart-live-surface, var(--bg-card))' : s.color} stroke={highlighted ? s.color : 'var(--chart-live-surface, var(--bg-card))'} strokeWidth={highlighted ? 2.5 : 1.5}><title>{label}</title></circle>
               : <path d={markerPath(s.marker!, x(p[0]), y(p[1]), Math.max(3, em / 5))} fill={s.color} stroke="var(--chart-live-surface, var(--chart-canvas))" strokeWidth={1.5} />
-            return <a key={`${p[0]}:${i}`} href={s.href?.(p[0], i)} aria-label={s.href ? label : undefined} onFocus={() => setHover(p[0])} onBlur={() => setHover(null)}>{point}</a>
+            return <a key={identity(s, i)} href={s.href?.(p[0], i)} aria-label={s.href ? label : undefined} onFocus={() => setCursor({ at: p[0], series: s.name, id: identity(s, i) })} onBlur={() => setCursor(null)}>{point}</a>
           })}
         </g>)}
         {[...marks].sort((a, b) => a.at - b.at).map((mark, i) => <Mark key={`mark-${i}`} mark={mark} x={x(mark.at)} top={8} bottom={8 + plotH} row={i % 3} em={em} flip={x(mark.at) > left + plotW * .62} />)}
         {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={8} y2={8 + plotH} className="ov-crosshair" />}
-        {hover !== null && series.filter(s => s.points.length).map(s => {
+        {hover !== null && series.filter(s => s.points.length && cursor?.series !== s.name).map(s => {
           const p = s.points[nearest(s)]!
           return <circle key={s.name} cx={x(p[0])} cy={y(p[1])} r={Math.max(4, em / 4)} fill={s.color} stroke="var(--chart-live-surface, var(--bg-card))" strokeWidth={2} pointerEvents="none" />
         })}
@@ -250,6 +251,7 @@ export interface LineSeries {
   points: [number, number][]
   dots?: boolean
   label?: (t: number, index: number) => string
+  id?: (t: number, index: number) => string
   href?: (t: number, index: number) => string | undefined
   highlight?: (t: number, index: number) => boolean
   interpolation?: 'linear' | 'step'
@@ -257,9 +259,7 @@ export interface LineSeries {
   marker?: MarkerShape
 }
 
-function dashArray(dash: LineSeries['dash'], em: number) {
-  return dash === 'dash' ? `${Math.round(em * 0.55)} ${Math.round(em * 0.3)}` : dash === 'dot' ? `0.1 ${Math.round(em * 0.35)}` : undefined
-}
+const dashArray = (dash: LineSeries['dash'], em: number) => dash === 'dash' ? `${Math.round(em * .55)} ${Math.round(em * .3)}` : dash === 'dot' ? `0.1 ${Math.round(em * .35)}` : undefined
 
 /** A shaded span under the data; a `missing` span is hatched because it has no data. */
 function Band({ band, x, y, width, height }: { band: ChartBand; x: number; y: number; width: number; height: number }) {
