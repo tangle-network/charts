@@ -7,8 +7,9 @@ import {
   type AgentGraphCall, type AgentGraphTool, HUB_METRICS, type HubMetrics, layoutHub, orthogonalPath, YOU_ID,
 } from "./agent-hub-layout";
 import { CALL_COLOR, CALL_LABEL, type HubEntity, HubNode, HubPopover } from "./agent-hub-parts";
-import { agentQuietActivity, tokenMilliseconds, useMotionAllowed, useRunNow } from "./run-ui-state";
-import { RunStatusIcon, statusMeta } from "@tangle-network/ui/run";
+import { agentQuietActivity, tokenMilliseconds, useMotionAllowed } from "./run-ui-state";
+import { useRunNow } from "@tangle-network/ui/hooks/use-live-time";
+import { RunStatusIcon, statusMeta } from "@tangle-network/ui/run/status-meta";
 import { fmtCost } from "./format";
 
 const PAD_X = 84;
@@ -115,7 +116,7 @@ export function AgentHubCanvas(props: AgentHubCanvasProps) {
         map.set(p.id, { id: p.id, kind: "tool", label: tool.label, tool });
       } else {
         const agent = nodes.find((n) => n.id === p.id)!;
-        map.set(p.id, { id: p.id, kind: p.kind, label: agent.label, sub: (agent.status === "succeeded" ? agent.result ?? callSummaries.answer.get(agent.id)?.label : undefined) ?? agent.turn ?? (agent.status === "needs-you" ? callSummaries["needs-you"].get(agent.id)?.label : undefined) ?? callSummaries.call.get(agent.id)?.label ?? undefined, status: agent.status, quiet: agentQuietActivity(agent, now)?.label, agent });
+        map.set(p.id, { id: p.id, kind: p.kind, label: agent.label, sub: (agent.status === "done" ? agent.result ?? callSummaries.answer.get(agent.id)?.label : undefined) ?? agent.turn ?? (agent.status === "needs-you" ? callSummaries["needs-you"].get(agent.id)?.label : undefined) ?? callSummaries.call.get(agent.id)?.label ?? undefined, status: agent.status, quiet: agentQuietActivity(agent, now)?.label, agent });
       }
     }
     return map;

@@ -1,7 +1,8 @@
-import { RunStatusIcon, statusMeta } from "@tangle-network/ui/run";
+import { RunStatusIcon, statusMeta } from "@tangle-network/ui/run/status-meta";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { AgentGraphNode, AgentGraphStatus } from "./agent-graph-layout";
-import { tokenMilliseconds, useRunNow } from "./run-ui-state";
+import { tokenMilliseconds } from "./run-ui-state";
+import { useRunNow } from "@tangle-network/ui/hooks/use-live-time";
 import { fmtEventTime } from "./format";
 
 export interface LatestEventsProps {

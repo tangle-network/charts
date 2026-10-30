@@ -8,16 +8,8 @@
 import type { ElkNode } from "elkjs/lib/elk-api";
 import { loadElk } from "./elk-loader";
 
-export type AgentGraphStatus =
-  | "running"
-  | "waiting"
-  /** Blocked on a person: drawn amber, named in the header. */
-  | "needs-you"
-  | "succeeded"
-  | "failed"
-  | "stopped"
-  | "idle"
-  | "unknown";
+import type { RunStatus as AgentGraphStatus } from "@tangle-network/ui/run/status-meta";
+export type { AgentGraphStatus };
 
 export interface AgentGraphNode {
   id: string;

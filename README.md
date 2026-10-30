@@ -1,5 +1,7 @@
 # @tangle-network/charts
 
+React charts use the shared UI package named in `package.json`; install that peer for graph and React views. Static Figures remain usable without React or UI. Agent graph status uses UI's canonical `RunStatus`; normalize external status strings with `runStatus` at the host boundary.
+
 Benchmark figures as static SVG and HTML tables, plus optional React timing primitives.
 
 The React entry also exports `DayBars`, `HBars`, `Histogram`, `Lines`, `Meter`, `Spark`, and `Gantt` for live operational pages. Import `@tangle-network/charts/react/live.css` for their layout with Brand tokens loaded; `--chart-live-*` properties may customize their semantic roles. Data, state colors, destination links, labels, and interpretation remain with the caller. `DayBars` accepts an `onOpen(index)` action with keyboard activation.

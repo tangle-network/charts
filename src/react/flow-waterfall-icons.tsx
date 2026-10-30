@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { RunStatusIcon } from '@tangle-network/ui/run'
+import { RunStatusIcon } from '@tangle-network/ui/run/status-meta'
 import type { FlowSpan } from '../flow-trace.js'
 
 const svg = (children: ReactNode, label?: string) => (

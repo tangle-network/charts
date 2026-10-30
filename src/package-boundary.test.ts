@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync, rmSync, mkdirSync, symlinkSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync, rmSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -77,7 +77,7 @@ it("packs an isolated static root and optional React entrypoint", () => {
       import { readFileSync } from "node:fs";
       import { createRequire } from "node:module";
       const require = createRequire(import.meta.url);
-      for (const name of ["react", "react/jsx-runtime", "react-dom", "@types/react/package.json"]) {
+      for (const name of ["react", "react/jsx-runtime", "react-dom", "@types/react/package.json", "@tangle-network/ui/hooks/use-live-time"]) {
         assert.throws(() => require.resolve(name), { code: "MODULE_NOT_FOUND" });
       }
       for (const name of ["window", "document", "HTMLElement", "SVGElement", "ResizeObserver"]) {
@@ -115,14 +115,20 @@ it("packs an isolated static root and optional React entrypoint", () => {
     const tsc = join(dirname(typescriptManifestPath), typescriptManifest.bin.tsc);
     execFileSync(process.execPath, [tsc, "-p", "tsconfig.json"], { cwd: consumer, stdio: "pipe", timeout: 30_000 });
 
-    // Only AFTER the React-free runtime/type proofs, supply the workspace's
-    // installed React peer. This tests package export resolution, not sources.
-    symlinkSync(dirname(require.resolve("react/package.json")), join(consumer, "node_modules/react"), "dir");
-    mkdirSync(join(consumer, "node_modules/@types"), { recursive: true });
-    symlinkSync(dirname(require.resolve("@types/react/package.json")), join(consumer, "node_modules/@types/react"), "dir");
+    // Supply the declared React/graph feature peers only after the isolated static proofs.
+    const reactPeers = ["react", "react-dom", "@types/react", "@types/react-dom"].map(name =>
+      `${name}@${JSON.parse(readFileSync(require.resolve(`${name}/package.json`), "utf8")).version}`);
+    execFileSync("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", "--package-lock=false",
+      ...reactPeers, ...["@tangle-network/ui", "@xyflow/react", "elkjs", "@tangle-network/brand"].map(name =>
+        `${name}@${manifest.peerDependencies[name]}`)], {
+      cwd: consumer, stdio: "pipe", timeout: 60_000,
+    });
     writeFileSync(join(consumer, "react.mjs"), `
       import assert from "node:assert/strict";
       import { Sparkline, StackedBarChart, sparklineGeometry } from "@tangle-network/charts/react";
+      import { useRunNow as chartClock } from "@tangle-network/charts/react/agent-graph";
+      import { useRunNow as uiClock } from "@tangle-network/ui/hooks/use-live-time";
+      assert.equal(chartClock, uiClock, "Chart and host bind the exact same shared clock module");
       assert.equal(typeof Sparkline, "function"); assert.equal(typeof StackedBarChart, "function");
       assert.equal(sparklineGeometry([1, null, 3]).gaps, 1);
       assert.equal(typeof document, "undefined");

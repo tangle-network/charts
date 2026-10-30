@@ -11,7 +11,7 @@ export const AGENT_HUB_CSS = `
 .ag-chip { cursor: pointer; }
 .ag-chip-needs-you, .ag-pill-needs-you { color: var(--surface-warning-text); }
 .ag-chip-failed, .ag-pill-failed { color: var(--surface-danger-text); }
-.ag-pill-succeeded { color: var(--surface-success-text); }
+.ag-pill-done { color: var(--surface-success-text); }
 .ag-stats { margin-left: auto; display: flex; gap: 12px; flex-wrap: wrap; color: var(--ag-muted); font-variant-numeric: tabular-nums; }
 .ag-stats b, .ag-pop-call b, .ag-pop-foot b { color: var(--ag-fg); font-weight: 500; }
 .ag-canvas-wrap { position: relative; min-height: 0; border: 1px solid var(--ag-border); border-radius: var(--radius-container); background: var(--bg-root); overflow: auto; }
