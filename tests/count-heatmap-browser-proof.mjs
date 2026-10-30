@@ -56,7 +56,7 @@ try {
    await page.goto(`${url}/?id=progress-lines&globals=theme:agent-${theme}`)
    const lines=page.locator('svg[aria-label="Best so far, Checked releases"]')
    await lines.waitFor()
-   assert.match(await lines.innerText(), /3 · Hidden test set/)
+   assert.match(await lines.textContent(), /3 · Hidden test set/)
    assert.equal(await lines.locator('.ov-line-point').count(),3)
    assert.equal(await lines.locator('[data-highlight]').count(),1)
    const vertices=(await lines.locator('polyline').getAttribute('points')).split(' ').map(s=>s.split(',').map(Number))
