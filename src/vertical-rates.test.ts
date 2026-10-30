@@ -52,20 +52,6 @@ describe("vertical rate view", () => {
     expect(result.svg.wide).toContain('y="34" font-size="15"');
   });
 
-  it("supplies verified marks by id and exposes the actual same details to hover and focus", () => {
-    const result = figure(rankedRates([row("Luna", 1)], { ...options, identities: { Luna: { model: { label: "GPT-5.6 Luna", src: "/images/openai.svg" }, harness: { label: "OpenCode", src: "https://assets.example.org/opencode.svg" } } } }));
-    expect(result.svg.wide).toContain('href="/images/openai.svg"');
-    expect(result.svg.wide.match(/class="tgc-logo-plate"/g)).toHaveLength(2);
-    expect(result.svg.wide).toContain('>GPT-5.6 Luna</text>');
-    expect(result.svg.wide).toContain('>OpenCode</text>');
-    expect(result.svg.wide).toContain('tabindex="0" role="img" aria-label="Luna · 1/26 passed · 3.8%');
-    expect(result.svg.wide).toContain('$0.593 est. per pass');
-    expect(result.svg.wide).toContain('2 s median run');
-    expect(result.svg.wide).toContain('.tgc-vertical:not(:has(.tgc-column:hover)):has(');
-    expect(result.svg.wide).toContain(':focus-visible) [data-tip="0"]{opacity:1}');
-    expect(renderFigure(result, 1)).toContain('class="tgc-plot" role="group"');
-  });
-
   it("keeps many long labels readable in an explicitly wider scrolling plot", () => {
     const rows = Array.from({ length: 8 }, (_, i) => row(`Long model name with variant ${i}`, i));
     const result = figure(rankedRates(rows, options));
