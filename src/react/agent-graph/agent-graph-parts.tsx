@@ -123,7 +123,7 @@ export function AgentCardView({ agent, selected, direction, now: fixed, onOpen, 
       <span className="text-[13px] text-muted-foreground tabular-nums" title={agent.costUsd == null ? "Cost not reported" : "Cost"}>{fmtCost(agent.costUsd ?? undefined) ?? "—"}</span>
     </div>
     <p data-agent-identity="" className="m-0 truncate text-[13px] leading-[18px] text-muted-foreground" title={[agent.harness, agent.model].filter(Boolean).join(" · ")}>{[agent.harness, agent.model ? shortModel(agent.model) : null].filter(Boolean).join(" · ") || "Identity not recorded"}</p>
-    {agent.status === "failed" && <p className="m-0 line-clamp-2 text-[13px] leading-4">{agent.result ?? agent.turn ?? "Failure cause not recorded"}</p>}
+    {(agent.status === "failed" || ((agent.status === "done" || agent.status === "stopped") && (agent.result ?? agent.turn))) && <p className="m-0 line-clamp-2 text-[13px] leading-4">{agent.result ?? agent.turn ?? "Failure cause not recorded"}</p>}
     <div className="mt-auto flex items-center justify-between gap-1 text-[13px]" style={{ color: quiet ? "var(--surface-warning-text)" : s.color }}>
       <span className="flex items-center gap-1"><StatusGlyph status={agent.status} size={16} />{quiet?.label ?? s.label}</span>
       <span data-agent-tokens="" title={agent.tokens == null ? "Tokens not recorded" : "Tokens"} className="text-muted-foreground tabular-nums whitespace-nowrap">{fmtTokenTotal(agent.tokens) ?? "—"}</span>
