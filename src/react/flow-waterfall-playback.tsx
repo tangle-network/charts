@@ -16,7 +16,6 @@ export interface PlaybackBarProps {
   /** Whole-trace activity drawn under the scrub track. */
   marks: FlowSegment[]
   slider: RefObject<HTMLInputElement | null>
-  timeOutput: RefObject<HTMLOutputElement | null>
   /** Shown while scrubbed away from the trace end. */
   followLabel?: string
   onTogglePlay: () => void
@@ -29,7 +28,7 @@ export interface PlaybackBarProps {
 }
 
 /** Play, restart, speed, a scrub track over the trace's own activity, zoom and the legend. */
-export function PlaybackBar({ view, playing, limit, clockMs, speed, zoom, marks, slider, timeOutput, followLabel,
+export function PlaybackBar({ view, playing, limit, clockMs, speed, zoom, marks, slider, followLabel,
   onTogglePlay, onRestart, onSpeed, onScrub, onFollow, onZoom, onFit }: PlaybackBarProps) {
   return (
     <footer className="fw-playback">
@@ -56,7 +55,7 @@ export function PlaybackBar({ view, playing, limit, clockMs, speed, zoom, marks,
         <input ref={slider} aria-label="Playback position" type="range" min={0} max={Math.max(1, limit)} step="any" defaultValue={clockMs}
           disabled={limit === 0} className="fw-slider"
           onChange={event => onScrub(Number(event.target.value))} />
-        <output ref={timeOutput} className="fw-time" aria-label="Playback time">{formatSpanDuration(clockMs)}</output>
+        <output className="fw-time" aria-label="Playback time">{formatSpanDuration(clockMs)}</output>
       </div>
       {followLabel && <button type="button" className="fw-text-button" onClick={onFollow}>{followLabel}</button>}
       <div className="fw-zoom" role="group" aria-label="Zoom">
