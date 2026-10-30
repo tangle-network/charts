@@ -124,14 +124,13 @@ button.tgc-count-label { cursor: pointer; }
 .ov-gantt [role='button']:hover > rect:first-child { fill: var(--ix-hover-bg); }
 .ov-gantt [role='button']:focus-visible > rect:first-child { stroke: var(--accent-text); stroke-width: 2; }
 .ov-gantt [data-state] rect { transition: width var(--motion-stream), fill var(--motion-control); }
-.ov-gantt [data-open='true'] rect { animation: ov-gantt-live var(--motion-ambient) infinite; }
+.ov-gantt [data-open='true'] rect { animation: tangle-breathe var(--motion-ambient) infinite; }
 .ov-gantt [data-labelled="false"] text { display: none; }
 .ov-gantt [data-labelled]:is(:hover, :focus) text { display: block; }
 .ov-gantt [data-labelled]:focus { outline: auto; }
 .ov-gantt-count { fill: var(--chart-live-fg, var(--chart-ink)); }
 .ov-gantt-end { fill: var(--chart-live-fg, var(--chart-ink)); font-size: 13px; paint-order: stroke; stroke: var(--chart-live-surface, var(--chart-canvas)); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
 .ov-gantt[data-featured] .ov-events { display: none; }
-@keyframes ov-gantt-live { 50% { opacity: .55; } }
 @media (prefers-reduced-motion: reduce) { .ov-gantt [data-state] rect { transition: none; animation: none; } }
 
 .ov-meter-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; padding: 0; margin: 0; list-style: none; }
