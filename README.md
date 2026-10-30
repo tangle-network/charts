@@ -204,7 +204,7 @@ Lanes form a tree through `parent`: each lane is drawn under its parent with a c
 A mark with a `lane` is drawn on that lane only (a steer to one agent, a wake of the root) instead of across every lane; a lane that is not in the figure is refused.
 `detail` is the caller's facts about a lane (profile, model, status, attempts, cost, top error), one hover line each on the lane's label and every span, and a column of the lanes table.
 `collapsed` folds the named lanes' subtrees: descendants are hidden, the label gains `+N`, and the folded lane's ticks and counts total its subtree. Passing `collapsed`, even empty, makes each parent lane's label a fold toggle (`data-toggle`, a button with `aria-expanded`); `TimelineView` keeps the fold state and wires the toggles to a click, Enter or Space, returning focus to the toggle.
-`Gantt` keeps its single-span `rows` input; `lanes` takes the same shape as `timeline` and draws spans only.
+`Gantt` keeps its single-span `rows` input and producer lane order; `lanes` uses the same prepared plot as `timeline`. The React adapter owns selection, focus and bounded row visibility; report tables are generated only for reports. The live stylesheet includes the shared figure rules.
 
 `Meter` with `segments` draws each recorded part of `total`; the remainder no segment accounts for is hatched and labelled `untraced` (rename it with `untraced`). A null segment is listed as `not recorded` and takes no width; a missing total hatches the whole track. Parts that sum past the total throw.
 
@@ -322,7 +322,9 @@ npm run build
 
 The package-boundary test builds and packs Charts, installs the tarball in an OS-temporary consumer with a normal offline npm install (no peer-omission flags), asserts React/React DOM/React types cannot resolve, and executes the static root without DOM globals. It compares root exports, static SVG/tables, Refusals, report/chart/plot HTML and CSS with the untouched source implementation, then compiles a static-only consumer with `lib: ["ES2022"]`, `types: []` and `skipLibCheck: false`. Only afterward does it supply the installed React peer/types to verify the packed React runtime and declarations. It runs under `npm test`.
 
-The component tests cover gap/zero/one/equal/negative cases, controlled identity, keyboard/touch selection, nonvisual values and resize contracts. The jsdom resize check verifies fluid/minimum-width attributes and preserved selection, **not browser-computed layout**; The retained [packed-browser fixture](scripts/charts-browser-smoke.mjs), ported from brand, and its [browser proof](scripts/charts-browser-proof.mjs) check Chromium at 1100px and 390px, keyboard selection, emulated touch, light/dark Brand tokens, reduced motion, and top-layer positioning inside a transformed, paint-contained panel. It passes with React 18 and React 19; the React 18 consumer also compiles the packed declarations with React 18 types. Physical touch hardware and screen-reader audio remain unchecked.
+The [viewport and keyboard proof](tests/integration/journey.browser.mjs) covers100,124and1000 lanes in both themes and widths, real stylesheet imports, native focus through clock updates, dense marker hover, End/Home navigation and folded historical records.
+
+The retained [packed-browser fixture](tests/fixtures/charts-browser-smoke.mjs), ported from brand, and its [browser proof](scripts/charts-browser-proof.mjs) check Chromium at 1100px and 390px, keyboard selection, emulated touch, light/dark Brand tokens, reduced motion, and top-layer positioning inside a transformed, paint-contained panel. It passes with React 18 and React 19; the React 18 consumer also compiles the packed declarations with React 18 types. Physical touch hardware and screen-reader audio remain unchecked.
 
 ### Figure browser proof
 

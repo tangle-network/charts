@@ -2,10 +2,10 @@
  * Lanes of recorded spans on one time axis, with recorded marks; an open span runs to the supplied `now`. Lanes can
  * form a tree (`parent`), carry attempt ticks coloured by outcome with ok and failed counts, and fold by subtree.
  */
-import { type ChartBand, type ChartMark, drawBands, drawGroups, drawMarks, EVENTS_READ, eventsGap, eventsTable, groupRowHeight, markHead, markLabelRows, markName } from "./events.js";
+import { type ChartBand, type ChartMark, drawBands, drawGroups, prepareMarks, EVENTS_READ, eventsGap, eventsTable, groupRowHeight, markHead, markLabelRows, markName } from "./events.js";
 import { duration } from "./format.js";
 import { OUTCOME_ORDER, type TickOutcome } from "./outcomes.js";
-import { hatch, line, NARROW, rect, svgRoot, text, titled, wideWidth } from "./svg.js";
+import { hatch, line, NARROW, rect, svgRoot, text, titled, wideWidth, svgPart, type SvgPart } from "./svg.js";
 import { table } from "./table.js";
 import { capitalize, esc, plural, textWidth, wrap } from "./text.js";
 import type { Figure, Refusal } from "./types.js";
@@ -69,14 +69,22 @@ const STEPS = [1, 2, 5, 10, 15, 30, 60, 120, 180, 360, 720, 1440, 2880, 10080].m
 
 interface Row { lane: TimelineLane; depth: number; children: number; hidden: number; folded: boolean; ticks: TimelineTick[] | undefined }
 
-export function timeline(lanes: TimelineLane[], o: TimelineOptions): Figure | Refusal {
+interface TimelinePresentation { gantt?: boolean; legacy?: boolean; span?: (start: number, end: number) => string }
+export interface TimelineViewport { em?: number; maxHeight?: number; scrollTop?: number; selectedId?: string; selectable?: boolean; colors?: Record<string, string>; bestMark?: string; header?: boolean }
+export interface TimelinePlot { parts: SvgPart[]; body: string; height: number; rowHeight: number; top: number }
+export interface PreparedTimeline { plot: (width: number, view?: TimelineViewport) => TimelinePlot; report: () => Figure; rowIds: string[] }
+
+/** Domain-size exception: one compiler closure shares validated time/tree indexes between the lazy report and live plot. */
+export function prepareTimeline(lanes: TimelineLane[], o: TimelineOptions, presentation: TimelinePresentation = {}): PreparedTimeline | Refusal {
+  const inputGap = presentation.gantt && (eventsGap(o.marks, o.bands) ?? (o.now !== undefined && !Number.isFinite(o.now) ? "now must be a finite time." : null));
+  if (inputGap) throw new RangeError(inputGap);
   const id = o.id ?? "timeline";
   if (!lanes.length) return { id, refused: "No lanes recorded." };
   if (!o.measure?.trim()) return { id, refused: "A timeline needs a measure." };
-  if (new Set(lanes.map((lane) => lane.id)).size !== lanes.length) return { id, refused: "Duplicate lane ids." };
+  if (!presentation.gantt && new Set(lanes.map((lane) => lane.id)).size !== lanes.length) return { id, refused: "Duplicate lane ids." };
   if (o.now !== undefined && !Number.isFinite(o.now)) return { id, refused: "now must be a finite time." };
   const byId = new Map(lanes.map((lane) => [lane.id, lane]));
-  for (const lane of lanes) {
+  for (const lane of presentation.gantt ? [] : lanes) {
     const seen = new Set<string>();
     for (let at: TimelineLane = lane; at.parent !== undefined; at = byId.get(at.parent)!) {
       if (!byId.has(at.parent)) return { id, refused: `${at.label}: parent ${at.parent} is not a lane.` };
@@ -89,31 +97,32 @@ export function timeline(lanes: TimelineLane[], o: TimelineOptions): Figure | Re
   const depthOf = new Map<string, number>();
   const depth = (lane: TimelineLane): number => depthOf.get(lane.id) ?? depthOf.set(lane.id, lane.parent === undefined ? (lane.depth ?? 0) : depth(byId.get(lane.parent)!) + 1).get(lane.id)!;
   for (const lane of lanes) {
+    if (presentation.gantt) { depthOf.set(lane.id, 0); continue; }
     const at = depth(lane);
     if (lane.depth !== undefined && lane.depth !== at) return { id, refused: `${lane.label}: depth ${lane.depth} is not one below its parent's ${at - 1}.` };
   }
   const spans = lanes.flatMap((lane) => lane.spans.map((span) => ({ lane, span })));
-  for (const { lane, span } of spans) {
-    if (typeof span.state !== "string" || !span.state.trim()) return { id, refused: `${lane.label}: every span needs a state.` };
+  for (const { lane, span } of presentation.legacy ? [] : spans) {
+    if (!presentation.gantt && (typeof span.state !== "string" || !span.state.trim())) return { id, refused: `${lane.label}: every span needs a state.` };
     if (!Number.isFinite(span.start) || (span.end !== null && (!Number.isFinite(span.end) || span.end < span.start))) return { id, refused: `${lane.label}: span times must be finite and end at or after their start.` };
-    if (span.end === null && o.now === undefined) return { id, refused: `${lane.label}: an open span needs now.` };
-    if (span.end === null && o.now! < span.start) return { id, refused: `${lane.label}: an open span starts after now.` };
+    if (span.end === null && o.now === undefined) return { id, refused: `${lane.label}: an open span needs ${presentation.gantt ? "a now at or after its start" : "now"}.` };
+    if (span.end === null && o.now! < span.start) return { id, refused: `${lane.label}: ${presentation.gantt ? "an open span needs a now at or after its start" : "an open span starts after now"}.` };
   }
   for (const lane of lanes) for (const tick of lane.ticks ?? []) {
     if (!tick || !Number.isFinite(tick.at)) return { id, refused: `${lane.label}: every tick needs a finite time.` };
     if (!TICK_OUTCOMES.includes(tick.outcome)) return { id, refused: `${lane.label}: tick outcome ${String(tick.outcome)} is not one of ${TICK_OUTCOMES.join(", ")}.` };
   }
-  const shape = eventsGap(o.marks, o.bands);
+  const shape = presentation.gantt ? null : eventsGap(o.marks, o.bands);
   if (shape) return { id, refused: shape };
   const marks = o.marks ?? [], bands = o.bands ?? [];
-  const stray = marks.find((mark) => mark.lane !== undefined && !byId.has(mark.lane));
+  const stray = !presentation.gantt && marks.find((mark) => mark.lane !== undefined && !byId.has(mark.lane));
   if (stray) return { id, refused: `${stray.label}: lane ${stray.lane} is not a lane.` };
   const ends = (span: TimelineSpan) => span.end ?? o.now!;
   const ticks = lanes.flatMap((lane) => lane.ticks ?? []);
   const data = [...spans.flatMap(({ span }) => [span.start, ends(span)]), ...ticks.map((tick) => tick.at), ...(o.now === undefined ? [] : [o.now])];
-  const times = data.length ? data : [...marks.map((m) => m.at), ...bands.flatMap((b) => [b.from, b.to])];
+  const times = presentation.gantt ? [...data, ...marks.map(mark => mark.at)] : data.length ? data : [...marks.map((m) => m.at), ...bands.flatMap((b) => [b.from, b.to])];
   if (!times.length) return { id, refused: "No spans, ticks, marks or bands recorded." };
-  const t0 = o.start ?? Math.min(...times), t1 = o.end ?? Math.max(...times);
+  const t0 = o.start ?? Math.min(...times), t1 = o.end ?? Math.max(...times, ...(presentation.gantt ? [t0 + 60_000] : []));
   if (!Number.isFinite(t0) || !Number.isFinite(t1) || t1 <= t0) return { id, refused: "The window needs two finite, increasing times." };
   if (data.some((t) => t < t0 || t > t1)) return { id, refused: "A span, tick or now falls outside the recorded window." };
   const fmt = o.formatTime ?? utcClock;
@@ -132,7 +141,8 @@ export function timeline(lanes: TimelineLane[], o: TimelineOptions): Figure | Re
     rows.push({ lane, depth: depthOf.get(lane.id)!, children: (kids.get(lane.id) ?? []).length, hidden: fold ? below.length : 0, folded: fold, ticks: all });
     if (!fold) (kids.get(lane.id) ?? []).forEach(visit);
   };
-  (kids.get(undefined) ?? []).forEach(visit);
+  if (presentation.gantt) rows.push(...lanes.map(lane => ({ lane, depth: 0, children: 0, hidden: 0, folded: false, ticks: lane.ticks })));
+  else (kids.get(undefined) ?? []).forEach(visit);
   const rowOf = new Map(rows.map((row, i) => [row.lane.id, i]));
   const shownAt = (laneId: string): number => {
     for (let at: TimelineLane | undefined = byId.get(laneId); at; at = at.parent === undefined ? undefined : byId.get(at.parent)) if (rowOf.has(at.id)) return rowOf.get(at.id)!;
@@ -140,8 +150,8 @@ export function timeline(lanes: TimelineLane[], o: TimelineOptions): Figure | Re
   };
 
   const inWindow = (mark: ChartMark) => mark.at >= t0 && mark.at <= t1;
-  const wide = marks.filter((mark) => mark.lane === undefined && inWindow(mark));
-  const onLane = marks.filter((mark) => mark.lane !== undefined && inWindow(mark));
+  const wide = marks.filter((mark) => (presentation.gantt || mark.lane === undefined) && inWindow(mark));
+  const onLane = presentation.gantt ? [] : marks.filter((mark) => mark.lane !== undefined && inWindow(mark));
   const before = marks.filter((mark) => mark.at < t0), after = marks.filter((mark) => mark.at > t1);
   const open = spans.filter(({ span }) => span.end === null).length;
   const noData = spans.filter(({ span }) => hatched.has(span.state));
@@ -154,12 +164,12 @@ export function timeline(lanes: TimelineLane[], o: TimelineOptions): Figure | Re
     return { ok, failed, why, text: `${ok}✓ ${failed}✗`, sentence: `${ok} ok, ${failed} failed${why ? ` (${why})` : ""}` };
   };
   const detail = (lane: TimelineLane) => (lane.detail ?? []).filter((fact) => typeof fact === "string" && fact.trim());
-  const spanLabel = (lane: TimelineLane, span: TimelineSpan) => [`${lane.label}: ${span.state} ${fmt(span.start)} to ${span.end === null ? `now (${fmt(o.now!)}, open)` : fmt(span.end)}, ${duration(ends(span) - span.start)}${span.note ? ` · ${span.note}` : ""}`, ...detail(lane)].join("\n");
+  const spanLabel = (lane: TimelineLane, span: TimelineSpan) => [`${lane.label}: ${span.state} ${fmt(span.start)} to ${span.end === null ? `now (${fmt(o.now!)}, open)` : fmt(span.end)}, ${presentation.span ? presentation.span(span.start, ends(span)) : duration(ends(span) - span.start)}${span.endLabel && presentation.gantt ? ` · ${span.endLabel}` : ""}${span.note ? ` · ${span.note}` : ""}`, ...detail(lane)].join("\n");
   const hasTicks = rows.some((row) => row.ticks !== undefined);
   const countWidth = hasTicks ? Math.max(...rows.filter((row) => row.ticks).map((row) => textWidth(counts(row.ticks!).text, 12, "mono"))) : 0;
 
-  const draw = (width: number) => {
-    const phone = width === NARROW, indent = phone ? 10 : 12;
+  const draw = (width: number, view: TimelineViewport = {}): TimelinePlot => {
+    const phone = presentation.gantt ? width < 600 : width === NARROW, indent = phone ? 10 : 12, em = view.em ?? 16;
     const caretX = (depth: number) => 4 + depth * indent;
     const labelX = (depth: number) => caretX(depth) + 11;
     const tail = (row: Row) => row.hidden ? ` +${row.hidden}` : "";
@@ -167,53 +177,85 @@ export function timeline(lanes: TimelineLane[], o: TimelineOptions): Figure | Re
     const right = phone ? width - 12 : width - 16 - (countWidth ? countWidth + 10 : 0);
     const px = (t: number) => left + (t - t0) / (t1 - t0) * (right - left);
     const labelRows = markLabelRows(wide, px, left, right, { before, after, window: [t0, t1] });
-    const top = 8 + (labelRows ? labelRows * 14 + 6 : 0) + groupRowHeight(bands);
-    const rowH = phone ? 40 : 24, bottom = top + rows.length * rowH;
-    const barTop = (y: number) => y + (phone ? 19 : 5), barH = 14;
-    let body = drawBands(bands, px, top, bottom, fmt, [t0, t1]) + drawGroups(bands, (from, to) => [px(from), px(to)], top, bottom, left, right, fmt, [t0, t1]);
-    for (const t of axisTicks(t0, t1, px, left, right, axisLabel)) {
-      body += line(px(t), top, px(t), bottom, "tgc-gridline") + text(px(t), bottom + 16, axisLabel(t), { size: 12, cls: "tgc-ink-muted tgc-num", anchor: "middle" });
+    const head = 8 + (labelRows ? labelRows * 14 + 6 : 0) + groupRowHeight(bands);
+    const top = view.maxHeight ? 4 : head, rowH = presentation.gantt ? Math.round((phone ? 2.8 : 2.2) * em) : phone ? 40 : 24;
+    const bottom = top + rows.length * rowH, height = view.header ? head + 28 : bottom + (view.maxHeight ? 8 : o.now === undefined ? 22 : 36);
+    const barTop = (y: number) => y + (presentation.gantt ? phone ? 24 : rowH * .25 : phone ? 19 : 5), barH = presentation.gantt ? rowH * .5 : 14;
+    const axis = presentation.gantt ? (phone ? [0, .5, 1] : [0, .25, .5, .75, 1]).map(f => t0 + f * (t1 - t0)) : axisTicks(t0, t1, px, left, right, axisLabel);
+    const best = marks.find(mark => mark.label === view.bestMark);
+    const emphasis = best ? `<g data-best="true"><circle cx="${px(best.at)}" cy="${head - 4}" r="8" fill="none" stroke="var(--accent-text)" stroke-width="2"/></g>` : "";
+    const parts: SvgPart[] = [];
+    const result = (): TimelinePlot => ({ parts, get body() { return parts.map(svgPart).join("") }, height, rowHeight: rowH, top });
+    if (view.header) {
+      const marks = prepareMarks(wide, px, head - 8, head + 5, left, right, fmt, 4, { priority: view.bestMark, live: presentation.gantt });
+      parts.push(emphasis + marks.body + axis.map(t => text(px(t), height - 6, axisLabel(t), { size: 12, cls: presentation.gantt ? "tgc-ink-muted tgc-num ov-axis" : "tgc-ink-muted tgc-num", anchor: t === t0 ? "start" : t === t1 ? "end" : "middle" })).join(""), ...marks.labels);
+      return result();
     }
+    let body = drawBands(bands, px, top, bottom, fmt, [t0, t1]) + drawGroups(bands, (from, to) => [px(from), px(to)], top, bottom, left, right, fmt, [t0, t1]);
+    for (const t of axis) {
+      body += line(px(t), top, px(t), bottom, "tgc-gridline") + (view.maxHeight ? "" : text(px(t), bottom + 16, axisLabel(t), { size: 12, cls: presentation.gantt ? "tgc-ink-muted tgc-num ov-axis" : "tgc-ink-muted tgc-num", anchor: "middle" }));
+    }
+    if (!view.maxHeight) body += emphasis;
     // Run-wide rules go under the lanes: bars, labels and counts stay readable where many events cross them.
-    body += drawMarks(wide, px, top - 8, bottom, left, right, fmt, 4, { before, after, window: [t0, t1] });
-    rows.forEach((row, i) => {
+    const global = prepareMarks(wide, px, top - 8, bottom, left, right, fmt, 4, { before, after, window: [t0, t1], rows: view.maxHeight ? 0 : undefined, priority: view.bestMark, live: presentation.gantt });
+    parts.push(body + global.body, ...global.labels);
+    const first = view.maxHeight ? Math.max(0, Math.floor(((view.scrollTop ?? 0) - top) / rowH) - 6) : 0;
+    const shown = view.maxHeight ? rows.slice(first, first + Math.ceil(view.maxHeight / rowH) + 14) : rows;
+    shown.forEach((row, offset) => {
+      const i = first + offset;
       const { lane } = row, y = top + i * rowH, mid = y + (phone ? 9 : 12), baseline = y + (phone ? 13 : 16);
-      const parentRow = lane.parent === undefined ? undefined : rowOf.get(lane.parent);
+      const parentRow = presentation.gantt || lane.parent === undefined ? undefined : rowOf.get(lane.parent);
       if (parentRow !== undefined) {
         const x = caretX(row.depth - 1) + 3, from = phone ? y + 2 : top + parentRow * rowH + 19;
-        body += `<path class="tgc-tree" d="M${x} ${from}V${mid}H${labelX(row.depth) - (row.children ? 13 : 3)}"/>`;
+        parts.push(`<path class="tgc-tree" d="M${x} ${from}V${mid}H${labelX(row.depth) - (row.children ? 13 : 3)}"/>`);
       }
       const countText = row.ticks ? counts(row.ticks) : undefined;
+      const total = presentation.gantt && Number.isFinite(lane.count) ? ` · ${lane.count!.toLocaleString()}` : "";
       const room = (phone ? width - 12 - (countText ? textWidth(countText.text, 12, "mono") + 8 : 0) : left - 8) - labelX(row.depth) - textWidth(tail(row), 12);
-      const label = wrap(lane.label, Math.max(24, room), 12, "sans", 1).lines[0]!;
-      const name = `<text class="tgc-ink tgc-lane-label" x="${labelX(row.depth)}" y="${baseline}" font-size="12">${esc(label)}${row.hidden ? `<tspan class="tgc-ink-muted">${esc(tail(row))}</tspan>` : ""}</text>`;
+      const label = wrap(lane.label, Math.max(24, room - textWidth(total, 12)), 12, "sans", 1).lines[0]!;
+      const name = `<text class="tgc-ink tgc-lane-label" x="${labelX(row.depth)}" y="${baseline}" font-size="12">${esc(label)}${total ? `<tspan class="ov-gantt-count">${esc(total)}</tspan>` : ""}${row.hidden ? `<tspan class="tgc-ink-muted">${esc(tail(row))}</tspan>` : ""}</text>`;
       const caret = row.children ? `<path class="tgc-caret" d="${row.folded ? `M${caretX(row.depth)} ${mid - 4}l6 4l-6 4z` : `M${caretX(row.depth) - 1} ${mid - 3}h8l-4 6z`}"/>` : "";
-      const facts = [lane.label, ...detail(lane), ...(countText ? [`Attempts: ${countText.sentence}${row.hidden ? `, including ${row.hidden} folded ${plural(row.hidden, "lane")}` : ""}`] : [])].join("\n");
+      const facts = [lane.label + total + (total && lane.countLabel ? ` ${lane.countLabel}` : ""), ...detail(lane), ...(countText ? [`Attempts: ${countText.sentence}${row.hidden ? `, including ${row.hidden} folded ${plural(row.hidden, "lane")}` : ""}`] : [])].join("\n");
       const toggle = foldable && row.children ? ` data-toggle="${esc(lane.id)}" class="tgc-lane-toggle" role="button" tabindex="0" aria-expanded="${!row.folded}" aria-label="${esc(`${row.folded ? "Unfold" : "Fold"} ${lane.label}`)}"` : "";
       const hit = toggle ? rect(caretX(row.depth) - 3, y + 1, (phone ? width - 12 : left - 4) - caretX(row.depth) + 3, phone ? 16 : rowH - 2, "tgc-lane-hit", 'rx="3"') : "";
-      body += `<g data-lane="${esc(lane.id)}" data-depth="${row.depth}"${row.folded ? ` data-folded="${row.hidden}"` : ""}><g${toggle}><title>${esc(facts)}</title>${hit}${caret}${name}</g>`;
-      for (const span of lane.spans) {
+      const attributes: Exclude<SvgPart, string>['attributes'] = { 'data-lane': lane.id, 'data-depth': row.depth, ...(presentation.gantt ? { 'data-lane-index': i } : {}), ...(view.selectable ? { role: 'button', tabIndex: 0, 'aria-label': lane.label, 'aria-pressed': view.selectedId === lane.id } : {}), ...(row.folded ? { 'data-folded': row.hidden } : {}) };
+      const selection = view.selectedId === lane.id ? rect(0, y, width, rowH, "tgc-lane-selected", 'rx="4" style="fill:var(--ix-sel-bg)"') : "";
+      let content = `${selection}${presentation.gantt ? rect(0, y, width, rowH, "tgc-lane-hit") : ""}<g${toggle}><title>${esc(facts)}</title>${hit}${caret}${name}</g>`;
+      for (const [spanIndex, span] of lane.spans.entries()) {
         const x = px(span.start), w = Math.max(1, px(ends(span)) - x);
-        const mark = hatched.has(span.state) ? hatch(x, barTop(y), w, barH, "tgc-span tgc-span-missing") : rect(x, barTop(y), w, barH, `tgc-span${muted.has(span.state) ? " tgc-span-muted" : ""}${span.end === null ? " tgc-span-open" : ""}`, 'rx="2"');
-        body += titled(spanLabel(lane, span), `<g data-state="${span.state.replace(/[^a-z0-9-]/gi, "")}"${span.end === null ? ' data-open="true"' : ""}>${mark}</g>`);
+        const color = view.colors ? `style="fill:${esc(view.colors[span.state] ?? view.colors.unknown ?? "var(--chart-live-faint, var(--chart-muted))")}"` : "";
+        const mark = hatched.has(span.state) ? hatch(x, barTop(y), w, barH, "tgc-span tgc-span-missing") : rect(x, barTop(y), w, barH, `tgc-span${muted.has(span.state) ? " tgc-span-muted" : ""}${span.end === null ? ` tgc-span-open${presentation.gantt ? " ov-gantt-open" : ""}` : ""}`, color ? `rx="2" ${color}` : 'rx="2"');
+        content += titled(spanLabel(lane, span), `<g${presentation.gantt ? ` data-span-index="${spanIndex}"` : ""} data-state="${span.state.replace(/[^a-z0-9-]/gi, "")}"${span.end === null ? ' data-open="true"' : ""}${presentation.gantt && hatched.has(span.state) ? ' data-hatched="true"' : ""}>${mark}</g>`);
       }
-      if (row.ticks?.length) body += drawTicks(row.ticks, lane.label, px, barTop(y), barH, fmt);
+      const last = lane.spans.reduce<TimelineSpan | undefined>((a, b) => !a || ends(b) >= ends(a) ? b : a, undefined);
+      if (presentation.gantt && view.selectedId === lane.id && last?.endLabel) {
+        const label = wrap(last.endLabel, Math.max(40, right - left - 16), 12, 'sans', 1).lines[0]!;
+        content += titled(last.endLabel, text(Math.max(left + 8, Math.min(px(ends(last)) + 8, width - textWidth(label, 12) - 8)), barTop(y) + barH / 2, label, { size: 12, cls: "tgc-ink tgc-num tgc-gantt-end" }), 'class="ov-gantt-end"');
+      }
+      if (row.ticks?.length) content += drawTicks(row.ticks, lane.label, px, barTop(y), barH, fmt);
       if (countText) {
         const x = phone ? width - 12 : width - 16;
-        body += titled(`${lane.label}: ${countText.sentence}${row.hidden ? ` across ${row.hidden + 1} lanes` : ""}`, `<text class="tgc-num tgc-count" x="${x}" y="${baseline}" font-size="12" text-anchor="end">${countText.ok}<tspan class="tgc-count-ok">✓</tspan> ${countText.failed}<tspan class="tgc-count-failed">✗</tspan></text>`);
+        content += titled(`${lane.label}: ${countText.sentence}${row.hidden ? ` across ${row.hidden + 1} lanes` : ""}`, `<text class="tgc-num tgc-count" x="${x}" y="${baseline}" font-size="12" text-anchor="end">${countText.ok}<tspan class="tgc-count-ok">✓</tspan> ${countText.failed}<tspan class="tgc-count-failed">✗</tspan></text>`);
       }
-      body += "</g>";
+      parts.push({ key: `lane:${lane.id}`, attributes, body: content });
     });
+    let overlay = "";
     for (const mark of onLane) {
       const y = top + shownAt(mark.lane!) * rowH, cy = barTop(y) + barH / 2, x = px(mark.at);
       const glyph = markHead(mark.kind, x, cy, phone ? 3 : 3.5) || line(x, barTop(y) - 3, x, barTop(y) + barH + 3, `tgc-mark tgc-mark-${mark.kind}`);
       const verdict = mark.verdict ? ` data-verdict="${mark.verdict}" class="tgc-verdict-${mark.verdict}"` : "";
-      body += titled(`${markName(mark)}: ${fmt(mark.at)}${mark.verdict ? ` · ${mark.verdict}` : ""}`, `<g data-mark="${mark.kind}" data-lane-mark="${esc(mark.lane!)}"${verdict}>${glyph}</g>`);
+      overlay += titled(`${markName(mark)}: ${fmt(mark.at)}${mark.verdict ? ` · ${mark.verdict}` : ""}`, `<g data-mark="${mark.kind}" data-lane-mark="${esc(mark.lane!)}"${verdict}>${glyph}</g>`);
     }
-    if (o.now !== undefined) body += line(px(o.now), top, px(o.now), bottom, "tgc-now") + text(px(o.now), bottom + 30, `now ${fmt(o.now)}`, { size: 12, cls: "tgc-ink tgc-num", anchor: px(o.now) > (left + right) / 2 ? "end" : "start" });
-    return svgRoot(width, bottom + (o.now === undefined ? 22 : 36), body);
+    if (o.now !== undefined) {
+      const rule = line(px(o.now), top, px(o.now), bottom, "tgc-now", presentation.gantt ? 'data-now="true"' : '');
+      overlay += rule + (view.maxHeight ? "" : text(px(o.now), bottom + 30, `now ${fmt(o.now)}`, { size: 12, cls: "tgc-ink tgc-num", anchor: px(o.now) > (left + right) / 2 ? "end" : "start" }));
+    }
+    parts.push(overlay);
+    return result();
   };
 
+  const report = (): Figure => {
+  const svg = (width: number) => { const plot = draw(width); return svgRoot(width, plot.height, plot.body); };
   const all = counts(ticks);
   const tree = lanes.some((lane) => lane.parent !== undefined || lane.depth);
   const folds = foldable && rows.some((row) => row.children);
@@ -234,7 +276,7 @@ export function timeline(lanes: TimelineLane[], o: TimelineOptions): Figure | Re
       ...(hasTicks ? ["Each tick is one recorded attempt: ok ticks rise above the bar and failed ticks drop below it in their outcome's colour; the counts at the right are ok (✓) and failed (✗)."] : []),
       ...(marks.length + bands.length ? [EVENTS_READ] : []),
     ].join(" "),
-    svg: { wide: draw(wideWidth(o.width)), narrow: draw(NARROW), ...(folds ? { interactive: true } : {}) },
+    svg: { wide: svg(wideWidth(o.width)), narrow: svg(NARROW), ...(folds ? { interactive: true } : {}) },
     table: laneTable + table(`${capitalize(o.measure)} by lane`, [{ label: "Lane" }, { label: "State" }, { label: "Start", numeric: true }, { label: "End", numeric: true }, { label: "Duration", numeric: true }, { label: "Note" }],
       spans.map(({ lane, span }) => [lane.label, span.state, fmt(span.start), span.end === null ? "open" : fmt(span.end), duration(ends(span) - span.start), span.note ?? ""])) + eventsTable(marks, bands, "time", fmt),
     note: {
@@ -246,6 +288,13 @@ export function timeline(lanes: TimelineLane[], o: TimelineOptions): Figure | Re
       ],
     },
   };
+  };
+  return { plot: draw, report, rowIds: rows.map(row => row.lane.id) };
+}
+
+export function timeline(lanes: TimelineLane[], options: TimelineOptions): Figure | Refusal {
+  const prepared = prepareTimeline(lanes, options);
+  return 'refused' in prepared ? prepared : prepared.report();
 }
 
 /** Ticks of one outcome within 2 px merge into one stroke whose hover gives the count and time range. */

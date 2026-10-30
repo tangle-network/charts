@@ -1,0 +1,151 @@
+/** Actual HTTP packed-consumer proof for Discovery's shared overview timeline. */
+import assert from 'node:assert/strict'
+import { spawn } from 'node:child_process'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { chromium } from 'playwright'
+
+const output = process.env.CHARTS_PROOF_DIR
+assert.ok(output, 'CHARTS_PROOF_DIR must retain the evidence outside the gate cache')
+await mkdir(output, { recursive: true })
+const server = spawn(process.execPath, ['tests/fixtures/charts-browser-smoke.mjs', ...process.argv.slice(2)], { stdio: ['ignore', 'pipe', 'pipe'] })
+const logs = []
+for (const stream of [server.stdout, server.stderr]) stream.on('data', bytes => logs.push(String(bytes)))
+let browser, observedPage, activeCase
+const checks = []
+try {
+  const deadline = Date.now() + 120000
+  while (true) {
+    try { if ((await fetch('http://127.0.0.1:46489')).ok) break } catch {}
+    assert.ok(Date.now() < deadline && server.exitCode === null, logs.join(''))
+    await new Promise(resolve => setTimeout(resolve, 250))
+  }
+  browser = await chromium.launch({ headless: true })
+  for (const agents of [100, 124, 1000]) for (const theme of ['light', 'dark']) for (const width of [1512, 390]) {
+    const context = await browser.newContext({ viewport: { width, height: 982 }, colorScheme: theme, recordVideo: { dir: output, size: { width, height: 982 } } })
+    const page = await context.newPage(), errors = [], styles = new Set()
+    observedPage=page; activeCase={agents,theme,width}
+    const currentStyle = (selector, property) => page.evaluate(({selector, property}) => getComputedStyle(document.querySelector(selector))[property], {selector, property})
+    page.on('pageerror', error => errors.push(error.message))
+    page.on('response', response => { if (response.ok() && /\/(?:live|figure)\.css$/.test(response.url())) styles.add(new URL(response.url()).pathname) })
+    await page.goto(`http://127.0.0.1:46489/?id=journey&globals=agent-${theme}&agents=${agents}`)
+    await page.locator('[data-lane="agent-0"]').waitFor()
+    await page.evaluate(() => {
+      window.__timelineInput=[]
+      for(const type of ['mousemove','mouseout','mouseleave','scroll','focusin']) document.addEventListener(type,event=> {
+        const record=()=>{const target=event.target instanceof Element?event.target:null;window.__timelineInput.push({time:performance.now(),type,target:target?.getAttribute('class'),lane:target?.closest('[data-lane]')?.getAttribute('data-lane'),related:event.relatedTarget instanceof Element?event.relatedTarget.tagName:null,x:event.clientX,y:event.clientY,hit:event.clientX===undefined?null:document.elementFromPoint(event.clientX,event.clientY)?.closest('[data-lane]')?.getAttribute('data-lane'),focused:document.activeElement?.getAttribute('data-lane'),scrollTop:document.querySelector('.ov-gantt-scroll')?.scrollTop,tip:document.querySelector('.ov-tip')?.textContent??null});if(window.__timelineInput.length>500)window.__timelineInput.splice(100,1)}
+        queueMicrotask(record);requestAnimationFrame(record)
+      },true)
+    })
+    assert.deepEqual([...styles].sort(), ['/figure.css', '/live.css'], 'the published live stylesheet loads the shared figure rules through its real import')
+    assert.equal(await page.locator('.ov-gantt').evaluate(node => { const parent = node.parentElement, css = getComputedStyle(parent); return Math.abs(node.clientWidth - (parent.clientWidth - parseFloat(css.paddingLeft) - parseFloat(css.paddingRight))) <= 1 && getComputedStyle(node).marginTop === '0px' }), true, 'a live plot fills its host without report margins')
+    assert.ok(await page.locator('[data-lane]').count() < 40, `${agents} lanes render a bounded window`)
+    assert.deepEqual(await page.locator('.ov-step-state').allTextContents(), ['Pass', 'Stuck', 'Unchecked'])
+    assert.ok((await page.locator('[data-lane=agent-0] .ov-gantt-count').textContent()).includes('190'))
+    await page.getByRole('button', { name: 'Agent 0', exact: true }).click()
+    await page.locator('[data-lane=agent-0] .ov-gantt-end').waitFor()
+    assert.equal(await page.locator('[data-lane=agent-0] .ov-gantt-end').count(), 1, 'only the latest span has an unambiguous end reading')
+    assert.ok(!(await page.locator('[data-lane=agent-0] .ov-gantt-end title').textContent()).startsWith('30s'), 'array order cannot select an older span')
+    assert.equal(await page.evaluate(() => { const node = document.querySelector('[data-lane=agent-0] .ov-gantt-end'); return Boolean(node && node.parentElement.lastElementChild === node) }), true, 'later spans cannot paint over the end reading')
+    assert.ok((await page.locator('[data-lane=agent-0] .ov-gantt-end title').textContent()).includes('≥$12,345.67'))
+    const labels = await page.locator('.ov-gantt > svg [data-labelled]').evaluateAll(nodes => nodes.map(node => ({show:node.dataset.labelled, text:getComputedStyle(node.querySelector('text')).display})))
+    assert.ok(labels.filter(label => label.show === 'true').length > 1, 'more than just the best release is named')
+    assert.ok(labels.some(label => label.show === 'false' && label.text === 'none'), 'dense release labels are sparse: '+JSON.stringify({agents,theme,width,labels}))
+    assert.equal(await page.locator('.ov-gantt > svg [data-labelled][aria-label="rc18"]').getAttribute('data-labelled'), 'true', 'the selected late release keeps a label in the crowded header')
+    const hidden = page.locator('.ov-gantt > svg [data-labelled=false]').first(), hiddenId = await hidden.getAttribute('data-mark-id'), hiddenText = '[data-mark-id='+JSON.stringify(hiddenId)+'] text'
+    await hidden.hover()
+    assert.notEqual(await currentStyle(hiddenText, 'display'), 'none', 'a release reveals its name on hover')
+    await hidden.focus()
+    assert.notEqual(await currentStyle(hiddenText, 'display'), 'none', 'keyboard focus reveals a release name')
+    const repeated = page.locator('.ov-gantt > svg [data-mark-id][aria-label="repeat"]').last()
+    await repeated.focus()
+    const recordedMarkId = await repeated.getAttribute('data-mark-id'), originalMark = await repeated.elementHandle()
+    const clockWidth = await page.locator('[data-lane=agent-3] [data-open] rect').getAttribute('width')
+    await page.waitForFunction(previous => document.querySelector('[data-lane=agent-3] [data-open] rect')?.getAttribute('width') !== previous, clockWidth)
+    assert.equal(await originalMark.evaluate(node => node.isConnected && node === document.activeElement), true, 'a live clock keeps the original native mark focused')
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-mark-id')), recordedMarkId, 'a live clock update preserves the later recorded mark when labels repeat')
+    await originalMark.dispose()
+    await page.mouse.move(1, 1)
+    await page.getByRole('button', { name: 'Agent 0', exact: true }).press('End')
+    await page.getByRole('button', { name: `Agent ${agents - 1}`, exact: true }).waitFor()
+    await page.waitForFunction(name => document.querySelector('.ov-tip')?.textContent?.startsWith(name), 'Agent '+(agents-1), {timeout:10000})
+    assert.equal(await page.getByRole('button', { name: 'Agent '+(agents-1), exact: true }).evaluate(node => node === document.activeElement), true, 'offscreen keyboard navigation focuses its recorded destination before any hover')
+    await page.getByRole('button', { name: `Agent ${agents - 1}`, exact: true }).press('Enter')
+    assert.equal(await page.getByRole('button', { name: `Agent ${agents - 1}`, exact: true }).getAttribute('aria-pressed'), 'true')
+    await page.getByRole('button', { name: `Agent ${agents - 1}`, exact: true }).hover()
+    await page.locator('.ov-tip').waitFor()
+    const hoveredClock = await page.locator('[data-lane="agent-'+(agents-1)+'"] [data-open] rect').getAttribute('width')
+    await page.waitForFunction(({id,before}) => document.querySelector('[data-lane="'+id+'"] [data-open] rect')?.getAttribute('width') !== before, {id:'agent-'+(agents-1),before:hoveredClock})
+    await page.locator('.ov-tip').waitFor()
+    const tooltip = await page.locator('.ov-tip').boundingBox(), plot = await page.locator('.ov-gantt').boundingBox()
+    assert.ok(tooltip.y >= plot.y && tooltip.y + tooltip.height <= plot.y + plot.height, 'A late virtual row tooltip stays beside the visible row')
+    await page.locator('.ov-gantt-scroll').evaluate(el => { el.scrollTop -= 20 })
+    await page.locator('.ov-tip').waitFor({ state: 'hidden' })
+    await page.getByRole('button', { name: `Agent ${agents - 1}`, exact: true }).press('Home')
+    await page.getByRole('button', { name: 'Agent 0', exact: true }).waitFor()
+    await page.waitForFunction(() => document.querySelector('.ov-tip')?.textContent?.startsWith('Agent 0'), undefined, {timeout:10000})
+    const plotWidth = Number(await page.locator('.ov-gantt > svg').getAttribute('width'))
+    await page.setViewportSize({ width: width === 390 ? 900 : 700, height: 982 })
+    await page.waitForFunction(previous => Number(document.querySelector('.ov-gantt > svg')?.getAttribute('width')) !== previous, plotWidth)
+    assert.ok(await page.locator('[data-lane]').count() < 40, 'resize preserves bounded rendering')
+    assert.equal(await page.getByRole('button', { name: 'Agent 0', exact: true }).evaluate(node => node === document.activeElement), true, 'resize preserves the focused lane')
+    await page.setViewportSize({ width, height: 982 })
+    await page.waitForFunction(previous => Number(document.querySelector('.ov-gantt > svg')?.getAttribute('width')) === previous, plotWidth)
+    const before = await page.locator('[data-lane="agent-3"] [data-open] rect').getAttribute('width')
+    await page.screenshot({ path: `${output}/journey-${agents}-${width}-${theme}.png` })
+    await page.waitForFunction(previous => { const bar = document.querySelector('[data-lane="agent-3"] [data-open] rect'); return bar && bar.getAttribute('width') !== previous }, before, { timeout: 10000 })
+    assert.equal(await page.locator('[data-best] circle').count(), 1)
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    assert.equal(await currentStyle('[data-lane="agent-3"] [data-open] rect', 'animationName'), 'none')
+    assert.notEqual(await currentStyle('svg[role="group"] .ov-mark-deadline', 'strokeDasharray'), 'none')
+    await page.goto(`http://127.0.0.1:46489/?id=journey&globals=agent-${theme}&ancestor=1`)
+    await page.locator('.ov-axis').first().waitFor()
+    assert.equal(await currentStyle('.ov-axis', 'fill'), 'rgb(17, 109, 91)')
+    assert.equal(await currentStyle('.ov-mark-label', 'fill'), 'rgb(32, 67, 120)')
+    if (agents === 100 && theme === 'light' && width === 1512) {
+      const prior = await page.locator('.ov-mark-label').first().elementHandle()
+      await page.waitForFunction(node => !node.isConnected, prior)
+      assert.deepEqual(await prior.evaluate(node => ({connected:node.isConnected,fill:getComputedStyle(node).fill})), {connected:false,fill:''}, 'a detached snapshot handle reproduces the earlier empty-style observation')
+      assert.equal(await currentStyle('.ov-mark-label', 'fill'), 'rgb(32, 67, 120)', 'an atomic current-DOM reading preserves the exact ancestor color contract')
+      await prior.dispose()
+    }
+    if (agents === 100) {
+      await page.goto('http://127.0.0.1:46489/?id=timeline-tree')
+      const fold = page.getByRole('button', { name: 'Fold Recorded lead', exact: true })
+      await fold.focus()
+      await fold.press('Enter')
+      const unfold = page.getByRole('button', { name: 'Unfold Recorded lead', exact: true })
+      assert.equal(await page.locator('[data-lane="worker"]').count(), 0)
+      assert.equal(await unfold.evaluate(node => node === document.activeElement), true)
+      assert.ok((await page.locator('[data-lane="lead"] title').first().textContent()).includes('1 ok, 1 failed'))
+      await unfold.press('Space')
+      await page.locator('[data-lane="worker"]').waitFor()
+      assert.equal(await fold.evaluate(node => node === document.activeElement), true)
+      await page.getByText('Data and method', { exact: true }).click()
+      assert.ok((await page.locator('table').first().textContent()).includes('Recorded worker'))
+      const response=await page.request.get('http://127.0.0.1:46489/formatter-proof.json'), formatting=await response.json()
+      assert.equal(response.status(),200)
+      assert.deepEqual(formatting.formatted,['$0.00','$1e-20','$1e-10','$0.003','$1.20','—','—','—'])
+      assert.equal('refused' in formatting.figure,false)
+      for(const price of ['$1e-20','$1e-10','$1.20'])assert.ok(formatting.figure.table.includes(price),'the actual static cost figure preserves '+price)
+      assert.ok(!formatting.figure.svg.wide.includes('>$0<'),'nonzero cost ticks retain their magnitude')
+      await page.goto(`http://127.0.0.1:46489/?id=clock-precision&globals=agent-${theme}`)
+      await page.locator('.fw-axis-track .fw-tick').first().waitFor()
+      const clockLabels=await page.locator('.fw-axis-track .fw-tick').allTextContents()
+      assert.ok(clockLabels.length>=3)
+      assert.equal(new Set(clockLabels).size,clockLabels.length,'distinct zoomed axis positions have distinct labels: '+JSON.stringify(clockLabels))
+      if(width===1512)for(const tick of ['10.2s','10.4s','10.6s'])assert.ok(clockLabels.includes(tick),tick+' remains readable in the actual zoomed waterfall')
+
+    }
+    assert.deepEqual(errors, [])
+    await context.close()
+    await page.video().saveAs(`${output}/journey-${agents}-${width}-${theme}.webm`)
+    checks.push({ theme, width, result: 'PASS', agents })
+  }
+} finally {
+  if(observedPage && !observedPage.isClosed()) await writeFile(`${output}/input-at-failure.json`,JSON.stringify({case:activeCase,...await observedPage.evaluate(()=>({events:window.__timelineInput??[],tip:document.querySelector('.ov-tip')?.outerHTML??null,focus:document.activeElement?.outerHTML?.slice(0,300),scrollTop:document.querySelector('.ov-gantt-scroll')?.scrollTop}))},null,2))
+  await Promise.all((browser?.contexts() ?? []).map(context => context.close())); await browser?.close()
+  server.kill('SIGTERM')
+  await writeFile(`${output}/consumer.log`, logs.join(''))
+  await writeFile(`${output}/checks.json`, JSON.stringify(checks, null, 2))
+}

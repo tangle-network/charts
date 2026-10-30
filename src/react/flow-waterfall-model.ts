@@ -1,5 +1,6 @@
 import { runStatus, statusMeta } from '@tangle-network/ui/run'
-import { duration } from '../format.js'
+import { formatSpanDuration, formatCost, formatCount } from '../format.js'
+export { formatSpanDuration, formatCost, formatCount } from '../format.js'
 import { type FlowOutcome, type FlowSpan, type FlowTrace, finiteNumber, reportedCount, sumReportedCounts } from '../flow-trace.js'
 
 /** A minimap mark on a parent row: merged descendant activity of one kind. */
@@ -83,37 +84,6 @@ export const spanFailed = (span: FlowSpan): boolean => span.status === 'failed'
 export const spanRunning = (span: FlowSpan): boolean => span.status === 'running'
 export const spanFact = (span: FlowSpan, label: string): string | undefined => new Map((span.facts ?? []).map(fact => [fact.label.toLowerCase(), fact.value])).get(label.toLowerCase())
 const ordered = (span: FlowSpan) => Number.isFinite(span.startMs) && Number.isFinite(span.endMs) && span.endMs >= span.startMs
-
-/** 542ms, 6.9s, 23s, 1m 22s, 2h 05m: the precision a reader compares at each scale. */
-export function formatSpanDuration(ms: number): string {
-  if (!Number.isFinite(ms) || ms < 0) return '—'
-  if (ms >= 86_400_000) return duration(ms)
-  if (ms < 1000) return `${Math.round(ms)}ms`
-  if (ms < 10_000) return `${(ms / 1000).toFixed(1)}s`
-  if (ms < 60_000) return `${Math.round(ms / 1000)}s`
-  if (ms < 3_600_000) {
-    const m = Math.floor(ms / 60_000), s = Math.round((ms % 60_000) / 1000)
-    return s === 60 ? `${m + 1}m` : s ? `${m}m ${s}s` : `${m}m`
-  }
-  const h = Math.floor(ms / 3_600_000), m = Math.round((ms % 3_600_000) / 60_000)
-  return m === 60 ? `${h + 1}h` : `${h}h ${String(m).padStart(2, '0')}m`
-}
-
-/** $0.12, $0.005, $12.40; never rounds a recorded nonzero cost to $0.00. */
-export function formatCost(usd: number): string {
-  if (finiteNumber(usd) === undefined) return '—'
-  if (usd === 0) return '$0.00'
-  if (usd < 0.01) return `$${usd.toPrecision(1).replace(/0+$/, '')}`
-  return `$${usd.toFixed(2)}`
-}
-
-/** 9.8k, 754.4k, 1.2M with the exact count left to a title. */
-export function formatCount(n: number): string {
-  if (reportedCount(n) === undefined) return '—'
-  if (n < 1000) return String(n)
-  if (n < 1_000_000) return `${(n / 1000).toFixed(1)}K`
-  return `${(n / 1_000_000).toFixed(1)}M`
-}
 
 /** Merge marks closer than `gapMs` so a dense row stays a readable strip of at most `cap` marks. Marks narrower
  * than the gap merge across kinds and take the kind that covers more time; failures and retries stay distinct. */

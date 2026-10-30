@@ -13,7 +13,7 @@ const dir = mkdtempSync(join(tmpdir(), 'charts-browser-'))
 const supplied = process.argv[2]
 const packed = supplied ? resolve(supplied) : join(dir, JSON.parse(execFileSync('npm', ['pack', '--json', '--ignore-scripts', '--pack-destination', dir], { cwd: root, encoding: 'utf8' }))[0].filename)
 writeFileSync(join(dir, 'package.json'), JSON.stringify({ private: true, type: 'module' }))
-execFileSync('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--package-lock=false', packed], { cwd: dir, stdio: 'inherit' })
+execFileSync('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--package-lock=false', packed, '@tangle-network/brand@1.31.2'], { cwd: dir, stdio: 'inherit' })
 let peerRequire = createRequire(join(dir, 'package.json'))
 const reactVersion = process.env.CHARTS_REACT_VERSION ?? '19'
 if (reactVersion) {
@@ -26,14 +26,14 @@ if (reactVersion) {
  execFileSync(process.execPath,[join(dirname(manifestPath),manifest.bin.tsc),'-p','tsconfig.json'],{cwd:dir,stdio:'inherit'})
 }
 const flowApp = readFileSync(join(root,'scripts/fixtures/flow-waterfall-consumer.jsx'),'utf8')
-const versionApp = readFileSync(join(root,'scripts/fixtures/version-graph-consumer.jsx'),'utf8')
-const topologyApp = readFileSync(join(root,'scripts/fixtures/agent-graph-consumer.jsx'),'utf8')
+const versionApp = readFileSync(join(root,'scripts/fixtures/version-graph-consumer.jsx'),'utf8') + "\nversionNodes[0].title += ' \u2014 recorded source identity with a long unbroken suffix abcdefghijklmnopqrstuvwxyz0123456789';\n"
+const topologyApp = readFileSync(join(root,'scripts/fixtures/agent-graph-consumer.jsx'),'utf8').replace(' const edges =', " Object.assign(nodes[0], {status:'running',lastActivityAt:Date.now()-5166*60000,medianEventGapMs:1000,events:[{id:'quiet-recorded-event',label:'Recorded source read',at:Date.now()-5166*60000}]});\n const edges =")
 const recorded = JSON.parse(readFileSync(join(root,'docs/fixtures/discovery-waterfall.json'),'utf8'))
 const healthy = JSON.parse(readFileSync(join(root,'docs/fixtures/healthy-flow.json'),'utf8'))
 const app = `
 import React, { useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Sparkline, StackedBarChart, FlowWaterfall, Gantt, Meter, VersionGraph, CountHeatmap, HBars, DayBars } from '@tangle-network/charts/react'
+import { Sparkline, StackedBarChart, FlowWaterfall, Gantt, Meter, VersionGraph, CountHeatmap, HBars, DayBars, TimelineView } from '@tangle-network/charts/react'
 import { AgentGraph } from '@tangle-network/charts/react/agent-graph'
 function App() {
  const [selectedBucketId, onSelectionChange] = useState(null)
@@ -48,7 +48,7 @@ function Journey() {
  const [selectedId, onSelect] = useState(), [now, setNow] = useState(Date.now())
  const start = useState(() => Date.now() - 60000)[0]
  useEffect(() => { const clock = setInterval(() => setNow(Date.now()), 100); return () => clearInterval(clock) }, [])
- return <main style={params.has('ancestor')?{'--chart-live-muted':'rgb(17, 109, 91)','--chart-live-fg':'rgb(32, 67, 120)'}:undefined}><Meter total={3} used={1} steps={[{label:"Manifest",state:"pass"},{label:"Offline build",state:"fail"},{label:"Hidden test",state:"unrun"}]} text="Best checked release"/><Gantt lanes={Array.from({length:Number(params.get('agents')||124)},(_,i)=>({id:'agent-'+i,label:'Agent '+i,count:i===0?190:i,countLabel:'commits',spans:[{start:start+i*100,end:i%3===0?null:start+30000,state:i===0?'lead':i===2?'failed':i===4?'idle':i%3===0?'running':'shipped',endLabel:Math.round((now-start)/1000)+'s · ≥$12,345.67 list · — billed'},...(i===0?[{start,end:start+30000,state:'shipped',endLabel:'30s · ≥$12,345.67 list · — billed'}]:[])]}))} selectedId={selectedId} onSelect={onSelect} maxHeight={420} now={now} marks={[...Array.from({length:20},(_,i)=>({kind:'release',label:'rc'+(i+1),at:start+10000+i*2000})),{kind:'deadline',label:'Cutoff',at:start+55000}]} bestMark="rc2" colors={{running:ENDING_COLORS.live,shipped:ENDING_COLORS.solved,failed:ENDING_COLORS.died,idle:ENDING_COLORS.cancelled,lead:ENDING_COLORS.cancelled}} axis={t=>new Date(t).toISOString().slice(11,19)} span={(a,b)=>Math.round((b-a)/1000)+'s'}/></main>
+ return <main style={params.has('ancestor')?{'--chart-live-muted':'rgb(17, 109, 91)','--chart-live-fg':'rgb(32, 67, 120)'}:undefined}><Meter total={3} used={1} steps={[{label:"Manifest",state:"pass"},{label:"Offline build",state:"fail"},{label:"Hidden test",state:"unrun"}]} text="Best checked release"/><Gantt lanes={Array.from({length:Number(params.get('agents')||124)},(_,i)=>({id:'agent-'+i,label:'Agent '+i,count:i===0?190:i,countLabel:'commits',spans:[{start:start+Math.min(i,123)*100,end:i%3===0?null:start+30000,state:i===0?'lead':i===2?'failed':i===4?'idle':i%3===0?'running':'shipped',endLabel:Math.round((now-start)/1000)+'s · ≥$12,345.67 list · — billed'},...(i===0?[{start,end:start+30000,state:'shipped',endLabel:'30s · ≥$12,345.67 list · — billed'}]:[])]}))} selectedId={selectedId} onSelect={onSelect} maxHeight={420} now={now} marks={[...Array.from({length:20},(_,i)=>({kind:'release',label:'rc'+(i+1),at:start+10000+i*200,verdict:i%2?'pass':'unknown'})),{kind:'release',label:'repeat',at:start+5000},{kind:'release',label:'repeat',at:start+45000,verdict:'fail'},{kind:'deadline',label:'Cutoff',at:start+55000}]} bestMark="rc18" colors={{running:ENDING_COLORS.live,shipped:ENDING_COLORS.solved,failed:ENDING_COLORS.died,idle:ENDING_COLORS.cancelled,lead:ENDING_COLORS.cancelled}} axis={t=>new Date(t).toISOString().slice(11,19)} span={(a,b)=>Math.round((b-a)/1000)+'s'}/></main>
 }
 function AnalyticsCounts() {
  const [extra,setExtra]=useState(0),[selected,onSelectRow]=useState('')
@@ -56,15 +56,19 @@ function AnalyticsCounts() {
  const rows=Array.from({length:140},(_,i)=>({id:'agent-'+i,label:'Agent '+i,total:i===0?null:i===1?0:(i+extra)*columns.length,cells:Object.fromEntries(columns.map((c,j)=>[c.id,i===0?null:{value:i===1?0:i+extra,failures:j===0&&i===2?2:0}]))}))
  return <main><h1>Recorded tool calls</h1><button onClick={()=>setExtra(n=>n+100)}>Append counts</button><output>{selected}</output><CountHeatmap label="Tool calls" columns={columns} rows={rows} onSelectRow={onSelectRow}/><DayBars interval="4 h" days={["2026-10-29T00:00:00Z"]} series={[{name:"Recorded calls",color:"#8b7cf6",values:[210]}]}/><HBars rows={[{label:'Recorded',value:10+extra},{label:'Zero',value:0}]} max={110}/></main>
 }
+function RecordedTimeline() {
+ const start=Date.parse('2026-10-28T00:00:00Z')
+ return <main><TimelineView options={{measure:'Recorded work',now:start+60000}} lanes={[{id:'lead',label:'Recorded lead',spans:[{start,end:null,state:'running'}],ticks:[{at:start+1000,outcome:'ok'}]},{id:'worker',parent:'lead',label:'Recorded worker',spans:[{start:start+1000,end:start+2000,state:'missing'}],ticks:[{at:start+2000,outcome:'oom'}]}]}/></main>
+}
 const params = new URLSearchParams(location.search)
 const name = (params.get('id') ?? '').replace('chatcontrols-flowwaterfall--','')
 document.documentElement.dataset.theme=params.get('globals')?.includes('agent-light')?'light':'dark'
-createRoot(document.getElementById('root')).render(name === 'analytics-counts' ? <AnalyticsCounts/> : name === 'versions' ? <Versions/> : name === 'topology' ? <Topology/> : name === 'journey' ? <Journey/> : name ? <FlowApp name={name}/> : <App />)
+createRoot(document.getElementById('root')).render(name === 'timeline-tree' ? <RecordedTimeline/> : name === 'analytics-counts' ? <AnalyticsCounts/> : name === 'versions' ? <Versions/> : name === 'topology' ? <Topology/> : name === 'journey' ? <Journey/> : name ? <FlowApp name={name}/> : <App />)
 `
 writeFileSync(join(dir, 'app.jsx'), app)
 await build({entryPoints:[join(dir,'app.jsx')],bundle:true,outfile:join(dir,'app.js'),jsx:'automatic',alias:{react:dirname(peerRequire.resolve('react/package.json')),'react-dom':dirname(peerRequire.resolve('react-dom/package.json'))}})
 // The trace paints Brand roles only, so the page loads Brand's tokens as every host does.
-const tokens = readFileSync(require.resolve('@tangle-network/brand/styles/tokens.css'),'utf8') + readFileSync(peerRequire.resolve('@tangle-network/charts/figure.css'),'utf8') + readFileSync(peerRequire.resolve('@tangle-network/charts/react/flow-waterfall.css'),'utf8') + readFileSync(peerRequire.resolve('@tangle-network/charts/react/live.css'),'utf8') + `
+const tokens = readFileSync(peerRequire.resolve('@tangle-network/brand/styles/tokens.css'),'utf8') + readFileSync(peerRequire.resolve('@tangle-network/charts/react/flow-waterfall.css'),'utf8') + `
 :root { --chart-live-fg:hsl(var(--foreground));--chart-live-muted:hsl(var(--muted-foreground));--chart-live-faint:hsl(var(--muted-foreground));--chart-live-bg:hsl(var(--background));--chart-live-hover:hsl(var(--secondary)); --foreground:230 20% 12%;--muted-foreground:230 10% 40%;--background:0 0% 100%;--border:230 15% 85%;--secondary:230 15% 95%;--primary:250 65% 45%;--accent:205 70% 40%;--warning-strong:35 85% 35%;--success:145 65% 30%;--destructive:0 70% 45%;--chart-accent:hsl(var(--primary)); }
 :root[data-theme=dark] { --foreground:230 20% 95%;--muted-foreground:230 10% 70%;--background:240 20% 10%;--border:240 15% 25%;--secondary:240 15% 18%;--primary:250 75% 75%;--accent:205 85% 65%;--warning-strong:35 95% 65%;--success:145 60% 65%;--destructive:0 80% 70%; }
 `
@@ -74,5 +78,12 @@ main{max-width:1000px;margin:16px auto;padding:16px;min-width:0;box-sizing:borde
 [data-chart-tooltip]{box-shadow:0 4px 16px #0002}table{border-collapse:collapse;width:100%;text-align:left}th,td{padding:8px;border-bottom:1px solid #8884}details{margin-top:16px}
 </style><div id="root"></div><script type="module" src="/app.js"></script></html>`
 const graphCss = '@layer utilities {.flex{display:flex}.text-xs{font-size:17px}}' + readFileSync(peerRequire.resolve('@tangle-network/charts/react/agent-graph.css'),'utf8') + '.topology-pane{height:680px}';
-const server=createServer((req,res)=>{res.setHeader('Content-Type', req.url==='/app.js'?'text/javascript':'text/html');res.end(req.url==='/app.js'?readFileSync(join(dir,'app.js')):req.url.includes('id=topology')?html.replace('</style>',graphCss+'</style>'):html)})
+const styles = {'/live.css':peerRequire.resolve('@tangle-network/charts/react/live.css'),'/figure.css':peerRequire.resolve('@tangle-network/charts/figure.css')};
+const server=createServer(async(req,res)=>{
+ if(req.url==='/formatter-proof.json') {
+  const api=await import(peerRequire.resolve('@tangle-network/charts'))
+  const rows=[1e-20,1e-10,1.2].map((price,i)=>({id:'recorded-cost-'+i,label:'Recorded cost '+i,rank:null,attempts:10,solved:5,rate:.5,estimate:'bootstrap',interval:{lower:.2,upper:.8,level:.95,method:'task-cluster-bootstrap'},tiers:null,cost:{perSolvedUsd:price,basis:'receipts',receipts:10},medianWallMs:1000,onFront:null}))
+  res.setHeader('Content-Type','application/json');res.end(JSON.stringify({figure:api.costFrontier(rows,{measure:'solve rate'}),formatted:[0,1e-20,1e-10,.0032,1.2,-1,NaN,Infinity].map(value=>api.formatCost(value))}));return
+ }
+ res.setHeader('Content-Type', styles[req.url]?'text/css':req.url==='/app.js'?'text/javascript':'text/html');res.end(styles[req.url]?readFileSync(styles[req.url]):req.url==='/app.js'?readFileSync(join(dir,'app.js')):(req.url.includes('id=topology')?html.replace('</style>',graphCss+'</style>'):html).replace('<style>','<link rel="stylesheet" href="/live.css"><style>'))})
 server.listen(Number(process.env.PORT || 46489),'127.0.0.1',()=>console.log(JSON.stringify({consumer:dir,tarball:packed,react:JSON.parse(readFileSync(peerRequire.resolve('react/package.json'),'utf8')).version,url:'http://127.0.0.1:'+server.address().port})))

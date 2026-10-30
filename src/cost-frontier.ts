@@ -17,7 +17,7 @@
  * plotted rows carry `onFront: true` (it never computes dominance itself).
  */
 
-import { costText, drawable, estimateNote, intervalName, kn, pct, perPass, rateDataGap, rateIntervalGap, rateOrder, usd, usdTick } from "./format.js";
+import { costText, drawable, estimateNote, intervalName, kn, pct, perPass, rateDataGap, rateIntervalGap, rateOrder, formatCost, usdTick } from "./format.js";
 import { log, logDomain, logTicks } from "./scale.js";
 import { circle, hbar, line, NARROW, polyline, svgRoot, text, titled, WIDE } from "./svg.js";
 import { type Column, table } from "./table.js";
@@ -105,19 +105,19 @@ export function costFrontier(rows: RateRow[], o: CostFrontierOptions): Figure | 
   let finding: string;
   if (cheapestFront && costed.includes(top) && cheapestFront.id !== top.id) {
     const saving = 1 - cost(cheapestFront) / cost(top);
-    finding = `${cheapestFront.label} costs ${usd(cost(cheapestFront))} per pass${est(cheapestFront)}, ${pct(saving)} less than ${top.label}.`;
+    finding = `${cheapestFront.label} costs ${formatCost(cost(cheapestFront))} per pass${est(cheapestFront)}, ${pct(saving)} less than ${top.label}.`;
   } else if (cheapestFront && cheapestFront.id === top.id) {
     finding = `${top.label} leads on both ${o.measure} and cost per pass.`;
   } else {
     const cheapest = [...costed].sort((a, b) => cost(a) - cost(b))[0]!;
-    finding = `${cheapest.label} has the lowest cost per pass, ${usd(cost(cheapest))}${est(cheapest)}.`;
+    finding = `${cheapest.label} has the lowest cost per pass, ${formatCost(cost(cheapest))}${est(cheapest)}.`;
   }
   const lowest = Math.min(...costed.map(cost));
   const highest = Math.max(...costed.map(cost));
   const lede =
     (lowest === highest
-      ? `Cost per pass is ${usd(lowest)}.`
-      : `Cost per pass ranges from ${usd(lowest)} to ${usd(highest)}.`) +
+      ? `Cost per pass is ${formatCost(lowest)}.`
+      : `Cost per pass ranges from ${formatCost(lowest)} to ${formatCost(highest)}.`) +
     (costed.some((row) => row.cost.basis === "estimated") ? " Costs include estimates." : "");
   const read =
     `Higher ${o.measure} and lower cost per pass are better; on the wide plot, better is up and right.` +
