@@ -66,7 +66,7 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = NO_M
   return <div ref={ref} className="ov-plot ov-gantt tgc-figure tgc-figure-chart" data-featured={bestMark ? true : undefined} onMouseLeave={() => setTip(null)} onMouseMove={hover} onFocus={hover} onKeyDown={key}
     onClick={event => { const row = event.target instanceof Element ? event.target.closest('[data-lane-index]') : null; if (row) onSelect?.(row.getAttribute('data-lane')!) }}>
     {header && width > 0 && <PlotSvg width={width} plot={header} label="Releases and time axis" selectable />}
-    <div ref={scroller} className="ov-gantt-scroll" style={{ maxHeight, overflow: maxHeight ? 'auto' : undefined }} onScroll={event => { if (event.currentTarget.scrollTop !== scrollTop) { setScrollTop(event.currentTarget.scrollTop); setTip(null) } }}>
+    <div ref={scroller} className="ov-gantt-scroll" style={{ maxHeight, overflow: maxHeight ? 'auto' : undefined }} onScroll={event => { const top = event.currentTarget.scrollTop; setScrollTop(top); setTip(current => current?.scrollTop === top ? current : null) }}>
       {width > 0 && plot && <PlotSvg width={width} plot={plot} label={`${model.rowIds.length} ${laneInput ? 'lanes' : 'agents'} over time`} selectable={Boolean(onSelect)} mount={mount} />}
     </div>
     <Tooltip tip={tip} /><EventList marks={marks} bands={[]} format={axis} />
@@ -91,7 +91,7 @@ function useLaneActions(model: LaneModel | null, plot: ReturnType<LaneModel['plo
     if (!row || !lane) return
     const index = target?.closest<SVGElement>('[data-span-index]')?.dataset.spanIndex
     const shown = index === undefined ? lane.spans : [lane.spans[Number(index)]!], point = target!.getBoundingClientRect(), root = event.currentTarget.getBoundingClientRect()
-    setTip({ x: point.right - root.left + 8, y: point.top - root.top - em, title: lane.label, lines: shown.flatMap(s => [{ label: s.end === null ? `${s.state} (open)` : s.state, value: span(s.start, s.end ?? now!), color: colors[s.state] ?? colors.unknown }, ...(s.note ? [{ label: s.note, value: '' }] : []), ...(s.endLabel ? [{ label: 'Duration / cost', value: s.endLabel }] : [])]) })
+    setTip({ scrollTop: scroller.current?.scrollTop, x: point.right - root.left + 8, y: point.top - root.top - em, title: lane.label, lines: shown.flatMap(s => [{ label: s.end === null ? `${s.state} (open)` : s.state, value: span(s.start, s.end ?? now!), color: colors[s.state] ?? colors.unknown }, ...(s.note ? [{ label: s.note, value: '' }] : []), ...(s.endLabel ? [{ label: 'Duration / cost', value: s.endLabel }] : [])]) })
   }
   const key = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (!model) return

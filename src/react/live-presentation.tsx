@@ -20,8 +20,7 @@ export function useWidth<T extends HTMLElement>() {
 
 
 export interface Tip {
-  x: number
-  y: number
+  x: number; y: number; scrollTop?: number
   title: string
   lines: { label: string; value: string; color?: string }[]
 }
