@@ -3,7 +3,7 @@ import type { Node, NodeProps } from "@xyflow/react";
 import { Wrench } from "lucide-react";
 import type { ReactNode } from "react";
 import { useRef } from "react";
-import type { AgentGraphDirection, AgentGraphEvent, AgentGraphNode, AgentGraphStatus } from "./agent-graph-layout";
+import type { AgentGraphDirection, AgentGraphEvent, AgentGraphNode } from "./agent-graph-layout";
 import { agentStatus, agentDescription, Handles, StatusGlyph, cardBorder } from "./agent-graph-parts";
 import { SELECTION_OUTLINE } from "./canvas-theme";
 import { fmtCost, fmtEventTime } from "./format";
@@ -15,7 +15,6 @@ import { useRunNow } from "@tangle-network/ui/hooks";
 export type LiveAgentCardNode = Node<
   { agent: AgentGraphNode; selected: boolean; direction: AgentGraphDirection; now?: number; onOpen?: () => void; parentLabel?: string; renderEventIcon?: (event: AgentGraphEvent) => ReactNode }, "liveAgent"
 >;
-const SETTLED: ReadonlySet<AgentGraphStatus> = new Set(["done", "stopped"]);
 
 function middleLabel(label: string) {
   return label.length <= 52 ? label : `${label.slice(0, 32)} … ${label.slice(-17)}`;
@@ -28,7 +27,7 @@ export function LiveAgentCardView({ agent, selected, direction = "TB", now: fixe
   const now = useRunNow(fixed);
   const ref = useRef<HTMLDivElement>(null);
   useAttention(ref, agent.status);
-  const settled = SETTLED.has(agent.status);
+  const settled = (agent.status === "done" || agent.status === "stopped");
   const failed = agent.status === "failed";
   const quiet = agentQuietActivity(agent, now);
   const s = agentStatus(agent.status);

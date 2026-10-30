@@ -125,6 +125,9 @@ it("packs an isolated static root and optional React entrypoint", () => {
     writeFileSync(join(consumer, "react.mjs"), `
       import assert from "node:assert/strict";
       import { Sparkline, StackedBarChart, sparklineGeometry } from "@tangle-network/charts/react";
+      import { useRunNow as chartClock } from "@tangle-network/charts/react/agent-graph";
+      import { useRunNow as uiClock } from "@tangle-network/ui/hooks";
+      assert.equal(chartClock, uiClock, "Chart and host bind the exact same shared clock module");
       assert.equal(typeof Sparkline, "function"); assert.equal(typeof StackedBarChart, "function");
       assert.equal(sparklineGeometry([1, null, 3]).gaps, 1);
       assert.equal(typeof document, "undefined");
