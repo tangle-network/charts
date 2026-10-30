@@ -9,12 +9,13 @@ import { SELECTION_OUTLINE } from "./canvas-theme";
 import { fmtCost, fmtEventTime } from "./format";
 import { shortModel } from "./naming";
 import { RESTING_SHADOW } from "./graph-style";
-import { agentQuietActivity, useAttention, useRunNow } from "./run-ui-state";
+import { agentQuietActivity, useAttention } from "./run-ui-state";
+import { useRunNow } from "@tangle-network/ui/hooks";
 
 export type LiveAgentCardNode = Node<
   { agent: AgentGraphNode; selected: boolean; direction: AgentGraphDirection; now?: number; onOpen?: () => void; parentLabel?: string; renderEventIcon?: (event: AgentGraphEvent) => ReactNode }, "liveAgent"
 >;
-const SETTLED: ReadonlySet<AgentGraphStatus> = new Set(["succeeded", "stopped"]);
+const SETTLED: ReadonlySet<AgentGraphStatus> = new Set(["done", "stopped"]);
 
 function middleLabel(label: string) {
   return label.length <= 52 ? label : `${label.slice(0, 32)} … ${label.slice(-17)}`;

@@ -1,6 +1,6 @@
 {
   "name": "@tangle-network/charts",
-  "version": "3.0.3",
+  "version": "4.0.0",
   "description": "Static SVG and HTML figures for benchmarks and operational timing. Draws from producer data and refuses what it cannot draw honestly.",
   "type": "module",
   "license": "MIT",
@@ -53,7 +53,8 @@
     "elkjs": "^0.12.0",
     "@xyflow/react": "^12.0.0",
     "react-dom": "^18 || ^19",
-    "@tangle-network/brand": "^1.31.3"
+    "@tangle-network/brand": "^1.31.3",
+    "@tangle-network/ui": "^11.51.5"
   },
   "peerDependenciesMeta": {
     "react": {
@@ -69,6 +70,9 @@
       "optional": true
     },
     "@tangle-network/brand": {
+      "optional": true
+    },
+    "@tangle-network/ui": {
       "optional": true
     }
   },
@@ -94,7 +98,7 @@
     "tsdown": "^0.23.0",
     "typescript": "^7.0.2",
     "vitest": "^5.0.2",
-    "@tangle-network/ui": "^11.51.1",
+    "@tangle-network/ui": "^11.51.5",
     "elkjs": "0.12.0",
     "@xyflow/react": "^12.12.0",
     "postcss": "^8.5.31",

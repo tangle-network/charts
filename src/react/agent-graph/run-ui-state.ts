@@ -3,24 +3,6 @@ import { statusMeta } from "@tangle-network/ui/run";
 import { type AnimationEvent, type CSSProperties, type RefObject, useEffect, useSyncExternalStore } from "react";
 import type { AgentGraphNode } from "./agent-graph-layout";
 
-const listeners = new Set<() => void>();
-let clock = Date.now();
-let timer: ReturnType<typeof setTimeout> | undefined;
-function tick() {
-  clock = Date.now();
-  for (const listener of listeners) listener();
-  timer = setTimeout(tick, 1000 - Date.now() % 1000);
-}
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  if (listeners.size === 1) tick();
-  return () => { listeners.delete(listener); if (!listeners.size) clearTimeout(timer); };
-}
-const noSubscribe = () => () => {};
-export function useRunNow(fixed?: number) {
-  const now = useSyncExternalStore(fixed === undefined ? subscribe : noSubscribe, () => fixed ?? clock, () => fixed ?? 0);
-  return fixed ?? now;
-}
 const motionQuery = () => typeof matchMedia === "undefined" ? null : matchMedia("(prefers-reduced-motion: reduce)");
 const subscribeMotion = (listener: () => void) => {
   const query = motionQuery();

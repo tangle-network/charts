@@ -22,7 +22,8 @@ import {
 } from "@xyflow/react";
 import { RunStatusIcon, statusMeta } from "@tangle-network/ui/run";
 import { ChevronDown } from "lucide-react";
-import { ambientStyle, syncAmbient, agentQuietActivity, useRunNow } from "./run-ui-state";
+import { ambientStyle, syncAmbient, agentQuietActivity } from "./run-ui-state";
+import { useRunNow } from "@tangle-network/ui/hooks";
 import { MOTION_CONTROL } from "./motion";
 import type {
   AgentFrame,
@@ -42,7 +43,7 @@ import {
 /** Workflow state adaptation stays at its boundary; agent states use ui directly. */
 export function agentStatus(status: AgentGraphStatus) {
   const meta = statusMeta(status);
-  const flow = status === "needs-you" ? "waiting" : status === "waiting" || status === "idle" || status === "unknown" ? "queued" : status === "stopped" ? "succeeded" : status;
+  const flow = status === "needs-you" ? "waiting" : status === "waiting" || status === "idle" || status === "unknown" ? "queued" : status === "stopped" || status === "done" ? "succeeded" : status;
   return { ...meta, color: `var(${meta.token})`, flow };
 }
 
