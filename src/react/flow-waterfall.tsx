@@ -376,7 +376,7 @@ export function FlowWaterfall({
         onExpandAll={rows.some(row => row.hasChildren) ? () => setCollapsed(new Set()) : undefined}
         onCollapseAll={() => setCollapsed(new Set(rows.filter(row => row.hasChildren).map(row => row.id)))} />
       {card && cardRow && <HoverCardContent role="presentation" container={root.current} side={view === 'agents' ? 'top' : 'bottom'} align="start" collisionPadding={8} className="border-0 bg-transparent p-0 shadow-none" style={{ width: "min(320px, calc(100vw - 16px))", zIndex: 20, padding: 0, border: 0, background: "transparent", boxShadow: "none" }} onEscapeKeyDown={event => { event.preventDefault(); closeCard() }} onInteractOutside={event => { if (event.detail.originalEvent.type !== 'pointerdown') return; const target = event.detail.originalEvent.target; if (target instanceof Element && target.closest('.fw-bar, .fw-seg')) event.preventDefault(); else setCard(null) }}>
-        <SpanCard id={cardId} row={cardRow} agent={cardAgent} clockMs={clockMs} pinned={card.pinned} onClose={closeCard} renderIcon={renderIcon} compact={view === 'agents'} />
+        <SpanCard id={cardId} row={cardRow} agent={cardAgent} clockMs={clockMs} mode={card.pinned ? 'pinned' : 'hover'} onClose={closeCard} renderIcon={renderIcon} compact={view === 'agents'} />
       </HoverCardContent>}
       {view === 'spans' && playback}
       </>}
