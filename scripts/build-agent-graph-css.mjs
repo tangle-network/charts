@@ -5,7 +5,7 @@ const from = new URL("../src/react/agent-graph/styles.css", import.meta.url);
 const result = await postcss([tailwindcss()]).process(await readFile(from, "utf8"), { from: from.pathname });
 // Compile Brand's existing arrival effect without importing unrelated intro UI.
 const brand = postcss.parse(await readFile(new URL(import.meta.resolve("@tangle-network/brand/styles/presentation.css")), "utf8"));
-brand.walkAtRules("keyframes", rule => { if (rule.params === "tangle-intro-enter") result.root.append(rule.clone()); });
+brand.walkAtRules("keyframes", rule => { if (["tangle-intro-enter", "tangle-surface-present", "tangle-surface-absent"].includes(rule.params)) result.root.append(rule.clone()); });
 // A compiled component sheet must not override its host's responsive utilities.
 // Component sublayers order resets before utilities; flat host utilities win.
 result.root.walkAtRules("layer", layer => {

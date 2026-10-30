@@ -107,3 +107,14 @@ export function useTraceClock(input: TraceClockInput): TraceClock {
 
   return { clockMs, limitMs: liveNow, positionMs: () => playhead.current }
 }
+
+/** Playback commands share one policy across buttons, scrubbing and keyboard actions. */
+export function usePlayback(position: number | null, setPosition: (value: number | null) => void) {
+  const [playing, setPlaying] = useState(false), [speed, setSpeed] = useState(1)
+  return { playing, setPlaying, speed, setSpeed,
+    end: (at: number | null) => { setPlaying(false); if (at !== null) setPosition(at) },
+    scrub: (at: number, limit: number) => { setPlaying(false); setPosition(Math.min(at, limit)) },
+    toggle: (at: number, limit: number) => { if (playing) { setPosition(at); setPlaying(false) } else { if (position === null || position >= limit - 1) setPosition(0); setPlaying(true) } },
+    restart: () => { setPosition(0); setPlaying(false) }, follow: () => { setPosition(null); setPlaying(false) },
+  }
+}

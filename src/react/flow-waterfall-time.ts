@@ -1,3 +1,5 @@
+import { type Dispatch, type RefObject, type SetStateAction, useEffect, useRef } from "react";
+import { tokenMilliseconds } from "./agent-graph/run-ui-state.js";
 /** Time-axis geometry for the trace inspector: clock-aligned steps and the zoom window. */
 export { formatClock } from '../format.js'
 
@@ -38,4 +40,39 @@ export function clampWindow(view: ViewWindow, limitMs: number): ViewWindow {
   let start = Math.max(0, view.startMs)
   if (start + span > limitMs) start = Math.max(0, limitMs - span)
   return { startMs: start, endMs: start + span }
+}
+
+/** One zoom gesture/tween lifecycle; retiring its reader cancels its scheduled frame. */
+export function useZoomWindow(root: RefObject<HTMLElement | null>, window: ViewWindow, limit: number, setWindow: Dispatch<SetStateAction<ViewWindow | null>>) {
+  const frame = useRef(0)
+  const stop = () => cancelAnimationFrame(frame.current)
+  useEffect(() => stop, [])
+  const by = (factor: number, anchor?: number) => { stop(); setWindow(previous => {
+    const current = previous ?? window, next = zoomWindow(current, factor, anchor ?? (current.startMs + current.endMs) / 2, limit)
+    return next.endMs - next.startMs >= limit - 1 ? null : next
+  }) }
+  const to = (start: number, end: number) => {
+    const current = window
+    const width = current.endMs - current.startMs
+    if (!Number.isFinite(end) || (end - start) / Math.max(1, width) > 0.25) return
+    const pad = Math.max((end - start) * 0.15, 500, (width / 8 - (end - start)) / 2)
+    const target = clampWindow({ startMs: start - pad, endMs: end + pad }, limit)
+    cancelAnimationFrame(frame.current)
+    const style = root.current ? getComputedStyle(root.current) : undefined
+    const duration = tokenMilliseconds('--duration-base', root.current), easing = style?.getPropertyValue('--ease-standard').trim()
+    const preference = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')
+    if (preference?.matches || !duration || !easing) { setWindow(target); return }
+    const tween = new Animation(new KeyframeEffect(null, [], { duration, easing, fill: 'both' }))
+    const began = performance.now()
+    const step = (now: number) => {
+      if (preference?.matches) { tween.cancel(); setWindow(target); return }
+      const t = Math.min(1, (now - began) / duration)
+      tween.currentTime = t * duration
+      const e = tween.effect?.getComputedTiming().progress ?? t
+      setWindow({ startMs: current.startMs + (target.startMs - current.startMs) * e, endMs: current.endMs + (target.endMs - current.endMs) * e })
+      if (t < 1) frame.current = requestAnimationFrame(step); else tween.cancel()
+    }
+    frame.current = requestAnimationFrame(step)
+  }
+  return { by, to, fit: () => { stop(); setWindow(null) }, pan: (delta: number) => { stop(); setWindow(previous => previous && clampWindow({ startMs: previous.startMs + delta, endMs: previous.endMs + delta }, limit)) } }
 }

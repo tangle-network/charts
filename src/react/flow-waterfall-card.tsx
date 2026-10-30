@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { runStatus, statusMeta } from '@tangle-network/ui/run/status-meta'
 import type { FlowSpan } from '../flow-trace.js'
 import { CloseGlyph, KindGlyph } from './flow-waterfall-icons.js'
@@ -18,8 +18,6 @@ export interface SpanCardProps {
   /** The agent that owns the span, for the agent-level header. */
   agent?: FlowWaterfallRow
   clockMs: number
-  left: number
-  top: number
   /** Pinned cards take focus, close on Escape and return focus to the row. */
   pinned: boolean
   onClose: () => void
@@ -75,7 +73,7 @@ function Table({ rows }: { rows: [string, ReactNode][] }) {
 }
 
 /** The span card: what ran, for how long, on what tokens and at what recorded cost, then its input and output. */
-export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, renderIcon, compact }: SpanCardProps) {
+export function SpanCard({ id, row, agent, clockMs, pinned, onClose, renderIcon, compact }: SpanCardProps) {
   const span = row.span
   const failure = spanFact(span, 'Failure')
   const state = runStatus(span.status ?? 'unknown')
@@ -83,7 +81,7 @@ export function SpanCard({ id, row, agent, clockMs, left, top, pinned, onClose, 
   const status = meta.label
   const owner = agent && agent.id !== row.id ? agent : undefined
   const frame = {
-    id, role: pinned ? 'dialog' : 'tooltip', 'aria-label': pinned ? `${span.name} details` : undefined, style: { left, top, '--fw-status': `var(${meta.token})` },
+    id, role: pinned ? 'dialog' : 'tooltip', 'aria-label': pinned ? `${span.name} details` : undefined, style: { '--fw-status': `var(${meta.token})` } as CSSProperties,
     onKeyDown: (event: { key: string; stopPropagation: () => void }) => { if (event.key === 'Escape') { event.stopPropagation(); onClose() } },
   }
   const close = pinned && <button type="button" className="fw-icon-button fw-card-close" aria-label="Close details" onClick={onClose} autoFocus><CloseGlyph /></button>

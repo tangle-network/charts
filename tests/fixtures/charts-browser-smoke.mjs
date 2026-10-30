@@ -28,7 +28,7 @@ if (reactVersion) {
 }
 const flowApp = readFileSync(join(root,'scripts/fixtures/flow-waterfall-consumer.jsx'),'utf8')
 const versionApp = readFileSync(join(root,'scripts/fixtures/version-graph-consumer.jsx'),'utf8') + "\nversionNodes[0].title += ' \u2014 recorded source identity with a long unbroken suffix abcdefghijklmnopqrstuvwxyz0123456789';\n"
-const topologyApp = readFileSync(join(root,'scripts/fixtures/agent-graph-consumer.jsx'),'utf8').replace(' const edges =', " Object.assign(nodes[0], {status:'running',lastActivityAt:Date.now()-5166*60000,medianEventGapMs:1000,events:[{id:'quiet-recorded-event',label:'Recorded source read',at:Date.now()-5166*60000}]});\n const edges =")
+const topologyApp = readFileSync(join(root,'scripts/fixtures/agent-graph-consumer.jsx'),'utf8')
 const recorded = JSON.parse(readFileSync(join(root,'docs/fixtures/discovery-waterfall.json'),'utf8'))
 const healthy = JSON.parse(readFileSync(join(root,'docs/fixtures/healthy-flow.json'),'utf8'))
 const app = `

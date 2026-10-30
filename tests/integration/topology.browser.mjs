@@ -8,6 +8,7 @@ async function proveCompactTopology(page, width, theme, output) {
   await page.goto(`${base}/?id=topology&compact=1&large=1&quiet=1&globals=agent-${theme}`)
   await page.locator(`.ag-topology[data-layout="${width < 600 ? 'list' : 'ready'}"]`).waitFor()
   await page.locator('.ag-agent-card[data-activity="quiet"]').getByText('Quiet 3d 14h',{exact:true}).waitFor()
+  assert.equal(await page.locator('.ag-agent-card[data-activity="quiet"] .ag-running-dot').evaluate(element => element.getAnimations().some(animation => animation.animationName === 'tangle-breathe')), false, 'quiet recorded agents keep their pulse stopped')
   if (width > 600) {
     const root = await page.locator('.react-flow__node[data-id="agent-0"]').boundingBox()
     const team = await page.locator('.react-flow__node-agentFrame').boundingBox()
@@ -42,6 +43,21 @@ async function proveCompactTopology(page, width, theme, output) {
   const selectedColor = await last.evaluate(node=>getComputedStyle(node).backgroundColor)
   assert.notEqual(selectedColor, await page.locator('.ag-agent-card:not([data-selected])').first().evaluate(node=>getComputedStyle(node).backgroundColor), 'selected and raised cards have distinct surfaces')
   await page.screenshot({ path: `${output}/compact-selected-${width}-${theme}.png` })
+  // Enter the shared inspector through real keyboard focus, outside the zoomed canvas.
+  const owner = page.locator(width < 600 ? '[data-agent-id="agent-129"]' : '.react-flow__node[data-id="agent-129"]')
+  await page.keyboard.press('Tab'); await owner.focus()
+  const metrics = page.locator('[data-agent-metrics]'); await metrics.waitFor({ state: 'visible' })
+  await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('[data-agent-metrics]')).opacity) >= .99)
+  assert.match(await metrics.innerText(), /Agent 129/); assert.match(await metrics.innerText(), /Cost/)
+  const metricBox = await metrics.boundingBox()
+  assert.ok(metricBox.x >= 0 && metricBox.x + metricBox.width <= width + 1 && metricBox.y >= 0 && metricBox.y + metricBox.height <= 983, 'shared inspector stays in the viewport')
+  assert.ok(await metrics.evaluate(element => parseFloat(getComputedStyle(element).fontSize)) >= 13, 'metrics keep their reading size outside the camera transform')
+  await page.keyboard.press('Tab'); assert.equal(await metrics.evaluate(element => element === document.activeElement), true)
+  await page.screenshot({ path: `${output}/shared-metrics-${width}-${theme}.png` })
+  await page.keyboard.press('Escape'); await metrics.waitFor({ state: 'hidden' }); await page.waitForTimeout(350)
+  assert.equal(await metrics.count(), 0, 'Escape stays closed after restoring the invoker')
+  assert.equal(await owner.evaluate(element => element === document.activeElement), true)
+
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false)
 }
 
@@ -95,20 +111,40 @@ try {
     assert.equal(await page.getByLabel('Reader selection').textContent(), 'agent-1')
     await page.screenshot({ path: `${output}/recorded-hub-${width}-${theme}.png` })
     await page.getByRole('button', { name: 'Close', exact: true }).click()
+    if (width < 600) {
+      await page.goto(`${base}/?id=topology&shared-tool=1&globals=agent-${theme}`); await ready()
+      await page.getByRole('button', { name: 'Switch layout', exact: true }).click()
+      const copies = page.getByRole('button', { name: 'Read source', exact: true }); assert.equal(await copies.count(), 2)
+      const earlier = copies.first(); await earlier.click()
+      const details = page.getByRole('dialog', { name: 'Read source calls', exact: true }); await details.waitFor({ state: 'visible' })
+      const card = await details.boundingBox(), invoker = await earlier.boundingBox()
+      assert.ok(card.x >= 8 && card.x + card.width <= width - 8 && Math.min(Math.abs(card.y - invoker.y - invoker.height), Math.abs(invoker.y - card.y - card.height)) <= 8, 'the shared tool preview fits beside its actual earlier-row invoker')
+      await page.getByRole('button', { name: 'Close', exact: true }).click(); await details.waitFor({ state: 'hidden' }); await page.waitForFunction(element => element === document.activeElement, await earlier.elementHandle()); assert.equal(await earlier.evaluate(element => element === document.activeElement), true)
+      await page.keyboard.press('Enter'); await details.waitFor({ state: 'visible' }); await page.keyboard.press('Escape'); await details.waitFor({ state: 'hidden' })
+      await page.waitForFunction(element => element === document.activeElement, await earlier.elementHandle()); assert.equal(await earlier.evaluate(element => element === document.activeElement), true, 'Escape returns to the same tool occurrence')
+      await page.goto(`${base}/?id=topology&large=1&quiet=1&globals=agent-${theme}`); await ready()
+      await page.getByRole('button', { name: 'Switch layout', exact: true }).click()
+      const chip = page.locator('.ag-chip').first(); await chip.click(); await page.getByRole('dialog').waitFor({ state: 'visible' })
+      await page.getByRole('button', { name: 'Close', exact: true }).click(); await page.getByRole('dialog').waitFor({ state: 'hidden' }); await page.waitForFunction(element => element === document.activeElement, await chip.elementHandle()); assert.equal(await chip.evaluate(element => element === document.activeElement), true, 'Close returns to the header chip')
+      await page.keyboard.press('Enter'); await page.getByRole('dialog').waitFor({ state: 'visible' }); await page.keyboard.press('Escape'); await page.getByRole('dialog').waitFor({ state: 'hidden' })
+      await page.waitForFunction(element => element === document.activeElement, await chip.elementHandle()); assert.equal(await chip.evaluate(element => element === document.activeElement), true, 'Escape returns to the header chip')
+    }
     await page.emulateMedia({ reducedMotion: 'no-preference' })
     await page.goto(`${base}/?id=topology&large=1&globals=agent-${theme}`)
     await ready()
     const count = () => page.locator(width < 600 ? '.ag-phone-select' : '.react-flow__node-agent,.react-flow__node-liveAgent').count()
     assert.ok(await count() < 100, '130 agents render a bounded window')
+    const running = page.locator('.ag-live-card[data-status="running"] .ag-running-dot').first()
+    await running.waitFor({ state: 'visible' })
+    const pulse = await running.evaluate(element => { const css = getComputedStyle(element); return { names: element.getAnimations().map(animation => animation.animationName), animation: css.animation, duration: css.getPropertyValue('--duration-ambient'), motion: css.getPropertyValue('--motion-ambient'), reduced: matchMedia('(prefers-reduced-motion: reduce)').matches, quiet: element.closest('[data-activity]')?.getAttribute('data-activity') } })
+    assert.ok(pulse.names.includes('tangle-breathe'), 'an actual running status pulses through Brand motion: ' + JSON.stringify(pulse))
+
     await page.getByRole('button', { name: 'Select last agent', exact: true }).click()
     const last = page.locator(width < 600 ? '[data-agent-id="agent-129"]' : '.react-flow__node[data-id="agent-129"]')
     await last.waitFor({ state: 'visible' })
-    const motion = await last.locator('.ag-live-card').evaluate(card => ({
-      arrival: card.getAnimations().map(animation => animation.animationName),
-      pulse: card.querySelector('.ag-running-dot').getAnimations().map(animation => animation.animationName),
-    }))
-    assert.ok(motion.arrival.includes('tangle-intro-enter'), 'Brand arrival has a real animation effect')
-    assert.ok(motion.pulse.includes('tangle-breathe'), 'running status pulses through Brand motion')
+    const arrival = await last.locator('.ag-live-card').evaluate(card => card.getAnimations().map(animation => animation.animationName))
+    assert.ok(arrival.includes('tangle-intro-enter'), 'Brand arrival has a real animation effect')
+    assert.equal(await last.locator('.ag-live-card').getAttribute('data-status'), 'stopped', 'the selected last agent retains its recorded terminal state')
     await last.focus()
     await page.keyboard.press('Enter')
     assert.equal(await page.getByLabel('Reader selection').textContent(), 'agent-129')
@@ -149,7 +185,7 @@ try {
 } catch (error) {
   if (currentPage && !currentPage.isClosed()) {
     await currentPage.screenshot({ path: `${output}/failure.png`, fullPage: true })
-    await writeFile(`${output}/failure.json`, JSON.stringify({ message: String(error), url: currentPage.url(), text: await currentPage.locator('body').innerText() }, null, 2))
+    await writeFile(`${output}/failure.json`, JSON.stringify({ message: String(error), url: currentPage.url(), text: await currentPage.locator('body').innerText(), focus: await currentPage.evaluate(() => document.activeElement?.parentElement?.outerHTML), dialogs: await currentPage.getByRole('dialog').evaluateAll(elements => elements.map(element => ({ html: element.outerHTML.slice(0, 700), bounds: element.getBoundingClientRect().toJSON() }))) }, null, 2))
   }
   throw error
 } finally {
