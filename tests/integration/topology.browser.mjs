@@ -8,6 +8,7 @@ async function proveCompactTopology(page, width, theme, output) {
   await page.goto(`${base}/?id=topology&compact=1&large=1&quiet=1&globals=agent-${theme}`)
   await page.locator(`.ag-topology[data-layout="${width < 600 ? 'list' : 'ready'}"]`).waitFor()
   await page.locator('.ag-agent-card[data-activity="quiet"]').getByText('Quiet 3d 14h',{exact:true}).waitFor()
+  assert.equal(await page.locator('.ag-agent-card[data-activity="quiet"] .ag-running-dot').evaluate(element => element.getAnimations().some(animation => animation.animationName === 'tangle-breathe')), false, 'quiet recorded agents keep their pulse stopped')
   if (width > 600) {
     const root = await page.locator('.react-flow__node[data-id="agent-0"]').boundingBox()
     const team = await page.locator('.react-flow__node-agentFrame').boundingBox()
