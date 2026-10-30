@@ -6,7 +6,7 @@ import { resolve } from 'node:path'
 import { chromium } from 'playwright'
 const out = resolve(process.env.COUNT_HEATMAP_EVIDENCE ?? '/tmp/count-heatmap-proof')
 await mkdir(out,{recursive:true})
-const child=spawn(process.execPath,['scripts/charts-browser-smoke.mjs',...process.argv.slice(2)],{env:{...process.env,PORT:'0'},stdio:['ignore','pipe','inherit']})
+const child=spawn(process.execPath,['tests/fixtures/charts-browser-smoke.mjs',...process.argv.slice(2)],{env:{...process.env,PORT:'0'},stdio:['ignore','pipe','inherit']})
 let output='', url=''
 await new Promise((done,reject)=>{child.stdout.on('data',data=>{output+=data;const row=output.trim().split('\n').findLast(line=>line.startsWith('{')&&line.includes('"url":'));if(row){url=JSON.parse(row).url;done()}});child.on('exit',code=>reject(new Error(`consumer exited ${code}: ${output}`)))})
 const browser=await chromium.launch({headless:true}), checks=[]

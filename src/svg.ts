@@ -7,6 +7,14 @@
 
 import { esc } from "./text.js";
 
+/** Stable native groups share geometry and attributes with the static serializer. */
+export type SvgPart = string | { key: string; attributes: Record<string, string | number | boolean | undefined>; body: string };
+export function svgPart(part: SvgPart): string {
+  if (typeof part === "string") return part;
+  const attributes = Object.entries(part.attributes).filter(([, value]) => value !== undefined).map(([key, value]) => ` ${key === "tabIndex" ? "tabindex" : key}="${esc(String(value))}"`).join("");
+  return `<g${attributes}>${part.body}</g>`;
+}
+
 export const WIDE = 720;
 export const NARROW = 358;
 
@@ -58,8 +66,8 @@ export function hatch(x: number, y: number, w: number, h: number, cls: string): 
   return `<g class="${cls}" data-hatched="true">${rect(x, y, w, h, "tgc-hatch-bg")}<path class="tgc-hatch" d="${hatchPath(x, y, w, h)}"/></g>`;
 }
 
-export function line(x1: number, y1: number, x2: number, y2: number, cls: string): string {
-  return `<line class="${cls}" x1="${r2(x1)}" y1="${r2(y1)}" x2="${r2(x2)}" y2="${r2(y2)}"/>`;
+export function line(x1: number, y1: number, x2: number, y2: number, cls: string, attributes = ""): string {
+  return `<line class="${cls}" x1="${r2(x1)}" y1="${r2(y1)}" x2="${r2(x2)}" y2="${r2(y2)}"${attributes ? ` ${attributes}` : ""}/>`;
 }
 
 export function circle(cx: number, cy: number, r: number, cls: string): string {
@@ -97,6 +105,6 @@ export function text(x: number, y: number, value: string, o: TextOptions = {}): 
 }
 
 /** A group whose `<title>` is the hover text for everything inside it. */
-export function titled(title: string, inner: string): string {
-  return `<g><title>${esc(title)}</title>${inner}</g>`;
+export function titled(title: string, inner: string, attributes = ""): string {
+  return `<g${attributes ? ` ${attributes}` : ""}><title>${esc(title)}</title>${inner}</g>`;
 }

@@ -5,9 +5,9 @@
  * producer records every position; the library never places an event.
  */
 import { duration } from "./format.js";
-import { hatch, line, markerPath, type MarkerShape, rect, text, titled } from "./svg.js";
+import { hatch, line, markerPath, type MarkerShape, rect, text, titled, svgPart, type SvgPart } from "./svg.js";
 import { table } from "./table.js";
-import { textWidth, wrap } from "./text.js";
+import { esc, textWidth, wrap } from "./text.js";
 
 /**
  * `pass` is solid, `deadline` dashed, `died` ends in a cross and `event` is dotted. `release`, `steer`, `ruling` and
@@ -125,6 +125,9 @@ export interface MarkLabelOptions {
   before?: readonly ChartMark[];
   after?: readonly ChartMark[];
   window?: readonly [number, number];
+  /** A producer-selected release gets first choice of a readable label. */
+  priority?: string;
+  live?: boolean;
 }
 
 /**
@@ -147,6 +150,7 @@ function groupMarks(marks: readonly ChartMark[], px: (x: number) => number): Mar
  * past the window is always named; a mark label that fits no row is left to its rule's hover and the table.
  */
 function layoutLabels(groups: MarkGroup[], left: number, right: number, o: MarkLabelOptions): { placed: Map<MarkGroup, Placed>; edges: Placed[]; rows: number } {
+  groups = [...groups].sort((a, b) => Number(b.marks.some(mark => mark.label === o.priority)) - Number(a.marks.some(mark => mark.label === o.priority)));
   const rows = o.rows ?? 3, maxW = Math.max(48, Math.min(200, (right - left) * 0.42)), gap = 6;
   const taken: Array<Array<[number, number]>> = Array.from({ length: rows }, () => []);
   const fits = (row: number, a: number, b: number) => taken[row]!.every(([p, q]) => b + gap <= p || a >= q + gap);
@@ -169,7 +173,7 @@ function layoutLabels(groups: MarkGroup[], left: number, right: number, o: MarkL
   // A gap between positions is context: every other mark claims a label row first.
   for (const group of [...groups.filter((g) => !isGap(g.marks[0]!)), ...groups.filter((g) => isGap(g.marks[0]!))]) {
     const flip = group.x > left + (right - left) * 0.62;
-    const name = markName(group.marks[0]!) + (group.marks.length > 1 ? ` (+${group.marks.length - 1})` : "");
+    const name = markName(group.marks.find(mark => mark.label === o.priority) ?? group.marks[0]!) + (group.marks.length > 1 ? ` (+${group.marks.length - 1})` : "");
     const spot = place(name, group.x + 4, group.x - 4, flip ? "end" : "start", true);
     if (spot) placed.set(group, spot);
   }
@@ -183,9 +187,9 @@ export function markLabelRows(marks: readonly ChartMark[], px: (x: number) => nu
 }
 
 /** The head shape of a release, steer, ruling or wake, centred on (x, y). Empty for the plain rule kinds. */
-export function markHead(kind: MarkKind, x: number, y: number, r = 3.5): string {
+export function markHead(kind: MarkKind, x: number, y: number, r = 3.5, classes = "tgc-mark-head"): string {
   const shape = MARK_HEADS[kind];
-  return shape ? `<path class="tgc-mark-head" d="${markerPath(shape, x, y, r)}"/>` : "";
+  return shape ? `<path class="${classes}" d="${markerPath(shape, x, y, r)}"/>` : "";
 }
 
 /**
@@ -193,27 +197,41 @@ export function markHead(kind: MarkKind, x: number, y: number, r = 3.5): string 
  * over every rule; marks of one kind and verdict at one place share a rule and a label. Rules run from `labelTop` to
  * `bottom`, except that release, steer and wake stems stop at their head, just below `top`.
  */
-export function drawMarks(marks: readonly ChartMark[], px: (x: number) => number, top: number, bottom: number, left: number, right: number, format: (x: number) => string, labelTop = top, o: MarkLabelOptions = {}): string {
-  const groups = groupMarks(marks, px);
+export function prepareMarks(marks: readonly ChartMark[], px: (x: number) => number, top: number, bottom: number, left: number, right: number, format: (x: number) => string, labelTop = top, o: MarkLabelOptions = {}): { body: string; labels: SvgPart[] } {
+  const labels: SvgPart[] = [];
+  const groups = groupMarks(marks, px), cls = (value: string) => o.live ? `${value} ${value.replaceAll("tgc-", "ov-")}` : value;
   const { placed, edges } = layoutLabels(groups, left, right, o);
   const rowY = (row: number) => labelTop + 12 + row * 14;
   let out = groups.map((group) => {
     const { x, marks: members } = group, mark = members[0]!;
     // Kinds with a head (release, steer, ruling, wake) are frequent: only a ruling crosses the data; the rest stop at its edge.
-    const stem = (MARK_HEADS[mark.kind] !== undefined && mark.kind !== "ruling") || isGap(mark);
-    let glyph = line(x, Math.min(top, labelTop), x, stem ? top + 4 : bottom, `tgc-mark tgc-mark-${mark.kind}`);
-    if (mark.kind === "died") glyph += line(x - 4, bottom - 8, x + 4, bottom, "tgc-mark tgc-mark-died") + line(x - 4, bottom, x + 4, bottom - 8, "tgc-mark tgc-mark-died");
-    glyph += markHead(mark.kind, x, top + 4);
-    const verdict = mark.verdict ? ` data-verdict="${mark.verdict}" class="tgc-verdict-${mark.verdict}"` : "";
+    const stem = !o.live && ((MARK_HEADS[mark.kind] !== undefined && mark.kind !== "ruling") || isGap(mark));
+    let glyph = line(x, Math.min(top, labelTop), x, stem ? top + 4 : bottom, cls(`tgc-mark tgc-mark-${mark.kind}`));
+    if (mark.kind === "died") glyph += line(x - 4, bottom - 8, x + 4, bottom, cls("tgc-mark tgc-mark-died")) + line(x - 4, bottom, x + 4, bottom - 8, cls("tgc-mark tgc-mark-died"));
+    glyph += markHead(mark.kind, x, top + 4, 3.5, cls("tgc-mark-head"));
+    const verdict = mark.verdict ? ` data-verdict="${mark.verdict}" class="${cls(`tgc-verdict-${mark.verdict}`)}"` : "";
     return titled(members.map((m) => `${markName(m)}: ${format(m.at)}${m.verdict ? ` · ${m.verdict}` : ""}`).join("\n"), `<g data-mark="${mark.kind}"${members.length > 1 ? ` data-merged="${members.length}"` : ""}${verdict}>${glyph}</g>`);
   }).join("");
   // Labels go over every rule, so a later rule never strikes through an earlier label.
-  for (const group of groups) {
+  for (const [index, group] of groups.entries()) {
     const spot = placed.get(group);
-    if (spot) out += text(spot.x, rowY(spot.row), spot.text, { size: 12, anchor: spot.anchor, cls: "tgc-mark-label" });
+    const lead = group.marks.find(mark => mark.label === o.priority) ?? group.marks[0]!;
+    if (o.live && o.rows !== 0) {
+      const label = spot?.text ?? wrap(markName(lead), Math.max(48, Math.min(200, right - left)), 12, 'sans', 1).lines[0]!;
+      const x = spot?.x ?? Math.max(left, Math.min(group.x + 4, right - textWidth(label, 12)));
+      const radius = Math.max(0, Math.min(5, (group.x - (groups[index - 1]?.x ?? -Infinity)) / 2, ((groups[index + 1]?.x ?? Infinity) - group.x) / 2));
+      const caption = text(x, rowY(spot?.row ?? 0), label, { size: 12, anchor: spot?.anchor ?? 'start', cls: cls("tgc-mark-label") });
+      const key = JSON.stringify([group.marks[0]!.at, group.marks[0]!.kind, group.marks[0]!.label, group.marks[0]!.verdict ?? null, group.marks[0]!.source ?? null]);
+      labels.push({ key: `mark:${key}`, attributes: { 'data-mark-id': key, 'data-labelled': Boolean(spot), tabIndex: 0, role: 'img', 'aria-label': markName(lead) }, body: `<title>${esc(markName(lead))}</title>` + rect(group.x - radius, Math.min(top, labelTop), radius * 2, Math.max(12, bottom - Math.min(top, labelTop)), "tgc-lane-hit", 'pointer-events="fill"') + caption });
+    } else if (spot) out += text(spot.x, rowY(spot.row), spot.text, { size: 12, anchor: spot.anchor, cls: "tgc-mark-label" });
   }
   for (const edge of edges) out += `<g data-edge="${edge.anchor === "end" ? "after" : "before"}">${text(edge.x, rowY(edge.row), edge.text, { size: 12, anchor: edge.anchor, cls: "tgc-mark-label tgc-mark-edge" })}</g>`;
-  return out;
+  return { body: out, labels };
+}
+
+export function drawMarks(...args: Parameters<typeof prepareMarks>): string {
+  const marks = prepareMarks(...args);
+  return marks.body + marks.labels.map(svgPart).join("");
 }
 
 /** The table form of marks and bands, in axis order. Empty when there are none. */

@@ -1,32 +1,15 @@
 /** Reusable, em-scaled charts for live operational series. Values, labels and status colors belong to callers. */
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { type ChartBand, type ChartMark, eventsGap, MARK_HEADS, markName } from '../events.js'
+import { useRef, useState } from 'react'
+import { formatCompact } from '../format.js'
+import { useWidth, Tooltip, EventList, type Tip } from './live-presentation.js'
+export { useWidth } from './live-presentation.js'
+import { type ChartBand, type ChartMark, drawMarks, eventsGap } from '../events.js'
 import { hatchPath, type MarkerShape, markerPath } from '../svg.js'
-import { textWidth, wrap } from '../text.js'
-import type { TimelineLane } from '../timeline.js'
 
 // Defaults for consumers that do not pass a series color.
 export const LIVE_SERIES = ['#8b7cf6', '#0ea5a0', '#c98500', '#e2508f', '#4a90e2'] as const
-export const formatCompact = (value: number | null | undefined) =>
-  value === null || value === undefined || !Number.isFinite(value) ? '—' : new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
+export { formatCompact } from '../format.js'
 const formatShare = (value: number | null) => value === null || !Number.isFinite(value) ? '—' : `${Math.round(value * 100)}%`
-
-/** The rendered width and font size of an element, so an SVG chart draws at its real size and its geometry follows
- * the page's type. */
-export function useWidth<T extends HTMLElement>() {
-  // A callback ref: a chart that first renders its empty message (no element) starts measuring when its plot mounts.
-  const [element, ref] = useState<T | null>(null)
-  const [size, setSize] = useState({ width: 0, em: 16 })
-  useEffect(() => {
-    if (!element) return
-    const observer = new ResizeObserver(([entry]) =>
-      setSize({ width: Math.floor(entry!.contentRect.width), em: parseFloat(getComputedStyle(element).fontSize) || 16 }),
-    )
-    observer.observe(element)
-    return () => observer.disconnect()
-  }, [element])
-  return [ref, size.width, size.em] as const
-}
 
 /** A nice ceiling for an axis and its three gridline values. */
 function ticksFor(max: number) {
@@ -35,42 +18,6 @@ function ticksFor(max: number) {
   const step = [1, 2, 2.5, 5, 10].map((m) => m * power).find((s) => s * 4 >= max) ?? power * 10
   const top = Math.ceil(max / step) * step
   return { top, ticks: [0, top / 2, top] }
-}
-
-interface Tip {
-  x: number
-  y: number
-  title: string
-  lines: { label: string; value: string; color?: string }[]
-}
-
-function Tooltip({ tip }: { tip: Tip | null }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [position, setPosition] = useState({ left: 0, top: 0 })
-  useLayoutEffect(() => {
-    const node = ref.current, parent = node?.parentElement
-    if (!tip || !node || !parent) return
-    const place = () => {
-      const next = { left: Math.max(0, Math.min(tip.x, parent.clientWidth - node.offsetWidth)), top: Math.max(0, Math.min(tip.y, parent.clientHeight - node.offsetHeight)) }
-      setPosition(old => old.left === next.left && old.top === next.top ? old : next)
-    }
-    place()
-    const observer = new ResizeObserver(place)
-    observer.observe(node); observer.observe(parent)
-    return () => observer.disconnect()
-  }, [tip])
-  if (!tip) return null
-  return (
-    <div ref={ref} className="ov-tip" role="tooltip" style={position}>
-      <strong>{tip.title}</strong>
-      {tip.lines.map((line, i) => (
-        <span key={`${line.label}:${i}`} className="ov-tip-line">
-          <span>{line.color && <i style={{ background: line.color }} />}{line.label}</span>
-          <b>{line.value}</b>
-        </span>
-      ))}
-    </div>
-  )
 }
 
 /** Bars per day (or per any label: `tick` shortens it on the axis), stacked by series, on one axis; hovering a bar lists
@@ -360,36 +307,8 @@ function Band({ band, x, y, width, height }: { band: ChartBand; x: number; y: nu
 /** A vertical event rule with its label; kinds differ by stroke pattern, the died cross and the release, steer, ruling
  * and wake head shapes as well as colour, and a recorded verdict colours the rule. */
 function Mark({ mark, x, top, bottom, row, em, flip }: { mark: ChartMark; x: number; top: number; bottom: number; row: number; em: number; flip: boolean }) {
-  const s = Math.max(3, em / 4)
-  const head = MARK_HEADS[mark.kind]
-  return (
-    <g data-mark={mark.kind} data-verdict={mark.verdict} className={mark.verdict ? `ov-verdict-${mark.verdict}` : undefined}>
-      <title>{markName(mark)}</title>
-      <line x1={x} x2={x} y1={top} y2={bottom} className={`ov-mark ov-mark-${mark.kind}`} />
-      {mark.kind === 'died' && <path d={`M${x - s} ${bottom - 2 * s}L${x + s} ${bottom}M${x - s} ${bottom}L${x + s} ${bottom - 2 * s}`} className="ov-mark ov-mark-died" />}
-      {head && <path d={markerPath(head, x, top + s, s)} className="ov-mark-head" />}
-      <text x={flip ? x - em * 0.3 : x + em * 0.3} y={top + em * (0.9 + row)} textAnchor={flip ? 'end' : 'start'} className="ov-mark-label">{markName(mark)}</text>
-    </g>
-  )
-}
-
-/** Every mark and band as text, in time order: the table form of the events drawn on the plot. */
-function EventList({ marks, bands, format }: { marks: ChartMark[]; bands: ChartBand[]; format: (t: number) => string }) {
-  if (!marks.length && !bands.length) return null
-  const items = [
-    ...marks.map((m) => ({ at: m.at, kind: m.kind, text: `${markName(m)} · ${format(m.at)}${m.verdict ? ` · ${m.verdict}` : ''}` })),
-    ...bands.map((b) => ({ at: b.from, kind: b.kind, text: `${b.label} · ${format(b.from)} to ${format(b.to)}${b.kind === 'missing' ? ' · no data' : ''}` })),
-  ].sort((a, b) => a.at - b.at)
-  return (
-    <ul className="ov-events" aria-label="Recorded events">
-      {items.map((item, i) => (
-        <li key={i} data-kind={item.kind}>
-          <i className={`ov-event-swatch ov-event-${item.kind}`} aria-hidden="true" />
-          {item.text}
-        </li>
-      ))}
-    </ul>
-  )
+  const room = Math.max(240, em * 6)
+  return <g dangerouslySetInnerHTML={{ __html: drawMarks([mark], () => x, top, bottom, flip ? x - room : x, flip ? x : x + room, () => '', top + em * (.9 + row) - 12, { live: true, rows: 1 }) }} />
 }
 
 /** One part of a whole. A null value is listed as not recorded and takes no width; `untraced` parts are hatched. */
@@ -527,130 +446,5 @@ export function Events({ at, from, to, label, color = LIVE_SERIES[0], ticks = 7,
   )
 }
 
-/** One bar per row on a shared time axis (who worked when): each row's bar spans its start to its end, coloured by its
- * state; hovering a span names it, its state and its span. Times are epoch ms; `axis` labels the time axis.
- * `lanes` give a row several spans (the same shape as the static `timeline`); a span with `end: null` is open and runs
- * to `now`. `marks` draw recorded events across every lane, and states in `hatch` are drawn hatched (no data). */
-export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = [], now, hatch = ['missing', 'untraced'], selectedId, onSelect, bestMark, maxHeight }: { selectedId?: string; onSelect?: (id: string) => void; bestMark?: string; maxHeight?: number; rows?: { label: string; start: number; end: number; state: string; note?: string }[]; lanes?: TimelineLane[]; colors: Record<string, string>; axis: (t: number) => string; span: (start: number, end: number) => string; marks?: ChartMark[]; now?: number; hatch?: string[] }) {
-  const [ref, width, em] = useWidth<HTMLDivElement>()
-  const [tip, setTip] = useState<Tip | null>(null)
-  const scroller = useRef<HTMLDivElement>(null)
-  const [scrollTop, setScrollTop] = useState(0)
-  const lanes: TimelineLane[] = laneInput ?? (rows ?? []).map((row, i) => ({ id: `${row.label}-${i}`, label: row.label, spans: [{ start: row.start, end: row.end, state: row.state, note: row.note }] }))
-  const gap = eventsGap(marks)
-  if (gap) throw new RangeError(gap)
-  if (now !== undefined && !Number.isFinite(now)) throw new RangeError('now must be a finite time.')
-  // Lanes are validated; the original single-span `rows` keep their lenient drawing so existing pages never throw.
-  if (laneInput) for (const lane of lanes) for (const s of lane.spans) {
-    if (!Number.isFinite(s.start) || (s.end !== null && (!Number.isFinite(s.end) || s.end < s.start))) throw new RangeError(`${lane.label}: span times must be finite and end at or after their start.`)
-    if (s.end === null && (now === undefined || now < s.start)) throw new RangeError(`${lane.label}: an open span needs a now at or after its start.`)
-  }
-  const spans = lanes.flatMap((lane) => lane.spans)
-  if (!spans.length) return <p className="ov-empty">No agent has started.</p>
-  const ends = (s: { end: number | null }) => s.end ?? now!
-  const phone = width < 600
-  const rowH = Math.round((phone ? 2.8 : 2.2) * em)
-  const labelW = phone ? 8 : Math.min(Math.round(16 * em), Math.round(width * 0.28))
-  const top = maxHeight ? 4 : marks.length ? 48 : 8
-  const fractions = phone ? [0, .5, 1] : [0, .25, .5, .75, 1]
-  const bottom = Math.round(1.8 * em)
-  const height = top + lanes.length * rowH + bottom
-  const times = [...spans.flatMap((s) => [s.start, ends(s)]), ...marks.map((m) => m.at), ...(now === undefined ? [] : [now])]
-  const t0 = Math.min(...times)
-  const t1 = Math.max(...times, t0 + 60_000)
-  const plotW = Math.max(0, width - labelW - 10)
-  const x = (t: number) => labelW + ((t - t0) / (t1 - t0)) * plotW
-  const fallback = colors.unknown ?? 'var(--chart-live-faint, var(--chart-muted))'
-  const orderedMarks = [...marks].sort((a, b) => a.at - b.at)
-  const best = orderedMarks.find(mark => mark.label === bestMark)
-  const labelled = new Set(best ? [best] : []), positions = best ? [x(best.at)] : []
-  const every = Math.max(1, Math.ceil(marks.length / Math.max(1, Math.floor(plotW / (6 * em)))))
-  orderedMarks.forEach((mark, i) => {
-    if (i % every === 0 && positions.every(at => Math.abs(at - x(mark.at)) >= 5 * em)) { labelled.add(mark); positions.push(x(mark.at)) }
-  })
-  const hatched = new Set(hatch)
-  const plotBottom = top + lanes.length * rowH
-  const first = maxHeight ? Math.max(0, Math.floor((scrollTop - top) / rowH) - 6) : 0
-  const visible = maxHeight ? lanes.slice(first, first + Math.ceil(maxHeight / rowH) + 14) : lanes
-  const select = (id: string) => onSelect?.(id)
-  const focusLane = (index: number) => {
-    const at = Math.max(0, Math.min(lanes.length - 1, index))
-    const position = at === 0 ? 0 : top + at * rowH - rowH
-    if (scroller.current) scroller.current.scrollTop = position
-    setScrollTop(Math.max(0, position))
-    requestAnimationFrame(() => scroller.current?.querySelector<SVGGElement>(`[data-lane-index="${at}"]`)?.focus())
-  }
-  const tipY = (y: number) => Math.max(0, y - (maxHeight ? scrollTop - 52 : 0) - em)
-  const tipX = (x: number) => Math.max(0, Math.min(x + 8, width - Math.min(240, width)))
-  return (
-    <div ref={ref} className="ov-plot ov-gantt" data-featured={bestMark ? true : undefined} onMouseLeave={() => setTip(null)}>
-      {maxHeight && width > 0 && <svg width={width} height={52} aria-label="Releases and time axis">
-        {orderedMarks.map((mark, i) => <g key={i} tabIndex={0} role="img" aria-label={markName(mark)} data-labelled={bestMark ? labelled.has(mark) : undefined} data-best={mark.label === bestMark || undefined}><Mark mark={mark} x={x(mark.at)} top={10} bottom={28} row={0} em={em} flip={x(mark.at) > width * .62} />{mark.label === bestMark && <circle cx={x(mark.at)} cy={14} r={8} fill="none" stroke="var(--accent-text)" strokeWidth={2} />}</g>)}
-        {fractions.map(f => <text key={f} x={labelW + f * plotW} y={46} className="ov-axis" textAnchor={f === 0 ? 'start' : f === 1 ? 'end' : 'middle'}>{axis(t0 + f * (t1 - t0))}</text>)}
-      </svg>}
-      <div ref={scroller} className="ov-gantt-scroll" style={{ maxHeight, overflow: maxHeight ? 'auto' : undefined }} onScroll={event => { setScrollTop(event.currentTarget.scrollTop); setTip(null) }}>
-      {width > 0 && (
-        <svg width={width} height={height} role={onSelect ? 'group' : 'img'} aria-label={`${lanes.length} ${laneInput ? 'lanes' : 'agents'} over time`}>
-          {fractions.map((f) => (
-            <g key={f}>
-              <line x1={labelW + f * plotW} x2={labelW + f * plotW} y1={top} y2={plotBottom} className="ov-gridline" />
-              {!maxHeight && <text x={labelW + f * plotW} y={height - em * 0.35} className="ov-axis" textAnchor={f === 0 ? 'start' : f === 1 ? 'end' : 'middle'}>{axis(t0 + f * (t1 - t0))}</text>}
-            </g>
-          ))}
-          {visible.map((lane, offset) => {
-            const i = first + offset, y = top + i * rowH
-            const suffix = typeof lane.count === 'number' && Number.isFinite(lane.count) ? ` · ${lane.count.toLocaleString()}` : ''
-            const label = wrap(lane.label, Math.max(40, (phone ? width - 16 : labelW - em) - textWidth(suffix, 13)), 13, 'sans', 1).lines[0]
-            const final = lane.spans.length ? lane.spans.reduce((last, s) => ends(s) >= ends(last) ? s : last) : undefined
-            const endLabel = selectedId === lane.id && final?.endLabel ? wrap(final.endLabel, Math.max(40, plotW - 16), 13, 'sans', 1).lines[0] : undefined
-            return (
-              <g key={lane.id} data-lane={lane.id} data-lane-index={i} role={onSelect ? 'button' : undefined} tabIndex={onSelect ? 0 : undefined} aria-label={lane.label} aria-pressed={onSelect ? selectedId === lane.id : undefined}
-                onMouseEnter={() => setTip({ x: tipX(x(ends(lane.spans.at(-1) ?? { end: t1 }))), y: tipY(y), title: lane.label, lines: lane.spans.flatMap((s) => [{ label: s.end === null ? `${s.state} (open)` : s.state, value: span(s.start, ends(s)), color: hatched.has(s.state) ? undefined : colors[s.state] ?? fallback }, ...(s.note ? [{ label: s.note, value: '' }] : []), ...(s.endLabel ? [{ label: 'Duration / cost', value: s.endLabel }] : [])]) })}
-                onClick={() => select(lane.id)} onKeyDown={event => {
-                  if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(lane.id) }
-                  const next = ({ ArrowDown: i + 1, ArrowUp: i - 1, Home: 0, End: lanes.length - 1 } as Record<string, number>)[event.key]
-                  if (next !== undefined) { event.preventDefault(); focusLane(next) }
-                }}>
-                {selectedId === lane.id && <rect x={0} y={y} width={width} height={rowH} fill="var(--ix-sel-bg)" rx={4} />}
-                {/* The whole row names every span on hover, as single-span rows always did. */}
-                <rect x={0} y={y} width={width} height={rowH} fill="transparent" />
-                <text x={phone ? 8 : labelW - em * 0.5} y={phone ? y + 13 : y + rowH / 2} dominantBaseline="middle" textAnchor={phone ? 'start' : 'end'} className="ov-axis ov-gantt-label"><title>{lane.label}{suffix}{suffix && lane.countLabel ? ` ${lane.countLabel}` : ''}</title>
-                  {label}{suffix && <tspan className="ov-gantt-count">{suffix}</tspan>}
-                </text>
-                {lane.spans.map((s, j) => {
-                  const color = colors[s.state] ?? fallback
-                  const bx = x(s.start), bw = Math.max(2, x(ends(s)) - bx), by = y + (phone ? 24 : rowH * 0.25), bh = rowH * 0.5
-                  const open = s.end === null
-                  return (
-                    <g key={j} data-state={s.state} data-open={open ? 'true' : undefined} data-hatched={hatched.has(s.state) ? 'true' : undefined}
-                      onMouseEnter={() => setTip({ x: tipX(bx + bw), y: tipY(y), title: lane.label, lines: [{ label: open ? `${s.state} (open)` : s.state, value: span(s.start, ends(s)), color: hatched.has(s.state) ? undefined : color }, ...(s.note ? [{ label: s.note, value: '' }] : []), ...(s.endLabel ? [{ label: 'Duration / cost', value: s.endLabel }] : [])] })}>
-                      {hatched.has(s.state) ? (
-                        <>
-                          <rect x={bx} y={by} width={bw} height={bh} className="ov-hatch-bg" />
-                          <path d={hatchPath(bx, by, bw, bh, 4)} className="ov-hatch" />
-                        </>
-                      ) : (
-                        <rect x={bx} y={by} width={bw} height={bh} rx={2} fill={color} className={open ? 'ov-gantt-open' : undefined} />
-                      )}
-                    </g>
-                  )
-                })}
-                {endLabel && <text className="ov-gantt-end" x={Math.max(labelW + 8, Math.min(x(ends(final!)) + 8, width - textWidth(endLabel, 13) - 8))} y={y + (phone ? 24 : rowH * .25) + rowH * .25} dominantBaseline="middle"><title>{final?.endLabel}</title>{endLabel}</text>}
-              </g>
-            )
-          })}
-          {now !== undefined && <line x1={x(now)} x2={x(now)} y1={top} y2={plotBottom} className="ov-now" data-now="true" />}
-          {orderedMarks.map((mark, i) => (
-            <g key={`mark-${i}`} className={mark.verdict ? `ov-verdict-${mark.verdict}` : undefined} data-labelled={!maxHeight && bestMark ? labelled.has(mark) : undefined} data-best={mark.label === bestMark || undefined} style={maxHeight ? { pointerEvents: 'none' } : undefined}>
-              {maxHeight && <line x1={x(mark.at)} x2={x(mark.at)} y1={top} y2={plotBottom} className={`ov-mark ov-mark-${mark.kind}`} style={{ opacity: mark.label === bestMark ? .8 : .3 }} />}{!maxHeight && <Mark mark={mark} x={x(mark.at)} top={4} bottom={plotBottom} row={i % 2} em={em} flip={x(mark.at) > labelW + plotW * 0.62} />}
-              {!maxHeight && mark.label === bestMark && <circle cx={x(mark.at)} cy={4 + Math.max(3, em / 4)} r={8} fill="none" stroke="var(--accent-text)" strokeWidth={2} />}
-            </g>
-          ))}
-        </svg>
-      )}
-      </div>
-      <Tooltip tip={tip} />
-      <EventList marks={marks} bands={[]} format={axis} />
-    </div>
-  )
-}
+/** Live lanes use the same prepared span plot as static timelines. */
+export { Gantt } from './timeline-view.js'

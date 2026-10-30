@@ -6,7 +6,7 @@ import { chromium } from 'playwright'
 const output = process.env.CHARTS_PROOF_DIR
 assert.ok(output, 'Retain version graph proof outside the checkout')
 await mkdir(output, { recursive: true })
-const server = spawn(process.execPath, ['scripts/charts-browser-smoke.mjs', ...process.argv.slice(2)], { stdio: ['ignore','pipe','pipe'] })
+const server = spawn(process.execPath, ['tests/fixtures/charts-browser-smoke.mjs', ...process.argv.slice(2)], { stdio: ['ignore','pipe','pipe'] })
 const logs = [], checks = []
 server.stdout.on('data', bytes => logs.push(String(bytes))); server.stderr.on('data', bytes => logs.push(String(bytes)))
 let browser, page

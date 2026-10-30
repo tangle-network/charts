@@ -31,7 +31,7 @@ let server, browser, context
 const log = createWriteStream(`${output}/consumer.log`)
 try {
   if (!process.env.CHARTS_FIXTURE_URL) {
-    server = spawn(process.execPath, ['scripts/charts-browser-smoke.mjs'], { stdio: ['ignore', 'pipe', 'pipe'], detached: true })
+    server = spawn(process.execPath, ['tests/fixtures/charts-browser-smoke.mjs'], { stdio: ['ignore', 'pipe', 'pipe'], detached: true })
     server.stdout.pipe(log); server.stderr.pipe(log)
   }
   const deadline = Date.now() + 120_000

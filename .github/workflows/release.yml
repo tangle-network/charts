@@ -60,7 +60,7 @@ jobs:
         uses: tangle-network/agent-runtime/.github/actions/admit-release@db1cc4314c3cfcc287469e0880b37a9bf25a6dbb
         with:
           directories: .
-          consumer: '@tangle-network/sandbox-ui@2.0.19 (Discovery Findings15)'
+          consumer: '@tangle-network/sandbox-ui@2.0.20 (Discovery shared presentation)'
 
       - name: Publish with provenance
         run: npm publish --access public --provenance --tag legacy
