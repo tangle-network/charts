@@ -14,7 +14,7 @@ export interface TraceClockInput {
   speed: number
   /** Null follows the trace end (live) or shows it whole (recorded). */
   position: number | null
-  onPlaybackEnd: (positionMs: number) => void
+  onPlaybackEnd: (positionMs: number | null) => void
   onTimeChange?: (positionMs: number) => void
   /** The visible window for a clock value; null zoom fits the trace. */
   view: (clockMs: number) => ViewWindow
@@ -36,7 +36,7 @@ const TEXT_INTERVAL_MS = 100
 /** Drives the trace clock. Bars, the cursor and the axis read CSS variables written here every frame,
  * so live growth and playback cost no React render per frame; text updates at 10 Hz. */
 export function useTraceClock(input: TraceClockInput): TraceClock {
-  const { root, slider, observedTotal, live, startedAt, snapshot, playing, speed, position, onPlaybackEnd, view, trackPx } = input
+  const { root, slider, observedTotal, live, snapshot, playing, position, view, trackPx } = input
   const [clockMs, setClockMs] = useState(position ?? observedTotal)
   const receivedAt = useRef(Date.now())
   const playhead = useRef(position ?? observedTotal)
@@ -52,21 +52,21 @@ export function useTraceClock(input: TraceClockInput): TraceClock {
   }
 
   const paint = (t: number, limit = liveNow()) => {
-    const element = root.current
-    if (!element) return
+    if (!root.current) return
     const { startMs, endMs } = latest.current.view(t)
     const k = Math.max(1e-9, latest.current.trackPx / Math.max(1, endMs - startMs))
     const following = latest.current.live && !latest.current.playing && latest.current.position === null
     for (const [name, value, scale] of [['--fw-t', t, k], ['--fw-v0', startMs, k], ['--fw-k', k, endMs - startMs]] as const) {
       const distance = Math.abs(value - (geometry.current[name] ?? NaN)) * scale
       if (following && Number.isFinite(distance) && distance < .25) continue
-      element.style.setProperty(name, String(value)); geometry.current[name] = value
+      root.current.style.setProperty(name, String(value)); geometry.current[name] = value
     }
     if (slider.current) { slider.current.max = String(Math.max(1, limit, t)); slider.current.value = String(t) }
   }
 
   useLayoutEffect(() => {
     if (position === clockMs) return
+    if (position === null && playing) latest.current.onPlaybackEnd(null)
     playhead.current = position ?? (live ? liveNow() : observedTotal)
     paint(playhead.current); setClockMs(playhead.current)
   }, [position])
