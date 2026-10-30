@@ -110,6 +110,17 @@ try {
     assert.equal(await page.getByLabel('Reader selection').textContent(), 'agent-1')
     await page.screenshot({ path: `${output}/recorded-hub-${width}-${theme}.png` })
     await page.getByRole('button', { name: 'Close', exact: true }).click()
+    if (width < 600) {
+      await page.goto(`${base}/?id=topology&shared-tool=1&globals=agent-${theme}`); await ready()
+      await page.getByRole('button', { name: 'Switch layout', exact: true }).click()
+      const copies = page.getByRole('button', { name: 'Read source', exact: true }); assert.equal(await copies.count(), 2)
+      const earlier = copies.first(); await earlier.click()
+      const details = page.getByRole('dialog', { name: 'Read source calls', exact: true }); await details.waitFor({ state: 'visible' })
+      assert.ok(Math.abs((await details.boundingBox()).y - (await earlier.boundingBox()).y) < 8, 'the shared tool preview anchors to its actual earlier-row invoker')
+      await page.getByRole('button', { name: 'Close', exact: true }).click(); assert.equal(await earlier.evaluate(element => element === document.activeElement), true)
+      await page.keyboard.press('Enter'); await details.waitFor({ state: 'visible' }); await page.keyboard.press('Escape'); await details.waitFor({ state: 'hidden' })
+      assert.equal(await earlier.evaluate(element => element === document.activeElement), true, 'Escape returns to the same tool occurrence')
+    }
     await page.emulateMedia({ reducedMotion: 'no-preference' })
     await page.goto(`${base}/?id=topology&large=1&globals=agent-${theme}`)
     await ready()
@@ -117,7 +128,8 @@ try {
     assert.ok(await count() < 100, '130 agents render a bounded window')
     const running = page.locator('.ag-live-card[data-status="running"] .ag-running-dot').first()
     await running.waitFor({ state: 'visible' })
-    assert.ok((await running.evaluate(element => element.getAnimations().map(animation => animation.animationName))).includes('tangle-breathe'), 'an actual running status pulses through Brand motion')
+    const pulse = await running.evaluate(element => { const css = getComputedStyle(element); return { names: element.getAnimations().map(animation => animation.animationName), animation: css.animation, duration: css.getPropertyValue('--duration-ambient'), motion: css.getPropertyValue('--motion-ambient'), reduced: matchMedia('(prefers-reduced-motion: reduce)').matches, quiet: element.closest('[data-activity]')?.getAttribute('data-activity') } })
+    assert.ok(pulse.names.includes('tangle-breathe'), 'an actual running status pulses through Brand motion: ' + JSON.stringify(pulse))
 
     await page.getByRole('button', { name: 'Select last agent', exact: true }).click()
     const last = page.locator(width < 600 ? '[data-agent-id="agent-129"]' : '.react-flow__node[data-id="agent-129"]')

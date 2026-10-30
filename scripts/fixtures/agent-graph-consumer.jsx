@@ -15,6 +15,8 @@ function Topology() {
    id: span.id, label: span.name, status: runStatus(span.status),
    turn: 'Imported from discovery-waterfall.json',
  }))
+ const sharedTools = params.has('shared-tool') ? [{ id: 'shared-tool', label: 'Read source' }] : []
+ const sharedCalls = sharedTools.length ? nodes.slice(0, 2).map((node, i) => ({ id: 'source-call-' + i, from: node.id, to: 'shared-tool', kind: 'call', startedAt: Date.now() - 1000, durationMs: 10 })) : []
  const edges = boundary ? nodes.slice(1).map(node => ({ from: nodes[0].id, to: node.id, kind: 'spawn' }))
    : recorded.spans.filter(span => span.kind === 'pipeline' && span.parentId).map(span => ({ from: span.parentId, to: span.id, kind: 'spawn' }))
  return <main>
@@ -26,7 +28,7 @@ function Topology() {
    <output aria-label="Reader selection">{selectedId ?? 'No selection'}</output>
    <output aria-label="Stream update">{tick}</output>
    <AgentGraph nodes={nodes} edges={edges} layout={layout} direction={compact ? 'LR' : 'TB'} live={!compact && !settled} now={Date.now()}
-     selectedId={selectedId} onSelect={onSelect} tools={[]} calls={[]}
+     selectedId={selectedId} onSelect={onSelect} tools={sharedTools} calls={sharedCalls}
      className="topology-pane" renderAgentMark={node => <span data-host-mark={node.id}>A</span>} />
  </main>
 }

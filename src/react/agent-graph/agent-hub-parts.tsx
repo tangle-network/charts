@@ -56,7 +56,7 @@ export interface HubNodeProps {
   dimmed: boolean;
   selected: boolean;
   buttonRef?: Ref<HTMLButtonElement>;
-  onOpen: () => void;
+  onOpen: (element: HTMLButtonElement) => void;
   onHover: (on: boolean) => void;
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
 }
@@ -79,7 +79,7 @@ export function HubNode({ entity, x, y, tile, dimmed, selected, buttonRef, onOpe
       aria-expanded={selected}
       className={`ag-node ag-node-${entity.kind}${dimmed ? " ag-dimmed" : ""}${selected ? " ag-selected" : ""}`}
       style={{ left: x, top: y, "--ag-tile": `${tile}px`, ...(tone ? { "--ag-tone": tone } : {}) } as CSSProperties}
-      onClick={onOpen}
+      onClick={event => onOpen(event.currentTarget)}
       onPointerEnter={() => onHover(true)}
       onPointerLeave={() => onHover(false)}
       onFocus={() => onHover(true)}
@@ -104,19 +104,18 @@ export interface HubPopoverProps {
   now: number;
   container: HTMLElement | null;
   summary?: ReactNode;
-  closeRef?: Ref<HTMLButtonElement>;
   onClose: () => void;
 }
 
 /** A node's recent calls: who it called or was called by, what for, how long, and what failed. */
-export function HubPopover({ entity, entities, calls, now, container, summary, closeRef, onClose }: HubPopoverProps) {
+export function HubPopover({ entity, entities, calls, now, container, summary, onClose }: HubPopoverProps) {
   const mine = (calls ?? []).filter((c) => (c.from === entity.id || c.to === entity.id) && c.startedAt <= now).sort((a, b) => b.startedAt - a.startedAt);
   const recent = mine.slice(0, 5);
   const lastMinute = mine.filter((c) => now - c.startedAt <= 60_000).length;
   const status = entity.status ? statusMeta(entity.status).label : undefined;
   const cost = entity.agent?.costUsd;
   return (
-    <HoverCardContent container={container} side="right" align="start" collisionPadding={8} role="dialog" aria-label={`${entity.label} calls`} className="ag-popover" onEscapeKeyDown={event => { event.preventDefault(); onClose(); }}>
+    <HoverCardContent container={container} side="right" align="start" collisionPadding={8} role="dialog" aria-label={`${entity.label} calls`} className="ag-popover" onOpenAutoFocus={event => { (event.target as HTMLElement).querySelector<HTMLButtonElement>(".ag-close")?.focus({ preventScroll: true }); }} onEscapeKeyDown={event => { event.preventDefault(); onClose(); }}>
       <div className="ag-pop-head">
         <span className="ag-tile ag-tile-mini" style={{ "--ag-tile": "28px" } as CSSProperties}><NodeIcon entity={entity} size={28} /></span>
         <span className="ag-pop-title">
@@ -124,7 +123,7 @@ export function HubPopover({ entity, entities, calls, now, container, summary, c
           {(entity.agent?.model || entity.sub || entity.tool?.detail) && <span className="ag-pop-sub">{entity.agent?.model ?? entity.tool?.detail ?? entity.sub}</span>}
         </span>
         {status && <span className={`ag-pill ag-pill-${entity.status}`}>{entity.status === "running" && !entity.quiet ? <span className="ag-running-dot" data-motion="essential" style={ambientStyle} onAnimationStart={syncAmbient} /> : <RunStatusIcon status={entity.quiet ? "waiting" : entity.status!} aria-hidden />}{entity.quiet ?? status}</span>}
-        <button ref={closeRef} type="button" className="ag-close" aria-label="Close" onClick={onClose}><X size={14} /></button>
+        <button type="button" className="ag-close" aria-label="Close" onClick={onClose}><X size={14} /></button>
       </div>
       {summary && <p className="ag-pop-summary">{summary}</p>}
       {recent.length > 0 && <ul className="ag-pop-calls">

@@ -83,9 +83,10 @@ export function AgentHubCanvas(props: AgentHubCanvasProps) {
   const width = useWidth(wrap);
   const now = useRunNow(nowProp);
   const [hover, setHover] = useState<string | null>(null);
-  const [open, setOpen] = useState<string | null>(selectedId ?? null);
+  const [selection, setSelection] = useState<{ id: string; invoker?: HTMLButtonElement } | null>(selectedId ? { id: selectedId } : null);
+  const open = selection?.id ?? null;
+  const setOpen = (id: string | null) => setSelection(id ? { id } : null);
   const buttons = useRef(new Map<string, HTMLButtonElement>());
-  const closeRef = useRef<HTMLButtonElement>(null);
   const buttonRef = (id: string) => (element: HTMLButtonElement | null) => { if (element) buttons.current.set(id, element); else buttons.current.delete(id); };
   const animate = useMotionAllowed();
   const visibleCalls = useMemo(() => calls.filter((c) => c.startedAt <= now), [calls, now]);
@@ -164,12 +165,11 @@ export function AgentHubCanvas(props: AgentHubCanvasProps) {
   const cost = costs.every((c) => c != null && Number.isFinite(c) && c >= 0) ? costs.reduce<number>((s, c) => s + (c ?? 0), 0) : undefined;
   const chips = nodes.filter((n) => n.status === "needs-you" || n.status === "failed" || agentQuietActivity(n, now));
 
-  const openNode = (id: string) => {
-    const next = open === id ? null : id;
-    setOpen(next);
-    if (next) onSelect?.(next);
+  const openNode = (id: string, invoker?: HTMLButtonElement) => {
+    const next = open === id ? null : { id, invoker };
+    setSelection(next);
+    if (next) onSelect?.(next.id);
   };
-  useEffect(() => { if (open) { closeRef.current?.closest('[role="dialog"]')?.scrollIntoView({ block: "nearest" }); closeRef.current?.focus({ preventScroll: true }); } }, [open]);
 
   const keydown = (id: string) => (event: KeyboardEvent<HTMLButtonElement>) => {
     const dirs: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
@@ -196,13 +196,13 @@ export function AgentHubCanvas(props: AgentHubCanvasProps) {
   const popover = openEntity && (() => {
     const summary = openEntity.kind === "you" ? (typeof you === "object" ? you.summary : undefined)
       : openEntity.agent?.turn ?? openEntity.sub ?? undefined;
-    return <HubPopover entity={openEntity} entities={entities} calls={props.calls === undefined ? undefined : visibleCalls} now={now} container={wrap.current} summary={summary}
-      closeRef={closeRef} onClose={() => { const id = open!; setOpen(null); buttons.current.get(id)?.focus(); }} />;
+    return <HubPopover key={openEntity.id} entity={openEntity} entities={entities} calls={props.calls === undefined ? undefined : visibleCalls} now={now} container={wrap.current} summary={summary}
+      onClose={() => setOpen(null)} />;
   })();
 
 
   return (
-    <HoverCard anchor={open ? buttons.current.get(open) : null} open={!!openEntity}><section className={`ag-root ${className ?? ""}`} aria-label={typeof title === "string" ? title : "Agent graph"}>
+    <HoverCard anchor={selection?.invoker ?? (open ? buttons.current.get(open) : null)} open={!!openEntity}><section className={`ag-root ${className ?? ""}`} aria-label={typeof title === "string" ? title : "Agent graph"}>
       <style>{AGENT_HUB_CSS}</style>
       <header className="ag-head">
         <span className="ag-title"><span className="ag-title-mark" aria-hidden />{title}</span>
@@ -221,10 +221,10 @@ export function AgentHubCanvas(props: AgentHubCanvasProps) {
         }).map(entity => <li key={entity.id}>
           <HubNode entity={entity} x={0} y={0} tile={32} dimmed={false} selected={open === entity.id}
             buttonRef={buttonRef(entity.id)}
-            onOpen={() => openNode(entity.id)} onHover={() => {}} onKeyDown={keydown(entity.id)} />
+            onOpen={element => openNode(entity.id, element)} onHover={() => {}} onKeyDown={keydown(entity.id)} />
           <div className="ag-tools">{tools.filter(t => visibleCalls.some(c => c.from === entity.id && c.to === t.id || c.to === entity.id && c.from === t.id)).map(t =>
-            <button ref={buttonRef(t.id)} type="button" key={t.id} onClick={() => openNode(t.id)}>{t.label}</button>)}</div>
-        </li>)}</ul>{availableTools.length > 0 && <div className="ag-available"><span>Available tools</span><div className="ag-tools">{availableTools.map(tool => <button ref={buttonRef(tool.id)} type="button" key={tool.id} onClick={() => openNode(tool.id)}>{tool.label}</button>)}</div></div>}</> : <div className="ag-canvas" style={{ width: w, height: h, transform: `scale(${scale})` }}>
+            <button ref={buttonRef(t.id)} type="button" key={t.id} onClick={event => openNode(t.id, event.currentTarget)}>{t.label}</button>)}</div>
+        </li>)}</ul>{availableTools.length > 0 && <div className="ag-available"><span>Available tools</span><div className="ag-tools">{availableTools.map(tool => <button ref={buttonRef(tool.id)} type="button" key={tool.id} onClick={event => openNode(tool.id, event.currentTarget)}>{tool.label}</button>)}</div></div>}</> : <div className="ag-canvas" style={{ width: w, height: h, transform: `scale(${scale})` }}>
           <svg className="ag-edges" width={w} height={h} aria-hidden>
             {layout.links.map((l) => {
               const { d, length } = routes.get(`${l.from}|${l.to}`)!;
@@ -245,7 +245,7 @@ export function AgentHubCanvas(props: AgentHubCanvasProps) {
             const tile = p.kind === "hub" ? metrics.hubTile : p.kind === "you" ? metrics.tile - 8 : metrics.tile;
             return <HubNode key={p.id} entity={entity} x={x} y={y} tile={tile} dimmed={Boolean(related && !related.has(p.id))}
               selected={open === p.id} buttonRef={buttonRef(p.id)}
-              onOpen={() => openNode(p.id)} onHover={(on) => setHover((prev) => (on ? p.id : prev === p.id ? null : prev))} onKeyDown={keydown(p.id)} />;
+              onOpen={element => openNode(p.id, element)} onHover={(on) => setHover((prev) => (on ? p.id : prev === p.id ? null : prev))} onKeyDown={keydown(p.id)} />;
           })}
         </div>}
         {popover}
