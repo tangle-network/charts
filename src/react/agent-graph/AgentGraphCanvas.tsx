@@ -381,15 +381,15 @@ export function AgentGraphCanvas({
           fitViewOptions={{ padding: `${FIT_PADDING}px`, minZoom, maxZoom: 1, nodes: live ? undefined : topology.agentIds.slice(0, 2).map(id => ({ id })) }}
         />
       </ReactFlow></div>}
-      {hovered && byId.has(hovered.id) && <AgentMetrics anchor={wrapperRef.current} mode={colorMode} id={detailsId} agent={byId.get(hovered.id)!} onClose={() => { hideDetails(); returningFocus.current = true; hoverTarget.current?.focus({ preventScroll: true }); returningFocus.current = false; }} />}
+      {hovered && byId.has(hovered.id) && <AgentMetrics anchor={wrapperRef.current} side={narrow ? "bottom" : "right"} mode={colorMode} id={detailsId} agent={byId.get(hovered.id)!} onClose={() => { hideDetails(); returningFocus.current = true; hoverTarget.current?.focus({ preventScroll: true }); returningFocus.current = false; }} />}
     </div></HoverCard>
   );
 }
 
 /** Metrics stay at reading size outside the zoomed canvas and its clipping container. */
-function AgentMetrics({ anchor, mode, id, agent, onClose }: { anchor: HTMLElement | null; mode: string; id: string; agent: AgentGraphProps["nodes"][number]; onClose: () => void }) {
+function AgentMetrics({ anchor, side, mode, id, agent, onClose }: { anchor: HTMLElement | null; side: "bottom" | "right"; mode: string; id: string; agent: AgentGraphProps["nodes"][number]; onClose: () => void }) {
   const facts = new Map([{ label: "Tokens", value: fmtTokenTotal(agent.tokens) ?? "Not recorded" }, { label: "Cost", value: fmtCost(agent.costUsd ?? undefined) ?? "Not recorded" }, ...(agent.facts ?? [])].map(fact => [fact.label.toLowerCase(), fact]));
-  return <HoverCardContent container={anchor} side="right" align="start" collisionPadding={12} id={id} data-agent-metrics role="tooltip" tabIndex={0} onWheel={event => event.stopPropagation()} onEscapeKeyDown={event => { event.preventDefault(); onClose(); }} className={`${mode} rounded-xl border border-border bg-card p-4 text-sm text-foreground shadow-xl`} style={{ colorScheme: mode, width: "min(420px, calc(100vw - 24px))", maxHeight: "min(560px, calc(100vh - 24px))", overflow: "auto" }}>
+  return <HoverCardContent container={anchor} side={side} align="start" collisionPadding={12} id={id} data-agent-metrics role="tooltip" tabIndex={0} onWheel={event => event.stopPropagation()} onEscapeKeyDown={event => { event.preventDefault(); onClose(); }} className={`${mode} rounded-xl border border-border bg-card p-4 text-sm text-foreground shadow-xl`} style={{ colorScheme: mode, width: "min(420px, calc(100vw - 24px))", maxHeight: "min(560px, calc(100vh - 24px))", overflow: "auto" }}>
     <div className="mb-2 flex items-center justify-between gap-3"><strong>{agent.label}</strong><span>{agentStatus(agent.status).label}</span></div>
     <p className="mb-3 text-muted-foreground">{[agent.model, agent.harness, agent.role].filter(Boolean).join(" · ")}</p>
     <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-5 gap-y-1.5">
