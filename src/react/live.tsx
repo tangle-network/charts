@@ -250,7 +250,7 @@ export interface LineSeries {
   color: string
   points: [number, number][]
   dots?: boolean
-  label?: (t: number, index: number) => string
+  label?: (t: number, index?: number) => string
   id?: (t: number, index: number) => string
   href?: (t: number, index: number) => string | undefined
   highlight?: (t: number, index: number) => boolean
