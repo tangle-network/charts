@@ -40,5 +40,5 @@ export { type MultiplePanel, smallMultiples, type SmallMultiplesOptions } from "
 export { type Observations } from "./scalar.js";
 export { type DotGroup, type DotGroupRect, type UnitDotLayout, unitDotLayout, type UnitDotOptions } from "./unit-dots.js";
 
-export type { FlowMarker, FlowOutcome, FlowSpan, FlowTrace } from "./flow-trace.js";
+export { reportedCount, sumReportedCounts, type FlowMarker, type FlowOutcome, type FlowSpan, type FlowTrace } from "./flow-trace.js";
 export { catalogPrice, otlpFlowTrace, type OtlpSpan, type OtlpTraceOptions, parseOtlpJsonl } from "./otlp-trace.js";
