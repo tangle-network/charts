@@ -1,18 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { spanRunning } from './flow-waterfall-model.js'
+import { tokenMilliseconds } from './agent-graph/run-ui-state.js'
 import type { FlowSpan } from '../flow-trace.js'
 
 export interface RowMotion { enter?: number; settle?: boolean }
 
-export const motionMilliseconds = (style: CSSStyleDeclaration | undefined, token: string) => {
-  const value = style?.getPropertyValue(token).trim() ?? ''
-  return (parseFloat(value) || 0) * (value.endsWith('ms') ? 1 : 1000)
-}
-
 export function useRowMotion(rows: readonly { id: string; span?: FlowSpan }[], element: HTMLElement | null): ReadonlyMap<string, RowMotion> {
-  const style = element ? getComputedStyle(element) : undefined
-  const hold = motionMilliseconds(style, '--duration-arrive') + motionMilliseconds(style, '--duration-stream')
-  const stagger = motionMilliseconds(style, '--stagger-step')
+  const hold = element ? tokenMilliseconds('--duration-arrive', element) + tokenMilliseconds('--duration-stream', element) : 0
+  const stagger = element ? tokenMilliseconds('--stagger-step', element) : 0
   const cap = stagger * 4
   const known = useRef<Set<string> | null>(null)
   const running = useRef(new Set<string>())

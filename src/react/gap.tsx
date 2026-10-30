@@ -22,7 +22,7 @@ export interface GapProps {
 const HEIGHT = 24
 const MID = HEIGHT / 2
 
-export function Gap({ value, bound = null, target, stretch = null, scale = 'log', format = formatCompact, tone = 'var(--chart-live-accent, #8b7cf6)', titles = {}, label }: GapProps) {
+export function Gap({ value, bound = null, target, stretch = null, scale = 'log', format = formatCompact, tone = 'var(--chart-live-accent, var(--chart-accent))', titles = {}, label }: GapProps) {
   const [ref, width] = useWidth<HTMLDivElement>()
   const log = scale === 'log' && value > 0 && target.min > 0
   const f = (v: number) => (log ? Math.log10(v) : v)

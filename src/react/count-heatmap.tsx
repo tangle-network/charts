@@ -71,7 +71,7 @@ export function CountHeatmap({ label, columns, rows, color = LIVE_SERIES[1], for
                 const cell = values[c]!, shade = cell.value ? 10 + 35 * Math.sqrt(cell.value / Math.max(1, max)) : 0
                 return <span key={group.ids.join(':')} role="cell" tabIndex={0} data-heat-row={r} data-heat-column={c + 1} data-value={cell.value ?? undefined}
                   className={`tgc-count-cell${cell.value === null ? ' missing' : cell.value === 0 ? ' zero' : ''}`}
-                  style={{ background: shade ? `color-mix(in srgb, ${color} ${shade}%, var(--chart-live-bg, #fff))` : undefined }}
+                  style={{ background: shade ? `color-mix(in srgb, ${color} ${shade}%, var(--chart-live-bg, var(--bg-root)))` : undefined }}
                   title={`${row.label} · ${group.label}: ${cell.value === null ? 'not recorded' : `${cell.partial ? 'at least ' : ''}${cell.value.toLocaleString()} calls`}${cell.failures ? `; ${cell.failures} failed` : ''}`}
                   onKeyDown={event => move(event, r, c + 1)} onPointerEnter={event => inspect(row, group, event.currentTarget)} onFocus={event => inspect(row, group, event.currentTarget)} onBlur={() => onInspect?.(null)}>
                   {cell.value === null ? '—' : `${cell.partial ? '≥' : ''}${format(cell.value)}`}{cell.failures > 0 && <span className="tgc-count-failed">✕{cell.failures}</span>}

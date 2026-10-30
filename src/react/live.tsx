@@ -7,7 +7,7 @@ import { type ChartBand, type ChartMark, drawMarks, eventsGap } from '../events.
 import { hatchPath, type MarkerShape, markerPath } from '../svg.js'
 
 // Defaults for consumers that do not pass a series color.
-export const LIVE_SERIES = ['#8b7cf6', '#0ea5a0', '#c98500', '#e2508f', '#4a90e2'] as const
+export const LIVE_SERIES = ['var(--chart-series-1)', 'var(--chart-series-2)', 'var(--chart-series-3)', 'var(--chart-series-4)', 'var(--chart-series-5)'] as const
 export { formatCompact } from '../format.js'
 const formatShare = (value: number | null) => value === null || !Number.isFinite(value) ? '—' : `${Math.round(value * 100)}%`
 
@@ -224,7 +224,7 @@ export function Lines({ series, format = formatCompact, rows = 13, axis, marks =
             s.dots ? (
               <g key={s.name}>
                 {s.points.map((p) => (
-                  <circle key={p[0]} cx={x(p[0])} cy={y(p[1])} r={Math.max(3, em / 5)} fill={s.color} stroke="var(--chart-live-surface, #fff)" strokeWidth={1.5} />
+                  <circle key={p[0]} cx={x(p[0])} cy={y(p[1])} r={Math.max(3, em / 5)} fill={s.color} stroke="var(--chart-live-surface, var(--bg-card))" strokeWidth={1.5} />
                 ))}
               </g>
             ) : (
@@ -243,7 +243,7 @@ export function Lines({ series, format = formatCompact, rows = 13, axis, marks =
           {hover !== null &&
             series.map((s) => {
               const p = s.points.length ? nearest(s.points, hover) : null
-              return p ? <circle key={s.name} cx={x(p[0])} cy={y(p[1])} r={Math.max(4, em / 4)} fill={s.color} stroke="var(--chart-live-surface, #fff)" strokeWidth={2} /> : null
+              return p ? <circle key={s.name} cx={x(p[0])} cy={y(p[1])} r={Math.max(4, em / 4)} fill={s.color} stroke="var(--chart-live-surface, var(--bg-card))" strokeWidth={2} /> : null
             })}
         </svg>
       )}
@@ -334,7 +334,7 @@ export function Meter({ used, total, format = formatCompact, tone, text, segment
   return (
     <div className="ov-meter">
       <span className="ov-meter-track">
-        <span style={{ width: `${(share ?? 0) * 100}%`, background: tone ?? (share !== null && share > 0.9 ? 'var(--chart-live-danger, #d85050)' : share !== null && share > 0.7 ? 'var(--chart-live-warning, #c98500)' : LIVE_SERIES[0]) }} />
+        <span style={{ width: `${(share ?? 0) * 100}%`, background: tone ?? (share !== null && share > 0.9 ? 'var(--chart-live-danger, var(--surface-danger-text))' : share !== null && share > 0.7 ? 'var(--chart-live-warning, var(--surface-warning-text))' : LIVE_SERIES[0]) }} />
       </span>
       <span className="ov-meter-text">
         {text ?? `${format(used ?? NaN)} of ${format(total ?? NaN)} · ${formatShare(share)}`}
@@ -407,7 +407,7 @@ export function Spark({ points, max = 1, color = LIVE_SERIES[0], label, format =
       } : undefined}>
       {label && <title>{reading ?? label}</title>}
       <polyline fill="none" stroke={color} strokeWidth={1.6} points={d} />
-      {hovered && <circle cx={px(hovered[0])} cy={py(hovered[1])} r={3} fill={color} stroke="var(--chart-live-surface, #fff)" strokeWidth={1.5} />}
+      {hovered && <circle cx={px(hovered[0])} cy={py(hovered[1])} r={3} fill={color} stroke="var(--chart-live-surface, var(--bg-card))" strokeWidth={1.5} />}
     </svg>
   )
 }

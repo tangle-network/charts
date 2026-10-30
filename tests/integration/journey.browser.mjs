@@ -135,6 +135,21 @@ try {
       assert.ok(clockLabels.length>=3)
       assert.equal(new Set(clockLabels).size,clockLabels.length,'distinct zoomed axis positions have distinct labels: '+JSON.stringify(clockLabels))
       if(width===1512)for(const tick of ['10.2s','10.4s','10.6s'])assert.ok(clockLabels.includes(tick),tick+' remains readable in the actual zoomed waterfall')
+      await page.goto(`http://127.0.0.1:46489/?id=controlled-position&globals=agent-${theme}`)
+      const playhead = page.getByRole('slider', {name:'Playback position'})
+      await playhead.waitFor()
+      await page.getByRole('button',{name:'Read cited instant',exact:true}).click()
+      await page.waitForFunction(()=>document.querySelector('.fw-slider')?.value==='3000')
+      await playhead.focus(); await page.keyboard.press('Home')
+      await page.waitForFunction(()=>document.querySelector('[data-retained-position]')?.textContent==='0')
+      await page.getByRole('button',{name:'Play',exact:true}).click()
+      await page.waitForFunction(()=>Number(document.querySelector('[data-retained-position]')?.textContent)>1000)
+      await page.getByRole('button',{name:'Pause',exact:true}).click()
+      const paused = Number(await page.locator('[data-retained-position]').textContent())
+      assert.ok(paused>=1000&&paused<11000,'shared playback reports retained time without a second host clock')
+      await page.getByRole('button',{name:'Show full record',exact:true}).click()
+      await page.waitForFunction(()=>document.querySelector('.fw-slider')?.value==='11000')
+
 
     }
     assert.deepEqual(errors, [])

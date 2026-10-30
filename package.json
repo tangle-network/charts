@@ -1,6 +1,6 @@
 {
   "name": "@tangle-network/charts",
-  "version": "2.0.24",
+  "version": "2.0.25",
   "description": "Static SVG and HTML figures for benchmarks and operational timing. Draws from producer data and refuses what it cannot draw honestly.",
   "type": "module",
   "license": "MIT",
@@ -76,7 +76,7 @@
     "check:run-tokens": "node scripts/check-run-tokens.mjs"
   },
   "devDependencies": {
-    "@tangle-network/brand": "^1.31.1",
+    "@tangle-network/brand": "^1.31.3",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
     "@types/node": "^26.6.3",

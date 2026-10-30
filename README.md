@@ -2,7 +2,7 @@
 
 Benchmark figures as static SVG and HTML tables, plus optional React timing primitives.
 
-The React entry also exports `DayBars`, `HBars`, `Histogram`, `Lines`, `Meter`, `Spark`, and `Gantt` for live operational pages. Import `@tangle-network/charts/react/live.css` for their layout and set `--chart-live-*` theme tokens on an ancestor. Data, state colors, destination links, labels, and interpretation remain with the caller. `DayBars` accepts an `onOpen(index)` action with keyboard activation.
+The React entry also exports `DayBars`, `HBars`, `Histogram`, `Lines`, `Meter`, `Spark`, and `Gantt` for live operational pages. Import `@tangle-network/charts/react/live.css` for their layout with Brand tokens loaded; `--chart-live-*` properties may customize their semantic roles. Data, state colors, destination links, labels, and interpretation remain with the caller. `DayBars` accepts an `onOpen(index)` action with keyboard activation.
 
 `VersionGraph` and `layoutVersionGraph` from `@tangle-network/charts/react` render version histories with lane and merge geometry, controlled selection, filtering, keyboard navigation and bounded rows. Import `react/live.css` and Brand tokens as above. Producers supply commit identities, parents, lane labels and scored chips; Charts preserves those facts and owns drawing, arrival motion and reduced-motion behavior.
 

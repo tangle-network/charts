@@ -10,7 +10,7 @@ import {
   quietActivity, agentCallouts, agentViewRows, criticalPathIds, defaultOpenFamilies, busyMs, drawnRow, costSummary, type FlowWaterfallRow, flowWaterfallRows, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
   toneKey, totalsAt, visibleFlowWaterfallRows, workKind,
 } from './flow-waterfall-model.js'
-import { motionMilliseconds } from './flow-waterfall-motion.js'
+import { tokenMilliseconds } from './agent-graph/run-ui-state.js'
 import type { FlowView } from './flow-waterfall-row.js'
 import { clampWindow, type ViewWindow, zoomWindow } from './flow-waterfall-time.js'
 export type { FlowView } from './flow-waterfall-row.js'
@@ -45,6 +45,8 @@ export interface FlowWaterfallProps {
   markers?: FlowMarker[]
   /** The time the reader moved to, in trace ms; `null` when following live or showing the whole trace. */
   onTimeChange?: (t: number | null) => void
+  /** Controlled trace-relative playhead; null shows the whole retained trace or follows live. */
+  position?: number | null
   /** What an agent bar's color means. `agent` (default): each agent or family its own muted hue across dot, bar and handoffs, with
    * model and tool steps as darker and lighter shades of it; the outcome stays on the row dot and amber marks the slowest (blind round
    * 25: global step hues made agents blur together). `muted`: one quiet tone, color on state only. `outcome`: the bar takes its outcome. */
@@ -163,7 +165,7 @@ function ViewControl({ view, graph, onChange }: { view: FlowView; graph: boolean
 /** Shared trace inspector: the agent timeline and the span waterfall over one clock.
  * Data remains producer-owned; playback, zoom and folding change presentation only. */
 export function FlowWaterfall({
-  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', graph, latestEvents, renderIcon, maxHeight, onSelect, markers, onTimeChange, agentFill: fillProp, selectedId, onDeselect, description, summary: showSummary = true, criticalPath = false, query: queryProp, onQueryChange, collapsed: collapsedProp, onCollapsedChange, zoom: zoomProp, onZoomChange, matchSpan,
+  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', graph, latestEvents, renderIcon, maxHeight, onSelect, markers, onTimeChange, position: positionProp, agentFill: fillProp, selectedId, onDeselect, description, summary: showSummary = true, criticalPath = false, query: queryProp, onQueryChange, collapsed: collapsedProp, onCollapsedChange, zoom: zoomProp, onZoomChange, matchSpan,
 }: FlowWaterfallProps) {
   const root = useRef<HTMLElement>(null)
   const search = useRef<HTMLInputElement>(null)
@@ -177,7 +179,7 @@ export function FlowWaterfall({
   const [collapsed, setCollapsed] = useHostable<ReadonlySet<string>>(collapsedProp, onCollapsedChange, () => new Set(defaultCollapsed ? trace.spans.flatMap(span => span.parentId ? [span.parentId] : []) : []))
   const [speed, setSpeed] = useState(1)
   const [playing, setPlaying] = useState(false)
-  const [position, setPosition] = useState<number | null>(null)
+  const [position, setPosition] = useHostable<number | null>(positionProp, onTimeChange, null)
   const [zoom, setZoom] = useHostable<ViewWindow | null>(zoomProp, onZoomChange, null)
   const [nameWidth, setNameWidth] = useState(NAME_WIDTH[defaultView])
   const [laneWidth, setLaneWidth] = useState(0)
@@ -287,7 +289,7 @@ export function FlowWaterfall({
     const target = clampWindow({ startMs: span.startMs - pad, endMs: end + pad }, limit)
     cancelAnimationFrame(zoomFrame.current)
     const style = root.current ? getComputedStyle(root.current) : undefined
-    const duration = motionMilliseconds(style, '--duration-base'), easing = style?.getPropertyValue('--ease-standard').trim()
+    const duration = tokenMilliseconds('--duration-base', root.current), easing = style?.getPropertyValue('--ease-standard').trim()
     const preference = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')
     if (preference?.matches || !duration || !easing) { setZoom(target); return }
     const tween = new Animation(new KeyframeEffect(null, [], { duration, easing, fill: 'both' }))
@@ -307,6 +309,7 @@ export function FlowWaterfall({
   const toggleNow = (row: FlowWaterfallRow) => {
     const flip = (open: ReadonlySet<string>) => new Set(open.has(row.id) ? [...open].filter(id => id !== row.id) : [...open, row.id])
     if (row.id.startsWith('family:')) { setFlippedFamilies(flip); return }
+    if (!isLive) setPlaying(false)
     onSelect?.(row.span)
     if (view === 'agents') { setOpenSteps(flip); setActiveId(row.id); return }
     if (collapsed.has(row.id)) zoomTo(row)
@@ -345,7 +348,7 @@ export function FlowWaterfall({
   const inspect = useCallback((target: string, element: HTMLElement, x?: number) => latest.current.inspect(target, element, x), [])
   const leave = useCallback(() => {
     clearTimeout(hideTimer.current)
-    hideTimer.current = setTimeout(() => setCard(previous => previous?.pinned ? previous : null), 140)
+    hideTimer.current = setTimeout(() => setCard(previous => previous?.pinned ? previous : null), tokenMilliseconds('--duration-fast', root.current))
   }, [])
   useEffect(() => {
     if (!card || card.pinned) return
@@ -359,7 +362,7 @@ export function FlowWaterfall({
     if (card?.pinned && card.target === target) { closeCard(); return }
     place(target, element, true, x)
     const row = byId.get(target)
-    if (row) { onSelect?.(row.span); zoomTo(row) }
+    if (row) { if (!isLive) setPlaying(false); onSelect?.(row.span); zoomTo(row) }
   }
   const pin = useCallback((target: string, element: HTMLElement, x?: number) => latest.current.pin(target, element, x), [])
   const selection = selectedId ?? (card?.pinned ? card.target : undefined)
@@ -371,7 +374,7 @@ export function FlowWaterfall({
   const scrubTo = useCallback((ms: number) => { setPlaying(false); setPosition(Math.min(ms, clock.limitMs())) }, [clock])
   const timeListener = useRef(onTimeChange)
   timeListener.current = onTimeChange
-  useEffect(() => { timeListener.current?.(position) }, [position])
+  useEffect(() => { if (playing) timeListener.current?.(clockMs) }, [playing, clockMs])
   const togglePlay = () => {
     if (playing) { setPosition(clock.positionMs()); setPlaying(false); return }
     if (position === null || position >= limit - 1) setPosition(0)
