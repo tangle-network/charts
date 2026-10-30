@@ -162,7 +162,7 @@ try {
       assert.equal(await target.evaluate(node=>getComputedStyle(node).stroke),role.pass,'Gap resolves the published Brand success role without private aliases')
       assert.equal(await page.locator('.ov-gap-stretch').evaluate(node=>getComputedStyle(node).stroke),role.pass)
       assert.equal(await page.locator('[data-waterfall-axis] > span > span').first().evaluate(node=>getComputedStyle(node).backgroundColor),role.border,'legacy Waterfall axis ends at an existing Brand border')
-      const canvas=page.getByRole('img',{name:'Recorded points',exact:true});await canvas.waitFor();const area=await canvas.boundingBox();assert.ok(area)
+      const canvas=page.getByRole('img',{name:'Recorded points',exact:true});await canvas.waitFor();await page.waitForFunction(()=>document.querySelector('.tgc-dot-map canvas')?.hasAttribute('data-frame-ms'));const area=await canvas.boundingBox();assert.ok(area)
       await canvas.hover({position:{x:area.width/2,y:area.height/2}})
       await page.getByText('Recorded dot',{exact:true}).waitFor()
       assert.equal(await page.locator('.tgc-dot-map-tip').evaluate(node=>getComputedStyle(node).backgroundColor),role.surface,'DotMap tooltip has a real Brand surface')

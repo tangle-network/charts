@@ -200,7 +200,7 @@ export function FlowWaterfall({
   const viewAt = useCallback((t: number): ViewWindow => zoom ?? { startMs: 0, endMs: Math.max(dataEnd, isLive ? t : 0, 1) }, [zoom, dataEnd, isLive])
   const clock = useTraceClock({
     root, slider, observedTotal: dataEnd, live: isLive, startedAt, snapshot: trace, playing, speed, position,
-    onPlaybackEnd: end => { setPlaying(false); setPosition(end) }, view: viewAt, trackPx,
+    onTimeChange: onTimeChange ? time => onTimeChange(time) : undefined, onPlaybackEnd: end => { setPlaying(false); setPosition(end) }, view: viewAt, trackPx,
   })
   useEffect(() => { for (const animation of root.current?.getAnimations?.({ subtree: true }) ?? []) if ('animationName' in animation && animation.animationName === 'tangle-breathe') animation.startTime = 0 }, [trace, view])
   const clockMs = clock.clockMs
@@ -371,9 +371,6 @@ export function FlowWaterfall({
     if (target) root.current?.querySelector<HTMLElement>(`.fw-canvas [data-span-id="${CSS.escape(target)}"]`)?.focus({ preventScroll: true })
   }
   const scrubTo = useCallback((ms: number) => { setPlaying(false); setPosition(Math.min(ms, clock.limitMs())) }, [clock])
-  const timeListener = useRef(onTimeChange)
-  timeListener.current = onTimeChange
-  useEffect(() => { if (playing) timeListener.current?.(clockMs) }, [playing, clockMs])
   const togglePlay = () => {
     if (playing) { setPosition(clock.positionMs()); setPlaying(false); return }
     if (position === null || position >= limit - 1) setPosition(0)

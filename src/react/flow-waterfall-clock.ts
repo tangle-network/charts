@@ -15,6 +15,7 @@ export interface TraceClockInput {
   /** Null follows the trace end (live) or shows it whole (recorded). */
   position: number | null
   onPlaybackEnd: (positionMs: number) => void
+  onTimeChange?: (positionMs: number) => void
   /** The visible window for a clock value; null zoom fits the trace. */
   view: (clockMs: number) => ViewWindow
   /** Timeline width in px available to bars. */
@@ -96,7 +97,7 @@ export function useTraceClock(input: TraceClockInput): TraceClock {
         }
       } else t = latest.current.position ?? limit
       paint(t, limit)
-      if (now - lastText >= TEXT_INTERVAL_MS) { lastText = now; setClockMs(t) }
+      if (now - lastText >= TEXT_INTERVAL_MS) { lastText = now; setClockMs(t); if (latest.current.playing) latest.current.onTimeChange?.(t) }
       frame = requestAnimationFrame(step)
     }
     frame = requestAnimationFrame(step)
