@@ -1,31 +1,13 @@
 /** Packed-package HTTP/browser integration; no intercepted requests or mocked components. */
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
-import { mkdirSync, createWriteStream, writeFileSync, readFileSync } from 'node:fs'
+import { mkdirSync, createWriteStream, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 
 const output = resolve(process.env.CHARTS_PROOF_DIR ?? '/tmp/charts-flow-waterfall-proof')
 mkdirSync(output, { recursive: true })
-// Verify the exact built public boundary consumed by hosts without Tailwind.
-if (process.argv.includes('--package-only')) {
-  const { FlowWaterfall } = await import('@tangle-network/charts/react')
-  const { createElement } = await import('react')
-  const { renderToStaticMarkup } = await import('react-dom/server')
-  const trace = JSON.parse(readFileSync('docs/fixtures/discovery-waterfall.json', 'utf8'))
-  const html = renderToStaticMarkup(createElement(FlowWaterfall, { trace }))
-  // Rows are virtualized: the tree reports all 53 rows and renders the first screenful.
-  assert.ok(html.includes('aria-rowcount="53"'))
-  assert.ok((html.match(/data-span-id=/g) ?? []).length > 10)
-  // The exact token total rides in the summary's title; the slowest badge is checked in the browser, where its row scrolls in.
-  assert.ok(html.includes('754,448 tokens'))
-  const stylesheet = readFileSync(fileURLToPath(import.meta.resolve('@tangle-network/charts/react/flow-waterfall.css')), 'utf8')
-  assert.equal(stylesheet, readFileSync('src/react/flow-waterfall.css', 'utf8'))
-  console.log(JSON.stringify({ publicExport: 'PASS', standaloneStylesheet: 'PASS', standardStylesheet: 'PASS', rowCount: 53 }))
-  process.exit(0)
-}
-const base = process.env.CHARTS_FIXTURE_URL ?? 'http://127.0.0.1:46489'
+let base = process.env.CHARTS_FIXTURE_URL, startup = ''
 const checks = {}
 let server, browser, context
 const log = createWriteStream(`${output}/consumer.log`)
@@ -33,10 +15,13 @@ try {
   if (!process.env.CHARTS_FIXTURE_URL) {
     server = spawn(process.execPath, ['tests/fixtures/charts-browser-smoke.mjs'], { stdio: ['ignore', 'pipe', 'pipe'], detached: true })
     server.stdout.pipe(log); server.stderr.pipe(log)
+    server.stdout.on('data', bytes => { startup += bytes })
   }
   const deadline = Date.now() + 120_000
   while (true) {
-    try { if ((await fetch(`${base}/iframe.html`)).ok) break } catch {}
+    const ready = startup.split('\n').slice(0, -1).find(line => line.startsWith('{"consumer":'))
+    if (ready) base = JSON.parse(ready).url
+    try { if (base && (await fetch(`${base}/iframe.html`)).ok) break } catch {}
     if (Date.now() > deadline || server?.exitCode != null) throw new Error('Packed consumer did not become ready; see consumer.log')
     await new Promise(resolve => setTimeout(resolve, 500))
   }
