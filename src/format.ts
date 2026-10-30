@@ -1,3 +1,4 @@
+import { finiteNumber, reportedCount } from './flow-trace.js';
 import type { CostBasis, Estimate, Interval, IntervalMethod, RateRow, Tier, TierCounts } from "./types.js";
 
 export const TIERS_BEST_FIRST: Tier[] = ["S", "A", "B", "C", "F"];
@@ -17,12 +18,7 @@ export function pts(value: number): string {
   return `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n)} pts`;
 }
 
-export function usd(value: number): string {
-  if (value >= 100) return `$${Math.round(value).toLocaleString("en-US")}`;
-  if (value >= 1) return `$${value.toFixed(2)}`;
-  if (value >= 0.01) return `$${value.toFixed(3)}`;
-  return `$${value.toFixed(4)}`;
-}
+export const usd = formatCost;
 
 /** Axis ticks: "$30", "$2.5", "$0.05". */
 export function usdTick(value: number): string {
@@ -147,4 +143,49 @@ export function tierSummary(tiers: TierCounts | null, unmeasured = 0, flagged = 
 
 export function tierTotal(tiers: TierCounts | null): number {
   return tiers ? LADDER.reduce((sum, t) => sum + tiers[t], 0) : 0;
+}
+
+export const formatCompact = (value: number | null | undefined) =>
+  value === null || value === undefined || !Number.isFinite(value) ? '—' : new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
+
+/** 542ms, 6.9s, 23s, 1m 22s, 2h 05m: the precision a reader compares at each scale. */
+export function formatSpanDuration(ms: number): string {
+  if (!Number.isFinite(ms) || ms < 0) return '—'
+  if (ms >= 86_400_000) return duration(ms)
+  if (ms < 1000) return `${Math.round(ms)}ms`
+  if (ms < 10_000) return `${(ms / 1000).toFixed(1)}s`
+  if (ms < 60_000) return `${Math.round(ms / 1000)}s`
+  if (ms < 3_600_000) {
+    const m = Math.floor(ms / 60_000), s = Math.round((ms % 60_000) / 1000)
+    return s === 60 ? `${m + 1}m` : s ? `${m}m ${s}s` : `${m}m`
+  }
+  const h = Math.floor(ms / 3_600_000), m = Math.round((ms % 3_600_000) / 60_000)
+  return m === 60 ? `${h + 1}h` : `${h}h ${String(m).padStart(2, '0')}m`
+}
+
+/** $0.12, $0.005, $12.40; never rounds a recorded nonzero cost to $0.00. */
+export function formatCost(usd: number): string {
+  if (finiteNumber(usd) === undefined || usd < 0) return '—'
+  if (usd === 0) return '$0.00'
+  if (usd < 0.01) return `$${usd.toPrecision(1).replace(/0+$/, '')}`
+  return `$${usd.toFixed(2)}`
+}
+
+/** 9.8k, 754.4k, 1.2M with the exact count left to a title. */
+export function formatCount(n: number): string {
+  return reportedCount(n) === undefined ? '—' : formatCompact(n)
+}
+
+/** 0s, 500ms, 20s, 1m 30s, 2h, 1h 15m: an axis label at the step's own precision. */
+export function formatClock(ms: number): string {
+  if (!Number.isFinite(ms) || ms < 0) return '—'
+  if (ms === 0) return '0s'
+  if (ms < 1000) return `${Math.round(ms)}ms`
+  if (ms < 60_000) return `${+(ms / 1000).toFixed(1)}s`
+  if (ms < 3_600_000) {
+    const m = Math.floor(ms / 60_000), s = Math.round((ms % 60_000) / 1000)
+    return s ? `${m}m ${s}s` : `${m}m`
+  }
+  const h = Math.floor(ms / 3_600_000), m = Math.round((ms % 3_600_000) / 60_000)
+  return m ? `${h}h ${m}m` : `${h}h`
 }

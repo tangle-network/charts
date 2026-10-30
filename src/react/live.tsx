@@ -1,5 +1,6 @@
 /** Reusable, em-scaled charts for live operational series. Values, labels and status colors belong to callers. */
 import { useRef, useState } from 'react'
+import { formatCompact } from '../format.js'
 import { useWidth, Tooltip, EventList, type Tip } from './live-presentation.js'
 export { useWidth } from './live-presentation.js'
 import { type ChartBand, type ChartMark, drawMarks, eventsGap } from '../events.js'
@@ -7,8 +8,7 @@ import { hatchPath, type MarkerShape, markerPath } from '../svg.js'
 
 // Defaults for consumers that do not pass a series color.
 export const LIVE_SERIES = ['#8b7cf6', '#0ea5a0', '#c98500', '#e2508f', '#4a90e2'] as const
-export const formatCompact = (value: number | null | undefined) =>
-  value === null || value === undefined || !Number.isFinite(value) ? '—' : new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
+export { formatCompact } from '../format.js'
 const formatShare = (value: number | null) => value === null || !Number.isFinite(value) ? '—' : `${Math.round(value * 100)}%`
 
 /** A nice ceiling for an axis and its three gridline values. */

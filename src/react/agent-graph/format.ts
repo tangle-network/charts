@@ -1,4 +1,4 @@
-import { formatCost, formatCount, formatSpanDuration } from "../flow-waterfall-model";
+import { formatCost, formatCount, formatSpanDuration } from "../../format.js";
 import { reportedCount } from "../../flow-trace.js";
 
 /** Canonical duration text; invalid or absent measurements have no chip. */
