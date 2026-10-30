@@ -42,6 +42,21 @@ async function proveCompactTopology(page, width, theme, output) {
   const selectedColor = await last.evaluate(node=>getComputedStyle(node).backgroundColor)
   assert.notEqual(selectedColor, await page.locator('.ag-agent-card:not([data-selected])').first().evaluate(node=>getComputedStyle(node).backgroundColor), 'selected and raised cards have distinct surfaces')
   await page.screenshot({ path: `${output}/compact-selected-${width}-${theme}.png` })
+  // Enter the shared inspector through real keyboard focus, outside the zoomed canvas.
+  const owner = page.locator(width < 600 ? '[data-agent-id="agent-129"]' : '.react-flow__node[data-id="agent-129"]')
+  await page.keyboard.press('Tab'); await owner.focus()
+  const metrics = page.locator('[data-agent-metrics]'); await metrics.waitFor({ state: 'visible' })
+  await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('[data-agent-metrics]')).opacity) >= .99)
+  assert.match(await metrics.innerText(), /Agent 129/); assert.match(await metrics.innerText(), /Cost/)
+  const metricBox = await metrics.boundingBox()
+  assert.ok(metricBox.x >= 0 && metricBox.x + metricBox.width <= width + 1 && metricBox.y >= 0 && metricBox.y + metricBox.height <= 983, 'shared inspector stays in the viewport')
+  assert.ok(await metrics.evaluate(element => parseFloat(getComputedStyle(element).fontSize)) >= 13, 'metrics keep their reading size outside the camera transform')
+  await page.keyboard.press('Tab'); assert.equal(await metrics.evaluate(element => element === document.activeElement), true)
+  await page.screenshot({ path: `${output}/shared-metrics-${width}-${theme}.png` })
+  await page.keyboard.press('Escape'); await metrics.waitFor({ state: 'hidden' }); await page.waitForTimeout(350)
+  assert.equal(await metrics.count(), 0, 'Escape stays closed after restoring the invoker')
+  assert.equal(await owner.evaluate(element => element === document.activeElement), true)
+
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false)
 }
 
