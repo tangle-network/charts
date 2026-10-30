@@ -112,7 +112,7 @@ try {
     await page.screenshot({ path: `${output}/recorded-hub-${width}-${theme}.png` })
     await page.getByRole('button', { name: 'Close', exact: true }).click()
     if (width < 600) {
-      await page.goto(`${base}/?id=topology&shared-tool=1&quiet=1&globals=agent-${theme}`); await ready()
+      await page.goto(`${base}/?id=topology&shared-tool=1&globals=agent-${theme}`); await ready()
       await page.getByRole('button', { name: 'Switch layout', exact: true }).click()
       const copies = page.getByRole('button', { name: 'Read source', exact: true }); assert.equal(await copies.count(), 2)
       const earlier = copies.first(); await earlier.click()
@@ -122,6 +122,8 @@ try {
       await page.getByRole('button', { name: 'Close', exact: true }).click(); await details.waitFor({ state: 'hidden' }); assert.equal(await earlier.evaluate(element => element === document.activeElement), true)
       await page.keyboard.press('Enter'); await details.waitFor({ state: 'visible' }); await page.keyboard.press('Escape'); await details.waitFor({ state: 'hidden' })
       assert.equal(await earlier.evaluate(element => element === document.activeElement), true, 'Escape returns to the same tool occurrence')
+      await page.goto(`${base}/?id=topology&large=1&quiet=1&globals=agent-${theme}`); await ready()
+      await page.getByRole('button', { name: 'Switch layout', exact: true }).click()
       const chip = page.locator('.ag-chip').first(); await chip.click(); await page.getByRole('dialog').waitFor({ state: 'visible' })
       await page.getByRole('button', { name: 'Close', exact: true }).click(); await page.getByRole('dialog').waitFor({ state: 'hidden' }); assert.equal(await chip.evaluate(element => element === document.activeElement), true, 'Close returns to the header chip')
       await page.keyboard.press('Enter'); await page.getByRole('dialog').waitFor({ state: 'visible' }); await page.keyboard.press('Escape'); await page.getByRole('dialog').waitFor({ state: 'hidden' })
