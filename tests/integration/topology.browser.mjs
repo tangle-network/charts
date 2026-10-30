@@ -119,11 +119,11 @@ try {
       const details = page.getByRole('dialog', { name: 'Read source calls', exact: true }); await details.waitFor({ state: 'visible' })
       const card = await details.boundingBox(), invoker = await earlier.boundingBox()
       assert.ok(card.x >= 8 && card.x + card.width <= width - 8 && Math.min(Math.abs(card.y - invoker.y - invoker.height), Math.abs(invoker.y - card.y - card.height)) <= 8, 'the shared tool preview fits beside its actual earlier-row invoker')
-      await page.getByRole('button', { name: 'Close', exact: true }).click(); assert.equal(await earlier.evaluate(element => element === document.activeElement), true)
+      await page.getByRole('button', { name: 'Close', exact: true }).click(); await details.waitFor({ state: 'hidden' }); assert.equal(await earlier.evaluate(element => element === document.activeElement), true)
       await page.keyboard.press('Enter'); await details.waitFor({ state: 'visible' }); await page.keyboard.press('Escape'); await details.waitFor({ state: 'hidden' })
       assert.equal(await earlier.evaluate(element => element === document.activeElement), true, 'Escape returns to the same tool occurrence')
       const chip = page.locator('.ag-chip').first(); await chip.click(); await page.getByRole('dialog').waitFor({ state: 'visible' })
-      await page.getByRole('button', { name: 'Close', exact: true }).click(); assert.equal(await chip.evaluate(element => element === document.activeElement), true, 'Close returns to the header chip')
+      await page.getByRole('button', { name: 'Close', exact: true }).click(); await page.getByRole('dialog').waitFor({ state: 'hidden' }); assert.equal(await chip.evaluate(element => element === document.activeElement), true, 'Close returns to the header chip')
       await page.keyboard.press('Enter'); await page.getByRole('dialog').waitFor({ state: 'visible' }); await page.keyboard.press('Escape'); await page.getByRole('dialog').waitFor({ state: 'hidden' })
       assert.equal(await chip.evaluate(element => element === document.activeElement), true, 'Escape returns to the header chip')
     }
@@ -183,7 +183,7 @@ try {
 } catch (error) {
   if (currentPage && !currentPage.isClosed()) {
     await currentPage.screenshot({ path: `${output}/failure.png`, fullPage: true })
-    await writeFile(`${output}/failure.json`, JSON.stringify({ message: String(error), url: currentPage.url(), text: await currentPage.locator('body').innerText() }, null, 2))
+    await writeFile(`${output}/failure.json`, JSON.stringify({ message: String(error), url: currentPage.url(), text: await currentPage.locator('body').innerText(), focus: await currentPage.evaluate(() => document.activeElement?.outerHTML), dialogs: await currentPage.getByRole('dialog').evaluateAll(elements => elements.map(element => ({ html: element.outerHTML.slice(0, 700), bounds: element.getBoundingClientRect().toJSON() }))) }, null, 2))
   }
   throw error
 } finally {
