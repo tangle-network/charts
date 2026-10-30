@@ -73,10 +73,10 @@ try {
    await page.waitForFunction(()=>document.querySelectorAll('.ov-line-point').length===4)
    await page.waitForTimeout(30)
    assert.equal(await page.locator('[data-highlight]').getAttribute('cy'),await page.locator('.ov-line-point').last().getAttribute('cy'))
-   assert.notEqual(await page.locator('.ov-line-point').last().evaluate(n=>getComputedStyle(n).animationName),'none')
+   assert.notEqual(await page.locator('.ov-line-point').last().evaluate(n=>getComputedStyle(n).transitionDuration),'0s')
    await page.screenshot({path:`${out}/lines-${theme}-${width}.png`,fullPage:true})
    await page.emulateMedia({reducedMotion:'reduce'})
-   assert.equal(await page.locator('.ov-line-point').last().evaluate(n=>getComputedStyle(n).animationName),'none')
+   assert.equal(await page.locator('.ov-line-point').last().evaluate(n=>getComputedStyle(n).transitionDuration),'0s')
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false)
    assert.deepEqual(errors,[])
   } finally {await context.close()}
