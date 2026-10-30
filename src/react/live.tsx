@@ -217,8 +217,8 @@ export function Lines({ series, format = formatCompact, rows = 13, axis, marks =
         {points.map(p => {
           const label = `${p.label}: ${p.value === null ? strip!.label : format(p.value)}`, cy = p.value === null ? stripY : y(p.value)
           return <a key={p.key} href={p.href} aria-label={p.href ? label : undefined} onFocus={() => setCursor({ at: p.at, key: p.key })} onBlur={() => setCursor(null)}
-            onMouseEnter={event => { if (!event.currentTarget.ownerSVGElement?.contains(document.activeElement)) setCursor({ at: p.at, key: p.key }) }}
-            onMouseLeave={event => { if (!event.currentTarget.ownerSVGElement?.contains(document.activeElement)) setCursor(null) }}>
+            onMouseEnter={event => { if (!event.currentTarget.closest('svg')?.contains(document.activeElement)) setCursor({ at: p.at, key: p.key }) }}
+            onMouseLeave={event => { if (!event.currentTarget.closest('svg')?.contains(document.activeElement)) setCursor(null) }}>
             {p.marker ? <path d={markerPath(p.marker, x(p.at), cy, Math.max(3, em / 5))} fill={p.color} /> :
               <circle className="ov-line-point" data-unscored={p.value === null || undefined} data-highlight={p.highlight || undefined} cx={x(p.at)} cy={cy} r={p.highlight ? 6 : Math.max(3, em / 5)} fill={p.highlight || p.value === null ? 'var(--chart-live-surface, var(--bg-card))' : p.color} stroke={p.highlight || p.value === null ? p.color : 'var(--chart-live-surface, var(--bg-card))'} strokeWidth={p.highlight ? 2.5 : 1.5} strokeDasharray={p.value === null ? '2 2' : undefined}><title>{label}</title></circle>}
           </a>
