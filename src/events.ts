@@ -222,7 +222,7 @@ export function prepareMarks(marks: readonly ChartMark[], px: (x: number) => num
       const radius = Math.max(0, Math.min(5, (group.x - (groups[index - 1]?.x ?? -Infinity)) / 2, ((groups[index + 1]?.x ?? Infinity) - group.x) / 2));
       const caption = text(x, rowY(spot?.row ?? 0), label, { size: 12, anchor: spot?.anchor ?? 'start', cls: cls("tgc-mark-label") });
       const key = JSON.stringify([group.marks[0]!.at, group.marks[0]!.kind, group.marks[0]!.label, group.marks[0]!.verdict ?? null, group.marks[0]!.source ?? null]);
-      labels.push({ key: `mark:${key}`, attributes: { 'data-mark-id': key, 'data-labelled': Boolean(spot), tabIndex: 0, role: 'img', 'aria-label': markName(lead) }, body: `<title>${esc(markName(lead))}</title>` + rect(group.x - radius, Math.min(top, labelTop), radius * 2, Math.max(12, bottom - Math.min(top, labelTop)), "tgc-lane-hit") + caption });
+      labels.push({ key: `mark:${key}`, attributes: { 'data-mark-id': key, 'data-labelled': Boolean(spot), tabIndex: 0, role: 'img', 'aria-label': markName(lead) }, body: `<title>${esc(markName(lead))}</title>` + rect(group.x - radius, Math.min(top, labelTop), radius * 2, Math.max(12, bottom - Math.min(top, labelTop)), "tgc-lane-hit", 'pointer-events="fill"') + caption });
     } else if (spot) out += text(spot.x, rowY(spot.row), spot.text, { size: 12, anchor: spot.anchor, cls: "tgc-mark-label" });
   }
   for (const edge of edges) out += `<g data-edge="${edge.anchor === "end" ? "after" : "before"}">${text(edge.x, rowY(edge.row), edge.text, { size: 12, anchor: edge.anchor, cls: "tgc-mark-label tgc-mark-edge" })}</g>`;
