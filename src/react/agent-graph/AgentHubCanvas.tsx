@@ -86,6 +86,7 @@ export function AgentHubCanvas(props: AgentHubCanvasProps) {
   const [open, setOpen] = useState<string | null>(selectedId ?? null);
   const buttons = useRef(new Map<string, HTMLButtonElement>());
   const closeRef = useRef<HTMLButtonElement>(null);
+  const buttonRef = (id: string) => (element: HTMLButtonElement | null) => { if (element) buttons.current.set(id, element); else buttons.current.delete(id); };
   const animate = useMotionAllowed();
   const visibleCalls = useMemo(() => calls.filter((c) => c.startedAt <= now), [calls, now]);
   const nextLayout = useMemo(() => layoutHub({ nodes, edges, tools, calls, you: Boolean(you) }), [nodes, edges, tools, calls, you]);
@@ -219,11 +220,11 @@ export function AgentHubCanvas(props: AgentHubCanvasProps) {
           return rank(a) - rank(b);
         }).map(entity => <li key={entity.id}>
           <HubNode entity={entity} x={0} y={0} tile={32} dimmed={false} selected={open === entity.id}
-            buttonRef={el => { if (el) buttons.current.set(entity.id, el); else buttons.current.delete(entity.id); }}
+            buttonRef={buttonRef(entity.id)}
             onOpen={() => openNode(entity.id)} onHover={() => {}} onKeyDown={keydown(entity.id)} />
           <div className="ag-tools">{tools.filter(t => visibleCalls.some(c => c.from === entity.id && c.to === t.id || c.to === entity.id && c.from === t.id)).map(t =>
-            <button type="button" key={t.id} onClick={() => openNode(t.id)}>{t.label}</button>)}</div>
-        </li>)}</ul>{availableTools.length > 0 && <div className="ag-available"><span>Available tools</span><div className="ag-tools">{availableTools.map(tool => <button type="button" key={tool.id} onClick={() => openNode(tool.id)}>{tool.label}</button>)}</div></div>}</> : <div className="ag-canvas" style={{ width: w, height: h, transform: `scale(${scale})` }}>
+            <button ref={buttonRef(t.id)} type="button" key={t.id} onClick={() => openNode(t.id)}>{t.label}</button>)}</div>
+        </li>)}</ul>{availableTools.length > 0 && <div className="ag-available"><span>Available tools</span><div className="ag-tools">{availableTools.map(tool => <button ref={buttonRef(tool.id)} type="button" key={tool.id} onClick={() => openNode(tool.id)}>{tool.label}</button>)}</div></div>}</> : <div className="ag-canvas" style={{ width: w, height: h, transform: `scale(${scale})` }}>
           <svg className="ag-edges" width={w} height={h} aria-hidden>
             {layout.links.map((l) => {
               const { d, length } = routes.get(`${l.from}|${l.to}`)!;
@@ -243,7 +244,7 @@ export function AgentHubCanvas(props: AgentHubCanvasProps) {
             const { x, y } = at(p.id);
             const tile = p.kind === "hub" ? metrics.hubTile : p.kind === "you" ? metrics.tile - 8 : metrics.tile;
             return <HubNode key={p.id} entity={entity} x={x} y={y} tile={tile} dimmed={Boolean(related && !related.has(p.id))}
-              selected={open === p.id} buttonRef={(el) => { if (el) buttons.current.set(p.id, el); else buttons.current.delete(p.id); }}
+              selected={open === p.id} buttonRef={buttonRef(p.id)}
               onOpen={() => openNode(p.id)} onHover={(on) => setHover((prev) => (on ? p.id : prev === p.id ? null : prev))} onKeyDown={keydown(p.id)} />;
           })}
         </div>}
