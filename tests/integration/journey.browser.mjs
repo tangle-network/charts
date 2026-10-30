@@ -10,12 +10,14 @@ await mkdir(output, { recursive: true })
 const server = spawn(process.execPath, ['tests/fixtures/charts-browser-smoke.mjs', ...process.argv.slice(2)], { stdio: ['ignore', 'pipe', 'pipe'] })
 const logs = []
 for (const stream of [server.stdout, server.stderr]) stream.on('data', bytes => logs.push(String(bytes)))
+let base
 let browser, observedPage, activeCase
 const checks = []
 try {
   const deadline = Date.now() + 120000
   while (true) {
-    try { if ((await fetch('http://127.0.0.1:46489')).ok) break } catch {}
+    const ready = logs.join('').split('\n').slice(0, -1).find(line => line.startsWith('{"consumer":'))
+    if (ready) { base = JSON.parse(ready).url; break }
     assert.ok(Date.now() < deadline && server.exitCode === null, logs.join(''))
     await new Promise(resolve => setTimeout(resolve, 250))
   }
@@ -27,7 +29,7 @@ try {
     const currentStyle = (selector, property) => page.evaluate(({selector, property}) => getComputedStyle(document.querySelector(selector))[property], {selector, property})
     page.on('pageerror', error => errors.push(error.message))
     page.on('response', response => { if (response.ok() && /\/(?:live|figure)\.css$/.test(response.url())) styles.add(new URL(response.url()).pathname) })
-    await page.goto(`http://127.0.0.1:46489/?id=journey&globals=agent-${theme}&agents=${agents}`)
+    await page.goto(`${base}/?id=journey&globals=agent-${theme}&agents=${agents}`)
     await page.locator('[data-lane="agent-0"]').waitFor()
     await page.evaluate(() => {
       window.__timelineInput=[]
@@ -98,7 +100,7 @@ try {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     assert.equal(await currentStyle('[data-lane="agent-3"] [data-open] rect', 'animationName'), 'none')
     assert.notEqual(await currentStyle('svg[role="group"] .ov-mark-deadline', 'strokeDasharray'), 'none')
-    await page.goto(`http://127.0.0.1:46489/?id=journey&globals=agent-${theme}&ancestor=1`)
+    await page.goto(`${base}/?id=journey&globals=agent-${theme}&ancestor=1`)
     await page.locator('.ov-axis').first().waitFor()
     assert.equal(await currentStyle('.ov-axis', 'fill'), 'rgb(17, 109, 91)')
     assert.equal(await currentStyle('.ov-mark-label', 'fill'), 'rgb(32, 67, 120)')
@@ -110,7 +112,7 @@ try {
       await prior.dispose()
     }
     if (agents === 100) {
-      await page.goto('http://127.0.0.1:46489/?id=timeline-tree')
+      await page.goto(`${base}/?id=timeline-tree`)
       const fold = page.getByRole('button', { name: 'Fold Recorded lead', exact: true })
       await fold.focus()
       await fold.press('Enter')
@@ -123,18 +125,67 @@ try {
       assert.equal(await fold.evaluate(node => node === document.activeElement), true)
       await page.getByText('Data and method', { exact: true }).click()
       assert.ok((await page.locator('table').first().textContent()).includes('Recorded worker'))
-      const response=await page.request.get('http://127.0.0.1:46489/formatter-proof.json'), formatting=await response.json()
+      const response=await page.request.get(`${base}/formatter-proof.json`), formatting=await response.json()
       assert.equal(response.status(),200)
       assert.deepEqual(formatting.formatted,['$0.00','$1e-20','$1e-10','$0.003','$1.20','—','—','—'])
       assert.equal('refused' in formatting.figure,false)
       for(const price of ['$1e-20','$1e-10','$1.20'])assert.ok(formatting.figure.table.includes(price),'the actual static cost figure preserves '+price)
       assert.ok(!formatting.figure.svg.wide.includes('>$0<'),'nonzero cost ticks retain their magnitude')
-      await page.goto(`http://127.0.0.1:46489/?id=clock-precision&globals=agent-${theme}`)
+      await page.goto(`${base}/?id=clock-precision&globals=agent-${theme}`)
       await page.locator('.fw-axis-track .fw-tick').first().waitFor()
       const clockLabels=await page.locator('.fw-axis-track .fw-tick').allTextContents()
       assert.ok(clockLabels.length>=3)
       assert.equal(new Set(clockLabels).size,clockLabels.length,'distinct zoomed axis positions have distinct labels: '+JSON.stringify(clockLabels))
       if(width===1512)for(const tick of ['10.2s','10.4s','10.6s'])assert.ok(clockLabels.includes(tick),tick+' remains readable in the actual zoomed waterfall')
+      await page.goto(`${base}/?id=controlled-position&globals=agent-${theme}`)
+      const playhead = page.getByRole('slider', {name:'Playback position'})
+      await playhead.waitFor()
+      await page.getByRole('button',{name:'Read cited instant',exact:true}).click()
+      await page.waitForFunction(()=>document.querySelector('.fw-slider')?.value==='3000')
+      await playhead.focus(); await page.keyboard.press('Home')
+      await page.waitForFunction(()=>document.querySelector('[data-retained-position]')?.textContent==='0')
+      await page.evaluate(()=>{window.__fwTimeSamples=[];window.__fwWallStart=performance.now()})
+      await page.getByRole('button',{name:'Play',exact:true}).click()
+      await page.waitForTimeout(2100)
+      const timing=await page.evaluate(()=>({wallMs:performance.now()-window.__fwWallStart,reports:window.__fwTimeSamples.filter(sample=>typeof sample.trace==='number')}))
+      assert.ok(timing.reports.length>=16&&timing.reports.length<=25,'controlled echo preserves the original10Hz React cadence: '+JSON.stringify(timing))
+      const progress=timing.reports.at(-1).trace
+      assert.ok(progress/timing.wallMs>=.85&&progress/timing.wallMs<=1.15,'controlled1x playback preserves real elapsed time: '+JSON.stringify(timing))
+      console.log('controlled-clock-metrics',JSON.stringify({theme,width,...timing}))
+      await page.waitForFunction(()=>Number(document.querySelector('[data-retained-position]')?.textContent)>1000)
+      await page.getByRole('button',{name:'Pause',exact:true}).click()
+      const paused = Number(await page.locator('[data-retained-position]').textContent())
+      assert.ok(paused>=1000&&paused<11000,'shared playback reports retained time without a second host clock')
+      await page.getByRole('button',{name:'Show full record',exact:true}).click()
+      await page.waitForFunction(()=>document.querySelector('.fw-slider')?.value==='11000')
+      for (const live of [false, true]) {
+        await page.goto(`${base}/?id=controlled-position${live ? '-live' : ''}&globals=agent-${theme}`)
+        const cursor = page.getByRole('slider', {name:'Playback position'})
+        await cursor.focus(); await page.keyboard.press('Home')
+        await page.getByRole('button',{name:'Play',exact:true}).click()
+        await page.waitForFunction(()=>Number(document.querySelector('[data-retained-position]')?.textContent)>0)
+        await page.getByRole('button',{name:'Show full record',exact:true}).click()
+        await page.waitForTimeout(250)
+        assert.equal(await page.locator('[data-retained-position]').textContent(),'null',`${live ? 'live follow' : 'full retained record'} stays selected after active playback`)
+        assert.equal(await page.getByRole('button',{name:'Play',exact:true}).count(),1,'external follow stops replay')
+        if (live) assert.equal(await page.locator('[data-flow-waterfall]').getAttribute('data-follow-live'),'true')
+        else assert.equal(await cursor.inputValue(),'11000')
+        await page.getByRole('button',{name:'Play',exact:true}).click()
+        await page.waitForFunction(()=>Number(document.querySelector('[data-retained-position]')?.textContent)>0)
+        await page.getByRole('button',{name:'Pause',exact:true}).click()
+      }
+      await page.goto(`${base}/?id=palette-contracts&globals=agent-${theme}`)
+      const target=page.locator('.ov-gap-target');await target.waitFor()
+      const role=await page.locator('[data-semantic-reference]').evaluate(node=>{const s=getComputedStyle(node);return {pass:s.color,surface:s.backgroundColor,border:s.borderTopColor}})
+      assert.equal(await target.evaluate(node=>getComputedStyle(node).stroke),role.pass,'Gap resolves the published Brand success role without private aliases')
+      assert.equal(await page.locator('.ov-gap-stretch').evaluate(node=>getComputedStyle(node).stroke),role.pass)
+      const canvas=page.getByRole('img',{name:'Recorded points',exact:true});await canvas.waitFor();await page.waitForFunction(()=>document.querySelector('.tgc-dot-map canvas')?.hasAttribute('data-frame-ms'));const area=await canvas.boundingBox();assert.ok(area)
+      await canvas.hover({position:{x:area.width/2,y:area.height/2}})
+      await page.getByText('Recorded dot',{exact:true}).waitFor()
+      assert.equal(await page.locator('.tgc-dot-map-tip').evaluate(node=>getComputedStyle(node).backgroundColor),role.surface,'DotMap tooltip has a real Brand surface')
+      assert.equal(await page.locator('.tgc-dot-map-tip').evaluate(node=>getComputedStyle(node).color),await page.locator('[data-tip-text-reference]').evaluate(node=>getComputedStyle(node).color))
+
+
 
     }
     assert.deepEqual(errors, [])

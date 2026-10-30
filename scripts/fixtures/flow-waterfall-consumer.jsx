@@ -1,6 +1,7 @@
 // Packed-package consumer. Recorded data is injected from docs/fixtures by the server builder.
 function FlowApp({ name }) {
  const [now, setNow] = useState(0)
+ const [position, setPosition] = useState(null)
  const [zoom,onZoomChange] = useState({startMs:10000,endMs:11000})
  useEffect(() => {
   if (!['discovery-streaming-replay', 'live-names'].includes(name)) return
@@ -9,6 +10,8 @@ function FlowApp({ name }) {
   return () => clearInterval(timer)
  }, [name])
  let trace = recorded, live
+ const controlled = name === 'controlled-position' || name === 'controlled-position-live'
+ if (controlled) { trace = {totalMs:11000,spans:[{id:'recorded-position',kind:'pipeline',name:'Retained position',startMs:0,endMs:11000,status:'done'}]}; live = name.endsWith('-live') }
  if (name === 'clock-precision') trace = {totalMs:11000,spans:[{id:'recorded-clock',kind:'pipeline',name:'Recorded clock',startMs:0,endMs:11000,status:'done'}]}
  if (name === 'healthy') trace = { ...healthy, spans: healthy.spans.map(s => s.kind === 'pipeline' ? { ...s, outcome: { tone: 'ok', label: 'Shipped' } } : s) }
  // Three agents whose calls carry tokens in, out and cached and a cost; named tools, a failed step and its retry, a restart.
@@ -64,10 +67,10 @@ function FlowApp({ name }) {
   }) }
 
  }
- return <main data-live-update={now}>{name==='discovery-streaming-replay'&&<p>Recorded Discovery replay ·20x; final totals arrive at settlement</p>}<FlowWaterfall trace={trace} live={live} maxHeight={1800}
+ return <main data-live-update={now}>{controlled&&<><button onClick={()=>setPosition(3000)}>Read cited instant</button><button onClick={()=>setPosition(null)}>Show full record</button><output data-retained-position>{String(position)}</output></>}{name==='discovery-streaming-replay'&&<p>Recorded Discovery replay ·20x; final totals arrive at settlement</p>}<FlowWaterfall trace={trace} live={live} maxHeight={1800}
   markers={name==='healthy'?[{at:Math.round(trace.totalMs/2),label:'Release v2',tone:'ok'},{at:Math.round(trace.totalMs/2)+50,label:'Release v3'},{at:trace.totalMs-50,label:'Release v4'}]:undefined}
   onSelect={span=>{window.__fwSelected=[...(window.__fwSelected??[]),span.id??span.name]}}
-  onTimeChange={t=>{window.__fwTime=t}}
+  position={controlled?position:undefined} onTimeChange={t=>{window.__fwTime=t;(window.__fwTimeSamples??=[]).push({wall:performance.now(),trace:t});if(controlled)setPosition(t)}}
   zoom={name==='clock-precision'?zoom:undefined} onZoomChange={name==='clock-precision'?onZoomChange:undefined}
   defaultView={name==='live-names'||name==='host-marks'||name==='agent-metrics'||name==='phone-names'?'agents':undefined} selectedId={name==='agent-metrics'||name==='phone-names'?'builder':undefined}
   renderIcon={name==='host-marks'?(span=>span.kind==='pipeline'?<span data-host-mark style={{display:'inline-flex',width:16,height:16,borderRadius:8,background:'currentColor'}}/>:undefined):undefined} /></main>

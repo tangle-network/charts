@@ -5,7 +5,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
 
 async function proveCompactTopology(page, width, theme, output) {
-  await page.goto(`http://127.0.0.1:46489/?id=topology&compact=1&large=1&quiet=1&globals=agent-${theme}`)
+  await page.goto(`${base}/?id=topology&compact=1&large=1&quiet=1&globals=agent-${theme}`)
   await page.locator(`.ag-topology[data-layout="${width < 600 ? 'list' : 'ready'}"]`).waitFor()
   await page.locator('.ag-agent-card[data-activity="quiet"]').getByText('Quiet 3d 14h',{exact:true}).waitFor()
   if (width > 600) {
@@ -52,11 +52,13 @@ const server = spawn(process.execPath, ['tests/fixtures/charts-browser-smoke.mjs
 const logs = [], checks = []
 server.stdout.on('data', bytes => logs.push(String(bytes)))
 server.stderr.on('data', bytes => logs.push(String(bytes)))
+let base
 let browser, currentPage
 try {
   const deadline = Date.now() + 120000
   while (true) {
-    try { if ((await fetch('http://127.0.0.1:46489')).ok) break } catch {}
+    const ready = logs.join('').split('\n').slice(0, -1).find(line => line.startsWith('{"consumer":'))
+    if (ready) { base = JSON.parse(ready).url; break }
     assert.ok(Date.now() < deadline && server.exitCode === null, logs.join(''))
     await new Promise(resolve => setTimeout(resolve, 250))
   }
@@ -67,7 +69,7 @@ try {
     currentPage = page
     page.on('pageerror', error => errors.push(error.message))
     const ready = () => page.locator(`.agent-graph[data-layout="${width < 600 ? 'list' : 'ready'}"]`).waitFor()
-    await page.goto(`http://127.0.0.1:46489/?id=topology&globals=agent-${theme}`)
+    await page.goto(`${base}/?id=topology&globals=agent-${theme}`)
     await ready()
     assert.deepEqual(await page.locator('[data-host-canary]').evaluate(el => ({ display: getComputedStyle(el).display, fontSize: getComputedStyle(el).fontSize })), { display: 'flex', fontSize: '17px' }, 'graph CSS preserves host utilities')
     assert.equal(await page.locator('.agent-graph').evaluate(el => getComputedStyle(el).display), 'flex', 'graph utilities apply to the scope root')
@@ -94,7 +96,7 @@ try {
     await page.screenshot({ path: `${output}/recorded-hub-${width}-${theme}.png` })
     await page.getByRole('button', { name: 'Close', exact: true }).click()
     await page.emulateMedia({ reducedMotion: 'no-preference' })
-    await page.goto(`http://127.0.0.1:46489/?id=topology&large=1&globals=agent-${theme}`)
+    await page.goto(`${base}/?id=topology&large=1&globals=agent-${theme}`)
     await ready()
     const count = () => page.locator(width < 600 ? '.ag-phone-select' : '.react-flow__node-agent,.react-flow__node-liveAgent').count()
     assert.ok(await count() < 100, '130 agents render a bounded window')

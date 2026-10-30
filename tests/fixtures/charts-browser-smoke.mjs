@@ -13,7 +13,8 @@ const dir = mkdtempSync(join(tmpdir(), 'charts-browser-'))
 const supplied = process.argv[2]
 const packed = supplied ? resolve(supplied) : join(dir, JSON.parse(execFileSync('npm', ['pack', '--json', '--ignore-scripts', '--pack-destination', dir], { cwd: root, encoding: 'utf8' }))[0].filename)
 writeFileSync(join(dir, 'package.json'), JSON.stringify({ private: true, type: 'module' }))
-execFileSync('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--package-lock=false', packed, '@tangle-network/brand@1.31.2'], { cwd: dir, stdio: 'inherit' })
+const brandRange=JSON.parse(execFileSync('tar',['-xOf',packed,'package/package.json'],{encoding:'utf8'})).peerDependencies['@tangle-network/brand']
+execFileSync('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--package-lock=false', packed, '@tangle-network/brand@'+brandRange], { cwd: dir, stdio: 'inherit' })
 let peerRequire = createRequire(join(dir, 'package.json'))
 const reactVersion = process.env.CHARTS_REACT_VERSION ?? '19'
 if (reactVersion) {
@@ -33,7 +34,7 @@ const healthy = JSON.parse(readFileSync(join(root,'docs/fixtures/healthy-flow.js
 const app = `
 import React, { useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Sparkline, StackedBarChart, FlowWaterfall, Gantt, Meter, VersionGraph, CountHeatmap, HBars, DayBars, TimelineView } from '@tangle-network/charts/react'
+import { Sparkline, StackedBarChart, FlowWaterfall, Gantt, Meter, VersionGraph, CountHeatmap, HBars, DayBars, TimelineView, Gap, DotMap } from '@tangle-network/charts/react'
 import { AgentGraph } from '@tangle-network/charts/react/agent-graph'
 function App() {
  const [selectedBucketId, onSelectionChange] = useState(null)
@@ -60,15 +61,19 @@ function RecordedTimeline() {
  const start=Date.parse('2026-10-28T00:00:00Z')
  return <main><TimelineView options={{measure:'Recorded work',now:start+60000}} lanes={[{id:'lead',label:'Recorded lead',spans:[{start,end:null,state:'running'}],ticks:[{at:start+1000,outcome:'ok'}]},{id:'worker',parent:'lead',label:'Recorded worker',spans:[{start:start+1000,end:start+2000,state:'missing'}],ticks:[{at:start+2000,outcome:'oom'}]}]}/></main>
 }
+function PaletteContracts() {
+ return <main><span data-semantic-reference style={{color:'var(--status-running)',background:'var(--bg-elevated)',borderTop:'1px solid var(--border-default)'}}>Brand reference</span><span data-tip-text-reference style={{color:'var(--text-primary)'}}>Recorded color contract</span><Gap value={5} target={{min:8,max:10}} stretch={{min:12,max:14}} scale="linear"/><DotMap positions={new Float32Array([.5,.5])} radii={.1} colors={new Uint8Array([0])} palette={['var(--chart-category-1)']} extent={[0,0,1,1]} height={160} describe={()=>'Recorded dot'} ariaLabel="Recorded points"/></main>
+}
 const params = new URLSearchParams(location.search)
 const name = (params.get('id') ?? '').replace('chatcontrols-flowwaterfall--','')
 document.documentElement.dataset.theme=params.get('globals')?.includes('agent-light')?'light':'dark'
-createRoot(document.getElementById('root')).render(name === 'timeline-tree' ? <RecordedTimeline/> : name === 'analytics-counts' ? <AnalyticsCounts/> : name === 'versions' ? <Versions/> : name === 'topology' ? <Topology/> : name === 'journey' ? <Journey/> : name ? <FlowApp name={name}/> : <App />)
+createRoot(document.getElementById('root')).render(name === 'palette-contracts' ? <PaletteContracts/> : name === 'timeline-tree' ? <RecordedTimeline/> : name === 'analytics-counts' ? <AnalyticsCounts/> : name === 'versions' ? <Versions/> : name === 'topology' ? <Topology/> : name === 'journey' ? <Journey/> : name ? <FlowApp name={name}/> : <App />)
 `
 writeFileSync(join(dir, 'app.jsx'), app)
 await build({entryPoints:[join(dir,'app.jsx')],bundle:true,outfile:join(dir,'app.js'),jsx:'automatic',alias:{react:dirname(peerRequire.resolve('react/package.json')),'react-dom':dirname(peerRequire.resolve('react-dom/package.json'))}})
 // The trace paints Brand roles only, so the page loads Brand's tokens as every host does.
-const tokens = readFileSync(peerRequire.resolve('@tangle-network/brand/styles/tokens.css'),'utf8') + readFileSync(peerRequire.resolve('@tangle-network/charts/react/flow-waterfall.css'),'utf8') + `
+const brandTokens = readFileSync(peerRequire.resolve('@tangle-network/brand/styles/tokens.css'),'utf8')
+const tokens = brandTokens + readFileSync(peerRequire.resolve('@tangle-network/charts/react/flow-waterfall.css'),'utf8') + `
 :root { --chart-live-fg:hsl(var(--foreground));--chart-live-muted:hsl(var(--muted-foreground));--chart-live-faint:hsl(var(--muted-foreground));--chart-live-bg:hsl(var(--background));--chart-live-hover:hsl(var(--secondary)); --foreground:230 20% 12%;--muted-foreground:230 10% 40%;--background:0 0% 100%;--border:230 15% 85%;--secondary:230 15% 95%;--primary:250 65% 45%;--accent:205 70% 40%;--warning-strong:35 85% 35%;--success:145 65% 30%;--destructive:0 70% 45%;--chart-accent:hsl(var(--primary)); }
 :root[data-theme=dark] { --foreground:230 20% 95%;--muted-foreground:230 10% 70%;--background:240 20% 10%;--border:240 15% 25%;--secondary:240 15% 18%;--primary:250 75% 75%;--accent:205 85% 65%;--warning-strong:35 95% 65%;--success:145 60% 65%;--destructive:0 80% 70%; }
 `
@@ -85,5 +90,5 @@ const server=createServer(async(req,res)=>{
   const rows=[1e-20,1e-10,1.2].map((price,i)=>({id:'recorded-cost-'+i,label:'Recorded cost '+i,rank:null,attempts:10,solved:5,rate:.5,estimate:'bootstrap',interval:{lower:.2,upper:.8,level:.95,method:'task-cluster-bootstrap'},tiers:null,cost:{perSolvedUsd:price,basis:'receipts',receipts:10},medianWallMs:1000,onFront:null}))
   res.setHeader('Content-Type','application/json');res.end(JSON.stringify({figure:api.costFrontier(rows,{measure:'solve rate'}),formatted:[0,1e-20,1e-10,.0032,1.2,-1,NaN,Infinity].map(value=>api.formatCost(value))}));return
  }
- res.setHeader('Content-Type', styles[req.url]?'text/css':req.url==='/app.js'?'text/javascript':'text/html');res.end(styles[req.url]?readFileSync(styles[req.url]):req.url==='/app.js'?readFileSync(join(dir,'app.js')):(req.url.includes('id=topology')?html.replace('</style>',graphCss+'</style>'):html).replace('<style>','<link rel="stylesheet" href="/live.css"><style>'))})
-server.listen(Number(process.env.PORT || 46489),'127.0.0.1',()=>console.log(JSON.stringify({consumer:dir,tarball:packed,react:JSON.parse(readFileSync(peerRequire.resolve('react/package.json'),'utf8')).version,url:'http://127.0.0.1:'+server.address().port})))
+ res.setHeader('Content-Type', styles[req.url]?'text/css':req.url==='/app.js'?'text/javascript':'text/html');res.end(styles[req.url]?readFileSync(styles[req.url]):req.url==='/app.js'?readFileSync(join(dir,'app.js')):(req.url.includes('id=topology')?html.replace('</style>',graphCss+'</style>'):req.url.includes('id=palette-contracts')?html.replace(tokens,brandTokens):html).replace('<style>','<link rel="stylesheet" href="/live.css"><style>'))})
+server.listen(Number(process.env.PORT ?? 0),'127.0.0.1',()=>console.log(JSON.stringify({consumer:dir,tarball:packed,react:JSON.parse(readFileSync(peerRequire.resolve('react/package.json'),'utf8')).version,url:'http://127.0.0.1:'+server.address().port})))

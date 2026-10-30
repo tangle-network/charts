@@ -9,11 +9,13 @@ await mkdir(output, { recursive: true })
 const server = spawn(process.execPath, ['tests/fixtures/charts-browser-smoke.mjs', ...process.argv.slice(2)], { stdio: ['ignore','pipe','pipe'] })
 const logs = [], checks = []
 server.stdout.on('data', bytes => logs.push(String(bytes))); server.stderr.on('data', bytes => logs.push(String(bytes)))
+let base
 let browser, page
 try {
  const deadline = Date.now() + 120000
  while (true) {
-  try { if ((await fetch('http://127.0.0.1:46489')).ok) break } catch {}
+  const ready = logs.join('').split('\n').slice(0, -1).find(line => line.startsWith('{"consumer":'))
+    if (ready) { base = JSON.parse(ready).url; break }
   assert.ok(Date.now()<deadline && server.exitCode===null, logs.join(''))
   await new Promise(resolve=>setTimeout(resolve,250))
  }
@@ -22,7 +24,7 @@ try {
   const began=Date.now(), context=await browser.newContext({viewport:{width,height:982},colorScheme:theme,recordVideo:{dir:output,size:{width,height:982}}})
   page=await context.newPage(); const errors=[]
   page.on('pageerror', error=>errors.push(error.message))
-  await page.goto(`http://127.0.0.1:46489/?id=versions&globals=agent-${theme}`)
+  await page.goto(`${base}/?id=versions&globals=agent-${theme}`)
   const chart=page.locator('.tgc-version-graph')
   await chart.locator('button[data-node="e"]').waitFor()
   assert.deepEqual(await chart.locator('path').evaluateAll(paths=>paths.map(path=>`${path.dataset.from}>${path.dataset.to}`).sort()),['a>1','b>1','c>1','c>b','d>a','e>c','e>d'])
