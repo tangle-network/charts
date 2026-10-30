@@ -186,3 +186,9 @@ button.tgc-count-label { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { .tgc-version-graph .vg-row[data-arriving] { transition: none; } }
 
 .ov-gantt .tgc-gantt-end { dominant-baseline: middle; }
+
+.ov-line-point { animation: ov-point-arrive var(--motion-arrive); }
+.ov-plot a:focus-visible { outline: none; }
+.ov-plot a:focus-visible .ov-line-point { stroke: var(--focus-border, var(--accent-text)); stroke-width: 3; }
+@keyframes ov-point-arrive { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ov-line-point { animation: none; } }

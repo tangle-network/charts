@@ -172,108 +172,73 @@ export function Histogram({ bins, format = formatCompact, color = LIVE_SERIES[0]
   )
 }
 
-/** Lines over time on one axis (at most four series); the crosshair readout lists each series at the nearest time. A
- * `dots` series draws its points as marks (checkpoints) instead of a line; `axis` labels the time axis (default MM-DD). */
-export function Lines({ series, format = formatCompact, rows = 13, axis, marks = [], bands = [] }: { series: LineSeries[]; format?: (v: number) => string; rows?: number; axis?: (t: number) => string; marks?: ChartMark[]; bands?: ChartBand[] }) {
+/** Lines and recorded points share one time axis. Named ticks preserve a discrete ladder; step interpolation
+ * holds the prior observation until the next one. Producers own point labels, destinations and highlights. */
+export function Lines({ series, format = formatCompact, rows = 13, axis, marks = [], bands = [], ticks: namedTicks }: {
+  series: LineSeries[]; format?: (v: number) => string; rows?: number; axis?: (t: number) => string
+  marks?: ChartMark[]; bands?: ChartBand[]; ticks?: { value: number; label: string }[]
+}) {
   const [ref, width, em] = useWidth<HTMLDivElement>()
   const height = Math.round(rows * em)
   const [hover, setHover] = useState<number | null>(null)
   const gap = eventsGap(marks, bands)
   if (gap) throw new RangeError(gap)
-  const all = series.flatMap((s) => s.points)
+  const all = series.flatMap(s => s.points)
   if (!all.length) return <p className="ov-empty">No history yet.</p>
-  // Marks and bands widen the time axis, so a deadline after the last point stays visible.
-  const times = [...all.map((p) => p[0]), ...marks.map((m) => m.at), ...bands.flatMap((b) => [b.from, b.to])]
-  const t0 = Math.min(...times)
-  const t1 = Math.max(...times)
-  const { top, ticks } = ticksFor(Math.max(...all.map((p) => p[1])))
-  const left = Math.round(3.4 * em)
-  const bottom = Math.round(1.8 * em)
-  const plotW = Math.max(0, width - left - 10)
-  const plotH = height - bottom - 8
-  const x = (t: number) => left + (t1 > t0 ? ((t - t0) / (t1 - t0)) * plotW : 0)
-  const y = (v: number) => 8 + plotH - (v / top) * plotH
-  const nearest = (points: [number, number][], t: number) => points.reduce((best, p) => (Math.abs(p[0] - t) < Math.abs(best[0] - t) ? p : best), points[0]!)
+  const times = [...all.map(p => p[0]), ...marks.map(m => m.at), ...bands.flatMap(b => [b.from, b.to])]
+  const t0 = Math.min(...times), t1 = Math.max(...times)
+  const automatic = ticksFor(Math.max(...all.map(p => p[1])))
+  const ticks = namedTicks?.length ? namedTicks : automatic.ticks.map(value => ({ value, label: format(value) }))
+  const top = namedTicks?.length ? Math.max(1, ...ticks.map(t => t.value), ...all.map(p => p[1])) : automatic.top
+  const left = Math.round(namedTicks?.length ? Math.min(width * .48, Math.max(3.4, ...ticks.map(t => t.label.length * .56 + .8)) * em) : 3.4 * em)
+  const plotW = Math.max(0, width - left - 10), plotH = height - Math.round(1.8 * em) - 8
+  const x = (t: number) => left + (t1 > t0 ? (t - t0) / (t1 - t0) * plotW : 0)
+  const y = (v: number) => 8 + plotH - v / top * plotH
+  const nearest = (s: LineSeries) => s.points.reduce((best, p, i) => Math.abs(p[0] - hover!) < Math.abs(s.points[best]![0] - hover!) ? i : best, 0)
   const day = (t: number) => new Date(t).toISOString().slice(5, 16).replace('T', ' ')
+  const readout = hover === null ? [] : series.filter(s => s.points.length).map(s => {
+    const i = nearest(s), p = s.points[i]!
+    return { label: s.label?.(p[0], i) ?? s.name, value: format(p[1]), color: s.color }
+  })
   return (
-    <div
-      ref={ref}
-      className="ov-plot"
-      onMouseMove={(event) => {
-        const box = event.currentTarget.getBoundingClientRect()
-        const px = event.clientX - box.left
-        setHover(px >= left ? t0 + ((px - left) / Math.max(1, plotW)) * (t1 - t0) : null)
-      }}
-      onMouseLeave={() => setHover(null)}
-    >
-      {width > 0 && (
-        <svg width={width} height={height} role="img" aria-label={series.map((s) => s.name).join(', ')}>
-          {ticks.map((t) => (
-            <g key={t}>
-              <line x1={left} x2={width - 10} y1={y(t)} y2={y(t)} className="ov-gridline" />
-              <text x={left - em * 0.4} y={y(t)} dominantBaseline="middle" className="ov-axis" textAnchor="end">{format(t)}</text>
-            </g>
-          ))}
-          {[t0, (t0 + t1) / 2, t1].map((t, i) => (
-            <text key={i} x={x(t)} y={height - em * 0.35} className="ov-axis" textAnchor={i === 0 ? 'start' : i === 2 ? 'end' : 'middle'}>{axis ? axis(t) : day(t).slice(0, 5)}</text>
-          ))}
-          {bands.map((band, i) => (
-            <Band key={`band-${i}`} band={band} x={x(band.from)} y={8} width={x(band.to) - x(band.from)} height={plotH} />
-          ))}
-          {series.map((s) =>
-            s.dots ? (
-              <g key={s.name}>
-                {s.points.map((p) => (
-                  <circle key={p[0]} cx={x(p[0])} cy={y(p[1])} r={Math.max(3, em / 5)} fill={s.color} stroke="var(--chart-live-surface, var(--bg-card))" strokeWidth={1.5} />
-                ))}
-              </g>
-            ) : (
-              <g key={s.name} data-series={s.name} data-dash={s.dash ?? 'solid'} data-marker={s.marker}>
-                <polyline fill="none" stroke={s.color} strokeWidth={Math.max(2, em / 8)} strokeLinejoin="round" strokeLinecap={s.dash === 'dot' ? 'round' : undefined} strokeDasharray={dashArray(s.dash, em)} points={s.points.map((p) => `${x(p[0])},${y(p[1])}`).join(' ')} />
-                {s.marker && (s.points.length <= 30 ? s.points : s.points.slice(-1)).map((p) => (
-                  <path key={p[0]} d={markerPath(s.marker!, x(p[0]), y(p[1]), Math.max(3, em / 5))} fill={s.color} stroke="var(--chart-live-surface, var(--chart-canvas))" strokeWidth={1.5} />
-                ))}
-              </g>
-            ),
-          )}
-          {[...marks].sort((a, b) => a.at - b.at).map((mark, i) => (
-            <Mark key={`mark-${i}`} mark={mark} x={x(mark.at)} top={8} bottom={8 + plotH} row={i % 3} em={em} flip={x(mark.at) > left + plotW * 0.62} />
-          ))}
-          {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={8} y2={8 + plotH} className="ov-crosshair" />}
-          {hover !== null &&
-            series.map((s) => {
-              const p = s.points.length ? nearest(s.points, hover) : null
-              return p ? <circle key={s.name} cx={x(p[0])} cy={y(p[1])} r={Math.max(4, em / 4)} fill={s.color} stroke="var(--chart-live-surface, var(--bg-card))" strokeWidth={2} /> : null
-            })}
-        </svg>
-      )}
-      {hover !== null && (
-        <Tooltip
-          tip={{
-            x: Math.min(x(hover) + 10, width - em * 14),
-            y: 8,
-            title: axis ? axis(hover) : day(hover),
-            lines: series.filter((s) => s.points.length).map((s) => {
-              const p = nearest(s.points, hover)
-              return { label: s.label ? s.label(p[0]) : s.name, value: format(p[1]), color: s.color }
-            }),
-          }}
-        />
-      )}
-      {series.length > 1 && series.some((s) => s.dash || s.marker) && (
-        <ul className="ov-key" aria-label="Series">
-          {series.map((s) => (
-            <li key={s.name}>
-              <svg width={em * 2} height={em} aria-hidden="true">
-                <line x1={0} x2={em * 2} y1={em / 2} y2={em / 2} stroke={s.color} strokeWidth={Math.max(2, em / 8)} strokeDasharray={dashArray(s.dash, em)} strokeLinecap={s.dash === 'dot' ? 'round' : undefined} />
-                {s.marker && <path d={markerPath(s.marker, em, em / 2, Math.max(3, em / 5))} fill={s.color} />}
-              </svg>
-              {s.name}
-            </li>
-          ))}
-        </ul>
-      )}
-      <EventList marks={marks} bands={bands} format={axis ?? ((t) => day(t))} />
+    <div ref={ref} className="ov-plot" onMouseLeave={() => setHover(null)} onMouseMove={event => {
+      const px = event.clientX - event.currentTarget.getBoundingClientRect().left
+      setHover(px >= left ? t0 + (px - left) / Math.max(1, plotW) * (t1 - t0) : null)
+    }}>
+      {width > 0 && <svg width={width} height={height} role={series.some(s => s.href) ? 'group' : 'img'} aria-label={series.map(s => s.name).join(', ')}>
+        {ticks.map(t => <g key={t.value}>
+          <line x1={left} x2={width - 10} y1={y(t.value)} y2={y(t.value)} className="ov-gridline" />
+          <text x={left - em * .4} y={y(t.value)} dominantBaseline="middle" className="ov-axis" textAnchor="end">{t.label}</text>
+        </g>)}
+        {[t0, (t0 + t1) / 2, t1].map((t, i) => <text key={i} x={x(t)} y={height - em * .35} className="ov-axis" textAnchor={i === 0 ? 'start' : i === 2 ? 'end' : 'middle'}>{axis ? axis(t) : day(t).slice(0, 5)}</text>)}
+        {bands.map((band, i) => <Band key={`band-${i}`} band={band} x={x(band.from)} y={8} width={x(band.to) - x(band.from)} height={plotH} />)}
+        {series.map(s => <g key={s.name} data-series={s.name} data-dash={s.dash ?? 'solid'} data-marker={s.marker}>
+          {!s.dots && <polyline fill="none" stroke={s.color} strokeWidth={Math.max(2, em / 8)} strokeLinejoin="round" strokeLinecap={s.dash === 'dot' ? 'round' : undefined} strokeDasharray={dashArray(s.dash, em)} points={s.points.flatMap((p, i) => s.interpolation === 'step' && i ? [[p[0], s.points[i - 1]![1]], p] : [p]).map(p => `${x(p[0]!)},${y(p[1]!)}`).join(' ')} />}
+          {(s.dots ? s.points : s.marker ? s.points.length <= 30 ? s.points : s.points.slice(-1) : []).map((p, i) => {
+            const label = `${s.label?.(p[0], i) ?? s.name}: ${format(p[1])}`, highlighted = s.highlight?.(p[0], i)
+            const point = s.dots
+              ? <circle className="ov-line-point" data-highlight={highlighted || undefined} cx={x(p[0])} cy={y(p[1])} r={highlighted ? 6 : Math.max(3, em / 5)} fill={highlighted ? 'var(--chart-live-surface, var(--bg-card))' : s.color} stroke={highlighted ? s.color : 'var(--chart-live-surface, var(--bg-card))'} strokeWidth={highlighted ? 2.5 : 1.5}><title>{label}</title></circle>
+              : <path d={markerPath(s.marker!, x(p[0]), y(p[1]), Math.max(3, em / 5))} fill={s.color} stroke="var(--chart-live-surface, var(--chart-canvas))" strokeWidth={1.5} />
+            return <a key={`${p[0]}:${i}`} href={s.href?.(p[0], i)} aria-label={s.href ? label : undefined} onFocus={() => setHover(p[0])} onBlur={() => setHover(null)}>{point}</a>
+          })}
+        </g>)}
+        {[...marks].sort((a, b) => a.at - b.at).map((mark, i) => <Mark key={`mark-${i}`} mark={mark} x={x(mark.at)} top={8} bottom={8 + plotH} row={i % 3} em={em} flip={x(mark.at) > left + plotW * .62} />)}
+        {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={8} y2={8 + plotH} className="ov-crosshair" />}
+        {hover !== null && series.filter(s => s.points.length).map(s => {
+          const p = s.points[nearest(s)]!
+          return <circle key={s.name} cx={x(p[0])} cy={y(p[1])} r={Math.max(4, em / 4)} fill={s.color} stroke="var(--chart-live-surface, var(--bg-card))" strokeWidth={2} pointerEvents="none" />
+        })}
+      </svg>}
+      {hover !== null && <Tooltip tip={{ x: Math.min(x(hover) + 10, width - em * 14), y: 8, title: axis ? axis(hover) : day(hover), lines: readout }} />}
+      {series.length > 1 && series.some(s => s.dash || s.marker) && <ul className="ov-key" aria-label="Series">
+        {series.map(s => <li key={s.name}>
+          <svg width={em * 2} height={em} aria-hidden="true">
+            <line x1={0} x2={em * 2} y1={em / 2} y2={em / 2} stroke={s.color} strokeWidth={Math.max(2, em / 8)} strokeDasharray={dashArray(s.dash, em)} strokeLinecap={s.dash === 'dot' ? 'round' : undefined} />
+            {s.marker && <path d={markerPath(s.marker, em, em / 2, Math.max(3, em / 5))} fill={s.color} />}
+          </svg>{s.name}
+        </li>)}
+      </ul>}
+      <EventList marks={marks} bands={bands} format={axis ?? day} />
     </div>
   )
 }
@@ -284,7 +249,10 @@ export interface LineSeries {
   color: string
   points: [number, number][]
   dots?: boolean
-  label?: (t: number) => string
+  label?: (t: number, index: number) => string
+  href?: (t: number, index: number) => string | undefined
+  highlight?: (t: number, index: number) => boolean
+  interpolation?: 'linear' | 'step'
   dash?: 'solid' | 'dash' | 'dot'
   marker?: MarkerShape
 }
