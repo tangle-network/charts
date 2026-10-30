@@ -1,4 +1,4 @@
-import { runStatus, statusMeta } from '@tangle-network/ui/run'
+import { runStatus, statusMeta } from '@tangle-network/ui/run/status-meta'
 import { formatSpanDuration, formatCost, formatCount } from '../format.js'
 export { formatSpanDuration, formatCost, formatCount } from '../format.js'
 import { type FlowOutcome, type FlowSpan, type FlowTrace, finiteNumber, reportedCount, sumReportedCounts } from '../flow-trace.js'

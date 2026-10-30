@@ -1,4 +1,4 @@
-import { RunStatusIcon, runStatus, statusMeta } from '@tangle-network/ui/run'
+import { RunStatusIcon, runStatus, statusMeta } from '@tangle-network/ui/run/status-meta'
 import { type CSSProperties, type ReactNode, memo } from 'react'
 import type { FlowSpan } from '../flow-trace.js'
 import { KIND_LABEL } from './flow-waterfall-card.js'

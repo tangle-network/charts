@@ -20,10 +20,10 @@ import {
   Position,
   useInternalNode,
 } from "@xyflow/react";
-import { RunStatusIcon, statusMeta } from "@tangle-network/ui/run";
+import { RunStatusIcon, statusMeta } from "@tangle-network/ui/run/status-meta";
 import { ChevronDown } from "lucide-react";
 import { ambientStyle, syncAmbient, agentQuietActivity } from "./run-ui-state";
-import { useRunNow } from "@tangle-network/ui/hooks";
+import { useRunNow } from "@tangle-network/ui/hooks/use-live-time";
 import { MOTION_CONTROL } from "./motion";
 import type {
   AgentFrame,

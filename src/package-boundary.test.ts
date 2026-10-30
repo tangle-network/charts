@@ -77,7 +77,7 @@ it("packs an isolated static root and optional React entrypoint", () => {
       import { readFileSync } from "node:fs";
       import { createRequire } from "node:module";
       const require = createRequire(import.meta.url);
-      for (const name of ["react", "react/jsx-runtime", "react-dom", "@types/react/package.json", "@tangle-network/ui/hooks"]) {
+      for (const name of ["react", "react/jsx-runtime", "react-dom", "@types/react/package.json", "@tangle-network/ui/hooks/use-live-time"]) {
         assert.throws(() => require.resolve(name), { code: "MODULE_NOT_FOUND" });
       }
       for (const name of ["window", "document", "HTMLElement", "SVGElement", "ResizeObserver"]) {
@@ -126,7 +126,7 @@ it("packs an isolated static root and optional React entrypoint", () => {
       import assert from "node:assert/strict";
       import { Sparkline, StackedBarChart, sparklineGeometry } from "@tangle-network/charts/react";
       import { useRunNow as chartClock } from "@tangle-network/charts/react/agent-graph";
-      import { useRunNow as uiClock } from "@tangle-network/ui/hooks";
+      import { useRunNow as uiClock } from "@tangle-network/ui/hooks/use-live-time";
       assert.equal(chartClock, uiClock, "Chart and host bind the exact same shared clock module");
       assert.equal(typeof Sparkline, "function"); assert.equal(typeof StackedBarChart, "function");
       assert.equal(sparklineGeometry([1, null, 3]).gaps, 1);

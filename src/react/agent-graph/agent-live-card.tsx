@@ -10,7 +10,7 @@ import { fmtCost, fmtEventTime } from "./format";
 import { shortModel } from "./naming";
 import { RESTING_SHADOW } from "./graph-style";
 import { agentQuietActivity, useAttention } from "./run-ui-state";
-import { useRunNow } from "@tangle-network/ui/hooks";
+import { useRunNow } from "@tangle-network/ui/hooks/use-live-time";
 
 export type LiveAgentCardNode = Node<
   { agent: AgentGraphNode; selected: boolean; direction: AgentGraphDirection; now?: number; onOpen?: () => void; parentLabel?: string; renderEventIcon?: (event: AgentGraphEvent) => ReactNode }, "liveAgent"

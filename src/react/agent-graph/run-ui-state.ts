@@ -1,6 +1,6 @@
-export { useRunNow } from "@tangle-network/ui/hooks";
+export { useRunNow } from "@tangle-network/ui/hooks/use-live-time";
 import { formatSpanDuration, quietGap } from "../flow-waterfall-model";
-import { statusMeta } from "@tangle-network/ui/run";
+import { statusMeta } from "@tangle-network/ui/run/status-meta";
 import { type AnimationEvent, type CSSProperties, type RefObject, useEffect, useSyncExternalStore } from "react";
 import type { AgentGraphNode } from "./agent-graph-layout";
 

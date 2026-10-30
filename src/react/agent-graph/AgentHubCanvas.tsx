@@ -8,8 +8,8 @@ import {
 } from "./agent-hub-layout";
 import { CALL_COLOR, CALL_LABEL, type HubEntity, HubNode, HubPopover } from "./agent-hub-parts";
 import { agentQuietActivity, tokenMilliseconds, useMotionAllowed } from "./run-ui-state";
-import { useRunNow } from "@tangle-network/ui/hooks";
-import { RunStatusIcon, statusMeta } from "@tangle-network/ui/run";
+import { useRunNow } from "@tangle-network/ui/hooks/use-live-time";
+import { RunStatusIcon, statusMeta } from "@tangle-network/ui/run/status-meta";
 import { fmtCost } from "./format";
 
 const PAD_X = 84;

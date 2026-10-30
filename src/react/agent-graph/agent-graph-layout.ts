@@ -8,7 +8,7 @@
 import type { ElkNode } from "elkjs/lib/elk-api";
 import { loadElk } from "./elk-loader";
 
-import type { RunStatus as AgentGraphStatus } from "@tangle-network/ui/run";
+import type { RunStatus as AgentGraphStatus } from "@tangle-network/ui/run/status-meta";
 export type { AgentGraphStatus };
 
 export interface AgentGraphNode {

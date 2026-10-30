@@ -1,5 +1,5 @@
 import { type CSSProperties, type ReactNode, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { statusMeta } from '@tangle-network/ui/run'
+import { statusMeta } from '@tangle-network/ui/run/status-meta'
 import { type FlowMarker, type FlowSpan, type FlowTrace, reportedCount, sumReportedCounts } from '../flow-trace.js'
 import { FlowBody, ROW_HEIGHT } from './flow-waterfall-body.js'
 import { SpanCard } from './flow-waterfall-card.js'

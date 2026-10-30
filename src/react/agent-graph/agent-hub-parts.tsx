@@ -2,7 +2,7 @@ import { AgentMark, ToolMark } from "./marks";
 /** Hub nodes and call details share the run status vocabulary. */
 
 import { Bot, User, Wrench, X } from "lucide-react";
-import { runStatus, statusMeta, RunStatusIcon } from "@tangle-network/ui/run";
+import { runStatus, statusMeta, RunStatusIcon } from "@tangle-network/ui/run/status-meta";
 import { type CSSProperties, type KeyboardEvent, type ReactNode, type Ref, useLayoutEffect, useRef, useState } from "react";
 import type { AgentGraphNode, AgentGraphStatus } from "./agent-graph-layout";
 import type { AgentGraphCall, AgentGraphCallKind, AgentGraphTool, HubNodeKind } from "./agent-hub-layout";

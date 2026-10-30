@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { runStatus, statusMeta } from '@tangle-network/ui/run'
+import { runStatus, statusMeta } from '@tangle-network/ui/run/status-meta'
 import type { FlowSpan } from '../flow-trace.js'
 import { CloseGlyph, KindGlyph } from './flow-waterfall-icons.js'
 import { type FlowWaterfallRow, rowCostText, formatCount, formatSpanDuration, spanFact, spanRunning, toneKey } from './flow-waterfall-model.js'

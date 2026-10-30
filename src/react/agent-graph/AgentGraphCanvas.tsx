@@ -50,7 +50,7 @@ import { LiveAgentCard, LiveAgentCardView, type LiveAgentCardNode } from "./agen
 import { useColorMode } from "./canvas-theme";
 import { edgeColor } from "./graph-style";
 import { agentQuietActivity, tokenMilliseconds, useMotionAllowed } from "./run-ui-state";
-import { useRunNow } from "@tangle-network/ui/hooks";
+import { useRunNow } from "@tangle-network/ui/hooks/use-live-time";
 
 const NODE_TYPES = { agent: AgentCard, liveAgent: LiveAgentCard, agentFrame: AgentFrameBox };
 const EDGE_TYPES = { agentMessage: AgentMessageEdgeView };
