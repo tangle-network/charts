@@ -4,7 +4,6 @@ import { useWidth, Tooltip, EventList, type Tip } from './live-presentation.js'
 export { useWidth } from './live-presentation.js'
 import { type ChartBand, type ChartMark, drawMarks, eventsGap } from '../events.js'
 import { hatchPath, type MarkerShape, markerPath } from '../svg.js'
-import { textWidth, wrap } from '../text.js'
 
 // Defaults for consumers that do not pass a series color.
 export const LIVE_SERIES = ['#8b7cf6', '#0ea5a0', '#c98500', '#e2508f', '#4a90e2'] as const

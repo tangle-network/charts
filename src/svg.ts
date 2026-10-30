@@ -7,6 +7,14 @@
 
 import { esc } from "./text.js";
 
+/** Stable native groups share geometry and attributes with the static serializer. */
+export type SvgPart = string | { key: string; attributes: Record<string, string | number | boolean | undefined>; body: string };
+export function svgPart(part: SvgPart): string {
+  if (typeof part === "string") return part;
+  const attributes = Object.entries(part.attributes).filter(([, value]) => value !== undefined).map(([key, value]) => ` ${key === "tabIndex" ? "tabindex" : key}="${esc(String(value))}"`).join("");
+  return `<g${attributes}>${part.body}</g>`;
+}
+
 export const WIDE = 720;
 export const NARROW = 358;
 

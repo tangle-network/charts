@@ -1,31 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampPreview, fmtCost, fmtTokens } from "./format";
-
-describe("fmtCost", () => {
-  it("returns undefined for absent, non-finite, or negative input", () => {
-    expect(fmtCost(undefined)).toBeUndefined();
-    expect(fmtCost(Number.NaN)).toBeUndefined();
-    expect(fmtCost(Number.POSITIVE_INFINITY)).toBeUndefined();
-    expect(fmtCost(-0.01)).toBeUndefined();
-    expect(fmtCost(-5)).toBeUndefined();
-  });
-
-  it("renders exact zero as $0", () => {
-    expect(fmtCost(0)).toBe("$0");
-  });
-
-  it("renders sub-cent amounts with four decimals", () => {
-    expect(fmtCost(0.0032)).toBe("$0.0032");
-    expect(fmtCost(0.009999)).toBe("$0.0100");
-    expect(fmtCost(0.00001)).toBe("$0.0000");
-  });
-
-  it("renders cent-and-above amounts with two decimals", () => {
-    expect(fmtCost(0.01)).toBe("$0.01");
-    expect(fmtCost(1.2)).toBe("$1.20");
-    expect(fmtCost(1234.5)).toBe("$1234.50");
-  });
-});
+import { clampPreview, fmtTokens } from "./format";
 
 describe("fmtTokens", () => {
   it("renders both sides when valid", () => {

@@ -5,7 +5,7 @@
  * producer records every position; the library never places an event.
  */
 import { duration } from "./format.js";
-import { hatch, line, markerPath, type MarkerShape, rect, text, titled } from "./svg.js";
+import { hatch, line, markerPath, type MarkerShape, rect, text, titled, svgPart, type SvgPart } from "./svg.js";
 import { table } from "./table.js";
 import { esc, textWidth, wrap } from "./text.js";
 
@@ -197,7 +197,8 @@ export function markHead(kind: MarkKind, x: number, y: number, r = 3.5, classes 
  * over every rule; marks of one kind and verdict at one place share a rule and a label. Rules run from `labelTop` to
  * `bottom`, except that release, steer and wake stems stop at their head, just below `top`.
  */
-export function drawMarks(marks: readonly ChartMark[], px: (x: number) => number, top: number, bottom: number, left: number, right: number, format: (x: number) => string, labelTop = top, o: MarkLabelOptions = {}): string {
+export function prepareMarks(marks: readonly ChartMark[], px: (x: number) => number, top: number, bottom: number, left: number, right: number, format: (x: number) => string, labelTop = top, o: MarkLabelOptions = {}): { body: string; labels: SvgPart[] } {
+  const labels: SvgPart[] = [];
   const groups = groupMarks(marks, px), cls = (value: string) => o.live ? `${value} ${value.replaceAll("tgc-", "ov-")}` : value;
   const { placed, edges } = layoutLabels(groups, left, right, o);
   const rowY = (row: number) => labelTop + 12 + row * 14;
@@ -220,11 +221,17 @@ export function drawMarks(marks: readonly ChartMark[], px: (x: number) => number
       const x = spot?.x ?? Math.max(left, Math.min(group.x + 4, right - textWidth(label, 12)));
       const radius = Math.max(.5, Math.min(5, (group.x - (groups[index - 1]?.x ?? -Infinity)) / 2, ((groups[index + 1]?.x ?? Infinity) - group.x) / 2));
       const caption = text(x, rowY(spot?.row ?? 0), label, { size: 12, anchor: spot?.anchor ?? 'start', cls: cls("tgc-mark-label") });
-      out += titled(markName(lead), rect(group.x - radius, Math.min(top, labelTop), radius * 2, Math.max(12, bottom - Math.min(top, labelTop)), "tgc-lane-hit") + caption, `data-mark-id="${esc(JSON.stringify([group.marks[0]!.at, group.marks[0]!.kind, group.marks[0]!.label, group.marks[0]!.verdict ?? null, group.marks[0]!.source ?? null]))}" data-labelled="${Boolean(spot)}" tabindex="0" role="img" aria-label="${esc(markName(lead))}"`);
+      const key = JSON.stringify([group.marks[0]!.at, group.marks[0]!.kind, group.marks[0]!.label, group.marks[0]!.verdict ?? null, group.marks[0]!.source ?? null]);
+      labels.push({ key, attributes: { 'data-mark-id': key, 'data-labelled': Boolean(spot), tabIndex: 0, role: 'img', 'aria-label': markName(lead) }, body: `<title>${esc(markName(lead))}</title>` + rect(group.x - radius, Math.min(top, labelTop), radius * 2, Math.max(12, bottom - Math.min(top, labelTop)), "tgc-lane-hit") + caption });
     } else if (spot) out += text(spot.x, rowY(spot.row), spot.text, { size: 12, anchor: spot.anchor, cls: "tgc-mark-label" });
   }
   for (const edge of edges) out += `<g data-edge="${edge.anchor === "end" ? "after" : "before"}">${text(edge.x, rowY(edge.row), edge.text, { size: 12, anchor: edge.anchor, cls: "tgc-mark-label tgc-mark-edge" })}</g>`;
-  return out;
+  return { body: out, labels };
+}
+
+export function drawMarks(...args: Parameters<typeof prepareMarks>): string {
+  const marks = prepareMarks(...args);
+  return marks.body + marks.labels.map(svgPart).join("");
 }
 
 /** The table form of marks and bands, in axis order. Empty when there are none. */

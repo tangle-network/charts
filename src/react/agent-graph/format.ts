@@ -1,31 +1,20 @@
-import { formatSpanDuration } from "../flow-waterfall-model";
+import { formatCost, formatCount, formatSpanDuration } from "../flow-waterfall-model";
+import { reportedCount } from "../../flow-trace.js";
 
 /** Canonical duration text; invalid or absent measurements have no chip. */
 export function fmtDuration(ms: number | undefined): string | undefined {
   return ms === undefined || !Number.isFinite(ms) || ms < 0 ? undefined : formatSpanDuration(ms);
 }
 
-/** Human-readable USD cost: `$0`, `$0.0032` (sub-cent, 4dp), `$1.20`. Undefined
- *  for an absent, non-finite, or negative input — a cost is a billing amount, so
- *  a negative value is bad data, not a refund to render. */
+/** Canonical USD text; invalid or absent measurements have no chip. */
 export function fmtCost(usd: number | undefined): string | undefined {
-  if (usd === undefined || !Number.isFinite(usd) || usd < 0) return undefined;
-  if (usd === 0) return "$0";
-  return usd < 0.01 ? `$${usd.toFixed(4)}` : `$${usd.toFixed(2)}`;
+  return usd === undefined || !Number.isFinite(usd) || usd < 0 ? undefined : formatCost(usd);
 }
 
-/** Bound host-supplied preview/error text to a fixed length (with an ellipsis)
- *  before it reaches the DOM, so an oversized payload can't bloat the node tree —
- *  the card only ever shows a short preview, and CSS clamping is visual only.
- *  Truncation is code-point aware: it never slices through a surrogate pair (which
- *  would leave a lone surrogate that renders as the replacement character). */
+/** Bound host preview text before rendering, preserving complete surrogate pairs at the cut. */
 export function clampPreview(text: string, max = 200): string {
   if (text.length <= max) return text;
-  // If the cut lands between a surrogate pair's two halves, drop the dangling
-  // high surrogate so the appended ellipsis isn't preceded by a broken glyph.
-  const lastCode = text.charCodeAt(max - 1);
-  const end = lastCode >= 0xd800 && lastCode <= 0xdbff ? max - 1 : max;
-  return `${text.slice(0, end)}…`;
+  return `${text.slice(0, max).replace(/[\uD800-\uDBFF]$/u, "")}…`;
 }
 
 /** Human-readable token usage: `1200/340 tok`. Undefined when neither side is a
@@ -35,21 +24,14 @@ export function fmtTokens(
   input: number | undefined,
   output: number | undefined,
 ): string | undefined {
-  const valid = (n: number | undefined): number | undefined =>
-    n !== undefined && Number.isFinite(n) && n >= 0 ? n : undefined;
-  const i = valid(input);
-  const o = valid(output);
+  const i = reportedCount(input), o = reportedCount(output);
   if (i === undefined && o === undefined) return undefined;
   return `${i ?? 0}/${o ?? 0} tok`;
 }
 
-/** A token total in a few characters: `840 tok`, `12.4k tok`, `1.2M tok`.
- *  Undefined for an absent, non-finite or negative count. */
+/** Canonical compact token count; invalid or absent measurements have no chip. */
 export function fmtTokenTotal(tokens: number | null | undefined): string | undefined {
-  if (tokens == null || !Number.isFinite(tokens) || tokens < 0) return undefined;
-  if (tokens < 1000) return `${Math.round(tokens)} tok`;
-  if (tokens < 1_000_000) return `${(tokens / 1000).toFixed(tokens < 10_000 ? 1 : 0)}k tok`;
-  return `${(tokens / 1_000_000).toFixed(1)}M tok`;
+  return reportedCount(tokens) === undefined ? undefined : `${formatCount(tokens!)} tok`;
 }
 
 export function fmtEventTime(at: number | undefined, now: number, frozen = false) {

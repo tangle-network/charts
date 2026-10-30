@@ -1,7 +1,7 @@
 /** The static `timeline` in React, with lanes that fold by subtree. A parent lane's label is a toggle: a click, Enter
  * or Space folds its descendants away, and the folded lane's ticks and counts then total its subtree. */
-import { type FocusEvent, type SyntheticEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { prepareTimeline, timeline, type TimelineLane, type TimelineOptions, type PreparedTimeline } from '../timeline.js'
+import { type SyntheticEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { prepareTimeline, timeline, type TimelineLane, type TimelineOptions, type PreparedTimeline, type TimelinePlot } from '../timeline.js'
 import { FigureView, type FigureViewProps } from './figure-view.js'
 import type { ChartMark } from '../events.js'
 import { EventList, Tooltip, type Tip, useWidth } from './live-presentation.js'
@@ -46,7 +46,7 @@ export function TimelineView({ lanes, options, defaultCollapsed = [], presentati
 
 const NO_MARKS: ChartMark[] = [], NO_DATA = ['missing', 'untraced']
 
-/** Gantt/useLaneActions size exception: one controller preserves native lane/mark identity across live SVG and viewport updates. */
+/** Native keyed groups keep lane/mark identity through live geometry and viewport updates. */
 export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = NO_MARKS, now, hatch = NO_DATA, selectedId, onSelect, bestMark, maxHeight }: { selectedId?: string; onSelect?: (id: string) => void; bestMark?: string; maxHeight?: number; rows?: { label: string; start: number; end: number; state: string; note?: string }[]; lanes?: TimelineLane[]; colors: Record<string, string>; axis: (t: number) => string; span: (start: number, end: number) => string; marks?: ChartMark[]; now?: number; hatch?: string[] }) {
   const [ref, width, em] = useWidth<HTMLDivElement>(), scroller = useRef<HTMLDivElement>(null)
   const [scrollTop, setScrollTop] = useState(0), [tip, setTip] = useState<Tip | null>(null)
@@ -60,29 +60,30 @@ export function Gantt({ rows, lanes: laneInput, colors, axis, span, marks = NO_M
     return { ...prepared, lanes }
   }, [laneInput, rows, axis, span, now, hatch, marks])
   const view = { em, scrollTop, maxHeight, selectedId, selectable: Boolean(onSelect), colors, bestMark }, plot = model?.plot(width, view)
-  const { hover, key, captureFocus } = useLaneActions(model, plot, scroller, setScrollTop, setTip, { span, now, colors, em, onSelect })
+  const { hover, key, mount } = useLaneActions(model, plot, scroller, setScrollTop, setTip, { span, now, colors, em, onSelect })
   if (!model || !model.lanes.some(lane => lane.spans.length)) return <p className="ov-empty">No agent has started.</p>
   const header = maxHeight ? model.plot(width, { ...view, header: true }) : null
-  return <div ref={ref} className="ov-plot ov-gantt tgc-figure tgc-figure-chart" data-featured={bestMark ? true : undefined} onMouseLeave={() => setTip(null)} onMouseMove={hover} onFocus={captureFocus} onKeyDown={key}
+  return <div ref={ref} className="ov-plot ov-gantt tgc-figure tgc-figure-chart" data-featured={bestMark ? true : undefined} onMouseLeave={() => setTip(null)} onMouseMove={hover} onFocus={hover} onKeyDown={key}
     onClick={event => { const row = event.target instanceof Element ? event.target.closest('[data-lane-index]') : null; if (row) onSelect?.(row.getAttribute('data-lane')!) }}>
-    {header && width > 0 && <svg width={width} height={header.height} aria-label="Releases and time axis" dangerouslySetInnerHTML={{ __html: header.body }} />}
+    {header && width > 0 && <PlotSvg width={width} plot={header} label="Releases and time axis" selectable />}
     <div ref={scroller} className="ov-gantt-scroll" style={{ maxHeight, overflow: maxHeight ? 'auto' : undefined }} onScroll={event => { if (event.currentTarget.scrollTop !== scrollTop) { setScrollTop(event.currentTarget.scrollTop); setTip(null) } }}>
-      {width > 0 && plot && <svg width={width} height={plot.height} role={onSelect ? 'group' : 'img'} aria-label={`${model.rowIds.length} ${laneInput ? 'lanes' : 'agents'} over time`} dangerouslySetInnerHTML={{ __html: plot.body }} />}
+      {width > 0 && plot && <PlotSvg width={width} plot={plot} label={`${model.rowIds.length} ${laneInput ? 'lanes' : 'agents'} over time`} selectable={Boolean(onSelect)} mount={mount} />}
     </div>
     <Tooltip tip={tip} /><EventList marks={marks} bands={[]} format={axis} />
   </div>
 }
 
 
+function PlotSvg({ width, plot, label, selectable, mount }: { width: number; plot: TimelinePlot; label: string; selectable?: boolean; mount?: (node: SVGGElement | null) => void }) {
+  return <svg width={width} height={plot.height} role={selectable ? 'group' : 'img'} aria-label={label}>
+    {plot.parts.map((part, i) => typeof part === 'string' ? <g key={`raw:${i}`} dangerouslySetInnerHTML={{ __html: part }} /> : <g key={`part:${part.key}`} {...part.attributes} ref={mount} dangerouslySetInnerHTML={{ __html: part.body }} />)}
+  </svg>
+}
+
 type LaneModel = PreparedTimeline & { lanes: TimelineLane[] }
 function useLaneActions(model: LaneModel | null, plot: ReturnType<LaneModel['plot']> | undefined, scroller: React.RefObject<HTMLDivElement | null>, setScrollTop: (value: number) => void, setTip: (tip: Tip | null) => void, { span, now, colors, em, onSelect }: { onSelect?: (id: string) => void; span: (start: number, end: number) => string; now?: number; colors: Record<string, string>; em: number }) {
-  const focus = useRef<{ id: string; mark: boolean; restoring?: boolean; reveal?: boolean } | null>(null)
-  useLayoutEffect(() => {
-    const root = scroller.current?.parentElement
-    if (!focus.current || !root || (document.activeElement !== document.body && !root.contains(document.activeElement))) return
-    const row = [...root.querySelectorAll<SVGGElement>(focus.current.mark ? '[data-mark-id]' : '[data-lane]')].find(row => row.getAttribute(focus.current!.mark ? 'data-mark-id' : 'data-lane') === focus.current!.id)
-    if (row && row !== document.activeElement) { focus.current.restoring = true; row.focus({ preventScroll: true }); focus.current.restoring = false }
-  }, [plot?.body])
+  const pending = useRef<string | null>(null);
+  const mount = (node: SVGGElement | null) => { if (node && node.dataset.lane === pending.current) { pending.current = null; node.focus({ preventScroll: true }) } };
   const hover = (event: SyntheticEvent<HTMLDivElement>) => {
     if (!model) return
     const target = event.target instanceof Element ? event.target : null, row = target?.closest<SVGGElement>('[data-lane-index]')
@@ -101,19 +102,13 @@ function useLaneActions(model: LaneModel | null, plot: ReturnType<LaneModel['plo
     if (next === undefined || !plot) return
     event.preventDefault()
     const at = Math.max(0, Math.min(model.rowIds.length - 1, next)), position = at === 0 ? 0 : plot.top + (at - 1) * plot.rowHeight
-    focus.current = { id: model.rowIds[at]!, mark: false, reveal: true }
+    pending.current = model.rowIds[at]!
     if (scroller.current) {
       scroller.current.scrollTop = position
-      ;[...scroller.current.querySelectorAll<SVGGElement>('[data-lane-index]')].find(row => Number(row.dataset.laneIndex) === at)?.focus({ preventScroll: true })
+      mount([...scroller.current.querySelectorAll<SVGGElement>('[data-lane-index]')].find(row => Number(row.dataset.laneIndex) === at) ?? null)
     }
     setScrollTop(scroller.current?.scrollTop ?? Math.max(0, position))
-    if (at === i) { hover(event); focus.current.reveal = false }
+    if (at === i) { hover(event); pending.current = null }
   }
-  const captureFocus = (event: FocusEvent<HTMLDivElement>) => {
-    if (focus.current?.restoring && !focus.current.reveal) return
-    const node = event.target.closest('[data-lane], [data-mark-id]')
-    if (node) focus.current = { id: node.getAttribute('data-lane') ?? node.getAttribute('data-mark-id')!, mark: node.hasAttribute('data-mark-id') }
-    hover(event)
-  }
-  return { hover, key, captureFocus }
+  return { hover, key, mount }
 }

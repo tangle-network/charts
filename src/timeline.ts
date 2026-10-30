@@ -2,10 +2,10 @@
  * Lanes of recorded spans on one time axis, with recorded marks; an open span runs to the supplied `now`. Lanes can
  * form a tree (`parent`), carry attempt ticks coloured by outcome with ok and failed counts, and fold by subtree.
  */
-import { type ChartBand, type ChartMark, drawBands, drawGroups, drawMarks, EVENTS_READ, eventsGap, eventsTable, groupRowHeight, markHead, markLabelRows, markName } from "./events.js";
+import { type ChartBand, type ChartMark, drawBands, drawGroups, prepareMarks, EVENTS_READ, eventsGap, eventsTable, groupRowHeight, markHead, markLabelRows, markName } from "./events.js";
 import { duration } from "./format.js";
 import { OUTCOME_ORDER, type TickOutcome } from "./outcomes.js";
-import { hatch, line, NARROW, rect, svgRoot, text, titled, wideWidth } from "./svg.js";
+import { hatch, line, NARROW, rect, svgRoot, text, titled, wideWidth, svgPart, type SvgPart } from "./svg.js";
 import { table } from "./table.js";
 import { capitalize, esc, plural, textWidth, wrap } from "./text.js";
 import type { Figure, Refusal } from "./types.js";
@@ -71,7 +71,7 @@ interface Row { lane: TimelineLane; depth: number; children: number; hidden: num
 
 interface TimelinePresentation { gantt?: boolean; legacy?: boolean; span?: (start: number, end: number) => string }
 export interface TimelineViewport { em?: number; maxHeight?: number; scrollTop?: number; selectedId?: string; selectable?: boolean; colors?: Record<string, string>; bestMark?: string; header?: boolean }
-export interface TimelinePlot { body: string; height: number; rowHeight: number; top: number }
+export interface TimelinePlot { parts: SvgPart[]; body: string; height: number; rowHeight: number; top: number }
 export interface PreparedTimeline { plot: (width: number, view?: TimelineViewport) => TimelinePlot; report: () => Figure; rowIds: string[] }
 
 /** Domain-size exception: one compiler closure shares validated time/tree indexes between the lazy report and live plot. */
@@ -184,9 +184,12 @@ export function prepareTimeline(lanes: TimelineLane[], o: TimelineOptions, prese
     const axis = presentation.gantt ? (phone ? [0, .5, 1] : [0, .25, .5, .75, 1]).map(f => t0 + f * (t1 - t0)) : axisTicks(t0, t1, px, left, right, axisLabel);
     const best = marks.find(mark => mark.label === view.bestMark);
     const emphasis = best ? `<g data-best="true"><circle cx="${px(best.at)}" cy="${head - 4}" r="8" fill="none" stroke="var(--accent-text)" stroke-width="2"/></g>` : "";
+    const parts: SvgPart[] = [];
+    const result = (): TimelinePlot => ({ parts, get body() { return parts.map(svgPart).join("") }, height, rowHeight: rowH, top });
     if (view.header) {
-      const body = emphasis + drawMarks(wide, px, head - 8, head + 5, left, right, fmt, 4, { priority: view.bestMark, live: presentation.gantt }) + axis.map(t => text(px(t), height - 6, axisLabel(t), { size: 12, cls: presentation.gantt ? "tgc-ink-muted tgc-num ov-axis" : "tgc-ink-muted tgc-num", anchor: t === t0 ? "start" : t === t1 ? "end" : "middle" })).join("");
-      return { body, height, rowHeight: rowH, top };
+      const marks = prepareMarks(wide, px, head - 8, head + 5, left, right, fmt, 4, { priority: view.bestMark, live: presentation.gantt });
+      parts.push(emphasis + marks.body + axis.map(t => text(px(t), height - 6, axisLabel(t), { size: 12, cls: presentation.gantt ? "tgc-ink-muted tgc-num ov-axis" : "tgc-ink-muted tgc-num", anchor: t === t0 ? "start" : t === t1 ? "end" : "middle" })).join(""), ...marks.labels);
+      return result();
     }
     let body = drawBands(bands, px, top, bottom, fmt, [t0, t1]) + drawGroups(bands, (from, to) => [px(from), px(to)], top, bottom, left, right, fmt, [t0, t1]);
     for (const t of axis) {
@@ -194,7 +197,8 @@ export function prepareTimeline(lanes: TimelineLane[], o: TimelineOptions, prese
     }
     if (!view.maxHeight) body += emphasis;
     // Run-wide rules go under the lanes: bars, labels and counts stay readable where many events cross them.
-    body += drawMarks(wide, px, top - 8, bottom, left, right, fmt, 4, { before, after, window: [t0, t1], rows: view.maxHeight ? 0 : undefined, priority: view.bestMark, live: presentation.gantt });
+    const global = prepareMarks(wide, px, top - 8, bottom, left, right, fmt, 4, { before, after, window: [t0, t1], rows: view.maxHeight ? 0 : undefined, priority: view.bestMark, live: presentation.gantt });
+    parts.push(body + global.body, ...global.labels);
     const first = view.maxHeight ? Math.max(0, Math.floor(((view.scrollTop ?? 0) - top) / rowH) - 6) : 0;
     const shown = view.maxHeight ? rows.slice(first, first + Math.ceil(view.maxHeight / rowH) + 14) : rows;
     shown.forEach((row, offset) => {
@@ -203,7 +207,7 @@ export function prepareTimeline(lanes: TimelineLane[], o: TimelineOptions, prese
       const parentRow = presentation.gantt || lane.parent === undefined ? undefined : rowOf.get(lane.parent);
       if (parentRow !== undefined) {
         const x = caretX(row.depth - 1) + 3, from = phone ? y + 2 : top + parentRow * rowH + 19;
-        body += `<path class="tgc-tree" d="M${x} ${from}V${mid}H${labelX(row.depth) - (row.children ? 13 : 3)}"/>`;
+        parts.push(`<path class="tgc-tree" d="M${x} ${from}V${mid}H${labelX(row.depth) - (row.children ? 13 : 3)}"/>`);
       }
       const countText = row.ticks ? counts(row.ticks) : undefined;
       const total = presentation.gantt && Number.isFinite(lane.count) ? ` · ${lane.count!.toLocaleString()}` : "";
@@ -214,38 +218,40 @@ export function prepareTimeline(lanes: TimelineLane[], o: TimelineOptions, prese
       const facts = [lane.label + total + (total && lane.countLabel ? ` ${lane.countLabel}` : ""), ...detail(lane), ...(countText ? [`Attempts: ${countText.sentence}${row.hidden ? `, including ${row.hidden} folded ${plural(row.hidden, "lane")}` : ""}`] : [])].join("\n");
       const toggle = foldable && row.children ? ` data-toggle="${esc(lane.id)}" class="tgc-lane-toggle" role="button" tabindex="0" aria-expanded="${!row.folded}" aria-label="${esc(`${row.folded ? "Unfold" : "Fold"} ${lane.label}`)}"` : "";
       const hit = toggle ? rect(caretX(row.depth) - 3, y + 1, (phone ? width - 12 : left - 4) - caretX(row.depth) + 3, phone ? 16 : rowH - 2, "tgc-lane-hit", 'rx="3"') : "";
-      const action = (presentation.gantt ? ` data-lane-index="${i}"` : "") + (view.selectable ? ` role="button" tabindex="0" aria-label="${esc(lane.label)}" aria-pressed="${view.selectedId === lane.id}"` : "");
+      const attributes: Exclude<SvgPart, string>['attributes'] = { 'data-lane': lane.id, 'data-depth': row.depth, ...(presentation.gantt ? { 'data-lane-index': i } : {}), ...(view.selectable ? { role: 'button', tabIndex: 0, 'aria-label': lane.label, 'aria-pressed': view.selectedId === lane.id } : {}), ...(row.folded ? { 'data-folded': row.hidden } : {}) };
       const selection = view.selectedId === lane.id ? rect(0, y, width, rowH, "tgc-lane-selected", 'rx="4" style="fill:var(--ix-sel-bg)"') : "";
-      body += `<g data-lane="${esc(lane.id)}" data-depth="${row.depth}"${action}${row.folded ? ` data-folded="${row.hidden}"` : ""}>${selection}${presentation.gantt ? rect(0, y, width, rowH, "tgc-lane-hit") : ""}<g${toggle}><title>${esc(facts)}</title>${hit}${caret}${name}</g>`;
+      let content = `${selection}${presentation.gantt ? rect(0, y, width, rowH, "tgc-lane-hit") : ""}<g${toggle}><title>${esc(facts)}</title>${hit}${caret}${name}</g>`;
       for (const [spanIndex, span] of lane.spans.entries()) {
         const x = px(span.start), w = Math.max(1, px(ends(span)) - x);
         const color = view.colors ? `style="fill:${esc(view.colors[span.state] ?? view.colors.unknown ?? "var(--chart-live-faint, var(--chart-muted))")}"` : "";
         const mark = hatched.has(span.state) ? hatch(x, barTop(y), w, barH, "tgc-span tgc-span-missing") : rect(x, barTop(y), w, barH, `tgc-span${muted.has(span.state) ? " tgc-span-muted" : ""}${span.end === null ? ` tgc-span-open${presentation.gantt ? " ov-gantt-open" : ""}` : ""}`, color ? `rx="2" ${color}` : 'rx="2"');
-        body += titled(spanLabel(lane, span), `<g${presentation.gantt ? ` data-span-index="${spanIndex}"` : ""} data-state="${span.state.replace(/[^a-z0-9-]/gi, "")}"${span.end === null ? ' data-open="true"' : ""}${presentation.gantt && hatched.has(span.state) ? ' data-hatched="true"' : ""}>${mark}</g>`);
+        content += titled(spanLabel(lane, span), `<g${presentation.gantt ? ` data-span-index="${spanIndex}"` : ""} data-state="${span.state.replace(/[^a-z0-9-]/gi, "")}"${span.end === null ? ' data-open="true"' : ""}${presentation.gantt && hatched.has(span.state) ? ' data-hatched="true"' : ""}>${mark}</g>`);
       }
       const last = lane.spans.reduce<TimelineSpan | undefined>((a, b) => !a || ends(b) >= ends(a) ? b : a, undefined);
       if (presentation.gantt && view.selectedId === lane.id && last?.endLabel) {
         const label = wrap(last.endLabel, Math.max(40, right - left - 16), 12, 'sans', 1).lines[0]!;
-        body += titled(last.endLabel, text(Math.max(left + 8, Math.min(px(ends(last)) + 8, width - textWidth(label, 12) - 8)), barTop(y) + barH / 2, label, { size: 12, cls: "tgc-ink tgc-num tgc-gantt-end" }), 'class="ov-gantt-end"');
+        content += titled(last.endLabel, text(Math.max(left + 8, Math.min(px(ends(last)) + 8, width - textWidth(label, 12) - 8)), barTop(y) + barH / 2, label, { size: 12, cls: "tgc-ink tgc-num tgc-gantt-end" }), 'class="ov-gantt-end"');
       }
-      if (row.ticks?.length) body += drawTicks(row.ticks, lane.label, px, barTop(y), barH, fmt);
+      if (row.ticks?.length) content += drawTicks(row.ticks, lane.label, px, barTop(y), barH, fmt);
       if (countText) {
         const x = phone ? width - 12 : width - 16;
-        body += titled(`${lane.label}: ${countText.sentence}${row.hidden ? ` across ${row.hidden + 1} lanes` : ""}`, `<text class="tgc-num tgc-count" x="${x}" y="${baseline}" font-size="12" text-anchor="end">${countText.ok}<tspan class="tgc-count-ok">✓</tspan> ${countText.failed}<tspan class="tgc-count-failed">✗</tspan></text>`);
+        content += titled(`${lane.label}: ${countText.sentence}${row.hidden ? ` across ${row.hidden + 1} lanes` : ""}`, `<text class="tgc-num tgc-count" x="${x}" y="${baseline}" font-size="12" text-anchor="end">${countText.ok}<tspan class="tgc-count-ok">✓</tspan> ${countText.failed}<tspan class="tgc-count-failed">✗</tspan></text>`);
       }
-      body += "</g>";
+      parts.push({ key: lane.id, attributes, body: content });
     });
+    let overlay = "";
     for (const mark of onLane) {
       const y = top + shownAt(mark.lane!) * rowH, cy = barTop(y) + barH / 2, x = px(mark.at);
       const glyph = markHead(mark.kind, x, cy, phone ? 3 : 3.5) || line(x, barTop(y) - 3, x, barTop(y) + barH + 3, `tgc-mark tgc-mark-${mark.kind}`);
       const verdict = mark.verdict ? ` data-verdict="${mark.verdict}" class="tgc-verdict-${mark.verdict}"` : "";
-      body += titled(`${markName(mark)}: ${fmt(mark.at)}${mark.verdict ? ` · ${mark.verdict}` : ""}`, `<g data-mark="${mark.kind}" data-lane-mark="${esc(mark.lane!)}"${verdict}>${glyph}</g>`);
+      overlay += titled(`${markName(mark)}: ${fmt(mark.at)}${mark.verdict ? ` · ${mark.verdict}` : ""}`, `<g data-mark="${mark.kind}" data-lane-mark="${esc(mark.lane!)}"${verdict}>${glyph}</g>`);
     }
     if (o.now !== undefined) {
       const rule = line(px(o.now), top, px(o.now), bottom, "tgc-now", presentation.gantt ? 'data-now="true"' : '');
-      body += rule + (view.maxHeight ? "" : text(px(o.now), bottom + 30, `now ${fmt(o.now)}`, { size: 12, cls: "tgc-ink tgc-num", anchor: px(o.now) > (left + right) / 2 ? "end" : "start" }));
+      overlay += rule + (view.maxHeight ? "" : text(px(o.now), bottom + 30, `now ${fmt(o.now)}`, { size: 12, cls: "tgc-ink tgc-num", anchor: px(o.now) > (left + right) / 2 ? "end" : "start" }));
     }
-    return { body, height, rowHeight: rowH, top };
+    parts.push(overlay);
+    return result();
   };
 
   const report = (): Figure => {
