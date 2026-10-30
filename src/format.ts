@@ -146,11 +146,11 @@ export function tierTotal(tiers: TierCounts | null): number {
 export const formatCompact = (value: number | null | undefined) =>
   value === null || value === undefined || !Number.isFinite(value) ? '—' : new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
 
-/** Span milliseconds, then tenths; long spans use day/hour labels. */
+/** Span milliseconds, tenths below ten seconds, then seconds/minutes; days stay compact. */
 export function formatSpanDuration(ms: number): string {
   if (!Number.isFinite(ms) || ms < 0) return '—'
-  if (ms >= 86_400_000) return duration(ms)
-  return ms < 1000 ? `${Math.round(ms)}ms` : formatClock(Math.round(ms / 100) * 100)
+  const precision = ms < 10_000 ? 100 : ms < 3_600_000 ? 1000 : 60_000
+  return ms >= 86_400_000 ? duration(ms) : ms < 1000 ? `${Math.round(ms)}ms` : formatClock(Math.round(ms / precision) * precision)
 }
 
 /** $0.12, $0.005, $12.40; never rounds a recorded nonzero cost to $0.00. */
