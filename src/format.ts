@@ -20,7 +20,7 @@ export function pts(value: number): string {
 
 /** Axis ticks: "$30", "$2.5", "$0.05". */
 export function usdTick(value: number): string {
-  return `$${Number(value.toPrecision(2)).toLocaleString("en-US", { maximumFractionDigits: 4 })}`;
+  return value < 0.01 ? formatCost(value) : `$${Number(value.toPrecision(2)).toLocaleString("en-US", { maximumFractionDigits: 4 })}`;
 }
 
 export function duration(ms: number): string {
@@ -146,7 +146,7 @@ export function tierTotal(tiers: TierCounts | null): number {
 export const formatCompact = (value: number | null | undefined) =>
   value === null || value === undefined || !Number.isFinite(value) ? '—' : new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
 
-/** 542ms, 6.9s, 23s, 1m 22s, 2h 05m: the precision a reader compares at each scale. */
+/** Span milliseconds, then tenths; long spans use day/hour labels. */
 export function formatSpanDuration(ms: number): string {
   if (!Number.isFinite(ms) || ms < 0) return '—'
   if (ms >= 86_400_000) return duration(ms)
@@ -166,7 +166,7 @@ export function formatCount(n: number): string {
   return reportedCount(n) === undefined ? '—' : formatCompact(n)
 }
 
-/** 0s, 500ms, 20s, 1m 30s, 2h, 1h 15m: an axis label at the step's own precision. */
+/** Elapsed clock at millisecond precision, so zoomed axis ticks keep distinct labels. */
 export function formatClock(ms: number): string {
   if (!Number.isFinite(ms) || ms < 0) return '—'
   const seconds = Math.round(ms) / 1000

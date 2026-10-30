@@ -10,7 +10,7 @@ await mkdir(output, { recursive: true })
 const server = spawn(process.execPath, ['tests/fixtures/charts-browser-smoke.mjs', ...process.argv.slice(2)], { stdio: ['ignore', 'pipe', 'pipe'] })
 const logs = []
 for (const stream of [server.stdout, server.stderr]) stream.on('data', bytes => logs.push(String(bytes)))
-let browser
+let browser, observedPage, activeCase
 const checks = []
 try {
   const deadline = Date.now() + 120000
@@ -23,11 +23,19 @@ try {
   for (const agents of [100, 124, 1000]) for (const theme of ['light', 'dark']) for (const width of [1512, 390]) {
     const context = await browser.newContext({ viewport: { width, height: 982 }, colorScheme: theme, recordVideo: { dir: output, size: { width, height: 982 } } })
     const page = await context.newPage(), errors = [], styles = new Set()
+    observedPage=page; activeCase={agents,theme,width}
     const currentStyle = (selector, property) => page.evaluate(({selector, property}) => getComputedStyle(document.querySelector(selector))[property], {selector, property})
     page.on('pageerror', error => errors.push(error.message))
     page.on('response', response => { if (response.ok() && /\/(?:live|figure)\.css$/.test(response.url())) styles.add(new URL(response.url()).pathname) })
     await page.goto(`http://127.0.0.1:46489/?id=journey&globals=agent-${theme}&agents=${agents}`)
     await page.locator('[data-lane="agent-0"]').waitFor()
+    await page.evaluate(() => {
+      window.__timelineInput=[]
+      for(const type of ['mousemove','mouseout','mouseleave','scroll','focusin']) document.addEventListener(type,event=> {
+        const record=()=>{const target=event.target instanceof Element?event.target:null;window.__timelineInput.push({time:performance.now(),type,target:target?.getAttribute('class'),lane:target?.closest('[data-lane]')?.getAttribute('data-lane'),related:event.relatedTarget instanceof Element?event.relatedTarget.tagName:null,x:event.clientX,y:event.clientY,hit:event.clientX===undefined?null:document.elementFromPoint(event.clientX,event.clientY)?.closest('[data-lane]')?.getAttribute('data-lane'),focused:document.activeElement?.getAttribute('data-lane'),scrollTop:document.querySelector('.ov-gantt-scroll')?.scrollTop,tip:document.querySelector('.ov-tip')?.textContent??null});if(window.__timelineInput.length>500)window.__timelineInput.splice(100,1)}
+        queueMicrotask(record);requestAnimationFrame(record)
+      },true)
+    })
     assert.deepEqual([...styles].sort(), ['/figure.css', '/live.css'], 'the published live stylesheet loads the shared figure rules through its real import')
     assert.equal(await page.locator('.ov-gantt').evaluate(node => { const parent = node.parentElement, css = getComputedStyle(parent); return Math.abs(node.clientWidth - (parent.clientWidth - parseFloat(css.paddingLeft) - parseFloat(css.paddingRight))) <= 1 && getComputedStyle(node).marginTop === '0px' }), true, 'a live plot fills its host without report margins')
     assert.ok(await page.locator('[data-lane]').count() < 40, `${agents} lanes render a bounded window`)
@@ -115,6 +123,19 @@ try {
       assert.equal(await fold.evaluate(node => node === document.activeElement), true)
       await page.getByText('Data and method', { exact: true }).click()
       assert.ok((await page.locator('table').first().textContent()).includes('Recorded worker'))
+      const response=await page.request.get('http://127.0.0.1:46489/formatter-proof.json'), formatting=await response.json()
+      assert.equal(response.status(),200)
+      assert.deepEqual(formatting.formatted,['$0.00','$1e-20','$1e-10','$0.003','$1.20','—','—','—'])
+      assert.equal('refused' in formatting.figure,false)
+      for(const price of ['$1e-20','$1e-10','$1.20'])assert.ok(formatting.figure.table.includes(price),'the actual static cost figure preserves '+price)
+      assert.ok(!formatting.figure.svg.wide.includes('>$0<'),'nonzero cost ticks retain their magnitude')
+      await page.goto(`http://127.0.0.1:46489/?id=clock-precision&globals=agent-${theme}`)
+      await page.locator('.fw-axis-track .fw-tick').first().waitFor()
+      const clockLabels=await page.locator('.fw-axis-track .fw-tick').allTextContents()
+      assert.ok(clockLabels.length>=3)
+      assert.equal(new Set(clockLabels).size,clockLabels.length,'distinct zoomed axis positions have distinct labels: '+JSON.stringify(clockLabels))
+      if(width===1512)for(const tick of ['10.2s','10.4s','10.6s'])assert.ok(clockLabels.includes(tick),tick+' remains readable in the actual zoomed waterfall')
+
     }
     assert.deepEqual(errors, [])
     await context.close()
@@ -122,6 +143,7 @@ try {
     checks.push({ theme, width, result: 'PASS', agents })
   }
 } finally {
+  if(observedPage && !observedPage.isClosed()) await writeFile(`${output}/input-at-failure.json`,JSON.stringify({case:activeCase,...await observedPage.evaluate(()=>({events:window.__timelineInput??[],tip:document.querySelector('.ov-tip')?.outerHTML??null,focus:document.activeElement?.outerHTML?.slice(0,300),scrollTop:document.querySelector('.ov-gantt-scroll')?.scrollTop}))},null,2))
   await Promise.all((browser?.contexts() ?? []).map(context => context.close())); await browser?.close()
   server.kill('SIGTERM')
   await writeFile(`${output}/consumer.log`, logs.join(''))
