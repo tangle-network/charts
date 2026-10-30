@@ -156,6 +156,18 @@ try {
       assert.ok(paused>=1000&&paused<11000,'shared playback reports retained time without a second host clock')
       await page.getByRole('button',{name:'Show full record',exact:true}).click()
       await page.waitForFunction(()=>document.querySelector('.fw-slider')?.value==='11000')
+      await page.goto(`http://127.0.0.1:46489/?id=palette-contracts&globals=agent-${theme}`)
+      const target=page.locator('.ov-gap-target');await target.waitFor()
+      const role=await page.locator('[data-semantic-reference]').evaluate(node=>{const s=getComputedStyle(node);return {pass:s.color,surface:s.backgroundColor,border:s.borderTopColor}})
+      assert.equal(await target.evaluate(node=>getComputedStyle(node).stroke),role.pass,'Gap resolves the published Brand success role without private aliases')
+      assert.equal(await page.locator('.ov-gap-stretch').evaluate(node=>getComputedStyle(node).stroke),role.pass)
+      assert.equal(await page.locator('[data-waterfall-axis] > span > span').first().evaluate(node=>getComputedStyle(node).backgroundColor),role.border,'legacy Waterfall axis ends at an existing Brand border')
+      const canvas=page.getByRole('img',{name:'Recorded points',exact:true});await canvas.waitFor();const area=await canvas.boundingBox();assert.ok(area)
+      await canvas.hover({position:{x:area.width/2,y:area.height/2}})
+      await page.getByText('Recorded dot',{exact:true}).waitFor()
+      assert.equal(await page.locator('.tgc-dot-map-tip').evaluate(node=>getComputedStyle(node).backgroundColor),role.surface,'DotMap tooltip has a real Brand surface')
+      assert.equal(await page.locator('.tgc-dot-map-tip').evaluate(node=>getComputedStyle(node).color),await page.locator('[data-tip-text-reference]').evaluate(node=>getComputedStyle(node).color))
+
 
 
     }
