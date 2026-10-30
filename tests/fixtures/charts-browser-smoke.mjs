@@ -66,7 +66,7 @@ function ProgressLines() {
  <Lines rows={22} ticks={[{value:1,label:'1 · Manifest'},{value:2,label:'2 · Offline build'},{value:3,label:'3 · Hidden test set'}]}
   axis={t=>new Date(t).toISOString().slice(11,16)} series={[
    {name:'Best so far',color:'var(--chart-series-1)',interpolation:'step',points:points.map(([t,v])=>[t,best=Math.max(best,v)])},
-   {name:'Checked releases',color:'var(--chart-series-2)',dots:true,points,id:(t,i)=>'rc'+(i+1),label:(t,i)=>'rc'+(i+1),href:(t,i)=>'?id=progress-lines&release=rc'+(i+1),highlight:(t,i)=>i=== (extra?3:1)}]}/></main>
+   {name:'Checked releases',color:'var(--chart-series-2)',dots:true,points,id:(t,i)=>'rc'+(i+1),label:(t,i)=>'rc'+(i+1),href:(t,i)=>'?id=progress-lines&release=rc'+(i+1)+'&globals='+encodeURIComponent(params.get('globals')||''),highlight:(t,i)=>i=== (extra?3:1)}]}/></main>
 }
 function RecordedTimeline() {
  const start=Date.parse('2026-10-28T00:00:00Z')
