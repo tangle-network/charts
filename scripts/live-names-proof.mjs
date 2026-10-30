@@ -7,7 +7,7 @@ import { chromium } from 'playwright'
 
 const output = resolve(process.env.CHARTS_PROOF_DIR ?? '/tmp/charts-live-names-proof')
 mkdirSync(output, { recursive: true })
-const server = spawn(process.execPath, ['scripts/charts-browser-smoke.mjs', ...process.argv.slice(2)], { stdio: ['ignore', 'pipe', 'pipe'], detached: true })
+const server = spawn(process.execPath, ['tests/fixtures/charts-browser-smoke.mjs', ...process.argv.slice(2)], { stdio: ['ignore', 'pipe', 'pipe'], detached: true })
 const log = createWriteStream(`${output}/consumer.log`), checks = []
 server.stdout.pipe(log); server.stderr.pipe(log)
 const base = 'http://127.0.0.1:46489'

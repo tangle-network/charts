@@ -322,7 +322,9 @@ npm run build
 
 The package-boundary test builds and packs Charts, installs the tarball in an OS-temporary consumer with a normal offline npm install (no peer-omission flags), asserts React/React DOM/React types cannot resolve, and executes the static root without DOM globals. It compares root exports, static SVG/tables, Refusals, report/chart/plot HTML and CSS with the untouched source implementation, then compiles a static-only consumer with `lib: ["ES2022"]`, `types: []` and `skipLibCheck: false`. Only afterward does it supply the installed React peer/types to verify the packed React runtime and declarations. It runs under `npm test`.
 
-The retained [packed-browser fixture](scripts/charts-browser-smoke.mjs), ported from brand, and its [browser proof](scripts/charts-browser-proof.mjs) check Chromium at 1100px and 390px, keyboard selection, emulated touch, light/dark Brand tokens, reduced motion, and top-layer positioning inside a transformed, paint-contained panel. It passes with React 18 and React 19; the React 18 consumer also compiles the packed declarations with React 18 types. Physical touch hardware and screen-reader audio remain unchecked.
+The [viewport and keyboard proof](tests/integration/journey.browser.mjs) covers100,124and1000 lanes in both themes and widths, real stylesheet imports, native focus through clock updates, dense marker hover, End/Home navigation and folded historical records.
+
+The retained [packed-browser fixture](tests/fixtures/charts-browser-smoke.mjs), ported from brand, and its [browser proof](scripts/charts-browser-proof.mjs) check Chromium at 1100px and 390px, keyboard selection, emulated touch, light/dark Brand tokens, reduced motion, and top-layer positioning inside a transformed, paint-contained panel. It passes with React 18 and React 19; the React 18 consumer also compiles the packed declarations with React 18 types. Physical touch hardware and screen-reader audio remain unchecked.
 
 ### Figure browser proof
 

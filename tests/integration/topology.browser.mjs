@@ -48,7 +48,7 @@ async function proveCompactTopology(page, width, theme, output) {
 const output = process.env.CHARTS_PROOF_DIR
 assert.ok(output, 'Retain topology evidence outside the gate cache')
 await mkdir(output, { recursive: true })
-const server = spawn(process.execPath, ['scripts/charts-browser-smoke.mjs', ...process.argv.slice(2)], { stdio: ['ignore', 'pipe', 'pipe'] })
+const server = spawn(process.execPath, ['tests/fixtures/charts-browser-smoke.mjs', ...process.argv.slice(2)], { stdio: ['ignore', 'pipe', 'pipe'] })
 const logs = [], checks = []
 server.stdout.on('data', bytes => logs.push(String(bytes)))
 server.stderr.on('data', bytes => logs.push(String(bytes)))
