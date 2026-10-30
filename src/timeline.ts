@@ -237,7 +237,7 @@ export function prepareTimeline(lanes: TimelineLane[], o: TimelineOptions, prese
         const x = phone ? width - 12 : width - 16;
         content += titled(`${lane.label}: ${countText.sentence}${row.hidden ? ` across ${row.hidden + 1} lanes` : ""}`, `<text class="tgc-num tgc-count" x="${x}" y="${baseline}" font-size="12" text-anchor="end">${countText.ok}<tspan class="tgc-count-ok">✓</tspan> ${countText.failed}<tspan class="tgc-count-failed">✗</tspan></text>`);
       }
-      parts.push({ key: lane.id, attributes, body: content });
+      parts.push({ key: `lane:${lane.id}`, attributes, body: content });
     });
     let overlay = "";
     for (const mark of onLane) {

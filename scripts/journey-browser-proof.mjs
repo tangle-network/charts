@@ -35,7 +35,7 @@ try {
     await page.locator('[data-lane=agent-0] .ov-gantt-end').waitFor()
     assert.equal(await page.locator('[data-lane=agent-0] .ov-gantt-end').count(), 1, 'only the latest span has an unambiguous end reading')
     assert.ok(!(await page.locator('[data-lane=agent-0] .ov-gantt-end title').textContent()).startsWith('30s'), 'array order cannot select an older span')
-    assert.equal(await page.locator('[data-lane=agent-0] .ov-gantt-end').evaluate(node => node.parentElement.lastElementChild === node), true, 'later spans cannot paint over the end reading')
+    assert.equal(await page.evaluate(() => { const node = document.querySelector('[data-lane=agent-0] .ov-gantt-end'); return Boolean(node && node.parentElement.lastElementChild === node) }), true, 'later spans cannot paint over the end reading')
     assert.ok((await page.locator('[data-lane=agent-0] .ov-gantt-end title').textContent()).includes('≥$12,345.67'))
     const labels = await page.locator('.ov-gantt > svg [data-labelled]').evaluateAll(nodes => nodes.map(node => ({show:node.dataset.labelled, text:getComputedStyle(node.querySelector('text')).display})))
     assert.ok(labels.filter(label => label.show === 'true').length > 1, 'more than just the best release is named')
