@@ -170,7 +170,6 @@ export function FlowWaterfall({
   const root = useRef<HTMLElement>(null)
   const search = useRef<HTMLInputElement>(null)
   const slider = useRef<HTMLInputElement>(null)
-  const timeOutput = useRef<HTMLOutputElement>(null)
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const searchId = useId(), cardId = useId()
   const [requestedView, setView] = useState<FlowView>(defaultView)
@@ -200,7 +199,7 @@ export function FlowWaterfall({
   }, [laneElement])
   const viewAt = useCallback((t: number): ViewWindow => zoom ?? { startMs: 0, endMs: Math.max(dataEnd, isLive ? t : 0, 1) }, [zoom, dataEnd, isLive])
   const clock = useTraceClock({
-    root, slider, timeOutput, observedTotal: dataEnd, live: isLive, startedAt, snapshot: trace, playing, speed, position,
+    root, slider, observedTotal: dataEnd, live: isLive, startedAt, snapshot: trace, playing, speed, position,
     onPlaybackEnd: end => { setPlaying(false); setPosition(end) }, view: viewAt, trackPx,
   })
   useEffect(() => { for (const animation of root.current?.getAnimations?.({ subtree: true }) ?? []) if ('animationName' in animation && animation.animationName === 'tangle-breathe') animation.startTime = 0 }, [trace, view])
@@ -403,7 +402,7 @@ export function FlowWaterfall({
   const overviewMarks = useMemo(() => rows.filter(row => !row.parentId).flatMap(row => row.hasChildren ? row.segments : row.kind === 'pipeline' ? [] : [{ startMs: row.span.startMs, endMs: row.span.endMs, kind: row.ok ? 'tool' as const : 'failed' as const, tone: row.tone, id: row.id, count: 1, retry: false }]), [rows])
   const playback = (
     <PlaybackBar view={view} playing={playing} limit={limit} clockMs={clockMs} speed={speed} zoom={zoom} marks={overviewMarks}
-      slider={slider} timeOutput={timeOutput} followLabel={position === null ? undefined : isLive ? 'Follow live' : 'Show full trace'}
+      slider={slider} followLabel={position === null ? undefined : isLive ? 'Follow live' : 'Show full trace'}
       onTogglePlay={togglePlay} onRestart={() => { setPosition(0); setPlaying(false) }} onSpeed={setSpeed} onScrub={scrubTo}
       onFollow={() => { setPosition(null); setPlaying(false) }} onZoom={zoomBy} onFit={() => setZoom(null)} />
   )

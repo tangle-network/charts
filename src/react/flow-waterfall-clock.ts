@@ -1,11 +1,9 @@
 import { type RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { formatSpanDuration } from './flow-waterfall-model.js'
 import type { ViewWindow } from './flow-waterfall-time.js'
 
 export interface TraceClockInput {
   root: RefObject<HTMLElement | null>
   slider: RefObject<HTMLInputElement | null>
-  timeOutput: RefObject<HTMLOutputElement | null>
   /** Observed trace end; live traces advance past it until the next snapshot. */
   observedTotal: number
   live: boolean
@@ -37,7 +35,7 @@ const TEXT_INTERVAL_MS = 100
 /** Drives the trace clock. Bars, the cursor and the axis read CSS variables written here every frame,
  * so live growth and playback cost no React render per frame; text updates at 10 Hz. */
 export function useTraceClock(input: TraceClockInput): TraceClock {
-  const { root, slider, timeOutput, observedTotal, live, startedAt, snapshot, playing, speed, position, onPlaybackEnd, view, trackPx } = input
+  const { root, slider, observedTotal, live, startedAt, snapshot, playing, speed, position, onPlaybackEnd, view, trackPx } = input
   const [clockMs, setClockMs] = useState(position ?? observedTotal)
   const receivedAt = useRef(Date.now())
   const playhead = useRef(position ?? observedTotal)
@@ -64,11 +62,14 @@ export function useTraceClock(input: TraceClockInput): TraceClock {
       element.style.setProperty(name, String(value)); geometry.current[name] = value
     }
     if (slider.current) { slider.current.max = String(Math.max(1, limit, t)); slider.current.value = String(t) }
-    if (timeOutput.current) timeOutput.current.textContent = formatSpanDuration(t)
   }
 
   useLayoutEffect(() => {
-    if (position !== null) playhead.current = position
+    if (position === clockMs) return
+    playhead.current = position ?? (live ? liveNow() : observedTotal)
+    paint(playhead.current); setClockMs(playhead.current)
+  }, [position])
+  useLayoutEffect(() => {
     if (!live && !playing) {
       const t = position ?? observedTotal
       paint(t)
@@ -101,7 +102,7 @@ export function useTraceClock(input: TraceClockInput): TraceClock {
     frame = requestAnimationFrame(step)
     return () => cancelAnimationFrame(frame)
     // Fixed marks update with data; following live only repaints perceptible geometry drift.
-  }, [live, playing, position, observedTotal, snapshot, view, trackPx])
+  }, [live, playing, observedTotal, view, trackPx])
 
   return { clockMs, limitMs: liveNow, positionMs: () => playhead.current }
 }

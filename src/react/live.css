@@ -105,13 +105,13 @@ button.tgc-count-label { cursor: pointer; }
 
 .tgc-dot-map { color: var(--chart-live-muted, var(--text-muted)); }
 .tgc-dot-map canvas:focus-visible { outline: 2px solid var(--chart-accent); outline-offset: 2px; }
-.tgc-dot-map-tip { z-index: 2; max-width: 300px; padding: 6px 9px; border-radius: 6px; background: var(--chart-tip-bg); color: var(--chart-tip-ink); font: 14px/1.4 ui-sans-serif, system-ui, sans-serif; white-space: pre-line; box-shadow: var(--shadow-dropdown); }
+.tgc-dot-map-tip { z-index: 2; max-width: 300px; padding: 6px 9px; border-radius: 6px; background: var(--chart-tip-bg, var(--bg-elevated)); color: var(--chart-tip-ink, var(--text-primary)); font: 14px/1.4 ui-sans-serif, system-ui, sans-serif; white-space: pre-line; box-shadow: var(--shadow-dropdown); }
 .ov-gap { width: 100%; min-width: 96px; height: 24px; }
 .ov-gap svg { display: block; overflow: visible; }
 .ov-gap-track { stroke: color-mix(in srgb, var(--chart-live-faint, var(--text-dim)) 40%, transparent); stroke-width: 1; }
 .ov-gap-tick { stroke: color-mix(in srgb, var(--chart-live-faint, var(--text-dim)) 60%, transparent); stroke-width: 1; }
-.ov-gap-target { fill: color-mix(in srgb, var(--chart-live-pass) 28%, transparent); stroke: var(--chart-live-pass); stroke-width: 1; }
-.ov-gap-stretch { fill: none; stroke: var(--chart-live-pass); stroke-width: 1; stroke-dasharray: 3 3; }
+.ov-gap-target { fill: color-mix(in srgb, var(--chart-live-pass, var(--status-running)) 28%, transparent); stroke: var(--chart-live-pass, var(--status-running)); stroke-width: 1; }
+.ov-gap-stretch { fill: none; stroke: var(--chart-live-pass, var(--status-running)); stroke-width: 1; stroke-dasharray: 3 3; }
 .ov-gap-span { stroke-width: 2; stroke-dasharray: 2 4; stroke-linecap: round; }
 .ov-gap-value { cursor: default; }
 
@@ -148,7 +148,7 @@ button.tgc-count-label { cursor: pointer; }
 
 /* Recorded version history shares chart/Brand roles with the live timeline. */
 .tgc-version-graph { min-width: 0; font: 14px/1.4 var(--font-sans, sans-serif); color: var(--chart-live-fg, var(--text-primary));
-  --vg-c0: var(--chart-series-1); --vg-c1: var(--chart-series-2); --vg-c2: var(--chart-series-3); --vg-c3: var(--chart-series-4); --vg-c4: var(--chart-series-5); --vg-c5: var(--chart-series-6); --vg-c6: var(--chart-series-7); --vg-c7: var(--chart-series-8);
+  --vg-c0: var(--chart-live-accent, var(--chart-series-1)); --vg-c1: var(--chart-series-2); --vg-c2: var(--chart-series-3); --vg-c3: var(--chart-series-4); --vg-c4: var(--chart-series-5); --vg-c5: var(--chart-series-6); --vg-c6: var(--chart-series-7); --vg-c7: var(--chart-live-muted, var(--chart-series-8));
 }
 .tgc-version-graph .vg-host { position: relative; }
 .tgc-version-graph .vg-lines { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }

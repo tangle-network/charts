@@ -116,7 +116,7 @@ export function WaterfallTimeAxis({ windowMs, originMs = 0, widthPx = 208,
       const pct = t / windowMs * 100;
       return <span key={t} style={{ position: "absolute", top: 0, bottom: 0,
         left: `${pct}%`, display: "flex", flexDirection: "column", alignItems: "start" }}>
-        <span style={{ height: "0.5rem", width: 1, background: "var(--intel-chart-grid, var(--color-border, var(--border-color)))" }} />
+        <span style={{ height: "0.5rem", width: 1, background: "var(--intel-chart-grid, var(--color-border, var(--border-default)))" }} />
         <span style={{ marginTop: "0.25rem", whiteSpace: "nowrap", fontFamily: "var(--font-mono, monospace)",
           fontSize: "var(--waterfall-axis-font-size, 11px)", lineHeight: 1, fontVariantNumeric: "tabular-nums",
           transform: pct > 75 ? "translateX(-100%)" : undefined }}>
