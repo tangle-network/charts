@@ -69,7 +69,7 @@ function FlowApp({ name }) {
  return <main data-live-update={now}>{name==='controlled-position'&&<><button onClick={()=>setPosition(3000)}>Read cited instant</button><button onClick={()=>setPosition(null)}>Show full record</button><output data-retained-position>{String(position)}</output></>}{name==='discovery-streaming-replay'&&<p>Recorded Discovery replay ·20x; final totals arrive at settlement</p>}<FlowWaterfall trace={trace} live={live} maxHeight={1800}
   markers={name==='healthy'?[{at:Math.round(trace.totalMs/2),label:'Release v2',tone:'ok'},{at:Math.round(trace.totalMs/2)+50,label:'Release v3'},{at:trace.totalMs-50,label:'Release v4'}]:undefined}
   onSelect={span=>{window.__fwSelected=[...(window.__fwSelected??[]),span.id??span.name]}}
-  position={name==='controlled-position'?position:undefined} onTimeChange={t=>{window.__fwTime=t;if(name==='controlled-position')setPosition(t)}}
+  position={name==='controlled-position'?position:undefined} onTimeChange={t=>{window.__fwTime=t;(window.__fwTimeSamples??=[]).push({wall:performance.now(),trace:t});if(name==='controlled-position')setPosition(t)}}
   zoom={name==='clock-precision'?zoom:undefined} onZoomChange={name==='clock-precision'?onZoomChange:undefined}
   defaultView={name==='live-names'||name==='host-marks'||name==='agent-metrics'||name==='phone-names'?'agents':undefined} selectedId={name==='agent-metrics'||name==='phone-names'?'builder':undefined}
   renderIcon={name==='host-marks'?(span=>span.kind==='pipeline'?<span data-host-mark style={{display:'inline-flex',width:16,height:16,borderRadius:8,background:'currentColor'}}/>:undefined):undefined} /></main>
