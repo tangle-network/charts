@@ -67,7 +67,7 @@ function ProgressLines() {
  let best=0
  return <main><button onClick={()=>setExtra(true)}>Append release</button><button onClick={()=>setScored(true)}>Score release</button><button onClick={()=>setOnly(true)}>Unscored only</button><output>{params.get('release')||'No release selected'}</output>
  <Lines rows={22} ticks={[{value:1,label:'1 · Manifest'},{value:2,label:'2 · Offline build'},{value:3,label:'3 · Hidden test set'}]}
-  axis={t=>new Date(t).toISOString().slice(11,16)} strip={{label:'No stage score',series:'Checked releases',points:scored&&!only?[]:[{id:'rc5',label:'rc5',at:start-3600000,href:href('rc5')}]}} series={[
+  axis={t=>new Date(t).toISOString().slice(11,16)} strip={{label:'No stage score',series:'Checked releases',points:scored&&!only?[]:[{id:'rc5',label:'rc5',at:start-3600000,href:href('rc5')}]}} series={only?[]:[
    {name:'Best so far',color:'var(--chart-series-1)',interpolation:'step',points:points.map(([t,v])=>[t,best=Math.max(best,v)])},
    {name:'Checked releases',color:'var(--chart-series-2)',dots:true,points,id:(t,i)=>ids[i],label:(t,i)=>ids[i??0],href:(t,i)=>href(ids[i]),highlight:(t,i)=>i=== (extra?3:1)}]}/></main>
 }

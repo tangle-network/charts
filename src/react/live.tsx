@@ -1,5 +1,5 @@
 /** Reusable, em-scaled charts for live operational series. Values, labels and status colors belong to callers. */
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { formatCompact } from '../format.js'
 import { useWidth, Tooltip, EventList, type Tip } from './live-presentation.js'
 export { useWidth } from './live-presentation.js'
@@ -208,7 +208,7 @@ export function Lines({ series, format = formatCompact, rows = 13, axis, marks =
       const px = event.clientX - event.currentTarget.getBoundingClientRect().left
       setCursor(current => current?.key ? current : px >= left ? { at: t0 + (px - left) / Math.max(1, plotW) * (t1 - t0) } : null)
     }}>
-      {width > 0 && <svg width={width} height={height} role={points.some(p => p.href) ? 'group' : 'img'} aria-label={series.map(s => s.name).join(', ')}>
+      {width > 0 && <svg width={width} height={height} role={points.some(p => p.href) ? 'group' : 'img'} aria-label={series.map(s => s.name).join(', ') || strip?.label}>
         <Grid ticks={ticks} left={left} right={width - 10} em={em} y={y} />
         {(t0 === t1 ? [t0] : [t0, (t0 + t1) / 2, t1]).map((t, i) => <text key={i} x={x(t)} y={height - em * .35} className="ov-axis" textAnchor={i === 0 ? 'start' : i === 2 ? 'end' : 'middle'}>{axis ? axis(t) : day(t).slice(0, 5)}</text>)}
         {missing.length > 0 && <Grid ticks={[{ value: 0, label: strip!.label }]} left={left} right={width - 10} em={em} y={() => stripY} />}
@@ -216,7 +216,9 @@ export function Lines({ series, format = formatCompact, rows = 13, axis, marks =
         {series.filter(s => !s.dots).map(s => <polyline key={s.name} data-series={s.name} data-dash={s.dash ?? 'solid'} fill="none" stroke={s.color} strokeWidth={Math.max(2, em / 8)} strokeLinejoin="round" strokeLinecap={s.dash === 'dot' ? 'round' : undefined} strokeDasharray={dashArray(s.dash, em)} points={s.points.flatMap((p, i) => s.interpolation === 'step' && i ? [[p[0], s.points[i - 1]![1]], p] : [p]).map(p => `${x(p[0]!)},${y(p[1]!)}`).join(' ')} />)}
         {points.map(p => {
           const label = `${p.label}: ${p.value === null ? strip!.label : format(p.value)}`, cy = p.value === null ? stripY : y(p.value)
-          return <a key={p.key} href={p.href} aria-label={p.href ? label : undefined} onFocus={() => setCursor({ at: p.at, key: p.key })} onBlur={() => setCursor(null)}>
+          return <a key={p.key} href={p.href} aria-label={p.href ? label : undefined} onFocus={() => setCursor({ at: p.at, key: p.key })} onBlur={() => setCursor(null)}
+            onMouseEnter={event => { if (!event.currentTarget.ownerSVGElement?.contains(document.activeElement)) setCursor({ at: p.at, key: p.key }) }}
+            onMouseLeave={event => { if (!event.currentTarget.ownerSVGElement?.contains(document.activeElement)) setCursor(null) }}>
             {p.marker ? <path d={markerPath(p.marker, x(p.at), cy, Math.max(3, em / 5))} fill={p.color} /> :
               <circle className="ov-line-point" data-unscored={p.value === null || undefined} data-highlight={p.highlight || undefined} cx={x(p.at)} cy={cy} r={p.highlight ? 6 : Math.max(3, em / 5)} fill={p.highlight || p.value === null ? 'var(--chart-live-surface, var(--bg-card))' : p.color} stroke={p.highlight || p.value === null ? p.color : 'var(--chart-live-surface, var(--bg-card))'} strokeWidth={p.highlight ? 2.5 : 1.5} strokeDasharray={p.value === null ? '2 2' : undefined}><title>{label}</title></circle>}
           </a>
@@ -367,9 +369,7 @@ export function Spark({ points, max = 1, color = LIVE_SERIES[0], label, format =
       onMouseMove={label ? (event) => {
         const box = event.currentTarget.getBoundingClientRect()
         const t = t0 + ((event.clientX - box.left) / Math.max(1, box.width)) * (t1 - t0)
-        let best = 0
-        for (let i = 1; i < points.length; i++) if (Math.abs(points[i]![0] - t) < Math.abs(points[best]![0] - t)) best = i
-        setHover(best)
+        setHover(points.reduce((best, p, i) => Math.abs(p[0] - t) < Math.abs(points[best]![0] - t) ? i : best, 0))
       } : undefined}>
       {label && <title>{reading ?? label}</title>}
       <polyline fill="none" stroke={color} strokeWidth={1.6} points={d} />
