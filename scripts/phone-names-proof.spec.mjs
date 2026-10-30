@@ -10,12 +10,16 @@ mkdirSync(output, { recursive: true })
 const server = spawn(process.execPath, ['tests/fixtures/charts-browser-smoke.mjs', ...process.argv.slice(2)], { stdio: ['ignore', 'pipe', 'pipe'], detached: true })
 const log = createWriteStream(`${output}/consumer.log`)
 server.stdout.pipe(log); server.stderr.pipe(log)
-const base = 'http://127.0.0.1:46489', checks = []
+let startup = '', base = ''
+server.stdout.on('data', bytes => { startup += bytes })
+const readiness = () => startup.split('\n').slice(0, -1).find(line => line.startsWith('{"consumer":'))
+const checks = []
 let browser
 try {
   const deadline = Date.now() + 120_000
   while (true) {
-    try { if ((await fetch(base)).ok) break } catch {}
+    const ready = readiness()
+    if (ready) { base = JSON.parse(ready).url; break }
     if (Date.now() > deadline || server.exitCode !== null) throw new Error('Packed consumer did not start; see consumer.log')
     await new Promise(resolve => setTimeout(resolve, 500))
   }

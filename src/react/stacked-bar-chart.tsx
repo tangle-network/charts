@@ -288,9 +288,9 @@ export function StackedBarChart(props: StackedBarChartProps) {
             position: "fixed", inset: "auto", margin: 0, left: 0, top: 0, zIndex: 1000, pointerEvents: "none",
             width: "max-content", maxWidth: "min(280px, calc(100vw - 16px))",
             padding: "10px 12px", borderRadius: "var(--radius-md, 8px)",
-            background: "var(--md3-surface-container-highest, #3b3b3b)",
-            color: "var(--md3-on-surface, #e6e6e6)",
-            border: "1px solid var(--md3-outline-variant, #4c4c4c)",
+            background: "var(--md3-surface-container-highest)",
+            color: "var(--md3-on-surface)",
+            border: "1px solid var(--md3-outline-variant)",
             fontFamily: "inherit", fontSize: "0.75rem", lineHeight: 1.5,
             overflowWrap: "anywhere",
           }}>

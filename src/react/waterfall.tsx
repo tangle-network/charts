@@ -116,7 +116,7 @@ export function WaterfallTimeAxis({ windowMs, originMs = 0, widthPx = 208,
       const pct = t / windowMs * 100;
       return <span key={t} style={{ position: "absolute", top: 0, bottom: 0,
         left: `${pct}%`, display: "flex", flexDirection: "column", alignItems: "start" }}>
-        <span style={{ height: "0.5rem", width: 1, background: "var(--intel-chart-grid, var(--color-border, #d1d3e1))" }} />
+        <span style={{ height: "0.5rem", width: 1, background: "var(--intel-chart-grid, var(--color-border, var(--border-default)))" }} />
         <span style={{ marginTop: "0.25rem", whiteSpace: "nowrap", fontFamily: "var(--font-mono, monospace)",
           fontSize: "var(--waterfall-axis-font-size, 11px)", lineHeight: 1, fontVariantNumeric: "tabular-nums",
           transform: pct > 75 ? "translateX(-100%)" : undefined }}>
@@ -152,16 +152,16 @@ export function WaterfallBar({ startMs, endMs, window, tone = "default",
       title="Timing unavailable" style={{ ...cell, textAlign: "center" }}>—</span>;
   }
   const geometry = waterfallSpanGeometry(startMs, endMs, window);
-  const color = suppliedColor ?? (tone === "error" ? "var(--intel-waterfall-error, #dc2626)"
-    : tone === "critical" ? "var(--intel-waterfall-critical, #0891b2)"
-    : "var(--intel-waterfall-bar, #2563eb)");
+  const color = suppliedColor ?? (tone === "error" ? "var(--intel-waterfall-error, var(--surface-danger-text))"
+    : tone === "critical" ? "var(--intel-waterfall-critical, var(--surface-info-text))"
+    : "var(--intel-waterfall-bar, var(--chart-series-1))");
   const visible = clipAtMs === undefined ? geometry
     : waterfallSpanGeometry(startMs, Math.max(startMs, Math.min(endMs, clipAtMs)), window);
   return <span className={className} data-waterfall-track="" data-tone={tone}
     title={`+${formatDuration(geometry.startOffsetMs)} · ${formatDuration(geometry.durationMs)}${tone === "critical" ? " · critical path" : ""}`}
     style={{ ...cell, position: "relative", height: "var(--waterfall-bar-height, 0.875rem)",
       overflow: "hidden", borderRadius: "var(--waterfall-bar-radius, 999px)",
-      background: "var(--intel-waterfall-track, rgb(148 163 184 / 22%))" }}>
+      background: "var(--intel-waterfall-track, var(--chart-grid))" }}>
     <span className={barClassName} data-waterfall-bar="" data-clipped={geometry.clipped || undefined}
       style={{ position: "absolute", top: 0, height: "100%", borderRadius: "inherit", background: color,
         left: `${geometry.offsetPct}%`, width: `${clipAtMs !== undefined && clipAtMs <= startMs ? 0 : visible.widthPct}%`,

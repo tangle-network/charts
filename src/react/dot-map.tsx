@@ -132,8 +132,8 @@ export function DotMap({ positions, radii, colors, palette, extent, rects, label
     const { scale, tx, ty } = view.current
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, size.width, size.height)
-    const style = box.current ? getComputedStyle(box.current) : null
-    const ink = style?.color || '#888'
+    const style = getComputedStyle(box.current ?? element)
+    const ink = style.color
     if (rects?.length) {
       ctx.lineWidth = 1
       ctx.font = '11px ui-sans-serif, system-ui, sans-serif'
@@ -193,7 +193,7 @@ export function DotMap({ positions, radii, colors, palette, extent, rects, label
       ctx.font = '600 12px ui-sans-serif, system-ui, sans-serif'
       ctx.textAlign = 'center'
       ctx.lineWidth = 3
-      const surface = style?.getPropertyValue('--dot-map-surface').trim() || style?.backgroundColor || '#161616'
+      const surface = style.getPropertyValue('--dot-map-surface').trim() || style.backgroundColor
       const taken: Array<[number, number, number, number]> = []
       for (const label of labels) {
         const x = label.x * scale + tx, y = label.y * scale + ty
