@@ -85,6 +85,7 @@ try {
   await page.screenshot({path:`${output}/meter-focus-${width}-${theme}.png`,fullPage:true})
   await page.getByRole('button',{name:'Update recorded values'}).click()
   assert.equal(await mode('compare').locator('.ov-meter-text').innerText(),'8 h')
+  await page.waitForFunction(()=>{const clip=getComputedStyle(document.querySelector('[data-meter-case="compare"] .ov-meter-track > span')).clipPath;const right=Number.parseFloat(clip.split(' ')[1]);return right>30&&right<70})
   const moving=await painted(bar('compare','Recorded work'))
   assert.notEqual(moving.motion,'0s','Brand stream motion is active')
   assert.ok(moving.right>30&&moving.right<70,`live recorded growth interpolates its painted interval: ${moving.clip}`)
