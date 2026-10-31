@@ -1,3 +1,9 @@
+## 4.0.8
+
+- Waterfall: every agent lane takes its own categorical colour (the root and lanes past the fifth no longer fall back to grey), and hovering a row holds and highlights it (#109).
+- Topology: the minimum zoom is the fit ratio for live and settled graphs, Fit View frames every agent, and the hover card lists the agent's latest stream rows (#110).
+- A docked SpanCard is content inside its host surface, with no frame of its own (#107).
+
 ## 4.0.1
 
 Keep recorded completed and stopped outcomes visible in topology cards, including the phone overview.
