@@ -55,10 +55,10 @@ async function proveCompactTopology(page, width, theme, output) {
   assert.equal(await owner.evaluate(element => element === document.activeElement), true)
 
   if (width > 600) {
-      await page.getByRole('button', { name: 'Fit View', exact: true }).click()
-      // Drew 2026-10-31: fit zooms out until every agent is in view, settled or live.
-      const viewport = await page.locator('.ag-graph-viewport').boundingBox(), boxes = await page.locator('.react-flow__node').evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().toJSON()))
-      assert.ok(boxes.every(box => box.x >= viewport.x - 1 && box.y >= viewport.y - 1 && box.right <= viewport.x + viewport.width + 1 && box.bottom <= viewport.y + viewport.height + 1), 'fit shows every agent')
+    await page.getByRole('button', { name: 'Fit View', exact: true }).click()
+    // Drew 2026-10-31: fit zooms out until every agent is in view, settled or live.
+    const viewport = await page.locator('.ag-graph-viewport').boundingBox(), boxes = await page.locator('.react-flow__node').evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().toJSON()))
+    assert.ok(boxes.every(box => box.x >= viewport.x - 1 && box.y >= viewport.y - 1 && box.right <= viewport.x + viewport.width + 1 && box.bottom <= viewport.y + viewport.height + 1), 'fit shows every agent')
   }
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false)
 }
