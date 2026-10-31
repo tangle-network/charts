@@ -103,8 +103,18 @@ try {
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false)
   assert.deepEqual(errors,[])
   await page.screenshot({path:`${output}/meter-reduced-${width}-${theme}.png`,fullPage:true})
+  const scroller=mode('clipped').locator('[data-meter-scroll]')
+  await scroller.scrollIntoViewIfNeeded();await scroller.evaluate(node=>node.scrollTop=node.scrollHeight)
+  await meter('clipped').focus()
+  const floating=meter('clipped').getByRole('tooltip');await floating.waitFor()
+  assert.match(await floating.innerText(),/Recorded work at the last visible row\s+3 · 75%[\s\S]*Open turn\s+1 · 25%/)
+  const overlay=await floating.evaluate(node=>{const b=node.getBoundingClientRect(),p=node.closest('[data-meter-scroll]').getBoundingClientRect();return {top:b.top,bottom:b.bottom,left:b.left,right:b.right,paneTop:p.top,paneBottom:p.bottom,native:node.matches(':popover-open')}})
+  assert.equal(overlay.native,true,'the existing shared readout escapes transformed and clipped ancestors through the native top layer')
+  assert.ok(overlay.top>=0&&overlay.bottom<=982&&overlay.left>=0&&overlay.right<=width,JSON.stringify(overlay))
+  assert.ok(overlay.top<overlay.paneTop||overlay.bottom>overlay.paneBottom,'the full readout extends beyond the bounded scrolling pane')
+  await page.screenshot({path:`${output}/meter-clipped-${width}-${theme}.png`})
   await page.waitForTimeout(Math.max(0,10100-(Date.now()-began)))
-  await context.close();checks.push({theme,width,modes:16,result:'PASS',layout,work,open,fit})
+  await context.close();checks.push({theme,width,modes:17,result:'PASS',layout,work,open,fit,overlay})
  }
 }catch(error){
  if(page&&!page.isClosed()){await page.screenshot({path:`${output}/failure.png`,fullPage:true});await writeFile(`${output}/failure.json`,JSON.stringify({error:String(error),text:await page.locator('body').innerText()},null,2))}

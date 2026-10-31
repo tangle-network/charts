@@ -20,6 +20,7 @@ function MeterModes() {
   {section('zero-whole', <Meter used={0} total={0} />)}
   {section('legacy-untraced', <Meter total={4} segments={[{label:'Missing interval',value:1,kind:'untraced'},{label:'Work',value:3}]} />)}
   {section('long', <Meter compact total={12} text="12 runs" segments={[{label:'A deliberately long recorded outcome abcdefghijklmnopqrstuvwxyz0123456789',value:9},{label:'Still running',value:3,pattern:'hatched'}]} />)}
+  {section('clipped', <div data-meter-scroll style={{height:96,overflow:'auto',transform:'translateZ(0)'}}><div style={{height:240}}/><div style={{transform:'translateY(0)'}}><Meter compact total={4} scaleMax={10} segments={[{label:'Recorded work at the last visible row',value:3},{label:'Open turn',value:1,pattern:'hatched'}]} /></div></div>)}
   {section('steps', <Meter total={3} used={1} steps={[{label:'Manifest',state:'pass'},{label:'Offline build',state:'fail'},{label:'Hidden check',state:'unrun'}]} text="Build checks" />)}
   {section('invalid-axis', <MeterBoundary><Meter total={4} scaleMax={3} segments={[{label:'Work',value:4}]} /></MeterBoundary>)}
   {section('invalid-nonfinite-axis', <MeterBoundary><Meter total={4} scaleMax={Infinity} used={1} /></MeterBoundary>)}

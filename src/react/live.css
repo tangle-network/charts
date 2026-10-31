@@ -7,7 +7,7 @@
 line.ov-gridline { stroke: color-mix(in srgb, var(--chart-live-faint, var(--text-dim)) 22%, transparent); stroke-width: 1; }
 .ov-axis { fill: var(--chart-live-muted, var(--text-muted)); font-size: 14px; line-height: 20px; font-family: inherit; font-variant-numeric: tabular-nums; }
 .ov-crosshair { stroke: var(--chart-live-faint, var(--text-dim)); stroke-dasharray: 3 3; }
-.ov-tip { position: absolute; z-index: 4; display: grid; gap: 4px; width: max-content; min-width: min(160px, 100%); max-width: min(240px, 100%); padding: 8px 12px; background: var(--chart-live-raised, var(--bg-elevated)); border: 1px solid var(--chart-live-border, var(--border-default)); border-radius: 8px; box-shadow: var(--shadow-dropdown); font-size: 14px; line-height: 20px; pointer-events: none; }
+.ov-tip { position: fixed; inset: 0 auto auto 0; margin: 0; box-sizing: border-box; z-index: 4; display: grid; gap: 4px; width: max-content; min-width: min(160px, calc(100vw - 16px)); max-width: min(240px, calc(100vw - 16px)); padding: 8px 12px; background: var(--chart-live-raised, var(--bg-elevated)); border: 1px solid var(--chart-live-border, var(--border-default)); border-radius: 8px; box-shadow: var(--shadow-dropdown); font-size: 14px; line-height: 20px; pointer-events: none; }
 .ov-tip-line { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: center; overflow-wrap: anywhere; color: var(--chart-live-muted, var(--text-muted)); }
 .ov-tip-line b { color: var(--chart-live-fg, var(--text-primary)); font-variant-numeric: tabular-nums; }
 .ov-hbars { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, max-content) minmax(33%, 1fr) max-content; gap: 4px 12px; }
@@ -49,7 +49,7 @@ button.tgc-count-label { cursor: pointer; }
 .ov-meter[data-compact] { grid-template-columns: minmax(32px, 1fr) auto; align-items: center; column-gap: 8px; }
 .ov-meter[data-compact] > .ov-meter-key { display: none; }
 .ov-meter:focus-visible { outline: 2px solid var(--focus-border, var(--accent-text)); outline-offset: 2px; }
-.ov-meter .ov-tip { box-sizing: border-box; overflow-wrap: anywhere; }
+.ov-meter .ov-tip { overflow-wrap: anywhere; }
 .ov-meter-text { font-size: 14px; line-height: 20px; font-family: inherit; font-variant-numeric: tabular-nums; color: var(--chart-live-muted, var(--text-muted)); }
 .ov-spark { display: block; width: 112px; height: 24px; }
 .ov-spark-empty { font-size: 14px; color: var(--chart-live-faint, var(--text-dim)); }
