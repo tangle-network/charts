@@ -1,49 +1,11 @@
-import {
-  Background,
-  Controls,
-  type Edge,
-  MarkerType,
-  MiniMap,
-  type Node,
-  ReactFlow,
-  type ReactFlowInstance,
-} from "@xyflow/react";
-import {
-  type KeyboardEvent as ReactKeyboardEvent,
-  type MouseEvent as ReactMouseEvent,
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { Background, Controls, type Edge, MarkerType, MiniMap, type Node, ReactFlow, type ReactFlowInstance } from "@xyflow/react";
+import { type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { AgentGraphProps } from "./AgentGraph";
 import { HoverCard, HoverCardContent } from "@tangle-network/ui/primitives/hover-card";
 import { fmtCost, fmtTokenTotal } from "./format";
 import { LatestEvents } from "./latest-events";
-import {
-  AGENT_CARD,
-  FRAME_CAPTION,
-  type AgentGraphStatus,
-  LIVE_AGENT_CARD,
-  type AgentLayout,
-  buildAgentTopology,
-  layoutAgents,
-} from "./agent-graph-layout";
-import {
-  AGENT_NODE_CLASS,
-  AgentCard,
-  AgentCardView,
-  type AgentCardNode,
-  AgentFrameBox,
-  type AgentFrameNode,
-  type AgentMessageEdge,
-  AgentMessageEdgeView,
-  agentStatus,
-  agentDescription,
-  MESSAGE_EDGE_COLOR,
-} from "./agent-graph-parts";
+import { AGENT_CARD, FRAME_CAPTION, type AgentGraphStatus, LIVE_AGENT_CARD, type AgentLayout, buildAgentTopology, layoutAgents } from "./agent-graph-layout";
+import { AGENT_NODE_CLASS, AgentCard, AgentCardView, type AgentCardNode, AgentFrameBox, type AgentFrameNode, type AgentMessageEdge, AgentMessageEdgeView, agentStatus, agentDescription, MESSAGE_EDGE_COLOR } from "./agent-graph-parts";
 import { LiveAgentCard, LiveAgentCardView, type LiveAgentCardNode } from "./agent-live-card";
 import { useColorMode } from "./canvas-theme";
 import { edgeColor } from "./graph-style";
@@ -98,7 +60,7 @@ function revealSelection(inst: ReactFlowInstance, wrapper: HTMLDivElement | null
 
 export function AgentGraphCanvas({
   nodes, edges, selectedId, onSelect, direction = "TB", className, emptyState,
-  live = false, renderEventIcon, showLatestEvents = true, now,
+  live = false, renderEventIcon, showLatestEvents = true, now, renderAgentDetail,
 }: AgentGraphProps) {
   const card = live ? LIVE_AGENT_CARD : AGENT_CARD;
   const clock = useRunNow(now);
@@ -376,21 +338,18 @@ export function AgentGraphCanvas({
           fitViewOptions={{ padding: `${FIT_PADDING}px`, minZoom, maxZoom: 1 }}
         />
       </ReactFlow></div>}
-      {hovered && byId.has(hovered.id) && <AgentMetrics anchor={wrapperRef.current} side={narrow ? "bottom" : "right"} mode={colorMode} id={detailsId} agent={byId.get(hovered.id)!} onClose={() => { hideDetails(); returningFocus.current = true; hoverTarget.current?.focus({ preventScroll: true }); returningFocus.current = false; }} />}
+      {hovered && byId.has(hovered.id) && <AgentMetrics anchor={wrapperRef.current} side={narrow ? "bottom" : "right"} mode={colorMode} id={detailsId} agent={byId.get(hovered.id)!} detail={renderAgentDetail?.(hovered.id)} onClose={() => { hideDetails(); returningFocus.current = true; hoverTarget.current?.focus({ preventScroll: true }); returningFocus.current = false; }} />}
     </div></HoverCard>
   );
 }
 
 /** Metrics stay at reading size outside the zoomed canvas and its clipping container. */
-function AgentMetrics({ anchor, side, mode, id, agent, onClose }: { anchor: HTMLElement | null; side: "bottom" | "right"; mode: string; id: string; agent: AgentGraphProps["nodes"][number]; onClose: () => void }) {
-  const facts = new Map([{ label: "Tokens", value: fmtTokenTotal(agent.tokens) ?? "Not recorded" }, { label: "Cost", value: fmtCost(agent.costUsd ?? undefined) ?? "Not recorded" }, ...(agent.facts ?? [])].map(fact => [fact.label.toLowerCase(), fact]));
+function AgentMetrics({ anchor, side, mode, id, agent, detail, onClose }: { anchor: HTMLElement | null; side: "bottom" | "right"; mode: string; id: string; agent: AgentGraphProps["nodes"][number]; detail?: ReactNode; onClose: () => void }) {
+  const line = [agent.model, agent.harness, fmtTokenTotal(agent.tokens), fmtCost(agent.costUsd ?? undefined)].filter(Boolean).join(" · ");
   return <HoverCardContent container={anchor} side={side} align="start" collisionPadding={12} id={id} data-agent-metrics role="tooltip" tabIndex={0} onWheel={event => event.stopPropagation()} onEscapeKeyDown={event => { event.preventDefault(); onClose(); }} className={`${mode} rounded-xl border border-border bg-card p-4 text-sm text-foreground shadow-xl`} style={{ colorScheme: mode, width: "min(420px, calc(100vw - 24px))", maxHeight: "min(560px, calc(100vh - 24px))", overflow: "auto" }}>
-    <div className="mb-2 flex items-center justify-between gap-3"><strong>{agent.label}</strong><span>{agentStatus(agent.status).label}</span></div>
-    <p className="mb-3 text-muted-foreground">{[agent.model, agent.harness, agent.role].filter(Boolean).join(" · ")}</p>
-    <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-5 gap-y-1.5">
-      {[...facts.values()].map(fact => <div key={fact.label} className="contents"><dt className="min-w-0 break-words text-muted-foreground">{fact.label}</dt><dd className="m-0 min-w-0 max-w-64 whitespace-normal break-words text-right tabular-nums">{fact.value}</dd></div>)}
-    </dl>
-    {agent.events?.length ? <ol aria-label="Latest stream rows" className="mt-3 grid gap-1 border-t border-border pt-3 font-mono text-xs text-muted-foreground">{agent.events.slice(-5).map(event => <li key={event.id} className="truncate" title={event.label}>{event.label}</li>)}</ol> : null}
+    <div className="mb-1 flex items-center justify-between gap-3"><strong>{agent.label}</strong><span>{agentStatus(agent.status).label}</span></div>
+    {line && <p className="mb-3 text-muted-foreground">{line}</p>}
+    {detail ?? (agent.events?.length ? <ol aria-label="Latest stream rows" className="grid gap-1 border-t border-border pt-3 font-mono text-xs text-muted-foreground">{agent.events.slice(-5).map(event => <li key={event.id} className="truncate" title={event.label}>{event.label}</li>)}</ol> : null)}
     {agent.status === "failed" && <p className="mt-3 whitespace-pre-wrap break-words text-[var(--surface-danger-text)]">{agent.result ?? agent.turn ?? "Failure cause not recorded"}</p>}
   </HoverCardContent>;
 }

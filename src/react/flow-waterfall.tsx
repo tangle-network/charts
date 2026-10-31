@@ -35,6 +35,8 @@ export interface FlowWaterfallProps {
   graph?: ReactNode
   /** Shared feed after the active view, kept mounted across Agents, Steps and Graph. */
   latestEvents?: ReactNode
+  /** The hovered agent's own stream, drawn by the host (sandbox-ui's timeline rows); the card keeps one line of facts above it. */
+  renderAgentDetail?: (agentId: string) => ReactNode
   /** Host brand marks by span; the inspector draws kind glyphs without it. */
   renderIcon?: (span: FlowSpan) => ReactNode
   /** Scroll height of the rows; the tree is virtualized beyond it. Defaults to 20 agent rows, or 640 px of steps. */
@@ -164,7 +166,7 @@ function ViewControl({ view, graph, onChange }: { view: FlowView; graph: boolean
 /** Shared trace inspector: the agent timeline and the span waterfall over one clock.
  * Data remains producer-owned; playback, zoom and folding change presentation only. */
 export function FlowWaterfall({
-  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', graph, latestEvents, renderIcon, maxHeight, onSelect, markers, onTimeChange, position: positionProp, agentFill: fillProp, selectedId, onDeselect, description, summary: showSummary = true, criticalPath = false, query: queryProp, onQueryChange, collapsed: collapsedProp, onCollapsedChange, zoom: zoomProp, onZoomChange, matchSpan,
+  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', graph, latestEvents, renderAgentDetail, renderIcon, maxHeight, onSelect, markers, onTimeChange, position: positionProp, agentFill: fillProp, selectedId, onDeselect, description, summary: showSummary = true, criticalPath = false, query: queryProp, onQueryChange, collapsed: collapsedProp, onCollapsedChange, zoom: zoomProp, onZoomChange, matchSpan,
 }: FlowWaterfallProps) {
   const root = useRef<HTMLElement>(null)
   const search = useRef<HTMLInputElement>(null)
@@ -375,8 +377,8 @@ export function FlowWaterfall({
         nameWidth={nameWidth} onNameWidth={px => { resized.current = true; setNameWidth(Math.max(140, Math.min(560, px))) }} onTrack={setLaneElement}
         onExpandAll={rows.some(row => row.hasChildren) ? () => setCollapsed(new Set()) : undefined}
         onCollapseAll={() => setCollapsed(new Set(rows.filter(row => row.hasChildren).map(row => row.id)))} />
-      {card && cardRow && <HoverCardContent role="presentation" container={root.current} side={view === 'agents' ? 'top' : 'bottom'} align="start" collisionPadding={8} className="border-0 bg-transparent p-0 shadow-none" style={{ width: "min(320px, calc(100vw - 16px))", zIndex: 20, padding: 0, border: 0, background: "transparent", boxShadow: "none" }} onEscapeKeyDown={event => { event.preventDefault(); closeCard() }} onInteractOutside={event => { if (event.detail.originalEvent.type !== 'pointerdown') return; const target = event.detail.originalEvent.target; if (target instanceof Element && target.closest('.fw-bar, .fw-seg')) event.preventDefault(); else setCard(null) }}>
-        <SpanCard id={cardId} row={cardRow} agent={cardAgent} clockMs={clockMs} mode={card.pinned ? 'pinned' : 'hover'} onClose={closeCard} renderIcon={renderIcon} compact={view === 'agents'} />
+      {card && cardRow && <HoverCardContent role="presentation" container={root.current} side={view === 'agents' ? 'top' : 'bottom'} align="start" collisionPadding={8} className="border-0 bg-transparent p-0 shadow-none" style={{ width: `min(${renderAgentDetail && view === 'agents' ? 420 : 320}px, calc(100vw - 16px))`, maxHeight: "var(--radix-hover-card-content-available-height, calc(100vh - 16px))", overflowY: "auto", zIndex: 20, padding: 0, border: 0, background: "transparent", boxShadow: "none" }} onEscapeKeyDown={event => { event.preventDefault(); closeCard() }} onInteractOutside={event => { if (event.detail.originalEvent.type !== 'pointerdown') return; const target = event.detail.originalEvent.target; if (target instanceof Element && target.closest('.fw-bar, .fw-seg')) event.preventDefault(); else setCard(null) }}>
+        <SpanCard id={cardId} row={cardRow} agent={cardAgent} clockMs={clockMs} mode={card.pinned ? 'pinned' : 'hover'} onClose={closeCard} renderIcon={renderIcon} compact={view === 'agents'} detail={view === 'agents' && renderAgentDetail ? renderAgentDetail((cardAgent ?? cardRow).id) : undefined} />
       </HoverCardContent>}
       {view === 'spans' && playback}
       </>}
