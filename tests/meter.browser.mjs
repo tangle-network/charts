@@ -113,6 +113,12 @@ try {
   assert.ok(overlay.top>=0&&overlay.bottom<=982&&overlay.left>=0&&overlay.right<=width,JSON.stringify(overlay))
   assert.ok(overlay.top<overlay.paneTop||overlay.bottom>overlay.paneBottom,'the full readout extends beyond the bounded scrolling pane')
   await page.screenshot({path:`${output}/meter-clipped-${width}-${theme}.png`})
+  await page.getByRole('button',{name:'Update recorded values'}).focus()
+  await floating.waitFor({state:'detached'})
+  await meter('clipped').hover();await floating.waitFor()
+  assert.equal(await floating.evaluate(node=>node.matches(':popover-open')),true,'pointer readout uses the same shared top layer')
+  assert.match(await floating.innerText(),/Recorded work at the last visible row\s+3 · 75%/)
+  await page.screenshot({path:`${output}/meter-clipped-hover-${width}-${theme}.png`})
   await page.waitForTimeout(Math.max(0,10100-(Date.now()-began)))
   await context.close();checks.push({theme,width,modes:17,result:'PASS',layout,work,open,fit,overlay})
  }
