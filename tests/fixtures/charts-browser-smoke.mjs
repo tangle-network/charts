@@ -81,6 +81,7 @@ function PaletteContracts() {
  return <main><span data-semantic-reference style={{color:'var(--status-running)',background:'var(--bg-elevated)',borderTop:'1px solid var(--border-default)'}}>Brand reference</span><span data-tip-text-reference style={{color:'var(--text-primary)'}}>Recorded color contract</span><Gap value={5} target={{min:8,max:10}} stretch={{min:12,max:14}} scale="linear"/><DotMap positions={new Float32Array([.5,.5])} radii={.1} colors={new Uint8Array([0])} palette={['var(--chart-category-1)']} extent={[0,0,1,1]} height={160} describe={()=>'Recorded dot'} ariaLabel="Recorded points"/></main>
 }
 const params = new URLSearchParams(location.search)
+if(params.has('nonzero-motion'))document.documentElement.style.setProperty('--motion-stream','420ms linear')
 const name = (params.get('id') ?? '').replace('chatcontrols-flowwaterfall--','')
 document.documentElement.dataset.theme=params.get('globals')?.includes('agent-light')?'light':'dark'
 createRoot(document.getElementById('root')).render(name === 'meter-modes' ? <MeterModes/> : name === 'progress-lines' ? <ProgressLines/> : name === 'palette-contracts' ? <PaletteContracts/> : name === 'timeline-tree' ? <RecordedTimeline/> : name === 'analytics-counts' ? <AnalyticsCounts/> : name === 'versions' ? <Versions/> : name === 'topology' ? <Topology/> : name === 'journey' ? <Journey/> : name ? <FlowApp name={name}/> : <App />)

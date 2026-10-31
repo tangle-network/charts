@@ -40,7 +40,7 @@ button.tgc-count-label { cursor: pointer; }
 .tgc-count-key > span:last-child { margin-left: auto; }
 .ov-line-point { opacity: 1; transition: opacity var(--motion-arrive); }
 @starting-style { .ov-line-point { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .ov-hbar-track > span, .ov-meter-track > span, .tgc-count-cell { transition: none; } .ov-line-point { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .ov-hbar-track > span, .ov-meter .ov-meter-track > span, .tgc-count-cell { transition: none; } .ov-line-point { transition: none; } }
 .ov-hbar-value { font-size: 14px; line-height: 20px; font-family: inherit; font-variant-numeric: tabular-nums; text-align: right; color: var(--chart-live-fg, var(--text-primary)); }
 .ov-hbar-note { grid-column: 1 / -1; font-size: 14px; color: var(--chart-live-faint, var(--text-dim)); }
 .ov-meter { display: grid; gap: 4px; min-width: 0; }
