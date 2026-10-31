@@ -22,7 +22,7 @@ export interface CountHeatmapProps {
 }
 
 /** Recorded counts, with failures separate from magnitude. Missing cells remain unknown; large row sets are windowed. */
-export function CountHeatmap({ label, columns, rows, color = LIVE_SERIES[1], format = formatCompact, renderLabel, onSelectRow, onInspect }: CountHeatmapProps) {
+export function CountHeatmap({ label, columns, rows, color, format = formatCompact, renderLabel, onSelectRow, onInspect }: CountHeatmapProps) {
   const [measure, width] = useWidth<HTMLDivElement>()
   const scroll = useRef<HTMLDivElement>(null)
   const [target, setTarget] = useState<[number, number] | null>(null)
@@ -31,7 +31,7 @@ export function CountHeatmap({ label, columns, rows, color = LIVE_SERIES[1], for
   const fit = Math.max(0, Math.floor(((width || 720) - (narrow ? 120 : 208) - 88) / 76))
   const shown = columns.length <= fit ? columns : columns.slice(0, Math.max(0, fit - 1))
   const rest = columns.slice(shown.length)
-  const groups = [...shown.map(column => ({ label: column.label, ids: [column.id] })), ...(rest.length ? [{ label: `${rest.length} ${shown.length ? 'more' : 'tools'}`, ids: rest.map(column => column.id) }] : [])]
+  const groups = [...shown.map((column, index) => ({ label: column.label, ids: [column.id], color: color ?? LIVE_SERIES[index % LIVE_SERIES.length] })), ...(rest.length ? [{ label: `${rest.length} ${shown.length ? 'more' : 'tools'}`, ids: rest.map(column => column.id), color: color ?? 'var(--chart-live-muted, var(--text-muted))' }] : [])]
   const cells = useMemo(() => rows.map(row => groups.map(group => {
     const known = group.ids.flatMap(id => { const cell = row.cells[id]; return cell && Number.isFinite(cell.value) && cell.value >= 0 ? [cell] : [] })
     return { value: known.length ? known.reduce((sum, cell) => sum + cell.value, 0) : null, failures: known.reduce((sum, cell) => sum + (cell.failures ?? 0), 0), partial: known.length < group.ids.length }
@@ -53,10 +53,10 @@ export function CountHeatmap({ label, columns, rows, color = LIVE_SERIES[1], for
     setTop(pane.scrollTop)
     setTarget([r, c])
   }
-  return <div ref={measure} className="tgc-count-heatmap" role="table" aria-label={label} aria-rowcount={rows.length + 1} aria-colcount={groups.length + 2} style={{ '--heatmap-color': color, '--heatmap-row': `${rowHeight}px` } as CSSProperties}>
+  return <div ref={measure} className="tgc-count-heatmap" role="table" aria-label={label} aria-rowcount={rows.length + 1} aria-colcount={groups.length + 2} style={{ '--heatmap-color': color ?? 'var(--chart-live-muted, var(--text-muted))', '--heatmap-row': `${rowHeight}px` } as CSSProperties}>
     <div className="tgc-count-head" role="row" style={grid} aria-rowindex={1}>
       <span role="columnheader">Agent</span>
-      {groups.map(group => <span key={group.ids.join(':')} role="columnheader" title={columns.filter(column => group.ids.includes(column.id)).map(column => column.label).join(', ')}>{group.label}</span>)}
+      {groups.map(group => <span key={group.ids.join(':')} role="columnheader" style={{ boxShadow: `inset 0 -2px ${group.color}` }} title={columns.filter(column => group.ids.includes(column.id)).map(column => column.label).join(', ')}>{group.label}</span>)}
       <span role="columnheader">Total</span>
     </div>
     <div ref={scroll} className="tgc-count-scroll" role="rowgroup" style={{ maxHeight: height }} onScroll={event => setTop(event.currentTarget.scrollTop)} onPointerLeave={() => onInspect?.(null)}>
@@ -71,7 +71,7 @@ export function CountHeatmap({ label, columns, rows, color = LIVE_SERIES[1], for
                 const cell = values[c]!, shade = cell.value ? 10 + 35 * Math.sqrt(cell.value / Math.max(1, max)) : 0
                 return <span key={group.ids.join(':')} role="cell" tabIndex={0} data-heat-row={r} data-heat-column={c + 1} data-value={cell.value ?? undefined}
                   className={`tgc-count-cell${cell.value === null ? ' missing' : cell.value === 0 ? ' zero' : ''}`}
-                  style={{ background: shade ? `color-mix(in srgb, ${color} ${shade}%, var(--chart-live-bg, var(--bg-root)))` : undefined }}
+                  style={{ background: shade ? `color-mix(in srgb, ${group.color} ${shade}%, var(--chart-live-bg, var(--bg-root)))` : undefined }}
                   title={`${row.label} · ${group.label}: ${cell.value === null ? 'not recorded' : `${cell.partial ? 'at least ' : ''}${cell.value.toLocaleString()} calls`}${cell.failures ? `; ${cell.failures} failed` : ''}`}
                   onKeyDown={event => move(event, r, c + 1)} onPointerEnter={event => inspect(row, group, event.currentTarget)} onFocus={event => inspect(row, group, event.currentTarget)} onBlur={() => onInspect?.(null)}>
                   {cell.value === null ? '—' : `${cell.partial ? '≥' : ''}${format(cell.value)}`}{cell.failures > 0 && <span className="tgc-count-failed">✕{cell.failures}</span>}
