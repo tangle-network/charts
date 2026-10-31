@@ -106,7 +106,7 @@ export function SpanCard({ id, row, agent, clockMs, mode, onClose, renderIcon, c
             : <span className={`fw-pill fw-pill-${state}`}>{meta.label}</span>}
           {close}
         </div>
-        {detail ? <><p className="fw-card-line">{[who.span.detail, formatSpanDuration(Math.max(0, (spanRunning(who.span) ? Math.max(who.span.endMs, clockMs) : who.span.endMs) - who.span.startMs)), who.span.costUsd ?? who.rollupCostUsd, who.counts?.tool && plural(who.counts.tool, 'tool call')].map(v => typeof v === 'number' ? rowCostText(who, v) : v).filter(Boolean).join(' · ')}</p>{detail}</> : <Table rows={metrics(who, clockMs, false).filter(([label]) => label.toLowerCase() !== 'failure')} />}
+        {detail ? <><p className="fw-card-line">{[who.span.detail, formatSpanDuration(Math.max(0, (spanRunning(who.span) ? Math.max(who.span.endMs, clockMs) : who.span.endMs) - who.span.startMs)), who.span.costUsd ?? who.rollupCostUsd, (spanFact(who.span, 'Tool calls') ? `${spanFact(who.span, 'Tool calls')} tool calls` : who.counts?.tool && plural(who.counts.tool, 'tool call'))].map(v => typeof v === 'number' ? rowCostText(who, v) : v).filter(Boolean).join(' · ')}</p>{detail}</> : <Table rows={metrics(who, clockMs, false).filter(([label]) => label.toLowerCase() !== 'failure')} />}
         {step && <p className="fw-card-step">{step}</p>}
         {!row.ok && <p className="fw-card-error">{failure ? `Failure: ${failure}` : span.output ? `Recorded output: ${span.output}` : 'Failure detail not reported'}</p>}
         {sentence && row.ok && <p className="fw-card-result">{sentence}</p>}

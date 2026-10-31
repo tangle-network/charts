@@ -1,3 +1,7 @@
+## 4.0.9
+
+- The agent hover card's one line of facts names the producer's recorded tool-call count (the span's "Tool calls" fact) before the steps on display, so a bounded step tail never reads as the whole run.
+
 ## 4.0.8
 
 - Waterfall: every agent lane takes its own categorical colour (the root and lanes past the fifth no longer fall back to grey), and hovering a row holds and highlights it (#109).
