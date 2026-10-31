@@ -18,11 +18,15 @@
   --fw-neutral-bar: color-mix(in oklab, var(--fw-text) 15%, var(--fw-surface));
   --fw-hatch: color-mix(in oklab, var(--fw-text) 22%, transparent);
   --fw-h0: var(--chart-muted);
-  --fw-h1: light-dark(oklch(from var(--tone-blue-icon) .58 .11 calc(h + 39)), oklch(from var(--tone-blue-icon) .67 .11 calc(h + 39)));
-  --fw-h2: light-dark(oklch(from var(--tone-violet-icon) .55 .11 h), oklch(from var(--tone-violet-icon) .70 .11 h));
-  --fw-h3: light-dark(oklch(from var(--tone-pink-icon) .55 .11 h), oklch(from var(--tone-pink-icon) .67 .11 calc(h - 16)));
-  --fw-h4: light-dark(oklch(from var(--tone-cyan-icon) .578 .11 calc(h - 22.894)), oklch(from var(--tone-cyan-icon) .67 .11 calc(h - 26.148)));
-  --fw-h5: light-dark(oklch(from var(--tone-blue-icon) .58 .11 calc(h + 37.6)), oklch(from var(--tone-blue-icon) .67 .11 calc(h + 29.5)));
+  /* One agent, one colour: lanes cycle the charts categorical series (the palette Topology and Analytics draw from). */
+  --fw-h1: var(--chart-series-1);
+  --fw-h2: var(--chart-series-2);
+  --fw-h3: var(--chart-series-3);
+  --fw-h4: var(--chart-series-4);
+  --fw-h5: var(--chart-series-5);
+  --fw-h6: var(--chart-series-6);
+  --fw-h7: var(--chart-series-7);
+  --fw-h8: var(--chart-series-8);
   --fw-ease: var(--ease-standard);
   --fw-bar-h: 20px;
   --fw-label-col: min(var(--fw-name-w), 42%);
@@ -53,6 +57,9 @@
 .fw-root [data-tone="3"] { --tone: var(--fw-h3); }
 .fw-root [data-tone="4"] { --tone: var(--fw-h4); }
 .fw-root [data-tone="5"] { --tone: var(--fw-h5); }
+.fw-root [data-tone="6"] { --tone: var(--fw-h6); }
+.fw-root [data-tone="7"] { --tone: var(--fw-h7); }
+.fw-root [data-tone="8"] { --tone: var(--fw-h8); }
 .fw-root [data-tone], .fw-root .fw-kinds {
   --fill: light-dark(var(--tone), color-mix(in oklab, var(--tone) 94%, var(--bg-root)));
   --line: var(--tone);
@@ -137,6 +144,9 @@
 .fw-root .fw-row { position: absolute; top: 0; left: 0; right: 0; transform: translateY(var(--row-y)); height: var(--fw-row-h); display: grid; grid-template-columns: var(--fw-label-col) minmax(0, 1fr); outline: 0; contain: layout style; }
 .fw-root .fw-row { background: var(--fw-tint, transparent); }
 .fw-root .fw-row:hover { --fw-tint: var(--fw-hover); }
+/* Hovering a row or any of its segments holds that row and dims the rest, so the eye stays on one agent. */
+.fw-root .fw-scroller:has(.fw-row:hover) .fw-row:not(:hover) { opacity: .45; }
+.fw-root .fw-row { transition: opacity var(--motion-control), transform var(--motion-surface); }
 .fw-root .fw-row.fw-active { --fw-tint: color-mix(in oklab, var(--fw-accent) 7%, transparent); }
 .fw-root .fw-row[aria-selected="true"] { --fw-tint: var(--ix-sel-bg); }
 .fw-root-agents[data-selection] .fw-row[aria-selected="true"] { box-shadow: inset 3px 0 0 var(--fw-accent); }
@@ -191,7 +201,6 @@
   opacity: var(--on);
 }
 .fw-root :is(.fw-bar, .fw-seg, .fw-mark) { opacity: calc(var(--on) * var(--fw-recede, 1)); transition: opacity var(--motion-control); }
-.fw-root .fw-row { transition: transform var(--motion-surface); }
 .fw-root .fw-enter > [role="gridcell"] { transition: opacity var(--motion-arrive); transition-delay: var(--fw-enter-delay); }
 .fw-root .fw-enter :is(.fw-bar, .fw-seg) { transition: clip-path var(--motion-grow, var(--motion-stream)); transition-delay: var(--fw-enter-delay); clip-path: inset(0); }
 @starting-style { .fw-root .fw-enter > [role="gridcell"] { opacity: 0; } .fw-root .fw-enter :is(.fw-bar, .fw-seg) { clip-path: inset(0 100% 0 0); } }
