@@ -22,6 +22,13 @@ try {
    assert.ok(await table.getByRole('row').count()<=23,'140 rows remain windowed')
    assert.match(await table.getByRole('row').nth(1).innerText(),/—/,'missing cells stay unknown')
    assert.match(await table.getByRole('row').nth(2).innerText(),/\b0\b/,'recorded zero is visible')
+   const legend = await table.locator('.tgc-count-head [role="columnheader"]').evaluateAll(nodes => nodes.slice(1, -1).map(node => ({ label: node.textContent, swatch: getComputedStyle(node).boxShadow })))
+   assert.ok(legend.every(item => item.label && item.swatch !== 'none'), 'each tool column labels its category color')
+   if (width > 600) {
+    assert.ok(new Set(legend.map(item => item.swatch)).size > 1, 'distinct tool series use categorical colors')
+    const fills = await table.locator('[data-heat-row="2"][data-value]').evaluateAll(nodes => nodes.map(node => getComputedStyle(node).backgroundColor))
+    assert.ok(new Set(fills).size > 1, 'equal counts preserve distinct tool colors')
+   }
    const first=table.getByRole('button',{name:'Agent 0',exact:true})
    await first.focus()
    for(let i=0;i<120;i++)await page.keyboard.press('ArrowDown')
@@ -51,7 +58,7 @@ try {
    await page.screenshot({path:`${out}/${theme}-${width}.png`,fullPage:true})
    await page.emulateMedia({reducedMotion:'reduce'})
    assert.equal(await track.evaluate(node=>getComputedStyle(node).transitionDuration),'0s')
-   checks.push({theme,width,result:'PASS',rows:140,mountedRows:await table.getByRole('row').count(),selected:'agent-120',before:old,after:await table.locator('[data-heat-row="120"][data-heat-column="1"]').innerText(),motion:during})
+   checks.push({legend,theme,width,result:'PASS',rows:140,mountedRows:await table.getByRole('row').count(),selected:'agent-120',before:old,after:await table.locator('[data-heat-row="120"][data-heat-column="1"]').innerText(),motion:during})
    await page.emulateMedia({reducedMotion:'no-preference'})
    await page.goto(`${url}/?id=progress-lines&globals=theme:agent-${theme}`)
    const lines=page.locator('.ov-plot svg').first()
