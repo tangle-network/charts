@@ -14,10 +14,6 @@ async function proveCompactTopology(page, width, theme, output) {
     const team = await page.locator('.react-flow__node-agentFrame').boundingBox()
     assert.ok(root.x + root.width < team.x, 'the root is separate to the left of its team')
     assert.equal(await page.locator('.react-flow__viewport').evaluate(node => new DOMMatrixReadOnly(getComputedStyle(node).transform).a), 1)
-    await page.getByRole('button', { name: 'Fit View', exact: true }).click()
-    assert.equal(await page.locator('.react-flow__viewport').evaluate(node => new DOMMatrixReadOnly(getComputedStyle(node).transform).a), 1, 'fit never shrinks readable card text')
-    const fittedRoot = await page.locator('.react-flow__node[data-id="agent-0"]').boundingBox(), viewport = await page.locator('.ag-graph-viewport').boundingBox()
-    assert.ok(fittedRoot.y >= viewport.y && fittedRoot.y+fittedRoot.height <= viewport.y+viewport.height, 'fit keeps the root visible')
     const colors = await page.evaluate(() => ({frame:getComputedStyle(document.querySelector('.ag-team-frame')).backgroundColor, card:getComputedStyle(document.querySelector('.ag-agent-card')).backgroundColor}))
     assert.notEqual(colors.frame, colors.card, 'raised cards have a distinct surface from the team')
   }
@@ -58,6 +54,12 @@ async function proveCompactTopology(page, width, theme, output) {
   assert.equal(await metrics.count(), 0, 'Escape stays closed after restoring the invoker')
   assert.equal(await owner.evaluate(element => element === document.activeElement), true)
 
+  if (width > 600) {
+    await page.getByRole('button', { name: 'Fit View', exact: true }).click()
+    // Drew 2026-10-31: fit zooms out until every agent is in view, settled or live.
+    const viewport = await page.locator('.ag-graph-viewport').boundingBox(), boxes = await page.locator('.react-flow__node').evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().toJSON()))
+    assert.ok(boxes.every(box => box.x >= viewport.x - 1 && box.y >= viewport.y - 1 && box.right <= viewport.x + viewport.width + 1 && box.bottom <= viewport.y + viewport.height + 1), 'fit shows every agent')
+  }
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false)
 }
 
