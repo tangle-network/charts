@@ -7,7 +7,7 @@
 line.ov-gridline { stroke: color-mix(in srgb, var(--chart-live-faint, var(--text-dim)) 22%, transparent); stroke-width: 1; }
 .ov-axis { fill: var(--chart-live-muted, var(--text-muted)); font-size: 14px; line-height: 20px; font-family: inherit; font-variant-numeric: tabular-nums; }
 .ov-crosshair { stroke: var(--chart-live-faint, var(--text-dim)); stroke-dasharray: 3 3; }
-.ov-tip { position: absolute; z-index: 4; display: grid; gap: 4px; width: max-content; min-width: min(160px, 100%); max-width: min(240px, 100%); padding: 8px 12px; background: var(--chart-live-raised, var(--bg-elevated)); border: 1px solid var(--chart-live-border, var(--border-default)); border-radius: 8px; box-shadow: var(--shadow-dropdown); font-size: 14px; line-height: 20px; pointer-events: none; }
+.ov-tip { position: fixed; inset: 0 auto auto 0; margin: 0; box-sizing: border-box; z-index: 4; display: grid; gap: 4px; width: max-content; min-width: min(160px, calc(100vw - 16px)); max-width: min(240px, calc(100vw - 16px)); padding: 8px 12px; background: var(--chart-live-raised, var(--bg-elevated)); border: 1px solid var(--chart-live-border, var(--border-default)); border-radius: 8px; box-shadow: var(--shadow-dropdown); font-size: 14px; line-height: 20px; pointer-events: none; }
 .ov-tip-line { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: center; overflow-wrap: anywhere; color: var(--chart-live-muted, var(--text-muted)); }
 .ov-tip-line b { color: var(--chart-live-fg, var(--text-primary)); font-variant-numeric: tabular-nums; }
 .ov-hbars { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, max-content) minmax(33%, 1fr) max-content; gap: 4px 12px; }
@@ -40,12 +40,16 @@ button.tgc-count-label { cursor: pointer; }
 .tgc-count-key > span:last-child { margin-left: auto; }
 .ov-line-point { opacity: 1; transition: opacity var(--motion-arrive); }
 @starting-style { .ov-line-point { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .ov-hbar-track > span, .tgc-count-cell { transition: none; } .ov-line-point { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .ov-hbar-track > span, .ov-meter .ov-meter-track > span, .tgc-count-cell { transition: none; } .ov-line-point { transition: none; } }
 .ov-hbar-value { font-size: 14px; line-height: 20px; font-family: inherit; font-variant-numeric: tabular-nums; text-align: right; color: var(--chart-live-fg, var(--text-primary)); }
 .ov-hbar-note { grid-column: 1 / -1; font-size: 14px; color: var(--chart-live-faint, var(--text-dim)); }
 .ov-meter { display: grid; gap: 4px; min-width: 0; }
-.ov-meter-track { display: block; height: 8px; border-radius: 3px; background: color-mix(in srgb, var(--chart-live-faint, var(--text-dim)) 14%, transparent); overflow: hidden; }
-.ov-meter-track > span { display: block; height: 100%; border-radius: 3px; }
+.ov-meter-track { position: relative; display: block; height: 8px; border-radius: 3px; background: color-mix(in srgb, var(--chart-live-faint, var(--text-dim)) 14%, transparent); overflow: hidden; }
+.ov-meter-track > span { position: absolute; inset: 0; border-radius: 3px; transition: clip-path var(--motion-stream); }
+.ov-meter[data-compact] { grid-template-columns: minmax(32px, 1fr) auto; align-items: center; column-gap: 8px; }
+.ov-meter[data-compact] > .ov-meter-key { display: none; }
+.ov-meter:focus-visible { outline: 2px solid var(--focus-border, var(--accent-text)); outline-offset: 2px; }
+.ov-meter .ov-tip { overflow-wrap: anywhere; }
 .ov-meter-text { font-size: 14px; line-height: 20px; font-family: inherit; font-variant-numeric: tabular-nums; color: var(--chart-live-muted, var(--text-muted)); }
 .ov-spark { display: block; width: 112px; height: 24px; }
 .ov-spark-empty { font-size: 14px; color: var(--chart-live-faint, var(--text-dim)); }
@@ -85,8 +89,7 @@ button.tgc-count-label { cursor: pointer; }
 .ov-key li, .ov-events li, .ov-meter-key li { display: inline-flex; align-items: center; gap: 8px; }
 .ov-meter-key b { font-weight: 600; color: var(--chart-live-fg, var(--chart-ink)); font-family: var(--chart-live-font-mono, monospace); font-variant-numeric: tabular-nums; }
 .ov-meter-key i, .ov-event-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 2px; }
-[data-segmented] > .ov-meter-track { display: flex; }
-[data-segmented] > .ov-meter-track > span { flex: none; border-radius: 0; }
+[data-segmented] > .ov-meter-track > span { border-radius: 0; }
 .ov-event-pass { border-left: 2px solid var(--chart-live-pass, var(--chart-pass, var(--status-running))); border-radius: 0; width: 0; }
 .ov-event-deadline { border-left: 2px dashed var(--chart-live-fg, var(--chart-ink)); border-radius: 0; width: 0; }
 .ov-event-died { border-left: 2px solid var(--chart-live-danger, var(--chart-breach, var(--status-error))); border-radius: 0; width: 0; }

@@ -285,64 +285,51 @@ export interface MeterSegment {
   value: number | null
   color?: string
   kind?: 'measured' | 'untraced'
+  pattern?: 'hatched'
 }
 
 // Brand chart tokens for segments without a caller colour.
 const SEGMENT_TONES = ['var(--chart-accent)', 'var(--chart-tier-c)', 'var(--chart-muted)'] as const
 
-/** A used-of-total meter with its numbers. With `segments` it is a part-of-whole bar: the remainder of `total` that no
- * segment accounts for is drawn hatched and labelled `untraced`, and a missing total hatches the whole track. */
-export function Meter({ used, total, format = formatCompact, tone, text, segments, steps, untraced = 'untraced' }: { steps?: { label: string; state: 'pass' | 'fail' | 'undecided' | 'unrun' }[]; used?: number | null | undefined; total: number | null | undefined; format?: (v: number) => string; tone?: string; text?: string; segments?: MeterSegment[]; untraced?: string }) {
+/** Recorded parts use `total`; `scaleMax` only extends their comparative axis. Compact rows keep a focusable readout. */
+export function Meter({ used, total, format = formatCompact, tone, text, segments, steps, untraced = 'untraced', compact = false, scaleMax }: { steps?: { label: string; state: 'pass' | 'fail' | 'undecided' | 'unrun' }[]; used?: number | null | undefined; total: number | null | undefined; format?: (v: number) => string; tone?: string; text?: string; segments?: MeterSegment[]; untraced?: string; compact?: boolean; scaleMax?: number }) {
+  const [hover, setHover] = useState(false), [focus, setFocus] = useState(false)
   if (steps) {
     const current = steps.findIndex(step => step.state !== 'pass')
     return <ol className="ov-meter-steps" aria-label={text ?? 'Check steps'}>{steps.map((step, i) => <li key={i} data-state={step.state} aria-current={i === current ? 'step' : undefined}><div className="ov-step-head"><strong>{i + 1}</strong><small className="ov-step-state">{step.state === 'pass' ? 'Pass' : step.state === 'fail' ? 'Stuck' : 'Unchecked'}</small></div><span>{step.label}</span></li>)}</ol>
   }
-  if (segments) return <SegmentMeter segments={segments} total={total} format={format} text={text} untraced={untraced} />
-  const share = used !== null && used !== undefined && total ? Math.min(1, used / total) : null
-  return (
-    <div className="ov-meter">
-      <span className="ov-meter-track">
-        <span style={{ width: `${(share ?? 0) * 100}%`, background: tone ?? (share !== null && share > 0.9 ? 'var(--chart-live-danger, var(--surface-danger-text))' : share !== null && share > 0.7 ? 'var(--chart-live-warning, var(--surface-warning-text))' : LIVE_SERIES[0]) }} />
-      </span>
-      <span className="ov-meter-text">
-        {text ?? `${format(used ?? NaN)} of ${format(total ?? NaN)} · ${formatShare(share)}`}
-      </span>
-    </div>
-  )
-}
-
-function SegmentMeter({ segments, total, format, text, untraced }: { segments: MeterSegment[]; total: number | null | undefined; format: (v: number) => string; text?: string; untraced: string }) {
-  for (const segment of segments) {
+  const whole = total != null && Number.isFinite(total) && total >= 0 ? total : null
+  if (scaleMax !== undefined && (!Number.isFinite(scaleMax) || scaleMax <= 0 || (whole !== null && scaleMax < whole))) throw new RangeError('scaleMax must be finite, positive and at least the recorded total.')
+  const share = used != null && whole ? Math.min(1, used / whole) : null
+  const input: MeterSegment[] = segments ?? [{ label: 'Used', value: used != null && Number.isFinite(used) ? used : null, color: tone ?? (share !== null && share > .9 ? 'var(--chart-live-danger, var(--surface-danger-text))' : share !== null && share > .7 ? 'var(--chart-live-warning, var(--surface-warning-text))' : LIVE_SERIES[0]) }]
+  for (const segment of segments ?? []) {
     if (segment.value !== null && (!Number.isFinite(segment.value) || segment.value < 0)) throw new RangeError(`${segment.label}: a segment value must be a nonnegative finite number or null.`)
   }
-  const known = segments.reduce((sum, segment) => sum + (segment.value ?? 0), 0)
-  const whole = total !== null && total !== undefined && Number.isFinite(total) && total > 0 ? total : null
-  if (whole !== null && known > whole * (1 + 1e-9)) throw new RangeError(`Segments sum to ${known}, more than the total ${whole}.`)
-  const remainder = whole === null ? 0 : whole - known
-  const parts = [
-    ...segments.map((segment, i) => ({ ...segment, color: segment.color ?? SEGMENT_TONES[i % SEGMENT_TONES.length], remainder: false })),
-    ...(remainder > whole! * 1e-9 ? [{ label: untraced, value: remainder, kind: 'untraced' as const, color: undefined, remainder: true }] : []),
-  ]
-  const share = (value: number) => (whole === null ? null : value / whole)
+  const known = input.reduce((sum, part) => sum + (part.value ?? 0), 0), remainder = whole === null ? 0 : whole - known
+  if (segments && whole !== null && known > whole * (1 + 1e-9)) throw new RangeError(`Segments sum to ${known}, more than the total ${whole}.`)
+  const parts = [...input, ...(segments && remainder > (whole ?? 0) * 1e-9 ? [{ label: untraced, value: remainder, kind: 'untraced' } as MeterSegment] : [])].map((part, i) => ({ ...part, color: part.color ?? SEGMENT_TONES[i % SEGMENT_TONES.length], hatched: part.kind === 'untraced' || part.pattern === 'hatched', valueText: part.value === null ? 'not recorded' : `${format(part.value)}${whole ? ` · ${formatShare(part.value / whole)}` : ''}` }))
+  const summary = (segments ? whole === null ? 'total not recorded' : `${format(known)} of ${format(whole)} accounted · ${formatShare(whole ? known / whole : null)}` : `${format(used ?? NaN)} of ${format(total ?? NaN)} · ${formatShare(share)}`) + (scaleMax === undefined ? '' : ` · scale maximum ${format(scaleMax)}`)
+  const readout = [text, summary, ...parts.map(part => `${part.label}: ${part.valueText}`)].filter(Boolean).join(' · ')
+  let offset = 0
   return (
-    <div className="ov-meter" data-segmented="true">
-      <span className={`ov-meter-track${whole === null ? ' ov-hatched' : ''}`} data-hatched={whole === null ? 'true' : undefined} aria-hidden="true">
-        {whole !== null && parts.filter((part) => part.value !== null && part.value > 0).map((part) => (
-          <span key={part.label} data-segment={part.label} data-hatched={part.kind === 'untraced' ? 'true' : undefined}
-            className={part.kind === 'untraced' ? 'ov-hatched' : undefined}
-            style={{ width: `${(part.value! / whole) * 100}%`, background: part.kind === 'untraced' ? undefined : part.color }} />
-        ))}
+    <div className="ov-meter ov-plot" data-segmented={segments ? 'true' : undefined} data-compact={compact ? 'true' : undefined} role={compact ? 'img' : undefined} aria-label={compact ? readout : undefined} tabIndex={compact ? 0 : undefined}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} onFocus={() => setFocus(true)} onBlur={() => setFocus(false)} onKeyDown={event => { if (event.key === 'Escape') { setHover(false); setFocus(false) } }}>
+      <span className={`ov-meter-track${segments && whole === null ? ' ov-hatched' : ''}`} data-hatched={segments && whole === null ? 'true' : undefined} aria-hidden="true">
+        {parts.map((part, i) => {
+          const fraction = whole === null || !whole ? 0 : Math.max(0, Math.min(part.value ?? 0, whole) / (scaleMax ?? whole)), start = offset
+          offset += fraction
+          return <span key={i} data-segment={part.label} data-hatched={part.hatched ? 'true' : undefined} className={part.hatched ? 'ov-hatched' : undefined}
+            style={{ clipPath: `inset(0 ${Math.max(0, 1 - start - fraction) * 100}% 0 ${start * 100}% round ${segments ? 0 : 3}px)`, backgroundColor: part.kind === 'untraced' ? undefined : part.color }} />
+        })}
       </span>
-      <ul className="ov-meter-key">
-        {parts.map((part) => (
-          <li key={part.label} data-segment={part.label}>
-            <i className={part.kind === 'untraced' || part.value === null ? 'ov-hatched' : undefined} style={part.kind === 'untraced' || part.value === null ? undefined : { background: part.color }} aria-hidden="true" />
-            <span>{part.label}</span>
-            <b>{part.value === null ? 'not recorded' : `${format(part.value)}${whole === null ? '' : ` · ${formatShare(share(part.value))}`}`}</b>
-          </li>
-        ))}
-      </ul>
-      <span className="ov-meter-text">{text ?? (whole === null ? 'total not recorded' : `${format(known)} of ${format(whole)} accounted · ${formatShare(known / whole)}`)}</span>
+      {segments && <ul className="ov-meter-key">
+        {parts.map((part, i) => <li key={i} data-segment={part.label}>
+          <i className={part.hatched || part.value === null ? 'ov-hatched' : undefined} style={part.kind === 'untraced' || part.value === null ? undefined : { backgroundColor: part.color }} aria-hidden="true" />
+          <span>{part.label}</span><b>{part.valueText}</b>
+        </li>)}
+      </ul>}
+      <span className="ov-meter-text">{text ?? (compact ? format((segments ? whole : used) ?? NaN) : summary)}</span>
+      {compact && <Tooltip tip={hover || focus ? { x: 0, y: 0, title: [text, summary].filter(Boolean).join(' · '), lines: parts.map(part => ({ label: part.label, value: part.valueText, color: part.color })) } : null} />}
     </div>
   )
 }

@@ -27,22 +27,22 @@ export interface Tip {
 
 export function Tooltip({ tip }: { tip: Tip | null }) {
   const ref = useRef<HTMLDivElement>(null)
-  const [position, setPosition] = useState({ left: 0, top: 0 })
   useLayoutEffect(() => {
-    const node = ref.current, parent = node?.parentElement
-    if (!tip || !node || !parent) return
+    const node = ref.current, parent = node?.parentElement, view = node?.ownerDocument.defaultView
+    if (!tip || !node || !parent || !view) return
     const place = () => {
-      const next = { left: Math.max(0, Math.min(tip.x, parent.clientWidth - node.offsetWidth)), top: Math.max(0, Math.min(tip.y, parent.clientHeight - node.offsetHeight)) }
-      setPosition(old => old.left === next.left && old.top === next.top ? old : next)
+      const box = parent.getBoundingClientRect()
+      node.style.transform = `translate(${Math.max(8, Math.min(box.left + Math.max(0, Math.min(tip.x, parent.clientWidth - node.offsetWidth)), view.innerWidth - node.offsetWidth - 8))}px, ${Math.max(8, Math.min(box.top + Math.max(0, Math.min(tip.y, parent.clientHeight - node.offsetHeight)), view.innerHeight - node.offsetHeight - 8))}px)`
     }
     place()
     const observer = new ResizeObserver(place)
     observer.observe(node); observer.observe(parent)
-    return () => observer.disconnect()
+    view.addEventListener('scroll', place, true); view.addEventListener('resize', place)
+    return () => { observer.disconnect(); view.removeEventListener('scroll', place, true); view.removeEventListener('resize', place) }
   }, [tip])
   if (!tip) return null
   return (
-    <div ref={ref} className="ov-tip" role="tooltip" style={position}>
+    <div ref={node => { ref.current = node; node?.showPopover?.() }} className="ov-tip" role="tooltip" popover="manual">
       <strong>{tip.title}</strong>
       {tip.lines.map((line, i) => (
         <span key={`${line.label}:${i}`} className="ov-tip-line">
