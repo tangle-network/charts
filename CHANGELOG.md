@@ -4,6 +4,10 @@
 - Topology: the minimum zoom is the fit ratio for live and settled graphs, Fit View frames every agent, and the hover card lists the agent's latest stream rows (#110).
 - A docked SpanCard is content inside its host surface, with no frame of its own (#107).
 
+## 4.0.9
+
+- The agent hover card's one line of facts names the producer's recorded tool-call count (the span's "Tool calls" fact) before the steps on display, so a bounded step tail never reads as the whole run.
+
 ## 4.0.1
 
 Keep recorded completed and stopped outcomes visible in topology cards, including the phone overview.
