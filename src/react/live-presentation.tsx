@@ -32,7 +32,7 @@ export function Tooltip({ tip }: { tip: Tip | null }) {
     if (!tip || !node || !parent || !view) return
     const place = () => {
       const box = parent.getBoundingClientRect()
-      node.style.transform = `translate(${Math.max(8, Math.min(box.left + tip.x, view.innerWidth - node.offsetWidth - 8))}px, ${Math.max(8, Math.min(box.top + tip.y, view.innerHeight - node.offsetHeight - 8))}px)`
+      node.style.transform = `translate(${Math.max(8, Math.min(box.left + Math.max(0, Math.min(tip.x, parent.clientWidth - node.offsetWidth)), view.innerWidth - node.offsetWidth - 8))}px, ${Math.max(8, Math.min(box.top + Math.max(0, Math.min(tip.y, parent.clientHeight - node.offsetHeight)), view.innerHeight - node.offsetHeight - 8))}px)`
     }
     place()
     const observer = new ResizeObserver(place)
