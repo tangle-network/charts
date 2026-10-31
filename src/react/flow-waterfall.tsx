@@ -268,7 +268,6 @@ export function FlowWaterfall({
     const flip = (open: ReadonlySet<string>) => new Set(open.has(row.id) ? [...open].filter(id => id !== row.id) : [...open, row.id])
     if (row.id.startsWith('family:')) { setFlippedFamilies(flip); return }
     if (!isLive) setPlaying(false)
-    onSelect?.(row.span)
     if (view === 'agents') { setOpenSteps(flip); setActiveId(row.id); return }
     if (collapsed.has(row.id)) zoomTo(row)
     setCollapsed(previous => {
