@@ -18,7 +18,7 @@ export interface SpanCardProps {
   /** The agent that owns the span, for the agent-level header. */
   agent?: FlowWaterfallRow
   clockMs: number
-  /** `pinned` cards take focus, close on Escape and return focus to the row; a `docked` card is a host's inspector panel. */
+  /** `pinned` cards take focus, close on Escape and return focus to the row; a `docked` card is content inside a host's surface (an inspector panel, a HoverCard) and draws no frame of its own. */
   mode: 'hover' | 'pinned' | 'docked'
   onClose: () => void
   renderIcon?: (span: FlowSpan) => ReactNode
@@ -82,7 +82,7 @@ export function SpanCard({ id, row, agent, clockMs, mode, onClose, renderIcon, c
   const meta = statusMeta(state)
   const owner = agent && agent.id !== row.id ? agent : undefined
   const frame = {
-    id, role: { hover: 'tooltip', pinned: 'dialog', docked: 'region' }[mode], 'aria-label': mode === 'hover' ? undefined : `${span.name} details`, style: { '--fw-status': `var(${meta.token})` } as CSSProperties,
+    id, 'data-mode': mode, role: { hover: 'tooltip', pinned: 'dialog', docked: 'region' }[mode], 'aria-label': mode === 'hover' ? undefined : `${span.name} details`, style: { '--fw-status': `var(${meta.token})` } as CSSProperties,
     onKeyDown: (event: { key: string; stopPropagation: () => void }) => { if (event.key === 'Escape') { event.stopPropagation(); onClose() } },
   }
   const close = mode === 'pinned' && <button type="button" className="fw-icon-button fw-card-close" aria-label="Close details" onClick={onClose} autoFocus><CloseGlyph /></button>
