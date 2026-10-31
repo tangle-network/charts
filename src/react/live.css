@@ -49,7 +49,7 @@ button.tgc-count-label { cursor: pointer; }
 .ov-meter[data-compact] { grid-template-columns: minmax(32px, 1fr) auto; align-items: center; column-gap: 8px; }
 .ov-meter[data-compact] > .ov-meter-key { display: none; }
 .ov-meter:focus-visible { outline: 2px solid var(--focus-border, var(--accent-text)); outline-offset: 2px; }
-.ov-meter .ov-tip { overflow-wrap: anywhere; }
+.ov-meter .ov-tip { box-sizing: border-box; overflow-wrap: anywhere; }
 .ov-meter-text { font-size: 14px; line-height: 20px; font-family: inherit; font-variant-numeric: tabular-nums; color: var(--chart-live-muted, var(--text-muted)); }
 .ov-spark { display: block; width: 112px; height: 24px; }
 .ov-spark-empty { font-size: 14px; color: var(--chart-live-faint, var(--text-dim)); }

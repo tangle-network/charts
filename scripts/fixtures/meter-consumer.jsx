@@ -6,7 +6,7 @@ class MeterBoundary extends React.Component {
 function MeterModes() {
  const [grown, setGrown] = useState(false)
  const hours = value => Number.isFinite(value) ? `${value} h` : '—'
- const section = (id, child) => <section data-meter-case={id} style={id === 'long' ? {maxWidth:180} : undefined}><h2>{id}</h2>{child}</section>
+ const section = (id, child) => <section data-meter-case={id} style={id === 'long' ? {maxWidth:180,marginLeft:'auto'} : undefined}><h2>{id}</h2>{child}</section>
  return <main><h1>Recorded Meter modes</h1><button onClick={() => setGrown(value => !value)}>Update recorded values</button>
   {section('used', <Meter used={4} total={10} />)}
   {section('parts', <Meter total={10} segments={[{label:'Work',value:3},{label:'Idle',value:2,pattern:'hatched'},{label:'Missing span',value:null}]} />)}
