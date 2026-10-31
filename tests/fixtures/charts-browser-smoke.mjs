@@ -87,7 +87,7 @@ document.documentElement.dataset.theme=params.get('globals')?.includes('agent-li
 createRoot(document.getElementById('root')).render(name === 'meter-modes' ? <MeterModes/> : name === 'progress-lines' ? <ProgressLines/> : name === 'palette-contracts' ? <PaletteContracts/> : name === 'timeline-tree' ? <RecordedTimeline/> : name === 'analytics-counts' ? <AnalyticsCounts/> : name === 'versions' ? <Versions/> : name === 'topology' ? <Topology/> : name === 'journey' ? <Journey/> : name ? <FlowApp name={name}/> : <App />)
 `
 writeFileSync(join(dir, 'app.jsx'), app)
-await build({entryPoints:[join(dir,'app.jsx')],bundle:true,outfile:join(dir,'app.js'),jsx:'automatic',alias:{...(process.env.CHARTS_SOURCE?{'@tangle-network/charts/react':join(root,'src/react/index.ts'),'@tangle-network/charts/react/agent-graph':join(root,'src/react/agent-graph/index.ts')}:{}),react:dirname(peerRequire.resolve('react/package.json')),'react-dom':dirname(peerRequire.resolve('react-dom/package.json'))}})
+await build({entryPoints:[join(dir,'app.jsx')],bundle:true,outfile:join(dir,'app.js'),jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'},alias:{...(process.env.CHARTS_SOURCE?{'@tangle-network/charts/react':join(root,'src/react/index.ts'),'@tangle-network/charts/react/agent-graph':join(root,'src/react/agent-graph/index.ts')}:{}),react:dirname(peerRequire.resolve('react/package.json')),'react-dom':dirname(peerRequire.resolve('react-dom/package.json'))}})
 // The trace paints Brand roles only, so the page loads Brand's tokens as every host does.
 const brandTokens = readFileSync(peerRequire.resolve('@tangle-network/brand/styles/tokens.css'),'utf8')
 const tokens = brandTokens + readFileSync(peerRequire.resolve('@tangle-network/charts/react/flow-waterfall.css'),'utf8') + `
