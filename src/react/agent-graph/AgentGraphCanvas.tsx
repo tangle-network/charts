@@ -229,7 +229,7 @@ export function AgentGraphCanvas({
   useEffect(() => { if (narrow) { rfRef.current = null; setReady(false); setShown(false); framed.current = null; } }, [narrow]);
   const layoutIdentity = layout ? `${layoutKey}:${layout.columns}` : null;
   const cameraKey = `${direction}:${topology.key}`;
-  const minZoom = !live ? 1 : layout && canvas ? Math.max(0.02, Math.min(0.2, (canvas.width - 2 * FIT_PADDING) / layout.width, (canvas.height - 2 * FIT_PADDING) / layout.height)) : 0.2;
+  const minZoom = layout && canvas ? Math.max(0.02, Math.min(1, (canvas.width - 2 * FIT_PADDING) / layout.width, (canvas.height - 2 * FIT_PADDING) / layout.height)) : 0.2;
   useEffect(() => {
     const inst = rfRef.current;
     if (!ready || !inst || !layoutIdentity || !canvas) return;
@@ -251,12 +251,7 @@ export function AgentGraphCanvas({
     });
     return () => cancelAnimationFrame(frame);
   }, [ready, layoutIdentity, cameraKey, canvas, minZoom, animateMotion, selectedId]);
-  const select = useCallback(
-    (id: string) => {
-      if (byId.has(id)) { onSelect?.(id); wrapperRef.current?.querySelector<HTMLElement>(`[data-agent-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" }); }
-    },
-    [byId, onSelect],
-  );
+  const select = useCallback((id: string) => { if (byId.has(id)) { onSelect?.(id); wrapperRef.current?.querySelector<HTMLElement>(`[data-agent-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" }); } }, [byId, onSelect]);
   const handleNodeClick = useCallback((_event: ReactMouseEvent, node: Node) => select(node.id), [select]);
   const handleKeyDown = useCallback((event: ReactKeyboardEvent<HTMLDivElement>) => {
     if (!(event.target instanceof HTMLElement)) return;
@@ -378,7 +373,7 @@ export function AgentGraphCanvas({
         <Controls
           showInteractive={false}
           position="bottom-right"
-          fitViewOptions={{ padding: `${FIT_PADDING}px`, minZoom, maxZoom: 1, nodes: live ? undefined : topology.agentIds.slice(0, 2).map(id => ({ id })) }}
+          fitViewOptions={{ padding: `${FIT_PADDING}px`, minZoom, maxZoom: 1 }}
         />
       </ReactFlow></div>}
       {hovered && byId.has(hovered.id) && <AgentMetrics anchor={wrapperRef.current} side={narrow ? "bottom" : "right"} mode={colorMode} id={detailsId} agent={byId.get(hovered.id)!} onClose={() => { hideDetails(); returningFocus.current = true; hoverTarget.current?.focus({ preventScroll: true }); returningFocus.current = false; }} />}
@@ -395,6 +390,7 @@ function AgentMetrics({ anchor, side, mode, id, agent, onClose }: { anchor: HTML
     <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-5 gap-y-1.5">
       {[...facts.values()].map(fact => <div key={fact.label} className="contents"><dt className="min-w-0 break-words text-muted-foreground">{fact.label}</dt><dd className="m-0 min-w-0 max-w-64 whitespace-normal break-words text-right tabular-nums">{fact.value}</dd></div>)}
     </dl>
+    {agent.events?.length ? <ol aria-label="Latest stream rows" className="mt-3 grid gap-1 border-t border-border pt-3 font-mono text-xs text-muted-foreground">{agent.events.slice(-5).map(event => <li key={event.id} className="truncate" title={event.label}>{event.label}</li>)}</ol> : null}
     {agent.status === "failed" && <p className="mt-3 whitespace-pre-wrap break-words text-[var(--surface-danger-text)]">{agent.result ?? agent.turn ?? "Failure cause not recorded"}</p>}
   </HoverCardContent>;
 }
