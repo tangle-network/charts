@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import type { FlowTrace } from "../flow-trace.js";
-import { FlowWaterfall, type FlowWaterfallWindow } from "./index.js";
+import { FlowWaterfall, flowWaterfallRows, type FlowWaterfallWindow } from "./index.js";
 
 // jsdom has no layout observers or animation frames; the component only needs them to exist.
 beforeAll(() => {
@@ -97,5 +97,28 @@ describe("FlowWaterfall host-owned state", () => {
     expect(seen[0]!.endMs - seen[0]!.startMs).toBeLessThan(window.endMs - window.startMs);
     fireEvent.keyDown(document, { key: "0" });
     expect(seen[1]).toBeNull();
+  });
+});
+
+describe("FlowWaterfall cost", () => {
+  // A Codex agent records tool runs but no priced model call (Discovery 31c, Drew 10-31: lanes read "$0.00").
+  const agents: FlowTrace = {
+    totalMs: 1000,
+    spans: [
+      { id: "codex", kind: "pipeline", name: "codex worker", startMs: 0, endMs: 1000, status: "done" },
+      { id: "codex#0", parentId: "codex", kind: "tool", name: "bash", startMs: 0, endMs: 10, status: "done" },
+      { id: "priced", kind: "pipeline", name: "priced worker", startMs: 0, endMs: 1000, status: "done" },
+      { id: "priced#0", parentId: "priced", kind: "tool", name: "bash", startMs: 0, endMs: 10, status: "done" },
+      { id: "priced#1", parentId: "priced", kind: "model", name: "gpt", startMs: 10, endMs: 20, status: "done", costUsd: 0.5 },
+    ],
+  };
+
+  it("leaves an agent whose steps carry no cost unpriced, never $0.00", () => {
+    const rows = new Map(flowWaterfallRows(agents).map((row) => [row.id, row]));
+    expect(rows.get("codex")!.rollupCostUsd).toBeUndefined();
+    expect(rows.get("priced")!.rollupCostUsd).toBe(0.5);
+    const { container } = render(<FlowWaterfall trace={agents} />);
+    expect(container.textContent).not.toContain("$0.00");
+    expect(container.textContent).toContain("$0.50");
   });
 });
