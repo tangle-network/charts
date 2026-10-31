@@ -78,7 +78,7 @@ export interface FlowWaterfallRow {
 }
 
 /** The CSS hue slot: 0 is the root agent's neutral, then five agent hues cycle. */
-export const toneKey = (tone: number): number => tone > 0 && tone <= 5 ? tone : 0
+export const toneKey = (tone: number): number => tone > 0 ? 1 + (tone - 1) % 8 : 0
 
 export const spanFailed = (span: FlowSpan): boolean => span.status === 'failed'
 export const spanRunning = (span: FlowSpan): boolean => span.status === 'running'
@@ -416,8 +416,8 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
     groups.set(key, [...(groups.get(key) ?? []), row])
   }
   const out: FlowWaterfallRow[] = []
-  let next = 0
-  const hue = (row: FlowWaterfallRow) => row.tone <= 0 || ++next > 5 ? 0 : 1 + [...roleOf(row.name)].reduce((hash, c) => (hash * 31 + c.charCodeAt(0)) >>> 0, 0) % 5
+  // Every lane, root included, takes its role's colour, cycling the eight series: recorded work is never grey.
+  const hue = (row: FlowWaterfallRow) => row.tone < 0 ? 0 : 1 + [...roleOf(row.name)].reduce((hash, c) => (hash * 31 + c.charCodeAt(0)) >>> 0, 0) % 8
   for (const [role, members] of groups) {
     if (members.length < 2) { const row = members[0]!, tone = hue(row); out.push({ ...row, tone, own: row.own.map(mark => ({ ...mark, tone })) }); continue }
     const tone = hue(members[0]!)
