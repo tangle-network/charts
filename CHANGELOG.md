@@ -1,3 +1,7 @@
+## 4.0.10
+
+- A row rolls up cost only when a span under it is priced: an agent whose tool steps carry no cost and whose own model work went unpriced (a Codex worker that recorded no tokens) shows no cost, never "$0.00".
+
 ## 4.0.9
 
 - The agent hover card's one line of facts names the producer's recorded tool-call count (the span's "Tool calls" fact) before the steps on display, so a bounded step tail never reads as the whole run.
