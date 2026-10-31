@@ -185,7 +185,7 @@ type TimelineLane = { id: string; label: string; spans: Array<{ start: number; e
 type TimelineTick = { at: number; outcome: "ok" | "quota" | "lost" | "rate-limit" | "oom" | "refused" | "aborted" | "other"; note?: string };
 type MultiplePanel = { id: string; label: string; unit?: string; domain?: [number, number]; points?: TimePoint[];
   missing?: { why: string; detail?: string }; end?: { at: number; kind: ChartMark["kind"]; label?: string }; marks?: ChartMark[] };
-type MeterSegment = { label: string; value: number | null; color?: string; kind?: "measured" | "untraced" };
+type MeterSegment = { label: string; value: number | null; color?: string; kind?: "measured" | "untraced"; pattern?: "hatched" };
 ```
 
 Mark kinds differ by stroke as well as colour: pass is solid, deadline dashed, died ends in a cross, and other events are dotted.
@@ -208,7 +208,9 @@ A mark with a `lane` is drawn on that lane only (a steer to one agent, a wake of
 `collapsed` folds the named lanes' subtrees: descendants are hidden, the label gains `+N`, and the folded lane's ticks and counts total its subtree. Passing `collapsed`, even empty, makes each parent lane's label a fold toggle (`data-toggle`, a button with `aria-expanded`); `TimelineView` keeps the fold state and wires the toggles to a click, Enter or Space, returning focus to the toggle.
 `Gantt` keeps its single-span `rows` input and producer lane order; `lanes` uses the same prepared plot as `timeline`. The React adapter owns selection, focus and bounded row visibility; report tables are generated only for reports. The live stylesheet includes the shared figure rules.
 
-`Meter` with `segments` draws each recorded part of `total`; the remainder no segment accounts for is hatched and labelled `untraced` (rename it with `untraced`). A null segment is listed as `not recorded` and takes no width; a missing total hatches the whole track. Parts that sum past the total throw.
+`Meter` with `segments` draws each recorded part of `total`; the remainder no segment accounts for is hatched and labelled `untraced` (rename it with `untraced`). A null segment is listed as `not recorded` and takes no width; a missing total hatches the whole track. Parts that sum past the total throw. Recorded zero remains zero; an unknown total is never inferred from the parts.
+
+`scaleMax` is a finite positive comparative axis maximum, at least `total`: `<Meter total={4} scaleMax={10} segments={[{label: "Work", value: 3}, {label: "Idle", value: 1, pattern: "hatched"}]} compact />` fills 40% of the track with no untraced remainder. The unused comparative scale stays plain; percentages still refer to the recorded total. `pattern: "hatched"` textures a measured segment without changing its meaning to untraced. `compact` puts the track and formatted total (or used value) on one row; `text` overrides that visible count. Hover or keyboard focus opens the full recorded summary and segment values, including unknowns; Escape dismisses it. Default used/total, segmented keys and step layouts retain their existing presentation. Only the compact readout is a tab stop.
 
 `smallMultiples` draws one panel per arm. A `missing` panel is hatched and reads `no data: <why>`; an `end` stops the line at a mark of its kind. It refuses mixed units, values outside the shared domain, points after an end and a missing panel that also carries data. `shared: "x"` keeps one x domain and requires each panel's own y `domain`. The lede counts `n of m <noun>s have data`.
 
