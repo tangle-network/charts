@@ -44,7 +44,7 @@ async function proveCompactTopology(page, width, theme, output) {
   await page.keyboard.press('Tab'); await owner.focus()
   const metrics = page.locator('[data-agent-metrics]'); await metrics.waitFor({ state: 'visible' })
   await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('[data-agent-metrics]')).opacity) >= .99)
-  assert.match(await metrics.innerText(), /Agent 129/); assert.match(await metrics.innerText(), /Cost/)
+  assert.match(await metrics.innerText(), /Agent 129/); assert.doesNotMatch(await metrics.innerText(), /Not recorded|unknown/, 'a value nobody recorded stays out of the card')
   const metricBox = await metrics.boundingBox()
   assert.ok(metricBox.x >= 0 && metricBox.x + metricBox.width <= width + 1 && metricBox.y >= 0 && metricBox.y + metricBox.height <= 983, 'shared inspector stays in the viewport')
   assert.ok(await metrics.evaluate(element => parseFloat(getComputedStyle(element).fontSize)) >= 13, 'metrics keep their reading size outside the camera transform')
