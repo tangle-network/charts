@@ -24,6 +24,28 @@ describe("operational latency figures", () => {
     }
   });
 
+  it("draws a ranked board with one highlighted row, a compared setup and every fact on hover", () => {
+    const rows = [
+      { id: "fast", label: "Fast", p50Ms: 49, p95Ms: 57, n: 100, extra: "100%" },
+      { id: "tangle", label: "Tangle", p50Ms: 5161, p95Ms: 14388, n: 100, extra: "100%", compareMs: 6000, facts: ["Production changed during this run"] },
+    ];
+    const figure = latencyRange(rows, { measure: "time to interactive", minN: 1, ranked: true, highlight: ["tangle"], heads: { value: "median", compare: "desktop", extra: "reached" } });
+    expect(isRefusal(figure)).toBe(false);
+    if (isRefusal(figure)) return;
+    expect(figure.svg.interactive).toBe(true);
+    expect(figure.svg.wide).toContain('class="tgc-row tgc-row-on"');
+    expect(figure.svg.wide).toContain("tgc-row-open");
+    expect(figure.svg.wide).toContain("Production changed during this run");
+    expect(figure.svg.wide).not.toContain("tgc-threshold");
+    expect(figure.table).toContain("100%");
+    expect(isRefusal(latencyRange([{ ...rows[1]!, id: "a" }], { measure: "time", minN: 1 }))).toBe(true);
+  });
+
+  it("draws a single value when too few samples support a p95", () => {
+    const figure = latencyRange([{ id: "a", label: "A", p50Ms: 11_000, p95Ms: null, n: 1 }], { measure: "first text", minN: 1, scale: "linear" });
+    expect(isRefusal(figure)).toBe(false);
+  });
+
   it("draws p50, p95, and an SLO, and refuses underpowered rows", () => {
     const options = { measure: "create latency", sloMs: 5000, minN: 5 };
     const rows = [{ id: "a", label: "A", p50Ms: 3000, p95Ms: 6500, n: 9 }];
@@ -33,7 +55,7 @@ describe("operational latency figures", () => {
     expect(figure.svg.wide).toContain("tgc-range-dot-breach");
     expect(figure.svg.wide).toContain("tgc-threshold");
     expect(figure.read).toContain("logarithmic");
-    expect(figure.table).toContain("6.5 s");
+    expect(figure.table).toContain("6.5s");
     expect(isRefusal(latencyRange([{ ...rows[0]!, n: 4 }], options))).toBe(true);
     expect(isRefusal(latencyRange([{ ...rows[0]!, p95Ms: 2000 }], options))).toBe(true);
     expect(isRefusal(latencyRange([{ ...rows[0]!, p50Ms: 0 }], options))).toBe(true);

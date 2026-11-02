@@ -15,7 +15,7 @@ export interface VerticalColumn {
   belowBar?: (x: number, width: number, baseline: number) => string;
 }
 
-function image(mark: NonNullable<RateIdentity["model"]>, x: number, y: number, size: number): string {
+export function image(mark: NonNullable<RateIdentity["model"]>, x: number, y: number, size: number): string {
   return `<image href="${esc(mark.src)}" x="${x}" y="${y}" width="${size}" height="${size}" preserveAspectRatio="xMidYMid meet"><title>${esc(mark.label)}</title></image>`;
 }
 
