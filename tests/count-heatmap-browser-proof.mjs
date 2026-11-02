@@ -25,7 +25,7 @@ try {
    const legend = await table.locator('.tgc-count-head [role="columnheader"]').evaluateAll(nodes => nodes.slice(1, -1).map(node => ({ label: node.textContent, swatch: getComputedStyle(node).boxShadow })))
    assert.ok(legend.every(item => item.label && item.swatch !== 'none'), 'each tool column labels its category color')
    if (width > 600) {
-    assert.ok(new Set(legend.map(item => item.swatch)).size > 1, 'distinct tool series use categorical colors')
+    assert.equal(new Set(legend.map(item => item.swatch)).size, legend.length, 'every visible tool column has its own categorical color')
     const fills = await table.locator('[data-heat-row="2"][data-value]').evaluateAll(nodes => nodes.map(node => getComputedStyle(node).backgroundColor))
     assert.ok(new Set(fills).size > 1, 'equal counts preserve distinct tool colors')
    }

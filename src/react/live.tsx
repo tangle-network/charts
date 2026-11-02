@@ -7,7 +7,7 @@ import { type ChartBand, type ChartMark, drawMarks, eventsGap } from '../events.
 import { hatchPath, type MarkerShape, markerPath } from '../svg.js'
 
 // Defaults for consumers that do not pass a series color.
-export const LIVE_SERIES = ['var(--chart-series-1)', 'var(--chart-series-2)', 'var(--chart-series-3)', 'var(--chart-series-4)', 'var(--chart-series-5)'] as const
+export const LIVE_SERIES = ['var(--chart-series-1)', 'var(--chart-series-2)', 'var(--chart-series-3)', 'var(--chart-series-4)', 'var(--chart-series-5)', 'var(--chart-series-6)', 'var(--chart-series-7)', 'var(--chart-series-8)'] as const
 export { formatCompact } from '../format.js'
 const formatShare = (value: number | null) => value === null || !Number.isFinite(value) ? '—' : `${Math.round(value * 100)}%`
 

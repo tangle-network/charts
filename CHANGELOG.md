@@ -1,6 +1,6 @@
 ## 4.0.14
 
-- `CountHeatmap` draws each visible tool column in its own categorical series colour, marked under its header, so equal counts in different tools stay distinct; a collapsed "N more" group and the magnitude key use the neutral tone. An explicit `color` still paints every column in that one colour.
+- `CountHeatmap` draws each visible tool column in its own categorical series colour, marked under its header, so equal counts in different tools stay distinct; a collapsed "N more" group and the magnitude key use the neutral tone. An explicit `color` still paints every column in that one colour. `LIVE_SERIES` carries all eight Brand series colours (`--chart-series-1..8`), as `FlowWaterfall` lanes do.
 
 ## 4.0.13
 
