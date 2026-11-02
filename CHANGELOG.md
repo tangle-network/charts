@@ -1,4 +1,4 @@
-## 4.1.0
+## 4.0.12
 
 - `latencyRange` is the benchmark board: `ranked`, `highlight`, `identities`, `heads`, `width`, `scale: "linear"`, `compareMs`, `extra` and `facts`; `sloMs` is optional and `p95Ms` may be null. Every row is a hover and focus target.
 - `metricBars` gains `orientation: "rows"`, drawn by the same rows.
