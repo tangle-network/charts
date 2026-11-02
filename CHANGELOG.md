@@ -1,3 +1,7 @@
+## 4.0.14
+
+- `CountHeatmap` draws each visible tool column in its own categorical series colour, marked under its header, so equal counts in different tools stay distinct; a collapsed "N more" group and the magnitude key use the neutral tone. An explicit `color` still paints every column in that one colour. `LIVE_SERIES` carries all eight Brand series colours (`--chart-series-1..8`), as `FlowWaterfall` lanes do.
+
 ## 4.0.13
 
 - `latencyRange` rows draw p50 and p95 with their 95% confidence bands (`p50Band`, `p95Band`) and print both with n; hover carries the rest. The options added for a competitor board in 4.0.12 are gone: `compareMs`, `extra`, `ranked`, `highlight` and `heads`, and `metricBars` no longer has `orientation: "rows"`.
