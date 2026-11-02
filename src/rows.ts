@@ -1,20 +1,22 @@
-/** Ranked rows: one row per entrant, the whole row a hover target, each number on its mark or lined up at the row's end. */
+/** Forest rows: each row draws p50 and p95 with their confidence bands, prints both and n, and hovers as one target. */
 import type { RateIdentity } from "./identity.js";
-import { circle, line, NARROW, rect, text } from "./svg.js";
-import { esc, textBlock, textWidth, wrap } from "./text.js";
+import { linearTicks, logTicks } from "./scale.js";
+import { circle, line, NARROW, rect, text, tipBox, tipWidth } from "./svg.js";
+import { esc, textWidth, wrap } from "./text.js";
 import { image } from "./vertical-columns.js";
+
+export type Band = readonly [number, number];
 
 export interface PlotRow {
   id: string;
   label: string;
   value: number;
-  /** The upper end of a drawn range; only a log scale draws it. */
+  valueBand?: Band;
+  /** The p95; null draws no diamond. */
   spread: number | null;
-  /** The same measure on a second setup: an open dot, with its own column. */
-  compare?: number;
-  /** A printed figure in its own column, such as a reached rate. */
-  extra?: string;
-  /** Hover lines; the first is the row's name. */
+  spreadBand?: Band;
+  n: number;
+  /** Hover lines; the first is the row's name and a `key: value` line aligns. */
   facts: string[];
   status?: "pass" | "breach";
 }
@@ -25,87 +27,61 @@ export interface RowLayout {
   min: number;
   max: number;
   format: (value: number) => string;
-  heads: { value: string; spread?: string; compare?: string; extra?: string };
-  ranked?: boolean;
-  highlight?: readonly string[];
   identities?: Readonly<Record<string, RateIdentity>>;
   threshold?: number;
 }
 
-interface Column { head: string; value: (row: PlotRow) => string; key?: "bar" | "open" }
+const SIZE = 12;
 
 export function drawRows(rows: PlotRow[], o: RowLayout, width: number): string {
-  const phone = width === NARROW, linear = o.scale === "linear", compared = rows.some((r) => r.compare !== undefined);
-  // A single linear value sits at its bar's end; anything else lines up in columns, right to left.
-  const onBar = linear && !compared;
-  const spreadShown = !linear && !phone && rows.some((r) => r.spread !== null);
-  const columns: Column[] = [
-    ...(o.heads.extra ? [{ head: o.heads.extra, value: (r: PlotRow) => r.extra ?? "–" }] : []),
-    ...(compared ? [{ head: o.heads.compare!, value: (r: PlotRow) => (r.compare === undefined ? "–" : o.format(r.compare)), key: "open" as const }] : []),
-    ...(spreadShown ? [{ head: o.heads.spread ?? "p95", value: (r: PlotRow) => (r.spread === null ? "–" : o.format(r.spread)) }] : []),
-    ...(onBar ? [] : [{ head: o.heads.value, value: (r: PlotRow) => o.format(r.value), ...(compared ? { key: "bar" as const } : {}) }]),
-  ];
-  const size = 14, rowH = phone ? 40 : 36, columnW = compared ? (phone ? 76 : 96) : phone ? 60 : 84;
-  const rankW = o.ranked ? (phone ? 32 : 36) : 10;
-  const logoW = rows.some((r) => o.identities?.[r.id]?.model) ? 30 : 0;
-  const longest = Math.max(...rows.map((r) => textWidth(r.label, size, "sans")));
-  const nameW = Math.min(longest + 14, phone ? 130 : 260);
-  const left = rankW + logoW + nameW;
-  const room = onBar ? Math.max(...rows.map((r) => textWidth(o.format(r.value), size, "mono"))) + 16 : 0;
-  const plotW = width - left - columns.length * columnW - room - 10;
-  const scale = (value: number) => left + (linear ? value / o.max : (Math.log(value) - Math.log(o.min)) / (Math.log(o.max) - Math.log(o.min))) * plotW;
-  const decades = linear ? [] : Array.from({ length: Math.ceil(Math.log10(o.max)) - Math.floor(Math.log10(o.min)) + 1 }, (_, i) => 10 ** (Math.floor(Math.log10(o.min)) + i)).filter((tick) => tick > o.min && scale(tick) < left + plotW - 24);
-  const ticked = decades.length > 0 && plotW / decades.length >= 52;
-  const top = columns.length || ticked || o.threshold !== undefined ? 30 : 6;
-  const bottom = top + rows.length * rowH;
-  let axis = "", body = "", tips = "", rules = "";
-  columns.forEach((c, k) => {
-    const x = width - 8 - k * columnW;
-    axis += text(x, 18, c.head, { size, cls: "tgc-ink-muted", anchor: "end" });
-    const keyX = x - textWidth(c.head, size, "sans") - 12;
-    if (c.key === "bar") axis += rect(keyX - 5, 9, 11, 9, "tgc-row-mark", 'rx="2"');
-    if (c.key === "open") axis += circle(keyX, 13, 4.5, "tgc-row-open");
+  const linear = o.scale === "linear", rowH = width === NARROW ? 28 : 24, top = 22, bottom = top + rows.length * rowH;
+  let right = width - 6;
+  const columns = [
+    { head: "n", key: "", value: (r: PlotRow) => String(r.n) },
+    { head: "p95", key: "p95", value: (r: PlotRow) => (r.spread === null ? "–" : o.format(r.spread)) },
+    { head: "p50", key: "p50", value: (r: PlotRow) => o.format(r.value) },
+  ].map((c) => {
+    const room = Math.max(textWidth(c.head, SIZE, "sans") + (c.key ? 14 : 0), ...rows.map((r) => textWidth(c.value(r), SIZE, "mono")));
+    const x = right;
+    right -= room + 12;
+    return { ...c, x };
   });
-  if (o.threshold !== undefined) {
-    axis += line(scale(o.threshold), top - 8, scale(o.threshold), bottom, "tgc-threshold");
-    axis += text(scale(o.threshold) + 3, 15, `SLO ${o.format(o.threshold)}`, { size: 12, cls: "tgc-ink-muted tgc-num" });
+  const logoW = rows.some((r) => o.identities?.[r.id]?.model) ? 22 : 0;
+  const nameW = Math.min(Math.max(...rows.map((r) => textWidth(r.label, SIZE, "sans"))) + 6, width * 0.34);
+  const left = 6 + logoW + nameW + 10, plotW = right - left - 2;
+  const scale = (value: number) => left + (linear ? value / o.max : Math.log(value / o.min) / Math.log(o.max / o.min)) * plotW;
+  const band = ([lo, hi]: Band, cls: string, cy: number) => rect(scale(Math.max(lo, o.min)), cy - 4, Math.max(2, scale(Math.min(hi, o.max)) - scale(Math.max(lo, o.min))), 8, cls, 'rx="4"');
+  let axis = "", body = "", tips = "", rules = "", lastTick = -Infinity;
+  for (const tick of linear ? linearTicks(0, o.max, 3) : logTicks(o.min, o.max)) {
+    const x = scale(tick), label = o.format(tick), half = textWidth(label, SIZE, "mono") / 2;
+    if (x - half < lastTick + 8 || x + half > right) continue;
+    lastTick = x + half;
+    axis += line(x, top, x, bottom, "tgc-gridline") + text(x, 14, label, { size: SIZE, cls: "tgc-ink-muted tgc-num", anchor: "middle" });
   }
-  if (ticked) {
-    for (const tick of decades) {
-      if (o.threshold !== undefined && Math.abs(scale(tick) - scale(o.threshold)) < 19) continue;
-      axis += line(scale(tick), top, scale(tick), bottom, "tgc-gridline");
-      axis += text(scale(tick), 18, o.format(tick), { size: 12, cls: "tgc-ink-muted tgc-num", anchor: "middle" });
-    }
+  for (const c of columns) {
+    axis += text(c.x, 14, c.head, { size: SIZE, cls: "tgc-ink-muted", anchor: "end" });
+    const keyX = c.x - textWidth(c.head, SIZE, "sans") - 9;
+    if (c.key === "p50") axis += circle(keyX, 10, 4, "tgc-row-mark");
+    if (c.key === "p95") axis += `<path class="tgc-row-p95" d="M${keyX} 5.5l4.5 4.5l-4.5 4.5l-4.5 -4.5z"/>`;
   }
+  if (o.threshold !== undefined) axis += line(scale(o.threshold), top - 6, scale(o.threshold), bottom, "tgc-threshold");
   rows.forEach((r, i) => {
-    const y = top + i * rowH, cy = y + rowH / 2, on = o.highlight?.includes(r.id) ?? false;
-    const mark = o.identities?.[r.id]?.model;
-    let marks = rect(0, y + 1, width, rowH - 2, "tgc-row-hit", 'rx="6"');
-    if (o.ranked) marks += text(rankW - 10, cy + 5, String(i + 1), { size, cls: "tgc-ink-muted tgc-num", anchor: "end" });
-    if (mark) marks += rect(rankW, cy - 11, 22, 22, "tgc-logo-plate", 'rx="5"') + image(mark, rankW + 3, cy - 8, 16);
-    marks += text(rankW + logoW, cy + 5, wrap(r.label, nameW - 6, size, "sans", 1).lines[0]!, { size, weight: on ? 600 : 400 });
-    if (r.status) {
-      marks += rect(scale(r.value), cy - 5, Math.max(2, scale(r.spread ?? r.value) - scale(r.value)), 10, `tgc-range-${r.status}`, 'rx="5"') + circle(scale(r.value), cy, 6, `tgc-range-dot-${r.status}`);
-    } else if (linear) {
-      marks += rect(left, cy - 8, Math.max(2, scale(r.value) - left), 16, "tgc-row-mark", 'rx="4"');
-      if (onBar) marks += text(scale(r.value) + 8, cy + 5, o.format(r.value), { size, weight: 600, cls: "tgc-ink tgc-num" });
-    } else {
-      if (r.spread !== null) marks += rect(scale(r.value), cy - 2.5, Math.max(2, scale(r.spread) - scale(r.value)), 5, "tgc-row-mark", 'rx="2.5"');
-      marks += circle(scale(r.value), cy, on ? 7 : 5.5, "tgc-row-mark");
-    }
-    if (r.compare !== undefined) marks += circle(scale(r.compare), cy, 5.5, "tgc-row-open");
-    columns.forEach((c, k) => {
-      marks += text(width - 8 - k * columnW, cy + 5, c.value(r), { size, weight: k === columns.length - 1 ? 600 : 400, cls: "tgc-ink tgc-num", anchor: "end" });
-    });
-    body += `<g class="tgc-row${on ? " tgc-row-on" : ""}" data-column="${i}" tabindex="0" role="img" aria-label="${esc(r.facts.join(" · "))}">${marks}</g>`;
-    const tipW = Math.min(300, width - 24);
-    const lines = r.facts.flatMap((fact) => wrap(fact, tipW - 28, size, "sans", 4).lines);
-    const tipH = lines.length * 19 + 16;
-    const tipX = Math.max(12, Math.min(width - tipW - 12, scale(r.value) - tipW / 2));
-    const tipY = Math.max(4, i > rows.length / 2 ? y - tipH - 6 : y + rowH + 6);
-    tips += `<g class="tgc-row-tip" data-tip="${i}" aria-hidden="true">${rect(tipX, tipY, tipW, tipH, "tgc-tip-bg", 'rx="7"')}${textBlock(lines, tipX + 14, tipY + 22, 19, 'class="tgc-tip-ink" font-size="14"')}</g>`;
+    const y = top + i * rowH, cy = y + rowH / 2, mark = o.identities?.[r.id]?.model;
+    let marks = rect(0, y + 1, width, rowH - 2, "tgc-row-hit", 'rx="4"');
+    if (mark) marks += image(mark, 6, cy - 8, 16);
+    marks += text(6 + logoW, cy + 4, wrap(r.label, nameW, SIZE, "sans", 1).lines[0]!, { size: SIZE });
+    if (r.spread !== null) marks += line(scale(r.value), cy, scale(r.spread), cy, "tgc-row-link");
+    if (r.spreadBand) marks += band(r.spreadBand, "tgc-row-band-p95", cy);
+    if (r.valueBand) marks += band(r.valueBand, "tgc-row-band", cy);
+    if (r.spread !== null) marks += `<path class="tgc-row-p95" d="M${scale(r.spread)} ${cy - 4.5}l4.5 4.5l-4.5 4.5l-4.5 -4.5z"/>`;
+    marks += circle(scale(r.value), cy, 4, r.status ? `tgc-range-dot-${r.status}` : "tgc-row-mark");
+    for (const [k, c] of columns.entries()) marks += text(c.x, cy + 4, c.value(r), { size: SIZE, weight: k === 2 ? 600 : 400, cls: "tgc-ink tgc-num", anchor: "end" });
+    body += `<g class="tgc-row" data-column="${i}" tabindex="0" role="img" aria-label="${esc(r.facts.join(" · "))}">${marks}</g>`;
+    const tipW = Math.min(tipWidth(r.facts), width - 12), tipH = r.facts.length * 18 + 14;
+    const tipX = Math.max(6, Math.min(width - tipW - 6, scale(r.value) - tipW / 2));
+    tips += tipBox(r.facts, tipX, i >= rows.length / 2 ? y - tipH - 3 : y + rowH + 3, tipW, `class="tgc-row-tip" data-tip="${i}"`);
     rules += `.tgc-rows:has(.tgc-row[data-column="${i}"]:hover) [data-tip="${i}"],.tgc-rows:not(:has(.tgc-row:hover)):has(.tgc-row[data-column="${i}"]:focus-visible) [data-tip="${i}"]{opacity:1}`;
   });
-  const height = Math.ceil(bottom + 4);
-  return `<svg class="tgc-svg tgc-rows${o.highlight ? "" : " tgc-rows-even"}" xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="group" aria-label="${esc(o.measure)} by setup"><style>${rules}</style>${axis}${body}${tips}</svg>`;
+  const height = bottom + 2;
+  return `<svg class="tgc-svg tgc-rows" xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="group" aria-label="${esc(o.measure)} by setup"><style>${rules}</style>${axis}${body}${tips}</svg>`;
 }

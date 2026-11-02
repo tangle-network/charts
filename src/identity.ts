@@ -1,7 +1,8 @@
 /** Model and harness marks supplied explicitly by the consumer. */
 export interface RateIdentity {
   model?: { label: string; src: string };
-  harness?: { label: string; src: string };
+  /** A harness with no mark is named under the model. */
+  harness?: { label: string; src?: string };
 }
 
 export function identityGap(rows: readonly { id: string }[], identities: Readonly<Record<string, RateIdentity>> | undefined): string | null {
@@ -11,7 +12,9 @@ export function identityGap(rows: readonly { id: string }[], identities: Readonl
     if (!identity || typeof identity !== "object") return `Invalid display identity for ${id}.`;
     for (const mark of [identity.model, identity.harness]) {
       if (!mark) continue;
-      if (typeof mark.label !== "string" || !mark.label.trim() || typeof mark.src !== "string") return `Invalid display identity for ${id}.`;
+      if (typeof mark.label !== "string" || !mark.label.trim()) return `Invalid display identity for ${id}.`;
+      if (mark.src === undefined && mark === identity.harness) continue;
+      if (typeof mark.src !== "string") return `Invalid display identity for ${id}.`;
       // Same-origin assets and HTTPS images only; protocol-relative URLs are not local assets.
       const local = /^\/(?!\/)[^\s<>"']+$/.test(mark.src);
       const https = /^https:\/\/[a-z0-9.-]+(?::\d+)?\/[^\s<>"']*$/i.test(mark.src);

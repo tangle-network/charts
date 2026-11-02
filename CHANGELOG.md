@@ -1,3 +1,12 @@
+## 4.0.13
+
+- `latencyRange` rows draw p50 and p95 with their 95% confidence bands (`p50Band`, `p95Band`) and print both with n; hover carries the rest. The options added for a competitor board in 4.0.12 are gone: `compareMs`, `extra`, `ranked`, `highlight` and `heads`, and `metricBars` no longer has `orientation: "rows"`.
+- `presentation: "panel"` draws a figure in a dashboard cell at a measured `width`, swapped to its narrow render by the viewport.
+- `metricBars` prints a `detail` line under a column's name, and a column's value clears its whisker.
+- `timeSeries` takes `dense`: a shorter plot, no axis titles and a one-line legend for a dashboard cell.
+- A figure draws at any measured `width` from 300 px. A harness may have a name and no mark. Intervals may name `student-t` or `binomial-ranks`.
+- Row and column tooltips share one layout: a bold title, then `key: value` lines aligned.
+
 ## 4.0.12
 
 - `latencyRange` is the benchmark board: `ranked`, `highlight`, `identities`, `heads`, `width`, `scale: "linear"`, `compareMs`, `extra` and `facts`; `sloMs` is optional and `p95Ms` may be null. Every row is a hover and focus target.

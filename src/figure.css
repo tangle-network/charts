@@ -310,6 +310,7 @@
 .tgc-column-tip { opacity: 0; pointer-events: none; }
 .tgc-tip-bg { fill: var(--chart-ink); }
 .tgc-tip-ink { fill: var(--chart-canvas, var(--depth-1, Canvas)); }
+.tgc-tip-key { fill: color-mix(in srgb, var(--chart-canvas, var(--depth-1, Canvas)) 70%, var(--chart-ink)); }
 
 .tgc-series-line { fill: none; stroke: var(--tgc-series, var(--chart-accent)); stroke-width: 2; stroke-linejoin: round; }
 .tgc-series-point, .tgc-series-key { fill: var(--tgc-series, var(--chart-accent)); stroke: var(--chart-canvas, var(--depth-1, Canvas)); stroke-width: 2; }
@@ -323,13 +324,14 @@
 .tgc-wide:has(.tgc-heat-pass), .tgc-wide:has(.tgc-heat-breach) { overflow-x: auto; }
 /* Ranked rows: the whole row is the hover target, and the row's numbers line up at its end. */
 .tgc-row-hit { fill: transparent; }
-.tgc-row-on .tgc-row-hit { fill: color-mix(in srgb, var(--chart-accent) 9%, transparent); }
 .tgc-row:hover .tgc-row-hit, .tgc-row:focus-visible .tgc-row-hit { fill: var(--chart-shade); }
 .tgc-row:focus-visible { outline: none; }
 .tgc-row:focus-visible .tgc-row-hit { stroke: var(--chart-accent); stroke-width: 2; }
-.tgc-row-mark { fill: var(--chart-muted); }
-.tgc-row-on .tgc-row-mark, .tgc-rows-even .tgc-row-mark { fill: var(--chart-accent); }
-.tgc-row-open { fill: var(--chart-canvas, var(--depth-1, Canvas)); stroke: var(--chart-ink); stroke-width: 2; }
+.tgc-row-mark { fill: var(--chart-accent); }
+.tgc-row-p95 { fill: var(--chart-ink); }
+.tgc-row-band { fill: color-mix(in srgb, var(--chart-accent) 28%, transparent); }
+.tgc-row-band-p95 { fill: color-mix(in srgb, var(--chart-ink) 14%, transparent); }
+.tgc-row-link { stroke: var(--chart-ink-muted); stroke-width: 1; }
 .tgc-row-tip { opacity: 0; pointer-events: none; }
 .tgc-range-pass { fill: var(--chart-pass, var(--status-running)); }
 .tgc-range-breach { fill: var(--chart-breach, var(--status-error)); }
@@ -351,10 +353,23 @@
 .tgc-figure-plot .tgc-wide svg { box-sizing: content-box; width: calc(100% - 48px); padding: 0 24px; }
 /* One plot text size on the 12/14/18/32 scale; numbers differ by tabular figures, not size. */
 .tgc-figure-plot svg text { font-size: 14px; }
-/* Larger tooltip text needs padding outside the original report backdrop. */
-.tgc-figure-plot .tgc-tip-bg { stroke: var(--chart-ink); stroke-width: 24px; }
 .tgc-figure-plot .tgc-phone-plot svg { min-width: var(--tgc-phone-width); }
 .tgc-figure-plot .tgc-wide, .tgc-figure-plot .tgc-narrow { overflow-x: auto; }
+
+/* A panel is drawn at its cell's width: one text size, the wide render until the viewport itself is a phone. */
+.tgc-figure-panel { margin: 0; max-width: none; }
+.tgc-figure-panel .tgc-plot { container-type: normal; }
+.tgc-figure-panel .tgc-wide, .tgc-figure-panel .tgc-narrow { overflow: visible; }
+.tgc-figure-panel .tgc-wide { display: block; }
+.tgc-figure-panel .tgc-narrow { display: none; }
+.tgc-figure-panel .tgc-wide svg { box-sizing: border-box; width: 100%; height: auto; padding: 0; }
+.tgc-figure-panel svg text { font-size: 12px; }
+@media (max-width: 719.98px) {
+  .tgc-figure-panel .tgc-wide { display: none; }
+  .tgc-figure-panel .tgc-narrow { display: block; }
+  .tgc-figure-panel .tgc-narrow:has(.tgc-vertical) { overflow-x: auto; }
+  .tgc-figure-panel .tgc-phone-plot svg { min-width: 0; width: 100%; height: auto; }
+}
 
 .tgc-figure-plot .tgc-wide-fallback svg { min-width: var(--tgc-fallback-width); }
 .tgc-phone-plot:focus-visible, .tgc-wide-fallback:focus-visible { outline: 2px solid var(--chart-accent); outline-offset: 2px; }
