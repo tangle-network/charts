@@ -1,4 +1,4 @@
-## 4.1.0
+## 4.0.11
 
 - `BehaviorStrip`: agents by time window on one canvas (three hues for reading, writing and verifying, textures for sub-classes, the serious colour for looping, a neutral ladder for thinking, running and uncalibrated classes), release markers, message ticks, a windowed row set past 40, a keyboard cursor and the shared tooltip.
 - `DotStrip`: one row per metric and one dot per entity with producer-marked outliers in the serious colour, a max label per row and keyboard focus per dot.
