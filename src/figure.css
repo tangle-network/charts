@@ -304,26 +304,39 @@
 .tgc-column:focus-visible { outline: none; }
 .tgc-column:focus-visible .tgc-column-hit { stroke: var(--chart-accent); }
 .tgc-vertical-bar { fill: var(--chart-accent); }
+.tgc-column:hover .tgc-column-hit { fill: var(--chart-shade); }
 /* Identity assets keep their approved colors on a white plate in either theme. */
 .tgc-logo-plate { fill: #fff; stroke: var(--chart-rule); }
 .tgc-column-tip { opacity: 0; pointer-events: none; }
 .tgc-tip-bg { fill: var(--chart-ink); }
-.tgc-tip-ink { fill: var(--chart-canvas); }
+.tgc-tip-ink { fill: var(--chart-canvas, var(--depth-1, Canvas)); }
+.tgc-tip-key { fill: color-mix(in srgb, var(--chart-canvas, var(--depth-1, Canvas)) 70%, var(--chart-ink)); }
 
 .tgc-series-line { fill: none; stroke: var(--tgc-series, var(--chart-accent)); stroke-width: 2; stroke-linejoin: round; }
-.tgc-series-point, .tgc-series-key { fill: var(--tgc-series, var(--chart-accent)); stroke: var(--chart-canvas); stroke-width: 2; }
+.tgc-series-point, .tgc-series-key { fill: var(--tgc-series, var(--chart-accent)); stroke: var(--chart-canvas, var(--depth-1, Canvas)); stroke-width: 2; }
 
 /* Semantic states stay tied to Brand status tokens. No-data has its own neutral mark. */
-.tgc-heat-pass { fill: color-mix(in srgb, var(--chart-pass, var(--status-running)) 19%, var(--chart-canvas)); stroke: var(--chart-pass, var(--status-running)); stroke-width: .8; }
-.tgc-heat-breach { fill: color-mix(in srgb, var(--chart-breach, var(--status-error)) 17%, var(--chart-canvas)); stroke: var(--chart-breach, var(--status-error)); stroke-width: .8; }
+.tgc-heat-pass { fill: color-mix(in srgb, var(--chart-pass, var(--status-running)) 19%, var(--chart-canvas, var(--depth-1, Canvas))); stroke: var(--chart-pass, var(--status-running)); stroke-width: .8; }
+.tgc-heat-breach { fill: color-mix(in srgb, var(--chart-breach, var(--status-error)) 17%, var(--chart-canvas, var(--depth-1, Canvas))); stroke: var(--chart-breach, var(--status-error)); stroke-width: .8; }
 .tgc-heat-no-data { fill: var(--chart-grid); stroke: var(--chart-rule); stroke-width: .8; }
 .tgc-heat-label { fill: var(--chart-ink); }
 .tgc-heat-missing { fill: var(--chart-ink-muted); }
 .tgc-wide:has(.tgc-heat-pass), .tgc-wide:has(.tgc-heat-breach) { overflow-x: auto; }
+/* Ranked rows: the whole row is the hover target, and the row's numbers line up at its end. */
+.tgc-row-hit { fill: transparent; }
+.tgc-row:hover .tgc-row-hit, .tgc-row:focus-visible .tgc-row-hit { fill: var(--chart-shade); }
+.tgc-row:focus-visible { outline: none; }
+.tgc-row:focus-visible .tgc-row-hit { stroke: var(--chart-accent); stroke-width: 2; }
+.tgc-row-mark { fill: var(--chart-accent); }
+.tgc-row-p95 { fill: var(--chart-ink); }
+.tgc-row-band { fill: color-mix(in srgb, var(--chart-accent) 28%, transparent); }
+.tgc-row-band-p95 { fill: color-mix(in srgb, var(--chart-ink) 14%, transparent); }
+.tgc-row-link { stroke: var(--chart-ink-muted); stroke-width: 1; }
+.tgc-row-tip { opacity: 0; pointer-events: none; }
 .tgc-range-pass { fill: var(--chart-pass, var(--status-running)); }
 .tgc-range-breach { fill: var(--chart-breach, var(--status-error)); }
-.tgc-range-dot-pass { fill: var(--chart-canvas); stroke: var(--chart-pass, var(--status-running)); stroke-width: 3; }
-.tgc-range-dot-breach { fill: var(--chart-canvas); stroke: var(--chart-breach, var(--status-error)); stroke-width: 3; }
+.tgc-range-dot-pass { fill: var(--chart-canvas, var(--depth-1, Canvas)); stroke: var(--chart-pass, var(--status-running)); stroke-width: 3; }
+.tgc-range-dot-breach { fill: var(--chart-canvas, var(--depth-1, Canvas)); stroke: var(--chart-breach, var(--status-error)); stroke-width: 3; }
 .tgc-waterfall-bar { fill: var(--chart-accent); }
 .tgc-series-hit { fill: transparent; stroke: transparent; }
 .tgc-series-observation:focus-visible { outline: none; }
@@ -340,10 +353,23 @@
 .tgc-figure-plot .tgc-wide svg { box-sizing: content-box; width: calc(100% - 48px); padding: 0 24px; }
 /* One plot text size on the 12/14/18/32 scale; numbers differ by tabular figures, not size. */
 .tgc-figure-plot svg text { font-size: 14px; }
-/* Larger tooltip text needs padding outside the original report backdrop. */
-.tgc-figure-plot .tgc-tip-bg { stroke: var(--chart-ink); stroke-width: 24px; }
 .tgc-figure-plot .tgc-phone-plot svg { min-width: var(--tgc-phone-width); }
 .tgc-figure-plot .tgc-wide, .tgc-figure-plot .tgc-narrow { overflow-x: auto; }
+
+/* A panel is drawn at its cell's width: one text size, the wide render until the viewport itself is a phone. */
+.tgc-figure-panel { margin: 0; max-width: none; }
+.tgc-figure-panel .tgc-plot { container-type: normal; }
+.tgc-figure-panel .tgc-wide, .tgc-figure-panel .tgc-narrow { overflow: visible; }
+.tgc-figure-panel .tgc-wide { display: block; }
+.tgc-figure-panel .tgc-narrow { display: none; }
+.tgc-figure-panel .tgc-wide svg { box-sizing: border-box; width: 100%; height: auto; padding: 0; }
+.tgc-figure-panel svg text { font-size: 12px; }
+@media (max-width: 719.98px) {
+  .tgc-figure-panel .tgc-wide { display: none; }
+  .tgc-figure-panel .tgc-narrow { display: block; }
+  .tgc-figure-panel .tgc-narrow:has(.tgc-vertical) { overflow-x: auto; }
+  .tgc-figure-panel .tgc-phone-plot svg { min-width: 0; width: 100%; height: auto; }
+}
 
 .tgc-figure-plot .tgc-wide-fallback svg { min-width: var(--tgc-fallback-width); }
 .tgc-phone-plot:focus-visible, .tgc-wide-fallback:focus-visible { outline: 2px solid var(--chart-accent); outline-offset: 2px; }
@@ -358,7 +384,9 @@
 .tgc-mark-steer { stroke: var(--chart-accent); stroke-dasharray: 1 3; stroke-linecap: round; }
 .tgc-mark-ruling { stroke: var(--chart-ink); stroke-dasharray: 6 2 1 2; }
 .tgc-mark-wake { stroke: var(--chart-ink-muted); stroke-dasharray: 1 3; stroke-linecap: round; }
-.tgc-mark-head { fill: var(--chart-ink-muted); stroke: var(--chart-canvas); stroke-width: 1; }
+.tgc-mark-candidate { stroke: var(--chart-ink-muted); stroke-dasharray: 1 3; stroke-linecap: round; }
+.tgc-mark-head { fill: var(--chart-ink-muted); stroke: var(--chart-canvas, var(--depth-1, Canvas)); stroke-width: 1; }
+[data-mark="candidate"] .tgc-mark-head { fill: var(--chart-canvas, var(--depth-1, Canvas)); stroke: var(--chart-ink-muted); stroke-width: 1.5; }
 [data-mark="steer"] .tgc-mark-head { fill: var(--chart-accent); }
 [data-mark="ruling"] .tgc-mark-head { fill: var(--chart-ink); }
 /* A recorded verdict colours the rule and head: pass and fail take the status tones, unknown the muted tone. */
@@ -368,7 +396,7 @@
 .tgc-verdict-fail .tgc-mark-head { fill: var(--chart-breach, var(--status-error)); }
 .tgc-verdict-unknown .tgc-mark { stroke: var(--chart-muted); }
 .tgc-verdict-unknown .tgc-mark-head { fill: var(--chart-muted); }
-.tgc-mark-label { fill: var(--chart-ink); paint-order: stroke; stroke: var(--chart-canvas); stroke-width: 3px; stroke-linejoin: round; }
+.tgc-mark-label { fill: var(--chart-ink); paint-order: stroke; stroke: var(--chart-canvas, var(--depth-1, Canvas)); stroke-width: 3px; stroke-linejoin: round; }
 .tgc-mark-edge { fill: var(--chart-ink-muted); }
 .tgc-band-after-pass { fill: color-mix(in srgb, var(--chart-pass, var(--status-running)) 12%, transparent); }
 .tgc-band-idle { fill: var(--chart-shade); }
@@ -400,7 +428,7 @@
 .tgc-tick-aborted { stroke: var(--chart-outcome-neutral); }
 .tgc-tick-other { stroke: var(--chart-outcome-other); }
 /* Lane labels and counts keep a canvas halo, so rules and ticks under them never strike through the text. */
-.tgc-lane-label, .tgc-count { paint-order: stroke; stroke: var(--chart-canvas); stroke-width: 3px; stroke-linejoin: round; }
+.tgc-lane-label, .tgc-count { paint-order: stroke; stroke: var(--chart-canvas, var(--depth-1, Canvas)); stroke-width: 3px; stroke-linejoin: round; }
 .tgc-count { fill: var(--chart-ink); }
 .tgc-count-ok { fill: var(--chart-pass, var(--status-running)); }
 .tgc-count-failed { fill: var(--chart-breach, var(--status-error)); }
@@ -450,15 +478,15 @@
 .tgc-checker-3 { --tgc-series: var(--chart-checker-3); }
 .tgc-checker-other { --tgc-series: var(--chart-muted); }
 /* Recorded verdicts: a pass is filled, a fail or an incomparable value is an outline, an undecided one dashed. */
-.tgc-series-point.tgc-point-outline { fill: var(--chart-canvas); stroke: var(--tgc-series, var(--chart-accent)); stroke-width: 1.75; }
-.tgc-series-point.tgc-point-undecided { fill: var(--chart-canvas); stroke: var(--tgc-series, var(--chart-accent)); stroke-width: 1.5; stroke-dasharray: 2 1.5; }
+.tgc-series-point.tgc-point-outline { fill: var(--chart-canvas, var(--depth-1, Canvas)); stroke: var(--tgc-series, var(--chart-accent)); stroke-width: 1.75; }
+.tgc-series-point.tgc-point-undecided { fill: var(--chart-canvas, var(--depth-1, Canvas)); stroke: var(--tgc-series, var(--chart-accent)); stroke-width: 1.5; stroke-dasharray: 2 1.5; }
 .tgc-strip-hatch .tgc-hatch { stroke: var(--tgc-series, var(--chart-muted)); }
 /* A failing verdict without a value is a neutral ring: in its checker's hue it read as that checker passing. */
 .tgc-series-point.tgc-point-outline.tgc-strip-fail { stroke: var(--chart-ink-muted); }
 .tgc-strip-edge { fill: none; stroke: var(--tgc-series, var(--chart-muted)); stroke-width: 1.25; }
 .tgc-strip-observation:focus-visible { outline: none; }
 .tgc-strip-observation:focus-visible .tgc-series-hit { stroke: var(--chart-ink); stroke-width: 2; }
-.tgc-point-badge { paint-order: stroke; stroke: var(--chart-canvas); stroke-width: 3px; stroke-linejoin: round; font-family: var(--font-mono, "JetBrains Mono", ui-monospace, monospace); }
+.tgc-point-badge { paint-order: stroke; stroke: var(--chart-canvas, var(--depth-1, Canvas)); stroke-width: 3px; stroke-linejoin: round; font-family: var(--font-mono, "JetBrains Mono", ui-monospace, monospace); }
 .tgc-point-label { fill: var(--chart-ink-muted); }
 .tgc-glyph-note { fill: var(--chart-ink); font-weight: 600; }
 /* Status colours appear only on these glyphs. */
@@ -469,11 +497,11 @@
 .tgc-target-stretch { fill: none; }
 .tgc-target-target-edge, .tgc-target-target.tgc-target-line { stroke: var(--chart-ink-muted); stroke-width: 1; }
 .tgc-target-stretch-edge, .tgc-target-stretch.tgc-target-line { stroke: var(--chart-ink-muted); stroke-width: 1; stroke-dasharray: 4 3; }
-.tgc-target-label { fill: var(--chart-ink-muted); paint-order: stroke; stroke: var(--chart-canvas); stroke-width: 3px; stroke-linejoin: round; }
+.tgc-target-label { fill: var(--chart-ink-muted); paint-order: stroke; stroke: var(--chart-canvas, var(--depth-1, Canvas)); stroke-width: 3px; stroke-linejoin: round; }
 /* Group headers: a labelled bracket above the plot and a light rule at each inner edge. */
 .tgc-group-rule { stroke: var(--chart-ink-muted); stroke-width: 1.5; }
 .tgc-group-edge { stroke: var(--chart-rule); stroke-width: 1; }
-.tgc-group-label { fill: var(--chart-ink); paint-order: stroke; stroke: var(--chart-canvas); stroke-width: 3px; stroke-linejoin: round; }
+.tgc-group-label { fill: var(--chart-ink); paint-order: stroke; stroke: var(--chart-canvas, var(--depth-1, Canvas)); stroke-width: 3px; stroke-linejoin: round; }
 /* The verdict key: glyphs in the neutral ink, so they describe a mark's form, not a series. */
 .tgc-key-mark { stroke-width: 1.5; }
 .tgc-key-filled { fill: var(--chart-ink-muted); stroke: none; }

@@ -13,6 +13,10 @@ export interface MetricRow {
   value: number | null;
   interval?: Interval | null;
   observations?: Observations;
+  /** A short line printed under the column's name, such as a cost. */
+  detail?: string;
+  /** Recorded facts shown on hover, one line each. */
+  facts?: readonly string[];
 }
 
 export interface MetricBarsOptions {
@@ -23,6 +27,8 @@ export interface MetricBarsOptions {
   formatValue?: (value: number) => string;
   identities?: Readonly<Record<string, RateIdentity>>;
   id?: string;
+  /** The render's width, from the container it fills. */
+  width?: number;
 }
 
 export function metricBars(rows: MetricRow[], o: MetricBarsOptions): Figure | Refusal {
@@ -46,7 +52,8 @@ export function metricBars(rows: MetricRow[], o: MetricBarsOptions): Figure | Re
     valueLabel: row.value === null ? "not measured" : label(row.value),
     interval: row.interval ?? null,
     identity: o.identities?.[row.id],
-    facts: [row.label, `${o.measure}: ${row.value === null ? "not measured" : label(row.value)}`, observationLabel(row.observations), ...(row.interval ? [`Interval: ${scalarIntervalLabel(row.interval, o.unit, o.formatValue)}`] : [])],
+    ...(row.detail ? { detail: row.detail } : {}),
+    facts: [row.label, `${o.measure}: ${row.value === null ? "not measured" : label(row.value)}`, observationLabel(row.observations), ...(row.interval ? [`Interval: ${scalarIntervalLabel(row.interval, o.unit, o.formatValue)}`] : []), ...(row.facts ?? [])],
   }));
   const measured = rows.filter((row) => row.value !== null);
   return {
@@ -54,7 +61,7 @@ export function metricBars(rows: MetricRow[], o: MetricBarsOptions): Figure | Re
     finding: `${capitalize(o.measure)} by setup.`,
     lede: `${measured.length} of ${rows.length} recorded values.`,
     read: "Bars start at zero. Missing values have no bar; whiskers show recorded intervals. Input order is preserved.",
-    svg: { wide: verticalColumns(columns, WIDE, o.measure, o.domain, (value) => scalarLabel(value, "", o.formatValue), true), narrow: verticalColumns(columns, NARROW, o.measure, o.domain, (value) => scalarLabel(value, "", o.formatValue), true), interactive: true },
+    svg: { wide: verticalColumns(columns, o.width ?? WIDE, o.measure, o.domain, (value) => scalarLabel(value, "", o.formatValue), true, o.width !== undefined), narrow: verticalColumns(columns, NARROW, o.measure, o.domain, (value) => scalarLabel(value, "", o.formatValue), true, o.width !== undefined), interactive: true },
     table: table(`${capitalize(o.measure)} by setup`, [{ label: "Setup" }, { label: o.measure, numeric: true }, { label: "Observations" }, { label: "Recorded interval" }], rows.map((row) => [row.label, row.value === null ? "not measured" : label(row.value), observationLabel(row.observations), scalarIntervalLabel(row.interval, o.unit, o.formatValue)])).replace('class="tgc-table"', 'class="tgc-table tgc-scalar-table"'),
     note: { method: "Recorded scalar values, in input order. No rank, interval or statistical comparison is inferred.", n: rows.map((row) => `${row.label}: ${observationLabel(row.observations)}`).join("; "), exclusions: rows.filter((row) => row.value === null).map((row) => `${row.label}: not measured.`) },
   };

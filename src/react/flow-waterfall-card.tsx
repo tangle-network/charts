@@ -18,12 +18,14 @@ export interface SpanCardProps {
   /** The agent that owns the span, for the agent-level header. */
   agent?: FlowWaterfallRow
   clockMs: number
-  /** `pinned` cards take focus, close on Escape and return focus to the row; a `docked` card is a host's inspector panel. */
+  /** `pinned` cards take focus, close on Escape and return focus to the row; a `docked` card is content inside a host's surface (an inspector panel, a HoverCard) and draws no frame of its own. */
   mode: 'hover' | 'pinned' | 'docked'
   onClose: () => void
   renderIcon?: (span: FlowSpan) => ReactNode
   /** The agent timeline's card: the agent and its outcome, its table, then the step under the pointer. */
   compact?: boolean
+  /** The agent's own stream under one line of recorded facts, in place of the facts table. */
+  detail?: ReactNode
 }
 
 const count = (n: number, unit: string) => <span title={`${n.toLocaleString()} ${unit}`}>{formatCount(n)} {unit}</span>
@@ -73,14 +75,14 @@ function Table({ rows }: { rows: [string, ReactNode][] }) {
 }
 
 /** The span card: what ran, for how long, on what tokens and at what recorded cost, then its input and output. */
-export function SpanCard({ id, row, agent, clockMs, mode, onClose, renderIcon, compact }: SpanCardProps) {
+export function SpanCard({ id, row, agent, clockMs, mode, onClose, renderIcon, compact, detail }: SpanCardProps) {
   const span = row.span
   const failure = spanFact(span, 'Failure')
   const state = runStatus(span.status ?? 'unknown')
   const meta = statusMeta(state)
   const owner = agent && agent.id !== row.id ? agent : undefined
   const frame = {
-    id, role: { hover: 'tooltip', pinned: 'dialog', docked: 'region' }[mode], 'aria-label': mode === 'hover' ? undefined : `${span.name} details`, style: { '--fw-status': `var(${meta.token})` } as CSSProperties,
+    id, 'data-mode': mode, role: { hover: 'tooltip', pinned: 'dialog', docked: 'region' }[mode], 'aria-label': mode === 'hover' ? undefined : `${span.name} details`, style: { '--fw-status': `var(${meta.token})` } as CSSProperties,
     onKeyDown: (event: { key: string; stopPropagation: () => void }) => { if (event.key === 'Escape') { event.stopPropagation(); onClose() } },
   }
   const close = mode === 'pinned' && <button type="button" className="fw-icon-button fw-card-close" aria-label="Close details" onClick={onClose} autoFocus><CloseGlyph /></button>
@@ -104,7 +106,7 @@ export function SpanCard({ id, row, agent, clockMs, mode, onClose, renderIcon, c
             : <span className={`fw-pill fw-pill-${state}`}>{meta.label}</span>}
           {close}
         </div>
-        <Table rows={metrics(who, clockMs, false).filter(([label]) => label.toLowerCase() !== 'failure')} />
+        {detail ? <><p className="fw-card-line">{[who.span.detail, formatSpanDuration(Math.max(0, (spanRunning(who.span) ? Math.max(who.span.endMs, clockMs) : who.span.endMs) - who.span.startMs)), who.span.costUsd ?? who.rollupCostUsd, (spanFact(who.span, 'Tool calls') ? `${spanFact(who.span, 'Tool calls')} tool calls` : who.counts?.tool && plural(who.counts.tool, 'tool call'))].map(v => typeof v === 'number' ? rowCostText(who, v) : v).filter(Boolean).join(' · ')}</p>{detail}</> : <Table rows={metrics(who, clockMs, false).filter(([label]) => label.toLowerCase() !== 'failure')} />}
         {step && <p className="fw-card-step">{step}</p>}
         {!row.ok && <p className="fw-card-error">{failure ? `Failure: ${failure}` : span.output ? `Recorded output: ${span.output}` : 'Failure detail not reported'}</p>}
         {sentence && row.ok && <p className="fw-card-result">{sentence}</p>}

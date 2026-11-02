@@ -11,9 +11,10 @@ import { esc, textWidth, wrap } from "./text.js";
 
 /**
  * `pass` is solid, `deadline` dashed, `died` ends in a cross and `event` is dotted. `release`, `steer`, `ruling` and
- * `wake` carry a head shape (diamond, triangle, square, circle), so every kind reads without colour.
+ * `wake` carry a head shape (diamond, triangle, square, circle), so every kind reads without colour. `candidate` is an
+ * unmerged release candidate: a hollow diamond on a dotted stem, named with its `age`.
  */
-export type MarkKind = "pass" | "deadline" | "died" | "event" | "release" | "steer" | "ruling" | "wake";
+export type MarkKind = "pass" | "deadline" | "died" | "event" | "release" | "steer" | "ruling" | "wake" | "candidate";
 /** A recorded verdict, such as a release tag's check: pass and fail take the status tones, unknown the muted tone. */
 export type MarkVerdict = "pass" | "fail" | "unknown";
 export interface ChartMark {
@@ -25,6 +26,8 @@ export interface ChartMark {
   source?: string;
   /** `timeline` only: the lane the event belongs to. It is drawn on that lane instead of across every lane. */
   lane?: string;
+  /** `candidate` only: how long it has waited unmerged, as the producer formats it ("3 h"); shown with the label and in the table. */
+  age?: string;
 }
 
 /**
@@ -35,11 +38,11 @@ export interface ChartMark {
 export type BandKind = "after-pass" | "idle" | "missing" | "blocked" | "group";
 export interface ChartBand { from: number; to: number; label: string; kind: BandKind }
 
-export const MARK_KINDS: readonly MarkKind[] = ["pass", "deadline", "died", "event", "release", "steer", "ruling", "wake"];
+export const MARK_KINDS: readonly MarkKind[] = ["pass", "deadline", "died", "event", "release", "steer", "ruling", "wake", "candidate"];
 export const MARK_VERDICTS: readonly MarkVerdict[] = ["pass", "fail", "unknown"];
 export const BAND_KINDS: readonly BandKind[] = ["after-pass", "idle", "missing", "blocked", "group"];
 /** The head shape of each kind that has one, shared with the React marks. */
-export const MARK_HEADS: Partial<Record<MarkKind, MarkerShape>> = { release: "diamond", steer: "triangle", ruling: "square", wake: "circle" };
+export const MARK_HEADS: Partial<Record<MarkKind, MarkerShape>> = { release: "diamond", steer: "triangle", ruling: "square", wake: "circle", candidate: "diamond" };
 
 /** Why the marks or bands cannot be drawn on `domain` (null when they can). Omit `domain` to check shape only. */
 export function eventsGap(marks: readonly ChartMark[] = [], bands: readonly ChartBand[] = [], domain?: readonly [number, number]): string | null {
@@ -49,6 +52,7 @@ export function eventsGap(marks: readonly ChartMark[] = [], bands: readonly Char
     if (!MARK_KINDS.includes(mark.kind)) return `${mark.label}: unknown mark kind.`;
     if (mark.verdict !== undefined && !MARK_VERDICTS.includes(mark.verdict)) return `${mark.label}: a verdict is pass, fail or unknown.`;
     if (mark.source !== undefined && (typeof mark.source !== "string" || !mark.source.trim())) return `${mark.label}: a source needs a name.`;
+    if (mark.age !== undefined && (mark.kind !== "candidate" || typeof mark.age !== "string" || !mark.age.trim())) return `${mark.label}: an age names how long a candidate has waited.`;
     if (!Number.isFinite(mark.at) || !inside(mark.at)) return `${mark.label}: mark position must be finite and inside the axis domain.`;
   }
   for (const band of bands) {
@@ -66,9 +70,9 @@ function isGap(mark: ChartMark): boolean {
   return mark.kind === "event" && mark.source === "gap";
 }
 
-/** A mark's label with its source, as drawn and listed. */
+/** A mark's label with its age and source, as drawn and listed. */
 export function markName(mark: ChartMark): string {
-  return mark.source ? `${mark.label} · ${mark.source}` : mark.label;
+  return [mark.label, mark.age, mark.source].filter(Boolean).join(" · ");
 }
 
 /** The kind cell of the events table: the kind, then the verdict and the lane when recorded. */
@@ -244,4 +248,4 @@ export function eventsTable(marks: readonly ChartMark[], bands: readonly ChartBa
   return table(`Recorded events by ${axisLabel}`, [{ label: "Event" }, { label: "Kind" }, { label: `${axisLabel} from`, numeric: true }, { label: `${axisLabel} to`, numeric: true }], rows.map((row) => row.cells));
 }
 
-export const EVENTS_READ = "Vertical rules mark recorded events (solid: pass, dashed: deadline, cross: died, dotted: other; a diamond is a release, a triangle a steer, a square a ruling and a circle a wake, coloured by verdict when one is recorded); tinted spans are recorded periods, a wall-topped span is a system-wide block, and hatched spans have no data.";
+export const EVENTS_READ = "Vertical rules mark recorded events (solid: pass, dashed: deadline, cross: died, dotted: other; a diamond is a release, a hollow diamond an unmerged candidate with its age, a triangle a steer, a square a ruling and a circle a wake, coloured by verdict when one is recorded); tinted spans are recorded periods, a wall-topped span is a system-wide block, and hatched spans have no data.";

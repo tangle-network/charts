@@ -27,11 +27,11 @@ export function CountHeatmap({ label, columns, rows, color, format = formatCompa
   const scroll = useRef<HTMLDivElement>(null)
   const [target, setTarget] = useState<[number, number] | null>(null)
   const [top, setTop] = useState(0)
-  const narrow = width > 0 && width < 600, rowHeight = narrow ? 44 : 32, height = 8 * rowHeight
+  const narrow = width > 0 && width < 600, rowHeight = narrow ? 44 : 32, height = 8 * rowHeight, neutral = color ?? 'var(--chart-live-muted, var(--text-muted))'
   const fit = Math.max(0, Math.floor(((width || 720) - (narrow ? 120 : 208) - 88) / 76))
   const shown = columns.length <= fit ? columns : columns.slice(0, Math.max(0, fit - 1))
   const rest = columns.slice(shown.length)
-  const groups = [...shown.map((column, index) => ({ label: column.label, ids: [column.id], color: color ?? LIVE_SERIES[index % LIVE_SERIES.length] })), ...(rest.length ? [{ label: `${rest.length} ${shown.length ? 'more' : 'tools'}`, ids: rest.map(column => column.id), color: color ?? 'var(--chart-live-muted, var(--text-muted))' }] : [])]
+  const groups = [...shown.map((column, index) => ({ label: column.label, ids: [column.id], color: color ?? LIVE_SERIES[index % LIVE_SERIES.length] })), ...(rest.length ? [{ label: `${rest.length} ${shown.length ? 'more' : 'tools'}`, ids: rest.map(column => column.id), color: neutral }] : [])]
   const cells = useMemo(() => rows.map(row => groups.map(group => {
     const known = group.ids.flatMap(id => { const cell = row.cells[id]; return cell && Number.isFinite(cell.value) && cell.value >= 0 ? [cell] : [] })
     return { value: known.length ? known.reduce((sum, cell) => sum + cell.value, 0) : null, failures: known.reduce((sum, cell) => sum + (cell.failures ?? 0), 0), partial: known.length < group.ids.length }
@@ -53,7 +53,7 @@ export function CountHeatmap({ label, columns, rows, color, format = formatCompa
     setTop(pane.scrollTop)
     setTarget([r, c])
   }
-  return <div ref={measure} className="tgc-count-heatmap" role="table" aria-label={label} aria-rowcount={rows.length + 1} aria-colcount={groups.length + 2} style={{ '--heatmap-color': color ?? 'var(--chart-live-muted, var(--text-muted))', '--heatmap-row': `${rowHeight}px` } as CSSProperties}>
+  return <div ref={measure} className="tgc-count-heatmap" role="table" aria-label={label} aria-rowcount={rows.length + 1} aria-colcount={groups.length + 2} style={{ '--heatmap-color': neutral, '--heatmap-row': `${rowHeight}px` } as CSSProperties}>
     <div className="tgc-count-head" role="row" style={grid} aria-rowindex={1}>
       <span role="columnheader">Agent</span>
       {groups.map(group => <span key={group.ids.join(':')} role="columnheader" style={{ boxShadow: `inset 0 -2px ${group.color}` }} title={columns.filter(column => group.ids.includes(column.id)).map(column => column.label).join(', ')}>{group.label}</span>)}

@@ -1,3 +1,43 @@
+## 4.0.14
+
+- `CountHeatmap` draws each visible tool column in its own categorical series colour, marked under its header, so equal counts in different tools stay distinct; a collapsed "N more" group and the magnitude key use the neutral tone. An explicit `color` still paints every column in that one colour.
+
+## 4.0.13
+
+- `latencyRange` rows draw p50 and p95 with their 95% confidence bands (`p50Band`, `p95Band`) and print both with n; hover carries the rest. The options added for a competitor board in 4.0.12 are gone: `compareMs`, `extra`, `ranked`, `highlight` and `heads`, and `metricBars` no longer has `orientation: "rows"`.
+- `presentation: "panel"` draws a figure in a dashboard cell at a measured `width`, swapped to its narrow render by the viewport.
+- `metricBars` prints a `detail` line under a column's name, and a column's value clears its whisker.
+- `timeSeries` takes `dense`: a shorter plot, no axis titles and a one-line legend for a dashboard cell.
+- A figure draws at any measured `width` from 300 px. A harness may have a name and no mark. Intervals may name `student-t` or `binomial-ranks`.
+- Row and column tooltips share one layout: a bold title, then `key: value` lines aligned.
+
+## 4.0.12
+
+- `latencyRange` is the benchmark board: `ranked`, `highlight`, `identities`, `heads`, `width`, `scale: "linear"`, `compareMs`, `extra` and `facts`; `sloMs` is optional and `p95Ms` may be null. Every row is a hover and focus target.
+- `metricBars` gains `orientation: "rows"`, drawn by the same rows.
+- Figures keep their surface colours on Brand-themed pages: `--chart-canvas` falls back to the page surface, so tooltips and open marks no longer render black.
+
+## 4.0.11
+
+- `BehaviorStrip`: agents by time window on one canvas (three hues for reading, writing and verifying, textures for sub-classes, the serious colour for looping, a neutral ladder for thinking, running and uncalibrated classes), release markers, message ticks, a windowed row set past 40, a keyboard cursor and the shared tooltip.
+- `DotStrip`: one row per metric and one dot per entity with producer-marked outliers in the serious colour, a max label per row and keyboard focus per dot.
+- `AgentGraphActivity` gains `testing`, `messaging`, `reviewing` and `looping`; live cards show the activity chip, and `activityCalibrated: false` draws it in the neutral step with the badge.
+- `ChartMark` gains the kind `candidate` (a hollow diamond with an `age`) for unmerged release candidates in `Lines` and `timeSeries`.
+
+## 4.0.10
+
+- A row rolls up cost only when a span under it is priced: an agent whose tool steps carry no cost and whose own model work went unpriced (a Codex worker that recorded no tokens) shows no cost, never "$0.00".
+
+## 4.0.9
+
+- The agent hover card's one line of facts names the producer's recorded tool-call count (the span's "Tool calls" fact) before the steps on display, so a bounded step tail never reads as the whole run.
+
+## 4.0.8
+
+- Waterfall: every agent lane takes its own categorical colour (the root and lanes past the fifth no longer fall back to grey), and hovering a row holds and highlights it (#109).
+- Topology: the minimum zoom is the fit ratio for live and settled graphs, Fit View frames every agent, and the hover card lists the agent's latest stream rows (#110).
+- A docked SpanCard is content inside its host surface, with no frame of its own (#107).
+
 ## 4.0.1
 
 Keep recorded completed and stopped outcomes visible in topology cards, including the phone overview.

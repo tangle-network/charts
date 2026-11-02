@@ -14,10 +14,6 @@ async function proveCompactTopology(page, width, theme, output) {
     const team = await page.locator('.react-flow__node-agentFrame').boundingBox()
     assert.ok(root.x + root.width < team.x, 'the root is separate to the left of its team')
     assert.equal(await page.locator('.react-flow__viewport').evaluate(node => new DOMMatrixReadOnly(getComputedStyle(node).transform).a), 1)
-    await page.getByRole('button', { name: 'Fit View', exact: true }).click()
-    assert.equal(await page.locator('.react-flow__viewport').evaluate(node => new DOMMatrixReadOnly(getComputedStyle(node).transform).a), 1, 'fit never shrinks readable card text')
-    const fittedRoot = await page.locator('.react-flow__node[data-id="agent-0"]').boundingBox(), viewport = await page.locator('.ag-graph-viewport').boundingBox()
-    assert.ok(fittedRoot.y >= viewport.y && fittedRoot.y+fittedRoot.height <= viewport.y+viewport.height, 'fit keeps the root visible')
     const colors = await page.evaluate(() => ({frame:getComputedStyle(document.querySelector('.ag-team-frame')).backgroundColor, card:getComputedStyle(document.querySelector('.ag-agent-card')).backgroundColor}))
     assert.notEqual(colors.frame, colors.card, 'raised cards have a distinct surface from the team')
   }
@@ -48,7 +44,7 @@ async function proveCompactTopology(page, width, theme, output) {
   await page.keyboard.press('Tab'); await owner.focus()
   const metrics = page.locator('[data-agent-metrics]'); await metrics.waitFor({ state: 'visible' })
   await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('[data-agent-metrics]')).opacity) >= .99)
-  assert.match(await metrics.innerText(), /Agent 129/); assert.match(await metrics.innerText(), /Cost/)
+  assert.match(await metrics.innerText(), /Agent 129/); assert.doesNotMatch(await metrics.innerText(), /Not recorded|unknown/, 'a value nobody recorded stays out of the card')
   const metricBox = await metrics.boundingBox()
   assert.ok(metricBox.x >= 0 && metricBox.x + metricBox.width <= width + 1 && metricBox.y >= 0 && metricBox.y + metricBox.height <= 983, 'shared inspector stays in the viewport')
   assert.ok(await metrics.evaluate(element => parseFloat(getComputedStyle(element).fontSize)) >= 13, 'metrics keep their reading size outside the camera transform')
@@ -58,6 +54,13 @@ async function proveCompactTopology(page, width, theme, output) {
   assert.equal(await metrics.count(), 0, 'Escape stays closed after restoring the invoker')
   assert.equal(await owner.evaluate(element => element === document.activeElement), true)
 
+  if (width > 600) {
+    await page.getByRole('button', { name: 'Fit View', exact: true }).click()
+    // Drew 2026-10-31: fit zooms out until every agent is in view, settled or live.
+    // The camera may still be moving when the click returns; wait for it to frame every agent.
+    const framed = () => { const v = document.querySelector('.ag-graph-viewport').getBoundingClientRect(); return [...document.querySelectorAll('.react-flow__node')].every(n => { const b = n.getBoundingClientRect(); return b.left >= v.left - 1 && b.top >= v.top - 1 && b.right <= v.right + 1 && b.bottom <= v.bottom + 1 }) }
+    assert.ok(await page.waitForFunction(framed, null, { timeout: 3000 }).then(() => true, () => false), 'fit shows every agent')
+  }
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false)
 }
 

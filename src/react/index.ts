@@ -24,6 +24,10 @@ export type { CountHeatmapColumn, CountHeatmapCell, CountHeatmapRow, CountHeatma
 export { TimelineView } from "./timeline-view.js";
 export { DOT_MAP_CATEGORIES, DotMap } from "./dot-map.js";
 export type { DotMapLabel, DotMapProps, DotMapRect } from "./dot-map.js";
+export { BehaviorStrip, BEHAVIOR_CATEGORIES, behaviorPaint, categoryMinutes, rowLabel as behaviorRowLabel } from './behavior-strip.js';
+export type { BehaviorCalibration, BehaviorCategoryStyle, BehaviorFamily, BehaviorPaint, BehaviorStripEvent, BehaviorStripMarker, BehaviorStripProps, BehaviorStripRow, BehaviorTexture } from './behavior-strip.js';
+export { DotStrip, dotStripRows } from './dot-strip.js';
+export type { DotStripDot, DotStripProps, DotStripRow } from './dot-strip.js';
 export type { TimelineViewProps } from "./timeline-view.js";
 // Shapes shared with the static figures; type-only, so the static root stays React-free and vice versa.
 export type { BandKind, ChartBand, ChartMark, MarkKind, MarkVerdict } from "../events.js";

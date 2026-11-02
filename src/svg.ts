@@ -5,7 +5,7 @@
  * its layout.
  */
 
-import { esc } from "./text.js";
+import { esc, textWidth } from "./text.js";
 
 /** Stable native groups share geometry and attributes with the static serializer. */
 export type SvgPart = string | { key: string; attributes: Record<string, string | number | boolean | undefined>; body: string };
@@ -17,13 +17,15 @@ export function svgPart(part: SvgPart): string {
 
 export const WIDE = 720;
 export const NARROW = 358;
+/** The narrowest dashboard cell a figure draws into at its own size. */
+const PANEL_MIN = 300;
 
 /**
- * The wide render's width for a caller-measured `width` (a figure's container): at least `WIDE`, whole pixels. A figure
- * drawn at its container's width keeps text and marks at their set size instead of being scaled up from 720 px.
+ * The wide render's width for a caller-measured `width` (a figure's container), whole pixels. A figure drawn at its
+ * container's width keeps text and marks at their set size instead of being scaled from 720 px.
  */
 export function wideWidth(width: number | undefined): number {
-  return width !== undefined && Number.isFinite(width) && width > WIDE ? Math.floor(width) : WIDE;
+  return width !== undefined && Number.isFinite(width) && width >= PANEL_MIN ? Math.floor(width) : WIDE;
 }
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -102,6 +104,23 @@ export function text(x: number, y: number, value: string, o: TextOptions = {}): 
   const anchor = o.anchor && o.anchor !== "start" ? ` text-anchor="${o.anchor}"` : "";
   const weight = o.weight === 600 ? ` font-weight="600"` : "";
   return `<text class="${o.cls ?? "tgc-ink"}" x="${r2(x)}" y="${r2(y)}" font-size="${o.size ?? 12}"${anchor}${weight}>${esc(value)}</text>`;
+}
+
+/** A hover tooltip: the first line is its title, and each `key: value` line aligns its value right. */
+/** The tooltip width that keeps every fact on one line. */
+export function tipWidth(facts: readonly string[]): number {
+  return Math.ceil(Math.max(...facts.map((fact) => textWidth(fact, 12, "mono")))) + 36;
+}
+
+export function tipBox(facts: readonly string[], x: number, y: number, width: number, attributes: string): string {
+  let body = "";
+  facts.forEach((fact, i) => {
+    const at = y + 21 + i * 18, split = fact.indexOf(": ");
+    body += split < 0 || i === 0
+      ? text(x + 10, at, fact, { size: 12, ...(i === 0 ? { weight: 600 as const } : {}), cls: "tgc-tip-ink" })
+      : text(x + 10, at, fact.slice(0, split), { size: 12, cls: "tgc-tip-key" }) + text(x + width - 10, at, fact.slice(split + 2), { size: 12, cls: "tgc-tip-ink tgc-num", anchor: "end" });
+  });
+  return `<g ${attributes} aria-hidden="true">${rect(x, y, width, facts.length * 18 + 14, "tgc-tip-bg", 'rx="8"')}${body}</g>`;
 }
 
 /** A group whose `<title>` is the hover text for everything inside it. */

@@ -65,6 +65,8 @@ export interface AgentGraphProps extends GraphMarks {
    * their initial attention order. Only the running dot breathes; commands update without routine sliding.
    */
   live?: boolean;
+  /** The hovered agent's own stream, drawn by the host; without it the card lists the agent's last recorded events. */
+  renderAgentDetail?: (agentId: string) => ReactNode;
   /** Optional host tool identity for a recorded event. */
   renderEventIcon?: (event: AgentGraphEvent) => ReactNode;
   /** Live tree activity; false when a shared workspace already supplies its strip. */

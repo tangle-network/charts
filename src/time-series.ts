@@ -64,6 +64,8 @@ export interface TimeSeriesOptions {
   width?: number;
   /** false leaves out the series legend under the plot, for a caller that names its series itself. The verdict key stays. */
   legend?: boolean;
+  /** A dashboard cell: a shorter plot, the figure's title naming the axes, the legend on one line. */
+  dense?: boolean;
   /** Draw a vertical rule at the x of the point whose tip shows. */
   crosshair?: boolean;
   /** Host-owned point actions use the stable data-point index; Enter/Space and click remain with the host. */
@@ -128,9 +130,9 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
   const px = axis.px;
   // Mark labels take rows above the plot, so they never sit on the data.
   const labelRows = markLabelRows(o.marks ?? [], px, left, right);
-  const top = 36 + (labelRows ? labelRows * 14 + 2 : 0) + groupRowHeight(o.bands), bottom = top + 224;
+  const top = (o.dense ? 10 : 36) + (labelRows ? labelRows * 14 + 2 : 0) + groupRowHeight(o.bands), bottom = top + (o.dense ? 128 : 224);
   const py = yScale(o.y.domain, o.y.scale, top, bottom);
-  let marks = text(left, 18, o.y.label, { cls: "tgc-ink-muted" });
+  let marks = o.dense ? "" : text(left, 18, o.y.label, { cls: "tgc-ink-muted" });
   for (const [i, tick] of grid.entries()) {
     marks += line(left, py(tick.at), right, py(tick.at), i === 0 && !o.y.ticks?.length ? "tgc-axis" : "tgc-gridline") + text(left - 8, py(tick.at) + 4, tick.label, { anchor: "end", cls: "tgc-ink-muted tgc-num", size: 12 });
   }
@@ -146,14 +148,14 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
     turn = fit.extra;
     marks += columnLabels(xs, px, fit.fit, left, right, width, xLabel, 12, bottom + strip + 20);
   } else for (const x of xTicks(xs, px, left, right, width, xLabel)) marks += text(px(x), bottom + strip + 20, xLabel(x), { anchor: "middle", cls: "tgc-ink-muted tgc-num" });
-  marks += text((left + right) / 2, bottom + strip + turn + 43, o.x.label, { anchor: "middle", cls: "tgc-ink-muted" });
+  if (!o.dense) marks += text((left + right) / 2, bottom + strip + turn + 43, o.x.label, { anchor: "middle", cls: "tgc-ink-muted" });
   marks += drawBands(o.bands ?? [], px, top, bottom, xLabel, undefined, axis.extent);
   // Group brackets and their labels go over the event rules, so a ruling's rule never strikes through a run's label.
   const groups = drawGroups(o.bands ?? [], axis.extent, top, bottom, left, right, xLabel);
   if (strip) marks += text(left - 8, bottom + 16, stripName, { anchor: "end", cls: "tgc-ink-muted", size: 12 }) + line(left, bottom + strip, right, bottom + strip, "tgc-gridline");
   const all = rows.flatMap((row) => row.points);
   const plotX = spreadX(all.filter((point) => point.y !== null), axis, 10), stripX = spreadX(all.filter((point) => point.y === null && point.verdict !== undefined), axis, 10);
-  let legendY = bottom + strip + turn + 72;
+  let legendY = bottom + strip + turn + (o.dense ? 42 : 72), legendX = left;
   let points = "", tips = "", rules = "";
   // Badges are placed after every mark, so a badge never covers a mark drawn later.
   const placed: Array<[number, number, number, number]> = [];
@@ -207,8 +209,9 @@ function plot(rows: TimeSeriesRow[], o: TimeSeriesOptions, width: number, xLabel
     if (o.legend === false || legend.has(legendKey)) continue;
     legend.add(legendKey);
     const label = wrap(row.label, right - left - 32, 12, "sans", 8);
-    marks += wrapSeries(`<g style="stroke-dasharray:${dash}">${line(left, legendY - 4, left + 24, legendY - 4, "tgc-series-line")}</g>` + (rows.length > 1 ? `<path class="tgc-series-key" d="${markerPath(row.colorIndex !== undefined ? "circle" : MARKER_SHAPES[ord % MARKER_SHAPES.length]!, left + 12, legendY - 4, 3.5)}"/>` : "")) + textBlock(label.lines, left + 32, legendY, 16, 'class="tgc-ink" font-size="12"');
-    legendY += label.lines.length * 16 + 8;
+    marks += wrapSeries(`<g style="stroke-dasharray:${dash}">${line(legendX, legendY - 4, legendX + 24, legendY - 4, "tgc-series-line")}</g>` + (rows.length > 1 ? `<path class="tgc-series-key" d="${markerPath(row.colorIndex !== undefined ? "circle" : MARKER_SHAPES[ord % MARKER_SHAPES.length]!, legendX + 12, legendY - 4, 3.5)}"/>` : "")) + textBlock(label.lines, legendX + 32, legendY, 16, 'class="tgc-ink" font-size="12"');
+    if (o.dense) legendX += 56 + row.label.length * 8;
+    else legendY += label.lines.length * 16 + 8;
   }
   const badges = placeBadges(pending, placed, left - 4, width - 2);
   const key = verdictKey(rows.flatMap((row) => row.points), o.markers, left, legendY + 4, right - left);

@@ -78,7 +78,7 @@ export interface FlowWaterfallRow {
 }
 
 /** The CSS hue slot: 0 is the root agent's neutral, then five agent hues cycle. */
-export const toneKey = (tone: number): number => tone > 0 && tone <= 5 ? tone : 0
+export const toneKey = (tone: number): number => tone > 0 ? 1 + (tone - 1) % 8 : 0
 
 export const spanFailed = (span: FlowSpan): boolean => span.status === 'failed'
 export const spanRunning = (span: FlowSpan): boolean => span.status === 'running'
@@ -114,8 +114,8 @@ function mergeSegments(marks: FlowSegment[], gapMs: number, cap = 240): FlowSegm
   return marks
 }
 
-/** Hierarchy only; presentation owns geometry.
- * Orphaned parents become roots; cycles are broken without dropping any span. */
+/** Hierarchy only; presentation owns geometry. Orphaned parents become roots; cycles are broken without dropping any span.
+ * A row rolls up cost only over a priced span: uncosted tool steps under unpriced agent work are unknown, never $0.00. */
 export function flowWaterfallRows(trace: FlowTrace, resolutionMs?: number): FlowWaterfallRow[] {
   const ids = new Set<string>()
   const rows: FlowWaterfallRow[] = [...trace.spans]
@@ -169,21 +169,21 @@ export function flowWaterfallRows(trace: FlowTrace, resolutionMs?: number): Flow
     ordered_.push(row)
     const marks: FlowSegment[] = []
     const own = row.span.promptTokens !== undefined || row.span.completionTokens !== undefined || row.span.cachedTokens !== undefined
-    let cost = row.span.costUsd ?? 0
-    let costKnown = row.span.kind !== 'model' || row.span.costUsd !== undefined
+    let cost = row.span.costUsd ?? 0, priced = row.span.costUsd !== undefined
+    let costKnown = row.span.kind !== 'model' || priced
     for (const child of kids) {
       for (const mark of visit(child, depth + 1, row.tone)) marks.push(mark)
       row.descendants += 1 + child.descendants
       if (child.kind === 'pipeline') row.hasAgents = true
       const childCost = child.hasChildren ? child.rollupCostUsd : child.span.costUsd
       if (childCost === undefined) { if (child.kind === 'model' || child.hasChildren) costKnown = false }
-      else cost += childCost
+      else { cost += childCost; priced = true }
       if (child.kind !== 'pipeline' && child.kind !== 'waiting' && ordered(child.span)) row.own.push(segmentOf(child))
     }
     Object.assign(row, stepStats(kids))
     const tokens = own ? { prompt: reportedCount(row.span.promptTokens), completion: reportedCount(row.span.completionTokens), cached: reportedCount(row.span.cachedTokens) } : sumTokens(kids)
     if (tokens) row.tokens = tokens
-    if (row.hasChildren && costKnown) row.rollupCostUsd = cost
+    if (row.hasChildren && costKnown && priced) row.rollupCostUsd = cost
     if (row.hasChildren) {
       row.segments = mergeSegments(marks.map(mark => ({ ...mark })), gap)
       row.own = mergeSegments(row.own, gap)
@@ -416,8 +416,8 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
     groups.set(key, [...(groups.get(key) ?? []), row])
   }
   const out: FlowWaterfallRow[] = []
-  let next = 0
-  const hue = (row: FlowWaterfallRow) => row.tone <= 0 || ++next > 5 ? 0 : 1 + [...roleOf(row.name)].reduce((hash, c) => (hash * 31 + c.charCodeAt(0)) >>> 0, 0) % 5
+  // Every lane, root included, takes its role's colour, cycling the eight series: recorded work is never grey.
+  const hue = (row: FlowWaterfallRow) => row.tone < 0 ? 0 : 1 + [...roleOf(row.name)].reduce((hash, c) => (hash * 31 + c.charCodeAt(0)) >>> 0, 0) % 8
   for (const [role, members] of groups) {
     if (members.length < 2) { const row = members[0]!, tone = hue(row); out.push({ ...row, tone, own: row.own.map(mark => ({ ...mark, tone })) }); continue }
     const tone = hue(members[0]!)
