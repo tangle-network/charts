@@ -1,9 +1,9 @@
 import { AgentMark } from "./marks";
 import type { Node, NodeProps } from "@xyflow/react";
-import { Wrench } from "lucide-react";
+import { BookOpen, Brain, FlaskConical, Hammer, Hourglass, type LucideIcon, MessageSquare, PenLine, Repeat, RotateCcw, ScanSearch, TestTubes, Wrench } from "lucide-react";
 import type { ReactNode } from "react";
 import { useRef } from "react";
-import type { AgentGraphDirection, AgentGraphEvent, AgentGraphNode } from "./agent-graph-layout";
+import type { AgentGraphActivity, AgentGraphDirection, AgentGraphEvent, AgentGraphNode } from "./agent-graph-layout";
 import { agentStatus, agentDescription, Handles, StatusGlyph, cardBorder } from "./agent-graph-parts";
 import { SELECTION_OUTLINE } from "./canvas-theme";
 import { fmtCost, fmtEventTime } from "./format";
@@ -15,6 +15,17 @@ import { useRunNow } from "@tangle-network/ui/hooks/use-live-time";
 export type LiveAgentCardNode = Node<
   { agent: AgentGraphNode; selected: boolean; direction: AgentGraphDirection; now?: number; onOpen?: () => void; parentLabel?: string; renderEventIcon?: (event: AgentGraphEvent) => ReactNode }, "liveAgent"
 >;
+
+/** Each activity's icon and label; looping alone takes the serious status colour. */
+export const AGENT_ACTIVITIES: Readonly<Record<AgentGraphActivity, { label: string; icon: LucideIcon }>> = {
+  thinking: { label: "Thinking", icon: Brain }, reading: { label: "Reading", icon: BookOpen }, building: { label: "Building", icon: Hammer }, proving: { label: "Proving", icon: FlaskConical }, writing: { label: "Writing", icon: PenLine }, waiting: { label: "Waiting", icon: Hourglass },
+  restarting: { label: "Restarting", icon: RotateCcw }, testing: { label: "Testing", icon: TestTubes }, messaging: { label: "Messaging", icon: MessageSquare }, reviewing: { label: "Reviewing", icon: ScanSearch }, looping: { label: "Looping", icon: Repeat },
+};
+/** The activity chip: the producer's classification with its icon; an uncalibrated classifier reads in the neutral step with the badge. */
+function ActivityChip({ agent }: { agent: AgentGraphNode }) {
+  const meta = agent.activity && AGENT_ACTIVITIES[agent.activity], uncalibrated = agent.activityCalibrated === false;
+  return meta ? <span className="ag-live-activity" data-calibrated={uncalibrated ? "false" : undefined} data-serious={!uncalibrated && agent.activity === "looping" ? "" : undefined} title={`${meta.label}${uncalibrated ? " · uncalibrated classifier" : ""}`}><meta.icon size={12} strokeWidth={1.75} aria-hidden />{meta.label}{uncalibrated && <small className="ag-live-badge">uncalibrated</small>}</span> : null;
+}
 
 function middleLabel(label: string) {
   return label.length <= 52 ? label : `${label.slice(0, 32)} … ${label.slice(-17)}`;
@@ -58,6 +69,7 @@ export function LiveAgentCardView({ agent, selected, direction = "TB", now: fixe
           <div className="ag-live-thinking-row"><p className={`ag-live-thinking${failed ? " ag-live-failure" : ""}`}>
             {failed ? agent.result ?? events.at(-1)?.label ?? agent.turn ?? s.label : agent.turn || "—"}
           </p>
+          {!failed && <ActivityChip agent={agent} />}
           {agent.status === "needs-you" && <button type="button" className="ag-live-respond nodrag nopan" disabled={!onOpen} title={onOpen ? undefined : "Responses unavailable in this view"} onClick={event => { event.stopPropagation(); onOpen?.(); }}>Respond</button>}</div>
           {events.length > 0 && <div className="ag-live-events-clip"><ol className="ag-live-events" aria-label="Latest events">
             {events.map(event => <li key={event.id} title={event.label}>

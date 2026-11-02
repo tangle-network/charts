@@ -30,6 +30,8 @@ export interface AgentGraphNode {
   facts?: readonly { label: string; value: string }[];
   /** Live cards: what it is doing now, from its real state; the card carries it as `data-activity` for hosts to style. */
   activity?: AgentGraphActivity | null;
+  /** Whether the producer's activity classifier is calibrated for this agent; false draws the activity in the neutral step with the badge. */
+  activityCalibrated?: boolean;
   /** Live cards: its latest tool calls or events, oldest first; the card shows the last three. */
   events?: readonly AgentGraphEvent[] | null;
   /** Recorded activity and full-stream median, when the visible event tail is bounded. Epoch milliseconds. */
@@ -46,7 +48,7 @@ export interface AgentGraphNode {
   result?: string | null;
 }
 
-export type AgentGraphActivity = "thinking" | "reading" | "building" | "proving" | "writing" | "waiting" | "restarting";
+export type AgentGraphActivity = "thinking" | "reading" | "building" | "proving" | "writing" | "waiting" | "restarting" | "testing" | "messaging" | "reviewing" | "looping";
 
 export interface AgentGraphEvent {
   id: string;
