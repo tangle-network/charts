@@ -29,6 +29,8 @@ export function kn(k: number, n: number): string {
 }
 
 export const METHOD_NAME: Record<IntervalMethod, string> = {
+  "student-t": "Student's t",
+  "binomial-ranks": "binomial rank",
   "task-cluster-bootstrap": "task-clustered bootstrap",
   "mcnemar-exact": "exact McNemar",
   wilson: "Wilson score",

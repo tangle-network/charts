@@ -10,7 +10,7 @@
 /** agent-eval `SearchEstimateMethod`, the same strings: what a unit count supports. */
 export type Estimate = "none" | "insufficient" | "descriptive" | "bootstrap";
 
-export type IntervalMethod = "task-cluster-bootstrap" | "mcnemar-exact" | "wilson";
+export type IntervalMethod = "task-cluster-bootstrap" | "mcnemar-exact" | "wilson" | "student-t" | "binomial-ranks";
 
 /**
  * A confidence interval as the producer recorded it. `level` and `method` are
