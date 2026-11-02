@@ -1,3 +1,10 @@
+## 4.0.11
+
+- `BehaviorStrip`: agents by time window on one canvas (three hues for reading, writing and verifying, textures for sub-classes, the serious colour for looping, a neutral ladder for thinking, running and uncalibrated classes), release markers, message ticks, a windowed row set past 40, a keyboard cursor and the shared tooltip.
+- `DotStrip`: one row per metric and one dot per entity with producer-marked outliers in the serious colour, a max label per row and keyboard focus per dot.
+- `AgentGraphActivity` gains `testing`, `messaging`, `reviewing` and `looping`; live cards show the activity chip, and `activityCalibrated: false` draws it in the neutral step with the badge.
+- `ChartMark` gains the kind `candidate` (a hollow diamond with an `age`) for unmerged release candidates in `Lines` and `timeSeries`.
+
 ## 4.0.10
 
 - A row rolls up cost only when a span under it is priced: an agent whose tool steps carry no cost and whose own model work went unpriced (a Codex worker that recorded no tokens) shows no cost, never "$0.00".

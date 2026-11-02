@@ -193,3 +193,46 @@ button.tgc-count-label { cursor: pointer; }
 .ov-gantt .tgc-gantt-end { dominant-baseline: middle; }
 
 .ov-plot a:focus-visible .ov-line-point { stroke: var(--focus-border, var(--accent-text)); stroke-width: 3; }
+
+/*
+ * BehaviorStrip: agents by time window on one canvas. Three hues read as reading, writing and verifying (Brand's
+ * categorical roles, the storyboard's validated pairs), looping takes the serious status colour, and thinking, running
+ * and uncalibrated classes climb a neutral ladder (faint, the two outcome greys). Textures tell sub-classes apart.
+ */
+.tgc-behavior-strip { position: relative; min-width: 0; color: var(--chart-live-fg, var(--text-primary)); font: 13px/16px var(--font-sans, sans-serif);
+  --tgc-behavior-reading: var(--chart-category-1); --tgc-behavior-writing: var(--chart-category-2); --tgc-behavior-verifying: var(--chart-category-3);
+  --tgc-behavior-serious: var(--chart-live-danger, var(--chart-breach, var(--status-error)));
+  --tgc-behavior-neutral-1: color-mix(in srgb, var(--chart-live-faint, var(--text-dim)) 28%, transparent); --tgc-behavior-neutral-2: var(--chart-outcome-other); --tgc-behavior-neutral-3: var(--chart-outcome-neutral); }
+.tgc-behavior-head { display: grid; grid-template-columns: var(--tgc-behavior-label) 1fr; align-items: end; height: 28px; color: var(--chart-live-muted, var(--text-muted)); }
+.tgc-behavior-axis-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.tgc-behavior-scroll { overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; overscroll-behavior: contain; }
+.tgc-behavior-row { display: flex; align-items: center; height: 16px; width: var(--tgc-behavior-label); box-sizing: border-box; padding-right: 8px; outline: none; }
+.tgc-behavior-row:focus-visible { outline: 2px solid var(--focus-border, var(--ring-color, var(--accent-text))); outline-offset: -2px; }
+.tgc-behavior-row[aria-selected] { background: var(--chart-live-hover, var(--bg-hover)); }
+.tgc-behavior-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tgc-behavior-canvas { position: absolute; top: 0; display: block; pointer-events: none; }
+.tgc-behavior-key { padding-top: 12px; font-size: 13px; }
+.tgc-behavior-key i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; background: var(--tgc-swatch); }
+.tgc-behavior-key i[data-texture="hatch"] { background: repeating-linear-gradient(135deg, var(--tgc-swatch) 0 1px, transparent 1px 4px), color-mix(in srgb, var(--tgc-swatch) 22%, transparent); }
+.tgc-behavior-key i[data-texture="dots"] { background: radial-gradient(circle, var(--tgc-swatch) 1px, transparent 1.5px) 0 0 / 4px 4px, color-mix(in srgb, var(--tgc-swatch) 22%, transparent); }
+.tgc-behavior-key i[data-texture="outline"] { background: none; border: 1px dashed var(--chart-live-faint, var(--text-dim)); box-sizing: border-box; }
+.tgc-behavior-key i[data-texture="rule"] { width: 0; height: 12px; border-left: 2px dashed var(--chart-live-muted, var(--text-muted)); border-radius: 0; }
+.tgc-behavior-key i[data-texture="tick"] { width: 0; height: 12px; border-left: 2px solid var(--chart-live-fg, var(--text-primary)); border-radius: 0; }
+.tgc-behavior-badge { margin-left: 4px; padding: 0 4px; border-radius: 3px; font-size: 11px; line-height: 14px; background: var(--tgc-behavior-neutral-1); color: var(--chart-live-muted, var(--text-muted)); }
+.tgc-behavior-count { margin-left: auto; color: var(--chart-live-muted, var(--text-muted)); }
+
+/* DotStrip: one row per metric, one dot per entity; an outlier is the producer's verdict, in the serious colour with a surface ring. */
+.tgc-dot-strip { font: 14px/20px var(--font-sans, sans-serif); color: var(--chart-live-fg, var(--text-primary)); }
+.tgc-dot-strip-label { fill: var(--chart-live-fg, var(--text-primary)); font-size: 14px; }
+.tgc-dot-strip-dot { fill: var(--chart-series-1); fill-opacity: .55; stroke: var(--chart-live-surface, var(--bg-card)); stroke-width: 1; }
+.tgc-dot-strip-outlier { fill: var(--chart-live-danger, var(--chart-breach, var(--status-error))); stroke: var(--chart-live-surface, var(--bg-card)); stroke-width: 2; }
+.tgc-dot-strip [role="button"] { cursor: pointer; }
+.tgc-dot-strip g:focus-visible { outline: none; }
+.tgc-dot-strip g:focus-visible circle, .tgc-dot-strip [data-selected] circle { stroke: var(--chart-live-fg, var(--text-primary)); stroke-width: 2; }
+.tgc-dot-strip-key-dot, .tgc-dot-strip-key-outlier { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--chart-series-1); opacity: .7; }
+.tgc-dot-strip-key-outlier { background: var(--chart-live-danger, var(--chart-breach, var(--status-error))); opacity: 1; box-shadow: 0 0 0 2px var(--chart-live-surface, var(--bg-card)); }
+
+/* An unmerged candidate: a hollow diamond on a dotted stem, in the muted role until a verdict colours it. */
+.ov-mark-candidate { stroke: var(--chart-live-muted, var(--chart-ink-muted)); stroke-dasharray: 1 3; stroke-linecap: round; }
+[data-mark="candidate"] .ov-mark-head { fill: var(--chart-live-surface, var(--chart-canvas)); stroke: var(--chart-live-muted, var(--chart-ink-muted)); stroke-width: 1.5; }
+.ov-event-candidate { border-left: 2px dotted var(--chart-live-muted, var(--chart-ink-muted)); border-radius: 0; width: 0; }

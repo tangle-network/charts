@@ -358,7 +358,9 @@
 .tgc-mark-steer { stroke: var(--chart-accent); stroke-dasharray: 1 3; stroke-linecap: round; }
 .tgc-mark-ruling { stroke: var(--chart-ink); stroke-dasharray: 6 2 1 2; }
 .tgc-mark-wake { stroke: var(--chart-ink-muted); stroke-dasharray: 1 3; stroke-linecap: round; }
+.tgc-mark-candidate { stroke: var(--chart-ink-muted); stroke-dasharray: 1 3; stroke-linecap: round; }
 .tgc-mark-head { fill: var(--chart-ink-muted); stroke: var(--chart-canvas); stroke-width: 1; }
+[data-mark="candidate"] .tgc-mark-head { fill: var(--chart-canvas); stroke: var(--chart-ink-muted); stroke-width: 1.5; }
 [data-mark="steer"] .tgc-mark-head { fill: var(--chart-accent); }
 [data-mark="ruling"] .tgc-mark-head { fill: var(--chart-ink); }
 /* A recorded verdict colours the rule and head: pass and fail take the status tones, unknown the muted tone. */

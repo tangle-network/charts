@@ -58,8 +58,8 @@ interface View {
   ty: number
 }
 
-/** Resolves CSS colours (including custom properties and light-dark()) to what the page computes, for the canvas. */
-function resolveColors(host: HTMLElement, palette: readonly string[]): string[] {
+/** Resolves CSS colours (including custom properties and light-dark()) to what the page computes, for a canvas. */
+export function resolveColors(host: HTMLElement, palette: readonly string[]): string[] {
   const probe = document.createElement('span')
   probe.style.display = 'none'
   host.appendChild(probe)
