@@ -1,3 +1,9 @@
+## 4.1.0
+
+- `latencyRange` is the benchmark board: `ranked`, `highlight`, `identities`, `heads`, `width`, `scale: "linear"`, `compareMs`, `extra` and `facts`; `sloMs` is optional and `p95Ms` may be null. Every row is a hover and focus target.
+- `metricBars` gains `orientation: "rows"`, drawn by the same rows.
+- Figures keep their surface colours on Brand-themed pages: `--chart-canvas` falls back to the page surface, so tooltips and open marks no longer render black.
+
 ## 4.0.11
 
 - `BehaviorStrip`: agents by time window on one canvas (three hues for reading, writing and verifying, textures for sub-classes, the serious colour for looping, a neutral ladder for thinking, running and uncalibrated classes), release markers, message ticks, a windowed row set past 40, a keyboard cursor and the shared tooltip.

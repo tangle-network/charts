@@ -40,6 +40,8 @@ phaseWaterfall([{ id: "route", label: "Route", ms: 5 }, { id: "restore", label: 
   { measure: "create", totalMs: 30398 });
 ```
 
+`latencyRange` and `metricBars` with `orientation: "rows"` draw every benchmark board the same way: one row per entrant, `ranked` numbers, `identities` marks, a `highlight` that mutes the rest, a value at each bar's end or in printed columns, and all of a row's `facts` on hover or focus. `latencyRange` omits the SLO threshold when `sloMs` is absent, takes `scale: "linear"` for bars from zero and `compareMs` for a second setup on the same row. Render them with `{ presentation: "plot" }` so the page shows no generated sentences.
+
 The producer maps its own blocked or absent states to `no-data`; Charts never assigns a status from a value. `latencyRange` refuses any row below `minN`; when the producer omits those rows, pass their reasons in `excluded` so the note names them. `phaseWaterfall` refuses phases whose sum exceeds the reported total because overlapping spans cannot be drawn as a cumulative waterfall. Its input order is retained, including zero-duration phases. The producer marks known unaccounted leaves with `kind: "unaccounted"`; Charts also marks any difference between their sum and `totalMs`.
 
 Charts owns presentation and interaction; producers own interpretation and status. The library never derives failure or running state from metadata values.
