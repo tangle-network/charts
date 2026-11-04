@@ -1,8 +1,9 @@
 import type { CSSProperties, ReactNode } from 'react'
-import { runStatus, statusMeta } from '@tangle-network/ui/run/status-meta'
+import { RunStatusIcon, runStatus, statusMeta } from '@tangle-network/ui/run/status-meta'
 import type { FlowSpan } from '../flow-trace.js'
 import { CloseGlyph, KindGlyph } from './flow-waterfall-icons.js'
-import { type FlowWaterfallRow, rowCostText, formatCount, formatSpanDuration, spanFact, spanRunning, toneKey } from './flow-waterfall-model.js'
+import { type FlowWaterfallRow, agentSummary, rowCostText, formatCount, formatSpanDuration, spanFact, spanRunning, toneKey } from './flow-waterfall-model.js'
+import { toolLabel } from './agent-graph/naming.js'
 
 
 /** Names wrap between words, never at their hyphens ("memscale-engineer-" / "2" read as two names). */
@@ -22,10 +23,8 @@ export interface SpanCardProps {
   mode: 'hover' | 'pinned' | 'docked'
   onClose: () => void
   renderIcon?: (span: FlowSpan) => ReactNode
-  /** The agent timeline's card: the agent and its outcome, its table, then the step under the pointer. */
+  /** The agent timeline's card: three lines, the agent and how it ended, its time, cost and model, then why it failed or what it did last. */
   compact?: boolean
-  /** The agent's own stream under one line of recorded facts, in place of the facts table. */
-  detail?: ReactNode
 }
 
 const count = (n: number, unit: string) => <span title={`${n.toLocaleString()} ${unit}`}>{formatCount(n)} {unit}</span>
@@ -35,13 +34,13 @@ const percentile = (sorted: readonly number[], p: number) => sorted[Math.min(sor
 const TOOLS_SHOWN = 4
 
 /** The card's table: what the row recorded, every value with its unit. A value nobody recorded is left out, never printed as zero. */
-function metrics(row: FlowWaterfallRow, clockMs: number, full: boolean): [string, ReactNode][] {
+function metrics(row: FlowWaterfallRow, clockMs: number, withFacts: boolean): [string, ReactNode][] {
   const span = row.span
   const out: [string, ReactNode][] = []
   if (span.detail) out.push([span.kind === 'tool' ? 'Provider' : 'Model', span.detail])
   const stop = spanRunning(span) ? Math.max(span.endMs, clockMs) : span.endMs
   out.push(['Ran for', Number.isFinite(stop - span.startMs) && stop >= span.startMs ? formatSpanDuration(stop - span.startMs) : '—'])
-  if (full) out.push(['Started at', `+${formatSpanDuration(Math.max(0, span.startMs))}`])
+  out.push(['Started at', `+${formatSpanDuration(Math.max(0, span.startMs))}`])
   const tokens = row.tokens
   if (tokens) {
     const parts = ([['prompt', 'in'], ['completion', 'out'], ['cached', 'cached']] as const).flatMap(([key, unit]) => tokens[key] === undefined ? [] : [count(tokens[key], unit)])
@@ -64,9 +63,10 @@ function metrics(row: FlowWaterfallRow, clockMs: number, full: boolean): [string
   if (counts?.failed) out.push(['Failures', plural(counts.failed, 'failed step')])
   const restarts = span.marks?.filter(mark => mark.kind === 'restart').length ?? 0
   if (counts?.retried || restarts) out.push(['Retries', [counts?.retried ? plural(counts.retried, 'step retried', 'steps retried') : '', restarts ? plural(restarts, 'restart') : ''].filter(Boolean).join(' · ')])
-  if (full && row.hasChildren) out.push(['Steps', row.descendants.toLocaleString()])
+  if (row.hasChildren) out.push(['Steps', row.descendants.toLocaleString()])
 
-  const facts = (span.facts ?? []).map(({ label, value }): [string, ReactNode] => [label, value])
+  // The producer's facts are the inspector's (a docked card); a hover card keeps to what the chart measured.
+  const facts = (withFacts ? span.facts ?? [] : []).map(({ label, value }): [string, ReactNode] => [label, value])
   return [...new Map([...out, ...facts].map(row => [row[0].toLowerCase(), row])).values()]
 }
 
@@ -75,7 +75,7 @@ function Table({ rows }: { rows: [string, ReactNode][] }) {
 }
 
 /** The span card: what ran, for how long, on what tokens and at what recorded cost, then its input and output. */
-export function SpanCard({ id, row, agent, clockMs, mode, onClose, renderIcon, compact, detail }: SpanCardProps) {
+export function SpanCard({ id, row, agent, clockMs, mode, onClose, renderIcon, compact }: SpanCardProps) {
   const span = row.span
   const failure = spanFact(span, 'Failure')
   const state = runStatus(span.status ?? 'unknown')
@@ -87,29 +87,26 @@ export function SpanCard({ id, row, agent, clockMs, mode, onClose, renderIcon, c
   }
   const close = mode === 'pinned' && <button type="button" className="fw-icon-button fw-card-close" aria-label="Close details" onClick={onClose} autoFocus><CloseGlyph /></button>
   if (compact) {
-
+    // Three lines at most (round s-tier): who and how it ended; how long, what it cost, on what; why it failed or what it did last.
+    // Every other fact belongs to the host's inspector, so the card never repeats it.
     const who = owner ?? row
-    const outcome = who.span.outcome
-    const outcomes = who.outcomes ?? (outcome ? [outcome] : [])
-    const kind = span.kind === 'model' ? 'Thinking' : KIND_LABEL[span.kind]
-
-    const named = span.name && span.name.toLowerCase() !== kind.toLowerCase() && span.name.toLowerCase() !== span.kind ? ` ${span.name}` : ''
-    const stop = spanRunning(span) ? Math.max(span.endMs, clockMs) : span.endMs
-    const step = owner && span.endMs > span.startMs ? `${kind}${named} · ${formatSpanDuration(stop - span.startMs)}${row.ok ? '' : ' · failed'}` : undefined
-
-    const sentence = !owner && span.output && span.output !== who.name ? span.output : undefined
+    const whoState = runStatus(who.span.status ?? 'unknown')
+    const stop = (span: FlowSpan) => spanRunning(span) ? Math.max(span.endMs, clockMs) : span.endMs
+    const cost = who.span.costUsd ?? who.rollupCostUsd
+    const facts = [formatSpanDuration(Math.max(0, stop(who.span) - who.span.startMs)), cost ? rowCostText(who, cost) : '', who.span.detail].filter(Boolean).join(' · ')
+    const reason = spanFact(who.span, 'Failure') ?? (whoState === 'failed' ? who.span.output : undefined)
+    const team = who.id.startsWith('family:') ? agentSummary(who).join(' · ') : undefined
+    const kind = span.kind === 'model' ? 'Thinking' : toolLabel(span.name)
+    const last = owner ? `${kind} · ${formatSpanDuration(Math.max(0, stop(span) - span.startMs))}` : who.own.at(-1) && `Last: ${toolLabel(who.own.at(-1)!.name ?? '')}`
+    const failedStep = owner && !row.ok ? spanFact(span, 'Failure') ?? span.output : undefined
     return (
-      <div {...frame} className="fw-card fw-card-compact" data-tone={toneKey(who.tone)} data-outcome={outcome?.tone}>
-        <div className="fw-card-agent">{outcomes.length ? outcomes.map(state => <span key={`${state.label}:${state.tone}:${state.ring}`} className="fw-agent-dot" data-tone="0" data-outcome={state.tone} data-ring={state.ring || undefined} aria-hidden />) : <span className="fw-agent-dot" aria-hidden />}<span className="fw-card-who">{keepWords(who.name)}</span>
-          {outcome
-            ? <span className="fw-pill fw-pill-outcome" data-tone="0" data-outcome={outcome.tone}>{outcome.label}</span>
-            : <span className={`fw-pill fw-pill-${state}`}>{meta.label}</span>}
+      <div {...frame} className="fw-card fw-card-compact" style={{ '--fw-status': `var(${statusMeta(whoState).token})` } as CSSProperties}>
+        <div className="fw-card-agent"><span className="fw-card-who">{keepWords(who.name)}</span>
+          <span className="fw-card-state" title={statusMeta(whoState).label}>{whoState === 'running' ? <span className="fw-spinner" data-motion="essential" /> : <RunStatusIcon status={whoState} size={14} aria-hidden />}<span className="fw-sr-only">{statusMeta(whoState).label}</span></span>
           {close}
         </div>
-        {detail ? <><p className="fw-card-line">{[who.span.detail, formatSpanDuration(Math.max(0, (spanRunning(who.span) ? Math.max(who.span.endMs, clockMs) : who.span.endMs) - who.span.startMs)), who.span.costUsd ?? who.rollupCostUsd, (spanFact(who.span, 'Tool calls') ? `${spanFact(who.span, 'Tool calls')} tool calls` : who.counts?.tool && plural(who.counts.tool, 'tool call'))].map(v => typeof v === 'number' ? rowCostText(who, v) : v).filter(Boolean).join(' · ')}</p>{detail}</> : <Table rows={metrics(who, clockMs, false).filter(([label]) => label.toLowerCase() !== 'failure')} />}
-        {step && <p className="fw-card-step">{step}</p>}
-        {!row.ok && <p className="fw-card-error">{failure ? `Failure: ${failure}` : span.output ? `Recorded output: ${span.output}` : 'Failure detail not reported'}</p>}
-        {sentence && row.ok && <p className="fw-card-result">{sentence}</p>}
+        {facts && <p className="fw-card-line">{facts}</p>}
+        {reason || failedStep ? <p className="fw-card-error" title={reason ?? failedStep}>{reason ?? failedStep}</p> : team ? <p className="fw-card-line">{team}</p> : last ? <p className="fw-card-line" title={last}>{last}</p> : null}
       </div>
     )
   }
@@ -122,7 +119,7 @@ export function SpanCard({ id, row, agent, clockMs, mode, onClose, renderIcon, c
         <span className={`fw-pill fw-pill-${state}`}>{meta.label}</span>
         {close}
       </div>
-      <Table rows={metrics(row, clockMs, true)} />
+      <Table rows={metrics(row, clockMs, mode === 'docked')} />
       {!row.ok && !span.output && !failure && <p className="fw-card-error">Failure detail not reported</p>}
       {span.input && <div className="fw-card-text"><div className="fw-card-label">Input</div><p>{span.input}</p></div>}
       {span.output && <div className="fw-card-text"><div className="fw-card-label">{row.ok ? 'Output' : 'Recorded output'}</div><p>{span.output}</p></div>}

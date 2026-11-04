@@ -1,5 +1,5 @@
 // Demo routes for the trace inspector: reference-shaped fixtures, recorded Discovery runs and a synthetic load trace.
-// Query: fixture=release|incident|discovery|run21c|load|otlp:<file under the data dir>, view=spans|agents, theme=dark|light, live=1, rate=N, n=N, width=px, markers=<JSON FlowMarker[]>, names=long (otlp worst-case labels), outcomes=1 (status as outcome), fill=outcome (outcome fill; agent hue is the default), desc=<goal line>.
+// Query: fixture=release|incident|discovery|run27|run21c|load|otlp:<file under the data dir>, graph=tree|hub (the run's AgentGraph as the Graph view, with LatestEvents), height=fill (fills the viewport), frameless=1, view=spans|agents, theme=dark|light, live=1, rate=N, n=N, width=px, markers=<JSON FlowMarker[]>, names=long (otlp worst-case labels), outcomes=1 (status as outcome), fill=outcome (outcome fill; agent hue is the default), desc=<goal line>.
 import { createRoot } from 'react-dom/client'
 import { useEffect, useState } from 'react'
 import { FlowWaterfall } from '../../src/react/index.ts'
@@ -9,6 +9,9 @@ import '../../src/react/flow-waterfall.css'
 import release from '../../docs/fixtures/trace-release.json'
 import incident from '../../docs/fixtures/trace-incident.json'
 import discovery from '../../docs/fixtures/discovery-waterfall.json'
+import run27 from '../../docs/fixtures/discovery-run-27.json'
+import { AgentGraph, LatestEvents } from '../../dist/react/agent-graph/index.js'
+import '../../dist/react/agent-graph.css'
 
 const params = new URLSearchParams(location.search)
 const theme = params.get('theme') ?? 'dark'
@@ -38,6 +41,7 @@ function load(n) {
 async function source(name) {
   if (name === 'incident') return incident
   if (name === 'discovery') return discovery
+  if (name === 'run27') return run27
   if (name === 'load') return load(Number(params.get('n') ?? 5000))
   if (name === 'run21c') return (await fetch('/run-21c.json')).json()
   if (name.startsWith('otlp:')) {
@@ -109,9 +113,17 @@ function LiveApp({ relay }) {
   }, [])
   if (!trace) return <p style={{ color: '#888', padding: 24 }}>Waiting for spans…</p>
   return <main style={{ width: params.get('width') ? `${params.get('width')}px` : 'auto', maxWidth: '100%', margin: '0 auto', padding: 24 }}>
-    <FlowWaterfall agentFill={params.get('fill') === 'agent' ? 'agent' : 'outcome'} trace={trace} live label={params.get('label') ?? 'Live session'}
+    <FlowWaterfall trace={trace} live label={params.get('label') ?? 'Live session'}
       defaultView={params.get('view') ?? 'spans'} maxHeight={Number(params.get('height') ?? 640)} />
   </main>
+}
+
+/** The trace's agents as AgentGraph nodes, the way sandbox-ui's TraceWorkspace builds them: the failure reason rides on `output`. */
+function graphOf(trace) {
+  const epoch = Date.parse('2026-11-04T08:32:39Z'), steps = trace.spans.filter(s => s.kind !== 'pipeline')
+  const nodes = trace.spans.filter(s => s.kind === 'pipeline').map(s => ({ id: s.id, label: s.name, status: s.status, model: s.detail, costUsd: s.costUsd, result: s.output,
+    events: steps.filter(step => step.parentId === s.id).slice(-3).map(step => ({ id: step.id, label: `Recorded ${step.name}`, at: epoch + step.endMs })) }))
+  return { nodes, edges: trace.spans.filter(s => s.kind === 'pipeline' && s.parentId).map(s => ({ from: s.parentId, to: s.id, kind: 'spawn' })), now: epoch + trace.totalMs }
 }
 
 function App({ trace }) {
@@ -129,11 +141,14 @@ function App({ trace }) {
     return () => clearInterval(timer)
   }, [])
   const shown = live && now < trace.totalMs ? reveal(trace, now) : trace
-  return <main style={{ width: params.get('width') ? `${params.get('width')}px` : 'auto', maxWidth: '100%', margin: '0 auto', padding: Number(params.get('pad') ?? 24) }}>
-    <FlowWaterfall agentFill={params.get('fill') ?? undefined} trace={shown} live={live && now < trace.totalMs} label={params.get('label') ?? 'Trace'}
+  const layout = params.get('graph'), graph = layout && graphOf(shown), fill = params.get('height') === 'fill'
+  return <main style={{ width: params.get('width') ? `${params.get('width')}px` : 'auto', maxWidth: '100%', margin: '0 auto', padding: Number(params.get('pad') ?? 24), boxSizing: 'border-box', ...(fill ? { height: '100vh' } : {}) }}>
+    <FlowWaterfall frameless={params.get('frameless') === '1'}
+      graph={graph ? <AgentGraph nodes={graph.nodes} edges={graph.edges} layout={layout} live={layout === 'tree'} now={graph.now} showLatestEvents={false} className="h-full" /> : undefined}
+      latestEvents={graph ? <LatestEvents agents={graph.nodes} now={graph.now} live={false} onSelect={() => {}} /> : undefined} agentFill={params.get('fill') ?? undefined} trace={shown} live={live && now < trace.totalMs} label={params.get('label') ?? 'Trace'}
       description={params.get('desc') ?? undefined}
       defaultView={params.get('view') ?? 'spans'}
-      defaultCollapsed={params.get('collapsed') === '1'} maxHeight={Number(params.get('height') ?? 640)}
+      defaultCollapsed={params.get('collapsed') === '1'} maxHeight={fill ? 'fill' : Number(params.get('height') ?? 640)}
       markers={params.get('markers') ? JSON.parse(params.get('markers')) : undefined}
       onSelect={span => { window.__fwSelected = [...(window.__fwSelected ?? []), span.id ?? span.name] }} />
   </main>

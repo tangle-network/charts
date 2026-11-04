@@ -13,20 +13,14 @@
   --fw-ok: var(--surface-success-text);
   --fw-amber: var(--surface-warning-text);
   --fw-live: var(--fw-accent);
-  --fw-kind-model: light-dark(oklch(from var(--chart-accent) .50 min(c, .10) h), oklch(from var(--chart-accent) .72 min(c, .10) h));
-  --fw-kind-tool: light-dark(oklch(from var(--tone-cyan-icon) .80 min(c, .10) h), oklch(from var(--tone-cyan-icon) .46 min(c, .10) h));
-  --fw-neutral-bar: color-mix(in oklab, var(--fw-text) 15%, var(--fw-surface));
+  /* Two inks carry every lane (round s-tier, Drew: "the colors in the waterfall are awful"): a faint track for an agent's lifetime and
+     one restrained ink for its steps. Color is left for state: danger on a failed lane, the live edge on a running one. */
+  --fw-ink: color-mix(in oklab, var(--fw-text) 58%, var(--fw-surface));
+  --fw-track: color-mix(in oklab, var(--fw-text) 9%, transparent);
+  /* Marks take Brand's solid step-9 danger and accent (validated: ΔE ≥ 19 from the ink in both themes); text keeps the status inks. */
+  --fw-failed-mark: var(--danger-9, var(--fw-failed));
+  --fw-live-mark: var(--accent-9, var(--fw-live));
   --fw-hatch: color-mix(in oklab, var(--fw-text) 22%, transparent);
-  --fw-h0: var(--chart-muted);
-  /* One agent, one colour: lanes cycle the charts categorical series (the palette Topology and Analytics draw from). */
-  --fw-h1: var(--chart-series-1);
-  --fw-h2: var(--chart-series-2);
-  --fw-h3: var(--chart-series-3);
-  --fw-h4: var(--chart-series-4);
-  --fw-h5: var(--chart-series-5);
-  --fw-h6: var(--chart-series-6);
-  --fw-h7: var(--chart-series-7);
-  --fw-h8: var(--chart-series-8);
   --fw-ease: var(--ease-standard);
   --fw-bar-h: 20px;
   --fw-label-col: min(var(--fw-name-w), 42%);
@@ -45,26 +39,16 @@
   font-feature-settings: "cv11" 1;
   -webkit-font-smoothing: antialiased;
 }
-.fw-root-agents { --fw-bar-h: 24px; --fw-label-col: min(var(--fw-name-w), 28%); }
+.fw-root-agents { --fw-bar-h: 24px; --fw-label-col: min(var(--fw-name-w), 32%); }
 .fw-root *, .fw-root *::before, .fw-root *::after { box-sizing: border-box; }
 .fw-root :is(p, dl, dd, h3, ul) { margin: 0; padding: 0; }
 .fw-root :is(button, input, select) { font: inherit; color: inherit; }
 .fw-root :is(button, input, select, [tabindex]):focus-visible { outline: 2px solid var(--fw-accent); outline-offset: 1px; }
 .fw-root :is(button, select):disabled { opacity: .45; cursor: default; }
-.fw-root [data-tone="0"] { --tone: var(--fw-h0); }
-.fw-root [data-tone="1"] { --tone: var(--fw-h1); }
-.fw-root [data-tone="2"] { --tone: var(--fw-h2); }
-.fw-root [data-tone="3"] { --tone: var(--fw-h3); }
-.fw-root [data-tone="4"] { --tone: var(--fw-h4); }
-.fw-root [data-tone="5"] { --tone: var(--fw-h5); }
-.fw-root [data-tone="6"] { --tone: var(--fw-h6); }
-.fw-root [data-tone="7"] { --tone: var(--fw-h7); }
-.fw-root [data-tone="8"] { --tone: var(--fw-h8); }
-.fw-root [data-tone], .fw-root .fw-kinds {
-  --fill: light-dark(var(--tone), color-mix(in oklab, var(--tone) 94%, var(--bg-root)));
+.fw-root [data-tone] {
+  --tone: var(--fw-ink);
+  --fill: var(--tone);
   --line: var(--tone);
-  --model-fill: light-dark(oklch(from var(--tone, var(--fw-h0)) .50 min(c, .10) h), oklch(from var(--tone, var(--fw-h0)) .72 min(c, .10) h));
-  --tool-fill: light-dark(oklch(from var(--tone, var(--fw-h0)) .80 min(c, .10) h), oklch(from var(--tone, var(--fw-h0)) .46 min(c, .10) h));
   --dim: light-dark(color-mix(in oklab, var(--tone) 62%, var(--fw-surface)), color-mix(in oklab, var(--tone) 40%, var(--fw-surface)));
   --dim-line: light-dark(color-mix(in oklab, var(--tone) 70%, var(--fw-surface)), color-mix(in oklab, var(--tone) 55%, var(--fw-surface)));
 }
@@ -169,8 +153,6 @@
 .fw-root .fw-span-name { display: inline-flex; align-items: center; gap: 8px; overflow: hidden; flex-shrink: 0; max-width: 100%; min-width: 0; }
 .fw-root .fw-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .fw-root .fw-strong { font-weight: 600; }
-.fw-root .fw-detail-icon { display: inline-flex; }
-.fw-root .fw-detail-icon :is(svg, img) { width: 12px; height: 12px; }
 .fw-root .fw-count { flex-shrink: 0; height: 18px; padding: 0 8px; border-radius: var(--radius-pill); background: var(--fw-well); border: 1px solid var(--fw-border); color: var(--fw-muted); font-size: 14px; line-height: 18px; font-variant-numeric: tabular-nums; }
 .fw-root .fw-alert { display: inline-flex; color: var(--fw-failed); flex-shrink: 0; }
 .fw-root .fw-alert svg { width: 13px; height: 13px; }
@@ -179,11 +161,7 @@
 .fw-root .fw-view-agents .fw-label { padding-left: 16px; gap: 12px; border-right: 0; }
 .fw-root .fw-view-agents .fw-names { flex-direction: column; align-items: flex-start; gap: 0; }
 .fw-root .fw-view-agents .fw-span-name { font-weight: 600; line-height: 18px; }
-.fw-root .fw-view-agents .fw-subtitle { display: flex; align-items: center; column-gap: 4px; height: 18px; overflow: hidden; max-width: 100%; min-width: 0; color: var(--fw-muted); font-size: 14px; line-height: 18px; }
-.fw-root .fw-view-agents .fw-subtitle-extra { flex: none; white-space: nowrap; }
-.fw-root .fw-view-agents .fw-subtitle-tail { display: flex; flex-wrap: wrap; column-gap: 4px; height: 18px; overflow: hidden; min-width: 0; flex: 0 1 auto; }
-.fw-root .fw-view-agents .fw-subtitle-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fw-root .fw-view-agents .fw-detail-icon { flex: none; width: 16px; height: 16px; align-items: center; justify-content: center; overflow: hidden; }
+.fw-root .fw-view-agents .fw-subtitle { height: 18px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fw-muted); font-size: 13px; line-height: 18px; }
 .fw-root .fw-agent-dot { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--tone, var(--fw-muted)); }
 .fw-root .fw-agent-dot:not([data-outcome]) { background: transparent; box-shadow: inset 0 0 0 1.5px var(--fw-muted); }
 .fw-root :is(.fw-agent-dot, .fw-legend .fw-swatch)[data-ring] { background: transparent; box-shadow: inset 0 0 0 1.5px var(--tone, var(--fw-muted)); }
@@ -216,33 +194,28 @@
 .fw-root :is(.fw-bar, .fw-seg):hover { filter: brightness(1.18); box-shadow: inset 0 0 0 1px var(--line), 0 0 0 2px color-mix(in oklab, var(--line) 55%, transparent); z-index: 1; }
 .fw-root .fw-bar.fw-k-tool { background: var(--dim); box-shadow: inset 0 0 0 1px var(--dim-line); }
 .fw-root .fw-bar.fw-k-handoff { background: var(--line); height: 8px; top: calc(50% + var(--fw-bar-shift) - 4px); box-shadow: none; }
-.fw-root .fw-bar.fw-k-waiting, .fw-root .fw-kinds .fw-swatch-wait { background: repeating-linear-gradient(-45deg, var(--fw-hatch) 0 1px, transparent 1px 5px); box-shadow: inset 0 0 0 1px var(--fw-hatch); }
+.fw-root .fw-bar:is(.fw-k-waiting, .fw-k-pipeline) { background: var(--fw-track); box-shadow: none; }
 .fw-root .fw-bar.fw-k-failed { background: color-mix(in oklab, var(--fw-failed) 22%, var(--fw-surface)); box-shadow: inset 0 0 0 1px var(--fw-failed); color: var(--fw-failed); }
-.fw-root .fw-bar.fw-k-pipeline { background: linear-gradient(90deg, var(--fw-neutral-bar), color-mix(in oklab, var(--fw-neutral-bar) 55%, var(--fw-surface))); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-text) 12%, transparent); }
-.fw-root .fw-bar.fw-k-pipeline.fw-has-marks { background: repeating-linear-gradient(-45deg, var(--fw-hatch) 0 1px, transparent 1px 5px); box-shadow: inset 0 0 0 1px var(--fw-hatch); }
-.fw-root .fw-bar.fw-k-pipeline.fw-has-agents { background: repeating-linear-gradient(-45deg, var(--fw-hatch) 0 1px, transparent 1px 5px), color-mix(in oklab, var(--fw-text) 4%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-text) 12%, transparent); }
-.fw-root .fw-view-agents .fw-bar.fw-k-pipeline:not(.fw-has-marks, .fw-has-agents) { background: color-mix(in oklab, var(--tone) 30%, var(--fw-surface)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--tone) 55%, transparent); }
-.fw-root.fw-fill-outcome .fw-view-agents .fw-row[data-span-id^="family:"]:not([data-outcome]), .fw-root.fw-fill-outcome .fw-view-agents .fw-row[data-span-id^="family:"]:not([data-outcome]) [data-tone] { --tone: var(--fw-h0); }
-.fw-root.fw-fill-muted .fw-view-agents [data-tone] { --tone: var(--fw-h0); }
-.fw-root [data-outcome="ok"] { --outcome-tone: var(--fw-ok); }
-.fw-root [data-outcome="failed"] { --outcome-tone: var(--fw-failed); }
+.fw-root [data-outcome="ok"] { --outcome-tone: var(--fw-muted); }
+.fw-root [data-outcome="failed"] { --outcome-tone: var(--fw-failed-mark); }
 .fw-root [data-outcome="warn"] { --outcome-tone: var(--fw-amber); }
-.fw-root [data-outcome="live"] { --outcome-tone: var(--fw-live); }
+.fw-root [data-outcome="live"] { --outcome-tone: var(--fw-live-mark); }
 .fw-root [data-outcome="neutral"] { --outcome-tone: var(--fw-muted); }
-.fw-root [data-outcome], .fw-root [data-outcome] [data-tone] { --tone: var(--outcome-tone); }
+.fw-root [data-outcome] { --tone: var(--outcome-tone); }
+/* The lane: its track tints only for state that needs a reader (a failure, a live agent); finished work stays neutral. */
+.fw-root.fw-fill-outcome .fw-view-agents .fw-row[data-span-kind="failed"] .fw-bar.fw-k-pipeline { background: color-mix(in oklab, var(--fw-failed-mark) 22%, transparent); }
+.fw-root.fw-fill-outcome .fw-view-agents .fw-row[data-running] .fw-bar.fw-k-pipeline { background: color-mix(in oklab, var(--fw-live-mark) 14%, transparent); box-shadow: inset -2px 0 0 var(--fw-live-mark); }
+.fw-root .fw-view-agents .fw-seg { background: var(--fw-ink); box-shadow: none; --fw-seg-ink: var(--fw-surface); }
+.fw-root .fw-view-agents .fw-seg-failed { background: var(--fw-failed-mark); }
 .fw-root.fw-root .fw-agent-dot[data-outcome] { --tone: var(--outcome-tone); }
 .fw-root .fw-legend { display: flex; flex-wrap: nowrap; gap: 4px 16px; margin: 8px 0 0; padding: 0; list-style: none; color: var(--fw-muted); font-size: 14px; line-height: 18px; }
 .fw-root .fw-legend li { display: inline-flex; align-items: center; gap: 8px; flex: none; white-space: nowrap; }
 .fw-root .fw-legends { display: flex; align-items: center; gap: 24px; max-width: 100%; min-width: 0; overflow-x: auto; margin-top: 8px; }
 .fw-root .fw-legends .fw-legend { flex: none; margin: 0; }
 .fw-root .fw-kinds { margin: 0; padding: 0; justify-content: flex-start; color: var(--fw-muted); }
-.fw-root .fw-kinds .fw-swatch-model { width: 12px; height: 8px; border-radius: 2px; background: var(--fw-kind-model); }
-.fw-root.fw-fill-agent .fw-kinds .fw-swatch-model { background: var(--model-fill); }
-.fw-root.fw-fill-agent .fw-kinds .fw-swatch-tool { background: var(--tool-fill); }
-.fw-root .fw-kinds .fw-swatch-tool { width: 12px; height: 8px; border-radius: 2px; background: var(--fw-kind-tool); }
-.fw-root .fw-kinds .fw-swatch-wait { width: 12px; height: 8px; border-radius: 2px; }
+.fw-root .fw-kinds .fw-swatch-ink { width: 12px; height: 8px; border-radius: 2px; background: var(--fw-ink); }
+.fw-root .fw-kinds .fw-swatch-track { width: 12px; height: 8px; border-radius: 2px; background: var(--fw-track); box-shadow: inset 0 0 0 1px var(--fw-track); }
 .fw-root .fw-kinds .fw-swatch-event { width: 8px; height: 8px; border-radius: 50%; background: var(--fw-muted); box-shadow: 0 0 0 2px var(--fw-surface); }
-.fw-root .fw-kinds .fw-swatch-handoff { width: 10px; height: 8px; border-left: 1.5px solid var(--fw-muted); border-bottom: 1.5px solid var(--fw-muted); border-bottom-left-radius: 3px; }
 .fw-root .fw-description { margin: 0; color: var(--fw-muted); font-size: 14px; line-height: 20px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fw-root .fw-legend .fw-swatch { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
 .fw-root .fw-legend b { color: var(--fw-text); font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -253,14 +226,7 @@
 .fw-root .fw-view-agents .fw-seg { pointer-events: auto; }
 .fw-root .fw-seg-model { background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); }
 .fw-root .fw-seg-tool { background: var(--dim); box-shadow: inset 0 0 0 1px var(--dim-line); }
-.fw-root:is(.fw-fill-muted, .fw-fill-outcome) .fw-view-agents .fw-seg-model { background: var(--fw-kind-model); box-shadow: none; }
-.fw-root:is(.fw-fill-muted, .fw-fill-outcome) .fw-view-agents .fw-seg-tool { background: var(--fw-kind-tool); box-shadow: none; }
-.fw-root.fw-fill-agent .fw-view-agents .fw-seg-model { background: var(--model-fill); box-shadow: none; }
-.fw-root.fw-fill-agent .fw-view-agents :is(.fw-seg-tool, .fw-seg-failed) { background: var(--tool-fill); box-shadow: none; }
-.fw-root.fw-fill-agent .fw-view-agents .fw-seg-failed { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-failed) 55%, transparent); }
 .fw-root .fw-view-agents .fw-seg { container-type: inline-size; justify-content: flex-start; font-size: 14px; line-height: 18px; white-space: nowrap; color: var(--fw-seg-ink); }
-.fw-root .fw-view-agents .fw-seg-model { --fw-seg-ink: light-dark(var(--fw-surface), var(--bg-root)); }
-.fw-root .fw-view-agents :is(.fw-seg-tool, .fw-seg-failed) { --fw-seg-ink: var(--fw-text); }
 .fw-root .fw-view-agents .fw-seg > * { pointer-events: none; }
 .fw-root .fw-seg-label { flex: 1; min-width: 0; height: 16px; margin: 0 6px; display: flex; flex-wrap: wrap; align-items: center; column-gap: 4px; overflow: hidden; }
 .fw-root .fw-seg-label > * { flex: none; height: 16px; display: inline-flex; align-items: center; }
@@ -274,7 +240,6 @@
 .fw-root .fw-view-agents .fw-seg .fw-glyph[data-glyph="retry"] { background: var(--fw-muted); }
 .fw-root .fw-view-agents .fw-seg .fw-glyph svg { width: min(9px, 100%); height: 9px; stroke-width: 2.5; }
 .fw-root .fw-seg-failed { background: color-mix(in oklab, var(--fw-failed) 18%, var(--fw-surface)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-failed) 70%, transparent); color: var(--fw-failed); }
-.fw-root .fw-view-agents .fw-seg-failed { background: var(--tool-fill); box-shadow: inset 0 0 0 1px var(--dim-line); }
 .fw-root .fw-glyph { display: inline-flex; color: currentColor; }
 .fw-root .fw-glyph svg { width: 11px; height: 11px; stroke-width: 2; }
 .fw-root .fw-seg-model .fw-glyph, .fw-root .fw-k-model .fw-glyph { color: light-dark(var(--tone), var(--fw-text)); }
@@ -412,8 +377,7 @@
   .fw-root.fw-root-agents .fw-overview { margin-top: 0; }
   .fw-root .fw-search-input { width: 120px; }
   .fw-root .fw-axis-label { border: 0; padding: 0; }
-  .fw-root .fw-tick:is(:nth-child(2), :nth-child(3)) { transform: translate(-50%, -50%); }
-  .fw-root .fw-tick:nth-child(4) { transform: translate(calc(-100% - 4px), -50%); }
+  .fw-root .fw-tick:not(:first-child) { transform: translate(-50%, -50%); }
   .fw-root .fw-row { transform: none; top: var(--row-y); contain: style; }
   .fw-root .fw-label { position: absolute; z-index: 3; height: 20px; top: 0; left: 0; right: 0; padding: 0 8px 0 calc(8px + var(--depth) * 12px); border: 0; gap: 4px; background: transparent; pointer-events: none; }
   .fw-root .fw-row :is(.fw-row-state, .fw-quiet) { position: absolute; top: 20px; left: calc(28px + var(--depth) * 12px); height: 18px; }
@@ -428,7 +392,16 @@
 }
 
 
-.fw-root.fw-fill-agent .fw-view-agents .fw-seg-failed[data-model] { background: var(--model-fill); --fw-seg-ink: light-dark(var(--fw-surface), var(--bg-root)); }
 
 .fw-root.fw-root.fw-root-agents[data-selection] .fw-row:not([aria-selected="true"]) .fw-seg { opacity: var(--on); background: color-mix(in oklab, var(--fw-surface) 80%, var(--tone)); --fw-seg-ink: var(--fw-text); }
 .fw-root .fw-card-line { margin: 4px 0 8px; font-size: 13px; line-height: 18px; color: var(--fw-muted, inherit); overflow-wrap: anywhere; }
+.fw-root[data-frameless] { border: 0; border-radius: 0; }
+/* fill: the waterfall takes its host's height and the rows take what the header leaves (Drew: "GIVE COMPONENTS THE PROPER SPACE"). */
+.fw-root[data-fill] { display: flex; flex-direction: column; box-sizing: border-box; height: 100%; min-height: 0; }
+.fw-root[data-fill] > * { flex: none; }
+.fw-root[data-fill] > :is(.fw-body, .fw-graph), .fw-root[data-fill] :is(.fw-viewport, .fw-graph > *) { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.fw-root[data-fill] .fw-scroller { flex: 1 1 auto; min-height: 0; }
+.fw-root .fw-card-compact { padding: 8px 12px; }
+.fw-root .fw-card-compact .fw-card-agent { margin-bottom: 2px; }
+.fw-root .fw-card-state { display: inline-flex; align-items: center; flex: none; color: var(--fw-status); }
+.fw-root .fw-card-compact :is(.fw-card-line, .fw-card-error) { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

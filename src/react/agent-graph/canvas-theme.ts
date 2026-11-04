@@ -52,3 +52,16 @@ export const SELECTION_OUTLINE: CSSProperties = {
   outline: "1px solid hsl(var(--foreground) / .45)",
   outlineOffset: 2,
 };
+
+/** Where a hover card goes: the corner of `viewport` across from the hovered `node`, so the card never covers it or its neighbours.
+ *  A zero-size anchor at that corner; the card opens inward from it. Without a viewport (a list) it opens below the node. */
+export function cornerAnchor(node: HTMLElement, viewport: HTMLElement | null) {
+  if (!viewport) return { side: "bottom" as const, align: "start" as const, anchor: { contextElement: node, getBoundingClientRect: () => node.getBoundingClientRect() } };
+  const box = viewport.getBoundingClientRect(), at = node.getBoundingClientRect(), inset = 12;
+  const left = at.left + at.width / 2 > box.left + box.width / 2, top = at.top + at.height / 2 > box.top + box.height / 2;
+  const x = left ? box.left + inset : box.right - inset, y = top ? box.top + inset : box.bottom - inset;
+  return {
+    side: top ? "bottom" as const : "top" as const, align: left ? "start" as const : "end" as const,
+    anchor: { contextElement: node, getBoundingClientRect: () => DOMRect.fromRect({ x, y, width: 0, height: 0 }) },
+  };
+}

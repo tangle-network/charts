@@ -72,8 +72,8 @@ export type AgentGraphDirection = "TB" | "LR";
 
 /** Every agent card's size. Fixed, so a status or turn update never moves a card. */
 export const AGENT_CARD = { width: 232, height: 120 } as const;
-/** A live card: room for the header, a two-line thinking line and the last three events. Fixed for the same reason. */
-export const LIVE_AGENT_CARD = { width: 296, height: 164 } as const;
+/** A live card: room for a two-line name, a two-line thinking line and the last event. Fixed for the same reason. */
+export const LIVE_AGENT_CARD = { width: 264, height: 112 } as const;
 
 export type CardSize = { readonly width: number; readonly height: number };
 /** A parent with at least this many leaf workers draws them as a grid. */

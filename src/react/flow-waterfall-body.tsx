@@ -19,10 +19,13 @@ export interface BodyProps extends RowEvents {
   totalRows: number
   view: FlowView
   maxHeight: number
+  /** Grow to the host's height instead of `maxHeight`; the rows still virtualize to what shows. */
+  fill?: boolean
+  /** The rows' measured scroll height, so the host can unfold as many agents as fit. */
+  onViewport?: (px: number) => void
   collapsed: ReadonlySet<string>
   searching: boolean
   slowestId?: string
-  costliestId?: string
   /** Steps on the chain that gates the trace's end. */
   criticalIds?: ReadonlySet<string>
   /** The search text and the host's matcher; matched rows are marked apart from their ancestors. */
@@ -31,9 +34,6 @@ export interface BodyProps extends RowEvents {
   activeId?: string
   pauses?: readonly FlowPause[]
   errorEnds?: readonly (number | undefined)[]
-  /** The model every agent shares: rows leave it out because the header names it. */
-  sharedDetail?: string
-  sharedOutcome?: string
   /** Live: the body keeps its full height as agents arrive, so the page below never shifts. */
   holdHeight?: boolean
   /** The playhead's line across the rows; without it only the dot on the axis shows. */
@@ -50,7 +50,6 @@ export interface BodyProps extends RowEvents {
   markers?: FlowMarker[]
   zoomed: boolean
   renderIcon?: (span: FlowSpan) => ReactNode
-  fillByAgent?: boolean
   emptyText: string
   onActiveChange: (id: string) => void
   onScrub: (ms: number) => void
@@ -100,7 +99,6 @@ function linksFor(rows: FlowWaterfallRow[], byId: Map<string, FlowWaterfallRow>,
 export function FlowBody(props: BodyProps) {
   const { rows, view, maxHeight, collapsed, searching, slowestId, activeId, selectedId, clockMs, window: win, trackPx, showCursor, zoomed } = props
   const [narrow, setNarrow] = useState(false)
-  const rowHeight = narrow ? 52 : ROW_HEIGHT[view]
   const scroller = useRef<HTMLDivElement>(null)
   const surface = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -111,6 +109,8 @@ export function FlowBody(props: BodyProps) {
   }, [])
   const [chunk, setChunk] = useState(0)
   const [viewport, setViewport] = useState(maxHeight)
+  // A filled agent view with few agents gives each row more air, up to a sensible max, instead of leaving the frame half empty.
+  const rowHeight = narrow ? 52 : props.fill && view === 'agents' ? Math.max(ROW_HEIGHT.agents, Math.min(56, Math.floor(viewport / Math.max(1, rows.length)))) : ROW_HEIGHT[view]
   const latest = useRef(props)
   latest.current = props
 
@@ -127,7 +127,9 @@ export function FlowBody(props: BodyProps) {
 
   const msPerPx = (win.endMs - win.startMs) / Math.max(1, trackPx)
   const tickEnd = win.startMs + (trackPx + (view === 'spans' ? 72 : 0)) * msPerPx
-  const ticks = narrow ? Array.from({length:4}, (_,i) => win.startMs + (win.endMs-win.startMs)*i/3) : clockTicks(win.startMs, tickEnd, Math.max(1, trackPx + (view === 'spans' ? 72 : 0)))
+  // A phone axis keeps three whole-unit ticks at most, none so close to the end that its label would clip (round s-tier: "33m 31.633s").
+  const ticks = narrow ? clockTicks(win.startMs, win.endMs, trackPx, trackPx / 2.5).filter(tick => (tick - win.startMs) / msPerPx <= trackPx - 40).slice(0, 3)
+    : clockTicks(win.startMs, tickEnd, Math.max(1, trackPx + (view === 'spans' ? 72 : 0)))
 
   const markerLabels = useMemo(() => {
     const shown = new Map<FlowMarker, 'right' | 'left'>()
@@ -149,7 +151,7 @@ export function FlowBody(props: BodyProps) {
   useEffect(() => {
     const element = scroller.current
     if (!element) return
-    const observer = new ResizeObserver(() => setViewport(element.clientHeight))
+    const observer = new ResizeObserver(() => { setViewport(element.clientHeight); latest.current.onViewport?.(element.clientHeight) })
     observer.observe(element)
     return () => observer.disconnect()
   }, [])
@@ -295,14 +297,14 @@ export function FlowBody(props: BodyProps) {
 
   const row = (item: FlowWaterfallRow, i: number, isSticky = false) => (
     <FlowRow key={isSticky ? `sticky-${item.id}` : item.id} row={item} view={view} top={i * rowHeight}
-      collapsed={collapsed.has(item.id)} searching={searching} slowest={item.id === slowestId} costliest={item.id === props.costliestId} critical={props.criticalIds?.has(item.id)} matched={matched?.has(item.id)}
+      collapsed={collapsed.has(item.id)} searching={searching} slowest={item.id === slowestId} critical={props.criticalIds?.has(item.id)} matched={matched?.has(item.id)}
       active={item.id === activeId} focusable={!isSticky && (item.id === activeId || (activeId === undefined || !index.has(activeId)) && i === 0)}
-      selected={item.id === selectedId} sticky={isSticky} motion={isSticky ? undefined : motion.get(item.id)} clockMs={clockMs} renderIcon={props.renderIcon} fillByAgent={props.fillByAgent} sharedDetail={props.sharedDetail} sharedOutcome={props.sharedOutcome} expanded={props.expandedIds?.has(item.id)}
+      selected={item.id === selectedId} sticky={isSticky} motion={isSticky ? undefined : motion.get(item.id)} clockMs={clockMs} renderIcon={props.renderIcon} expanded={props.expandedIds?.has(item.id)}
       onToggle={props.onToggle} onInspect={props.onInspect} onPin={props.onPin} onActivate={item => props.onActiveChange(item.id)} />
   )
 
   return (
-    <div className={`fw-body fw-view-${view}${zoomed ? ' fw-zoomed' : ''}`} ref={surface}>
+    <div className={`fw-body fw-view-${view}${zoomed ? ' fw-zoomed' : ''}`} ref={surface} style={narrow ? undefined : { '--fw-row-h': `${rowHeight}px` } as CSSProperties}>
       {axis}
       {Boolean(props.errorEnds?.length) && <div className="fw-error-rug" aria-label={`${props.errorEnds!.length} errors`}>
         {props.errorEnds!.map((at, index) => <span key={index} className="fw-error-tick" data-unlocated={at === undefined || undefined} style={{ '--s': at, '--error-index': index } as CSSProperties} title={at === undefined ? 'Error time not reported' : `Recorded end of failed span at ${formatClock(at)}; failure instant not reported`} />)}
@@ -314,7 +316,7 @@ export function FlowBody(props: BodyProps) {
           {props.markers?.map(marker => <span key={`l-${marker.at}-${marker.label}`} className="fw-marker-line" data-tone={marker.tone ?? 'neutral'} style={{ '--s': marker.at } as CSSProperties} />)}
         </div>
         <div ref={scroller} role="treegrid" aria-label="Trace timeline" aria-rowcount={rows.length} aria-multiselectable={false}
-          tabIndex={-1} className="fw-scroller" data-primary-content="" style={{ height, maxHeight }} onKeyDown={keydown}
+          tabIndex={-1} className="fw-scroller" data-primary-content="" style={props.fill ? undefined : { height, maxHeight }} onKeyDown={keydown}
           onScroll={event => { const next = Math.floor(event.currentTarget.scrollTop / rowHeight / CHUNK); if (next !== chunk) setChunk(next) }}>
           <div className="fw-canvas" style={{ height: rows.length * rowHeight }}>
             <div className="fw-links" aria-hidden>

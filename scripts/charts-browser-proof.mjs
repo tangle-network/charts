@@ -183,7 +183,7 @@ try {
   }))
   assert.ok(hostMarks.length > 0 && hostMarks.every(m => m.top >= 0 && m.bottom >= 0), `host marks overflow their rows: ${JSON.stringify(hostMarks)}`)
   await page.screenshot({ path: `${output}/host-marks.png` })
-  // An agent row says it failed in its subtitle; no extra alert glyph, and no event label over the rows.
+  // An agent row's dot and lane say it failed; no extra alert glyph, and no event label over the rows.
   assert.equal(await page.locator('.fw-view-agents .fw-alert').count(), 0)
   assert.equal(await page.locator('.fw-view-agents ~ * .fw-marker-label, .fw-marker-label').count(), 0)
   // The agents view's playhead block applies: its thin 4 px track (the knob rules sit beside it; a thumb's style is not readable).
@@ -276,15 +276,9 @@ try {
     const segment = await page.locator('[data-span-id="builder"] .fw-seg').nth(4).boundingBox()
     const pointer = { x: segment.x + segment.width / 2, y: segment.y + segment.height / 2 }
     await page.mouse.move(pointer.x, pointer.y)
-    await page.locator('.fw-card-table').waitFor()
-    const table = await page.locator('.fw-card-table > div').evaluateAll(rows => Object.fromEntries(rows.map(row => [row.querySelector('dt').textContent, row.querySelector('dd').textContent])))
-    assert.deepEqual(Object.keys(table), ['Model', 'Ran for', 'Tokens', 'Model latency', 'Cost', 'Model calls', 'Tool calls', 'Failures', 'Retries'], JSON.stringify(table))
-    assert.match(table.Tokens, /^[\d.]+K in[\d.]+K out[\d.]+K cached$/)
-    assert.match(table['Model latency'], /^[\d.]+s median[\d.]+s p95$/)
-    assert.match(table.Cost, /^\$\d+\.\d\d$/)
-    assert.equal(table['Tool calls'], '13bash5edit4read4')
-    assert.equal(table.Failures, '1 failed step')
-    assert.equal(table.Retries, '1 step retried · 1 restart')
+    // The hover card is three lines at most: the agent and its glyph, time · cost · model, then why it failed or what it did last.
+    const card = await page.locator('.fw-card').evaluate(card => ({ lines: card.children.length, text: card.innerText }))
+    assert.ok(card.lines <= 4 && !/Not recorded|No messages yet|Tool calls/.test(card.text), JSON.stringify(card))
     const placed = await page.evaluate(() => {
       const card = document.querySelector('.fw-card').getBoundingClientRect(), row = document.querySelector('[data-span-id="builder"]').getBoundingClientRect()
       return { left: card.left, top: card.top, bottom: card.bottom, clear: card.top >= row.bottom - 2 || card.bottom <= row.top + 2, inView: card.top >= 0 && card.bottom <= innerHeight }
@@ -297,8 +291,6 @@ try {
     await page.mouse.move(1, 1)
   }
   checks.metricsCard = 'PASS'
-  await (await import('../tests/integration/waterfall-card.browser.mjs')).default(page, base, output)
-  checks.longFactColumns = 'PASS'
   await page.setViewportSize({ width: 390, height: 844 })
   for (const theme of ['agent-light', 'agent-dark']) {
     await story('agent-metrics', theme)

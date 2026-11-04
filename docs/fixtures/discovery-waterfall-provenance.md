@@ -23,3 +23,7 @@ Only generic agent labels, tool names, relative durations, aggregate token count
 ## Consumer ownership
 
 The brief names Discovery Lab as the run-page consumer, but the served HTML loads `/assets/agent-record/workspace-viewer.js`. `tangle-tools` owns the route and pins the renderer: `fleet/discovery_workspace_parts/http.py` resolves `/run/<id>` and serves the pinned renderer's assets; `fleet/discovery_workspace_parts/shell.py` mounts `agent-workspace` in run mode. `agent-record` owns the React run viewer. Discovery Lab supplies execution and evidence records. Adoption belongs in that existing renderer and its Tangle Tools pin, without a second Lab dashboard.
+
+## discovery-run-27.json
+
+A seeded synthetic trace shaped like Discovery run `tangle-engine-20261104a` as served on 2026-11-04: 27 agents in the same teams and lifetimes, 8 failed with recorded reasons on `output`, and step telemetry only for the root, communicator and reviewers. The step timings are generated, not recorded; it exists to prove the run page's layout, not any latency.
