@@ -75,6 +75,7 @@ export interface FlowWaterfallRow {
   stepOf?: string
   /** Agent view: indent level (members under a family, steps under an agent). */
   inset?: number
+  /** A team row's agents, so a folded team still says which of them went quiet. */ members?: readonly FlowWaterfallRow[]
 }
 
 /** The CSS hue slot: 0 is the root agent's neutral, then five agent hues cycle. */
@@ -400,11 +401,9 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
     groups.set(key, [...(groups.get(key) ?? []), row])
   }
   const out: FlowWaterfallRow[] = []
-  // Every lane, root included, takes its role's colour, cycling the eight series: recorded work is never grey.
-  const hue = (row: FlowWaterfallRow) => row.tone < 0 ? 0 : 1 + [...roleOf(row.name)].reduce((hash, c) => (hash * 31 + c.charCodeAt(0)) >>> 0, 0) % 8
   for (const [role, members] of groups) {
-    if (members.length < 2) { const row = members[0]!, tone = hue(row); out.push({ ...row, tone, own: row.own.map(mark => ({ ...mark, tone })) }); continue }
-    const tone = hue(members[0]!)
+    if (members.length < 2) { const row = members[0]!, tone = row.tone; out.push({ ...row, tone, own: row.own.map(mark => ({ ...mark, tone })) }); continue }
+    const tone = members[0]!.tone
     const id = `family:${role}`
     const startMs = Math.min(...members.map(row => row.span.startMs))
     const endMs = Math.max(...members.map(row => row.span.endMs))
@@ -421,7 +420,7 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
       id, parentId: members[0]!.parentId, name: role, kind: 'pipeline', durationLabel: formatSpanDuration(endMs - startMs),
       approx: members.some(row => row.approx), ok: failed === 0, depth: 0, hasChildren: true, tone,
       outcomes: [...new Map(members.map(row => { const state = row.span.outcome ?? { tone: 'neutral' as const, label: 'Unknown', ring: true }; return [`${state.label}:${state.tone}:${state.ring}`, state] as const })).values()],
-      descendants: members.length, segments: [], retry: false, hasAgents: false,
+      descendants: members.length, segments: [], retry: false, hasAgents: false, members,
       // One hue per family (round 5: mixed member hues in one lane read as "muddy"); members alternate shades of it.
       own: members.flatMap((row, i) => row.own.map(mark => ({ ...mark, tone, alt: i % 2 === 1 }))).sort((a, b) => a.startMs - b.startMs),
       ...(known.length ? { rollupCostUsd: known.reduce((sum, cost) => sum + cost, 0) } : {}),
@@ -501,8 +500,10 @@ export const costIsTotal = (row: FlowWaterfallRow): boolean => row.id.startsWith
 /** A row's cost as printed: "≥" when it is a floor, "Σ" when it totals descendants (panel round 2: a team's $1.05 beside its own $0.60). */
 export const rowCostText = (row: FlowWaterfallRow, cost: number | undefined): string => spanFact(row.span, 'Cost') ?? (cost === undefined ? '' : `${costIsTotal(row) ? 'Σ ' : ''}${row.costFloor ? '≥' : ''}${formatCost(cost)}`)
 
-/** Quiet is elapsed silence beyond both five minutes and three median event gaps. */
-export function quietActivity(row: FlowWaterfallRow, now: number) {
+/** Quiet is silence beyond five minutes and three median event gaps; a team is quiet when any of its agents is, counting them. */
+export function quietActivity(row: FlowWaterfallRow, now: number): { last: number; quietMs: number; quiet: boolean; quietCount: number } {
+  const team = row.members?.map(member => quietActivity(member, now)).filter(activity => activity.quiet)
+  if (team) return { last: Number.NaN, quietMs: Math.max(0, ...team.map(activity => activity.quietMs)), quiet: team.length > 0, quietCount: team.length }
   const times = [...(row.span.activityAt ?? row.own.flatMap(mark => [mark.startMs, mark.endMs]))].filter(Number.isFinite).sort((a,b) => a-b)
   const last = times.at(-1) ?? Number.NaN
   const gaps = times.slice(1).map((at,i) => at-times[i]!).sort((a,b)=>a-b)
@@ -511,7 +512,8 @@ export function quietActivity(row: FlowWaterfallRow, now: number) {
   const supplied = row.span.medianEventGapMs
   const median = typeof supplied === 'number' && Number.isFinite(supplied) && supplied >= 0 ? supplied : observedMedian
   const gap = quietGap(last, median, now)
-  return { last, ...gap, quiet: spanRunning(row.span) && gap.quiet }
+  const quiet = spanRunning(row.span) && gap.quiet
+  return { last, ...gap, quiet, quietCount: quiet ? 1 : 0 }
 }
 
 /** The same elapsed-activity rule for graph cards and waterfall rows. */

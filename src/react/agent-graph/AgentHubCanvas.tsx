@@ -5,7 +5,7 @@ import { type KeyboardEvent, type ReactNode, type RefObject, useEffect, useLayou
 import type { AgentGraphEdge, AgentGraphNode } from "./agent-graph-layout";
 import { AGENT_HUB_CSS } from "./agent-hub-css";
 import {
-  type AgentGraphCall, type AgentGraphTool, HUB_METRICS, type HubMetrics, layoutHub, orthogonalPath, YOU_ID,
+  type AgentGraphCall, type AgentGraphTool, HUB_METRICS as metrics, type HubMetrics, layoutHub, orthogonalPath, YOU_ID,
 } from "./agent-hub-layout";
 import { CALL_COLOR, CALL_LABEL, type HubEntity, HubNode, HubPopover } from "./agent-hub-parts";
 import { agentQuietActivity, tokenMilliseconds, useMotionAllowed } from "./run-ui-state";
@@ -105,7 +105,6 @@ export function AgentHubCanvas(props: AgentHubCanvasProps) {
   }, [visibleCalls]);
 
   const span = (m: HubMetrics) => ({ w: (layout.maxCol - layout.minCol) * m.cellX + PAD_X * 2, h: (layout.maxRow - layout.minRow) * m.cellY + PAD_Y * 2 + m.hubTile + m.label });
-  const metrics = HUB_METRICS;
   const { w, h } = span(metrics);
   const list = width > 0 && (width < 600 || width / w < .85);
   const scale = width ? Math.max(.85, Math.min(1, width / w)) : 1;

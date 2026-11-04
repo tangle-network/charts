@@ -299,7 +299,7 @@
 .fw-root .fw-card-tools > span > :first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fw-root .fw-card-tools > span > :last-child { text-align: right; }
 .fw-root .fw-card-text { margin-top: 12px; }
-.fw-root .fw-card-compact .fw-card-agent { font-size: 14px; line-height: 20px; }
+.fw-root .fw-card-compact .fw-card-agent { margin-bottom: 2px; font-size: 14px; line-height: 20px; }
 .fw-root .fw-card-who { min-width: 0; flex: 1; overflow: hidden; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .fw-root .fw-card-text p { margin-top: 4px; color: var(--fw-text); overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 
@@ -357,7 +357,6 @@
 .fw-root .fw-quiet-tail { position: absolute; top: calc(50% + var(--fw-bar-shift) - var(--fw-bar-h) / 2); height: var(--fw-bar-h); left: calc(var(--fw-pad) + (var(--s) - var(--fw-v0)) * var(--fw-k) * 1px); width: calc(max(0, var(--fw-t) - var(--s)) * var(--fw-k) * 1px); background: repeating-linear-gradient(-45deg, var(--fw-hatch) 0 1px, transparent 1px 5px); pointer-events: none; }
 .fw-root .fw-now { background: color-mix(in oklab, var(--fw-text) 28%, transparent); }
 .fw-root .fw-card-error { margin-top: 8px; color: var(--fw-failed); font-size: 13px; line-height: 18px; }
-.fw-root .fw-card .fw-agent-dot:not([data-outcome]) { background: transparent; box-shadow: inset 0 0 0 1.5px var(--fw-muted); }
 @container flow-waterfall (max-width: 599px) {
   .fw-root > * { --fw-label-col: 0px; --fw-bar-shift: 18px; --fw-bar-h: 8px; --fw-row-h: 52px; }
   .fw-root .fw-summary > div:nth-child(-n+2) { flex: 1 0 auto; display: flex; align-items: baseline; gap: 8px; padding: 6px 8px; }
@@ -393,7 +392,6 @@
 
 
 .fw-root.fw-root.fw-root-agents[data-selection] .fw-row:not([aria-selected="true"]) .fw-seg { opacity: var(--on); background: color-mix(in oklab, var(--fw-surface) 80%, var(--tone)); --fw-seg-ink: var(--fw-text); }
-.fw-root .fw-card-line { margin: 4px 0 8px; font-size: 13px; line-height: 18px; color: var(--fw-muted, inherit); overflow-wrap: anywhere; }
 .fw-root[data-frameless] { border: 0; border-radius: 0; }
 /* fill: the waterfall takes its host's height and the rows take what the header leaves (Drew: "GIVE COMPONENTS THE PROPER SPACE"). */
 .fw-root[data-fill] { display: flex; flex-direction: column; box-sizing: border-box; height: 100%; min-height: 0; }
@@ -401,6 +399,6 @@
 .fw-root[data-fill] > :is(.fw-body, .fw-graph), .fw-root[data-fill] :is(.fw-viewport, .fw-graph > *) { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 .fw-root[data-fill] .fw-scroller { flex: 1 1 auto; min-height: 0; }
 .fw-root .fw-card-compact { padding: 8px 12px; }
-.fw-root .fw-card-compact .fw-card-agent { margin-bottom: 2px; }
 .fw-root .fw-card-state { display: inline-flex; align-items: center; flex: none; color: var(--fw-status); }
+.fw-root .fw-card-line { font-size: 13px; line-height: 18px; color: var(--fw-muted); }
 .fw-root .fw-card-compact :is(.fw-card-line, .fw-card-error) { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

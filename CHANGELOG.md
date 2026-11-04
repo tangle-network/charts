@@ -1,3 +1,6 @@
+## 4.0.17
+- A folded team row is quiet when any of its agents is: it carries `data-activity="quiet"`, the Quiet badge and "1 quiet" on its second line, as "2 failed" does (4.0.15 merged the members' activity, so a busy sibling hid a quiet agent).
+
 ## 4.0.16
 
 - `AgentGraph` tree: pressing a state control ("1 failed", "1 need you", "1 quiet") opens those agents' teams and frames them, or scrolls the phone list to the first; 4.0.15 dimmed the rest with the lit card off screen (caught by the tangle-tools Topology adoption test).
