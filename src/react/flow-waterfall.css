@@ -15,7 +15,7 @@
   --fw-live: var(--fw-accent);
   /* Two inks carry every lane (round s-tier, Drew: "the colors in the waterfall are awful"): a faint track for an agent's lifetime and
      one restrained ink for its steps. Color is left for state: danger on a failed lane, the live edge on a running one. */
-  --fw-ink: color-mix(in oklab, var(--fw-text) 58%, var(--fw-surface));
+  --fw-ink: light-dark(color-mix(in oklab, var(--fw-text) 68%, var(--fw-surface)), color-mix(in oklab, var(--fw-text) 60%, var(--fw-surface)));
   --fw-track: color-mix(in oklab, var(--fw-text) 9%, transparent);
   /* Marks take Brand's solid step-9 danger and accent (validated: ΔE ≥ 19 from the ink in both themes); text keeps the status inks. */
   --fw-failed-mark: var(--danger-9, var(--fw-failed));
@@ -153,6 +153,8 @@
 .fw-root .fw-span-name { display: inline-flex; align-items: center; gap: 8px; overflow: hidden; flex-shrink: 0; max-width: 100%; min-width: 0; }
 .fw-root .fw-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .fw-root .fw-strong { font-weight: 600; }
+.fw-root .fw-detail-icon { display: inline-flex; flex: none; width: 16px; height: 16px; align-items: center; justify-content: center; overflow: hidden; }
+.fw-root .fw-detail-icon :is(svg, img) { width: 14px; height: 14px; }
 .fw-root .fw-count { flex-shrink: 0; height: 18px; padding: 0 8px; border-radius: var(--radius-pill); background: var(--fw-well); border: 1px solid var(--fw-border); color: var(--fw-muted); font-size: 14px; line-height: 18px; font-variant-numeric: tabular-nums; }
 .fw-root .fw-alert { display: inline-flex; color: var(--fw-failed); flex-shrink: 0; }
 .fw-root .fw-alert svg { width: 13px; height: 13px; }
@@ -205,7 +207,7 @@
 /* The lane: its track tints only for state that needs a reader (a failure, a live agent); finished work stays neutral. */
 .fw-root.fw-fill-outcome .fw-view-agents .fw-row[data-span-kind="failed"] .fw-bar.fw-k-pipeline { background: color-mix(in oklab, var(--fw-failed-mark) 22%, transparent); }
 .fw-root.fw-fill-outcome .fw-view-agents .fw-row[data-running] .fw-bar.fw-k-pipeline { background: color-mix(in oklab, var(--fw-live-mark) 14%, transparent); box-shadow: inset -2px 0 0 var(--fw-live-mark); }
-.fw-root .fw-view-agents .fw-seg { background: var(--fw-ink); box-shadow: none; --fw-seg-ink: var(--fw-surface); }
+.fw-root .fw-view-agents .fw-seg { background: var(--fw-ink); box-shadow: none; --fw-seg-ink: light-dark(var(--fw-surface), var(--bg-root)); }
 .fw-root .fw-view-agents .fw-seg-failed { background: var(--fw-failed-mark); }
 .fw-root.fw-root .fw-agent-dot[data-outcome] { --tone: var(--outcome-tone); }
 .fw-root .fw-legend { display: flex; flex-wrap: nowrap; gap: 4px 16px; margin: 8px 0 0; padding: 0; list-style: none; color: var(--fw-muted); font-size: 14px; line-height: 18px; }

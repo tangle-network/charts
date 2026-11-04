@@ -142,6 +142,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
               : agentView && !step && <span className="fw-agent-dot" aria-hidden />}
             {/* A live outcome dot already says it runs; a spinner beside it was a second, contradicting mark. */}
             {running && !((isAgent || agentView && !step) && outcomes.length) && <span className="fw-spinner" data-motion={activity.quiet ? undefined : "essential"} role="status" aria-label="running" />}
+            {agentView && !step && renderIcon && <span className="fw-detail-icon" aria-hidden>{renderIcon(span)}</span>}
             <span className="fw-name-text">{isAgent ? row.name : toolLabel(row.name)}</span>
             {!agentView && callouts}
             {!agentView && state !== "unknown" && !activity.quiet && <span className="fw-row-state" style={{ color: `var(${meta.token})` }}>{state !== "running" && <RunStatusIcon status={state} size={16} aria-hidden />}{meta.label}</span>}

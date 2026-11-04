@@ -86,10 +86,10 @@ try {
   checks.retainedStackedInteractions = 'PASS'
   await page.setViewportSize({ width:1100,height:900 })
   await story('healthy')
-  assert.match(await page.locator('[data-slowest]').innerText(), /sandbox_run_command/)
+  assert.match(await page.locator('[data-slowest]').innerText(), /sandbox run command/)
   // An agent's outcome colors its lane and joins the legend with a count.
   assert.equal((await page.getByRole('list', { name: 'Outcomes', exact: true }).innerText()).replace(/\s+/g, ' ').trim(), 'Shipped 1')
-  // Agent fill (the default) keeps each agent's hue on its bar and puts the outcome on its dot.
+  // The outcome rides on the agent's dot; the lane stays neutral.
   assert.equal(await page.locator('[data-span-kind="pipeline"] .fw-agent-dot[data-outcome="ok"]').count(), 1)
   checks.outcomes = 'PASS'
   // Three markers: two collide mid-trace, so one label shows and both lines stay; the last flips left at the edge.
@@ -195,10 +195,10 @@ try {
   const nameXs = await page.evaluate(() => [...new Set([...document.querySelectorAll('.fw-view-agents .fw-row:not(.fw-step) .fw-label')]
     .filter(label => getComputedStyle(label).getPropertyValue('--depth').trim() === '0').map(label => Math.round(label.querySelector('.fw-names').getBoundingClientRect().left)))])
   assert.equal(nameXs.length, 1, `agent names start at ${JSON.stringify(nameXs)}`)
-  // One header band: the bar-type key shares the legend row in the header; model and tool segments differ in color.
+  // One header band: the lane key shares the legend row in the header; every step is one ink (round s-tier: per-agent hues read muddy).
   assert.equal(await page.locator('.fw-heading .fw-kinds').count(), 1)
-  const kinds = await page.evaluate(() => ['.fw-seg-model', '.fw-seg-tool'].map(sel => document.querySelector(`.fw-view-agents ${sel}`)).filter(Boolean).map(el => getComputedStyle(el).backgroundColor))
-  assert.ok(kinds.length < 2 || kinds[0] !== kinds[1], `model and tool segments share a color: ${kinds}`)
+  const inks = await page.evaluate(() => [...new Set([...document.querySelectorAll('.fw-view-agents :is(.fw-seg-model, .fw-seg-tool)')].map(el => getComputedStyle(el).backgroundColor))])
+  assert.equal(inks.length, 1, `steps in more than one ink: ${inks}`)
   // In-bar step labels show each part whole or not at all (round 28: "b…" and labels painting past bar ends), and hold 4.5:1 ink.
   const labels = await page.evaluate(() => {
     const canvas = document.createElement('canvas').getContext('2d', { willReadFrequently: true })
@@ -227,28 +227,6 @@ try {
   assert.deepEqual(labels.cut, [], `step label parts cut or past their step: ${JSON.stringify(labels.cut.slice(0, 5))}`)
   assert.equal(labels.ellipsis, 0, 'a step label part ellipsizes')
   assert.deepEqual(labels.low, [], `step label ink under 4.5:1: ${JSON.stringify(labels.low.slice(0, 5))}`)
-  // Kind reads by lightness for every hue: model and tool steps of one agent differ by >= 0.18 OKLab L, and model is the step
-  // further from the surface (critique P0 #4).
-  const kindSteps = await page.evaluate(() => {
-    const canvas = document.createElement('canvas').getContext('2d', { willReadFrequently: true })
-    const L = css => {
-      canvas.clearRect(0, 0, 1, 1); canvas.fillStyle = css; canvas.fillRect(0, 0, 1, 1)
-      const [r, g, b] = [...canvas.getImageData(0, 0, 1, 1).data.slice(0, 3)].map(v => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4 })
-      const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b), m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b), s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)
-      return 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s
-    }
-    const root = document.querySelector('.fw-root.fw-fill-agent')
-    if (!root) return []
-    const surface = L(getComputedStyle(root).getPropertyValue('--fw-surface') || getComputedStyle(root).backgroundColor)
-    const byTone = new Map()
-    for (const seg of root.querySelectorAll('.fw-view-agents :is(.fw-seg-model, .fw-seg-tool)')) {
-      const tone = seg.dataset.tone, kind = seg.classList.contains('fw-seg-model') ? 'model' : 'tool'
-      byTone.set(tone, { ...byTone.get(tone), [kind]: L(getComputedStyle(seg).backgroundColor) })
-    }
-    return [...byTone].filter(([, k]) => k.model !== undefined && k.tool !== undefined)
-      .map(([tone, k]) => ({ tone, dL: Math.abs(k.model - k.tool), modelStronger: Math.abs(k.model - surface) > Math.abs(k.tool - surface) }))
-  })
-  assert.ok(kindSteps.length > 0 && kindSteps.every(k => k.dL >= 0.18 && k.modelStronger), `kind lightness step: ${JSON.stringify(kindSteps)}`)
   // Every filled agent dot is an outcome the legend shows (critique gate A2): the set of drawn dot colours is within the legend's.
   const dots = await page.evaluate(() => {
     const fill = el => getComputedStyle(el).backgroundColor
