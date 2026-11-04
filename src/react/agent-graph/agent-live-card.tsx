@@ -1,3 +1,4 @@
+import { AgentMark } from "./marks";
 import type { Node, NodeProps } from "@xyflow/react";
 import { BookOpen, Brain, FlaskConical, Hammer, Hourglass, type LucideIcon, MessageSquare, PenLine, Repeat, RotateCcw, ScanSearch, TestTubes, Wrench } from "lucide-react";
 import type { ReactNode } from "react";
@@ -51,6 +52,7 @@ export function LiveAgentCardView({ agent, selected, direction = "TB", now: fixe
         title={agentDescription(agent)}
         style={{ boxShadow: RESTING_SHADOW, ...cardBorder(agent.status), ...(selected ? SELECTION_OUTLINE : {}), ["--ag-status" as string]: s.color }}>
         <div className="ag-live-head">
+          <span className="ag-live-mark grayscale hover:grayscale-0"><AgentMark agent={agent} layout="tree" size={18} /></span>
           <span className="ag-live-glyph" title={quiet?.label ?? s.label}><StatusGlyph status={agent.status} size={14} /></span>
           <span className="ag-live-name">{parentLabel && <span className="ag-parent-label">{parentLabel} / </span>}{agent.label}</span>
           {settled ? cost && <span className="ag-live-chip-cost" title="Cost">{cost}</span> : quiet && <span className="ag-live-quiet">{quiet.label}</span>}

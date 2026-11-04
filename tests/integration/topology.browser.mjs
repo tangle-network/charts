@@ -13,7 +13,11 @@ async function proveCompactTopology(page, width, theme, output) {
     const root = await page.locator('.react-flow__node[data-id="agent-0"]').boundingBox()
     const team = await page.locator('.react-flow__node-agentFrame').boundingBox()
     assert.ok(root.x + root.width < team.x, 'the root is separate to the left of its team')
-    assert.equal(await page.locator('.react-flow__viewport').evaluate(node => new DOMMatrixReadOnly(getComputedStyle(node).transform).a), 1)
+    // Entry reads at 0.8-1x, starting from the root (4.0.15 centered the middle of a tree too big to fit, the root off screen).
+    const zoom = await page.locator('.react-flow__viewport').evaluate(node => new DOMMatrixReadOnly(getComputedStyle(node).transform).a)
+    assert.ok(zoom >= 0.8 && zoom <= 1, `entry zoom ${zoom}`)
+    const rootBox = await page.locator('.react-flow__node[data-id="agent-0"]').boundingBox(), canvasBox = await page.locator('.ag-graph-viewport').boundingBox()
+    assert.ok(rootBox.x >= canvasBox.x && rootBox.y >= canvasBox.y && rootBox.x + rootBox.width <= canvasBox.x + canvasBox.width && rootBox.y - canvasBox.y < 64, `root starts the view: ${JSON.stringify({ rootBox, canvasBox })}`)
     const colors = await page.evaluate(() => ({frame:getComputedStyle(document.querySelector('.ag-team-frame')).backgroundColor, card:getComputedStyle(document.querySelector('.ag-agent-card')).backgroundColor}))
     assert.notEqual(colors.frame, colors.card, 'raised cards have a distinct surface from the team')
   }
@@ -25,6 +29,13 @@ async function proveCompactTopology(page, width, theme, output) {
   const sizes = await cards.evaluateAll(nodes => nodes.flatMap(node => [...node.querySelectorAll('span,p')].filter(child => child.textContent.trim()).map(child => parseFloat(getComputedStyle(child).fontSize))))
   assert.ok(sizes.length && sizes.every(size => size >= 13), `topology text floor: ${sizes}`)
   await page.screenshot({ path: `${output}/compact-tree-${width}-${theme}.png` })
+  // Lighting a state brings its agents into view (tangle-tools run-ui-adoption caught 4.0.15 dimming the rest with the failed card off screen).
+  await page.getByRole('button', { name: /^1 failed/ }).click()
+  const failedCard = page.locator('.ag-agent-card[data-status="failed"]').first()
+  await failedCard.waitFor({ state: 'visible' })
+  await page.waitForFunction(() => { const card = document.querySelector('.ag-agent-card[data-status="failed"]')?.getBoundingClientRect(), view = (document.querySelector('.ag-graph-viewport') ?? document.querySelector('.ag-phone-list')).getBoundingClientRect(); return card && card.top >= view.top - 1 && card.bottom <= view.bottom + 1 && card.left >= view.left - 1 && card.right <= view.right + 1 }, null, { timeout: 3000 })
+  await page.screenshot({ path: `${output}/compact-failed-lit-${width}-${theme}.png` })
+  await page.getByRole('button', { name: /^1 failed/ }).click()
   await page.getByRole('button', { name: 'Select last agent', exact: true }).click()
   const last = page.locator(width < 600 ? '[data-agent-id="agent-129"] .ag-agent-card' : '.react-flow__node[data-id="agent-129"] .ag-agent-card')
   await last.waitFor({state:'visible'})
@@ -127,10 +138,10 @@ try {
       await page.waitForFunction(element => element === document.activeElement, await earlier.elementHandle()); assert.equal(await earlier.evaluate(element => element === document.activeElement), true, 'Escape returns to the same tool occurrence')
       await page.goto(`${base}/?id=topology&large=1&quiet=1&globals=agent-${theme}`); await ready()
       await page.getByRole('button', { name: 'Switch layout', exact: true }).click()
-      const chip = page.locator('.ag-chip').first(); await chip.click(); await page.getByRole('dialog').waitFor({ state: 'visible' })
-      await page.getByRole('button', { name: 'Close', exact: true }).click(); await page.getByRole('dialog').waitFor({ state: 'hidden' }); await page.waitForFunction(element => element === document.activeElement, await chip.elementHandle()); assert.equal(await chip.evaluate(element => element === document.activeElement), true, 'Close returns to the header chip')
-      await page.keyboard.press('Enter'); await page.getByRole('dialog').waitFor({ state: 'visible' }); await page.keyboard.press('Escape'); await page.getByRole('dialog').waitFor({ state: 'hidden' })
-      await page.waitForFunction(element => element === document.activeElement, await chip.elementHandle()); assert.equal(await chip.evaluate(element => element === document.activeElement), true, 'Escape returns to the header chip')
+      // One control per state: pressing it lights those agents and dims the rest; pressing again restores them (no per-agent chips).
+      const chip = page.locator('.ag-chip').first(); await chip.click(); assert.equal(await chip.getAttribute('aria-pressed'), 'true')
+      assert.ok(await page.locator('.ag-node.ag-dimmed').count() > 0, 'the lit state dims the other agents')
+      await chip.click(); assert.equal(await chip.getAttribute('aria-pressed'), 'false'); assert.equal(await page.locator('[data-kind="agent"].ag-dimmed, [data-kind="hub"].ag-dimmed').count(), 0)
     }
     await page.emulateMedia({ reducedMotion: 'no-preference' })
     await page.goto(`${base}/?id=topology&large=1&globals=agent-${theme}`)
@@ -159,8 +170,9 @@ try {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
     await page.screenshot({ path: `${output}/boundary-tree-${width}-${theme}.png` })
     if (width > 600) {
+      const entryZoom = await page.locator('.react-flow__viewport').evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).a)
       await page.locator('.react-flow__controls-zoomin').click()
-      await page.waitForFunction(() => new DOMMatrixReadOnly(getComputedStyle(document.querySelector('.react-flow__viewport')).transform).a >= 1.199)
+      await page.waitForFunction(entry => new DOMMatrixReadOnly(getComputedStyle(document.querySelector('.react-flow__viewport')).transform).a >= entry * 1.199, entryZoom)
       const beforeZoom = await page.locator('.react-flow__viewport').evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).a)
       await page.getByRole('button', { name: 'Settle run', exact: true }).click()
       await page.locator('.react-flow__node-agent[data-id="agent-129"]').waitFor()
