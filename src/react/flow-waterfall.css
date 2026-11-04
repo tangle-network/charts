@@ -13,11 +13,8 @@
   --fw-ok: var(--surface-success-text);
   --fw-amber: var(--surface-warning-text);
   --fw-live: var(--fw-accent);
-  /* Two inks carry every lane (round s-tier, Drew: "the colors in the waterfall are awful"): a faint track for an agent's lifetime and
-     one restrained ink for its steps. Color is left for state: danger on a failed lane, the live edge on a running one. */
-  --fw-ink: light-dark(color-mix(in oklab, var(--fw-text) 68%, var(--fw-surface)), color-mix(in oklab, var(--fw-text) 60%, var(--fw-surface)));
-  --fw-track: color-mix(in oklab, var(--fw-text) 9%, transparent);
-  /* Marks take Brand's solid step-9 danger and accent (validated: ΔE ≥ 19 from the ink in both themes); text keeps the status inks. */
+  --fw-ink: color-mix(in oklab, var(--fw-text) 78%, var(--fw-surface));
+  --fw-track: color-mix(in oklab, var(--fw-text) 65%, transparent);
   --fw-failed-mark: var(--danger-9, var(--fw-failed));
   --fw-live-mark: var(--accent-9, var(--fw-live));
   --fw-hatch: color-mix(in oklab, var(--fw-text) 22%, transparent);
@@ -128,14 +125,11 @@
 .fw-root .fw-row { position: absolute; top: 0; left: 0; right: 0; transform: translateY(var(--row-y)); height: var(--fw-row-h); display: grid; grid-template-columns: var(--fw-label-col) minmax(0, 1fr); outline: 0; contain: layout style; }
 .fw-root .fw-row { background: var(--fw-tint, transparent); }
 .fw-root .fw-row:hover { --fw-tint: var(--fw-hover); }
-/* Hovering a row or any of its segments holds that row and dims the rest, so the eye stays on one agent. */
-.fw-root .fw-scroller:has(.fw-row:hover) .fw-row:not(:hover) { opacity: .45; }
-.fw-root .fw-row { transition: opacity var(--motion-control), transform var(--motion-surface); }
+.fw-root .fw-row { transition: transform var(--motion-surface); }
 .fw-root .fw-row.fw-active { --fw-tint: color-mix(in oklab, var(--fw-accent) 7%, transparent); }
 .fw-root .fw-row[aria-selected="true"] { --fw-tint: var(--ix-sel-bg); }
 .fw-root-agents[data-selection] .fw-row[aria-selected="true"] { box-shadow: inset 3px 0 0 var(--fw-accent); }
-.fw-root-agents[data-selection] .fw-row:not([aria-selected="true"]) { --fw-recede: .4; }
-.fw-root-agents[data-selection] .fw-row:not([aria-selected="true"]):hover { --fw-recede: .8; }
+.fw-root-agents[data-selection] .fw-row:not([aria-selected="true"]) { --fw-ink: color-mix(in oklab, var(--fw-text) 60%, var(--fw-surface)); }
 .fw-root-agents[data-selection] .fw-row:not([aria-selected="true"]) .fw-span-name { color: var(--fw-muted); }
 .fw-root .fw-row:focus-visible { box-shadow: inset 2px 0 0 var(--fw-accent); }
 .fw-root .fw-sticky-row { background: var(--fw-surface); }
@@ -180,7 +174,7 @@
   left: var(--x0);
   opacity: var(--on);
 }
-.fw-root :is(.fw-bar, .fw-seg, .fw-mark) { opacity: calc(var(--on) * var(--fw-recede, 1)); transition: opacity var(--motion-control); }
+.fw-root :is(.fw-bar, .fw-seg, .fw-mark) { opacity: var(--on); transition: opacity var(--motion-control); }
 .fw-root .fw-enter > [role="gridcell"] { transition: opacity var(--motion-arrive); transition-delay: var(--fw-enter-delay); }
 .fw-root .fw-enter :is(.fw-bar, .fw-seg) { transition: clip-path var(--motion-grow, var(--motion-stream)); transition-delay: var(--fw-enter-delay); clip-path: inset(0); }
 @starting-style { .fw-root .fw-enter > [role="gridcell"] { opacity: 0; } .fw-root .fw-enter :is(.fw-bar, .fw-seg) { clip-path: inset(0 100% 0 0); } }
@@ -193,7 +187,7 @@
   border-radius: 2px; background: var(--fw-failed); box-shadow: 0 0 0 1px var(--fw-surface); pointer-events: auto; }
 .fw-root :is(.fw-bar, .fw-seg) { top: calc(50% + var(--fw-bar-shift) - var(--fw-bar-h) / 2); height: var(--fw-bar-h); width: max(var(--w), calc(var(--on) * 3px)); border-radius: var(--radius-tag); cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .fw-root .fw-bar { background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); }
-.fw-root :is(.fw-bar, .fw-seg):hover { filter: brightness(1.18); box-shadow: inset 0 0 0 1px var(--line), 0 0 0 2px color-mix(in oklab, var(--line) 55%, transparent); z-index: 1; }
+.fw-root :is(.fw-bar, .fw-seg):hover { box-shadow: inset 0 0 0 1px var(--line), 0 0 0 2px color-mix(in oklab, var(--line) 55%, transparent); z-index: 1; }
 .fw-root .fw-bar.fw-k-tool { background: var(--dim); box-shadow: inset 0 0 0 1px var(--dim-line); }
 .fw-root .fw-bar.fw-k-handoff { background: var(--line); height: 8px; top: calc(50% + var(--fw-bar-shift) - 4px); box-shadow: none; }
 .fw-root .fw-bar:is(.fw-k-waiting, .fw-k-pipeline) { background: var(--fw-track); box-shadow: none; }
@@ -205,8 +199,9 @@
 .fw-root [data-outcome="neutral"] { --outcome-tone: var(--fw-muted); }
 .fw-root [data-outcome] { --tone: var(--outcome-tone); }
 /* The lane: its track tints only for state that needs a reader (a failure, a live agent); finished work stays neutral. */
-.fw-root.fw-fill-outcome .fw-view-agents .fw-row[data-span-kind="failed"] .fw-bar.fw-k-pipeline { background: color-mix(in oklab, var(--fw-failed-mark) 22%, transparent); }
-.fw-root.fw-fill-outcome .fw-view-agents .fw-row[data-running] .fw-bar.fw-k-pipeline { background: color-mix(in oklab, var(--fw-live-mark) 14%, transparent); box-shadow: inset -2px 0 0 var(--fw-live-mark); }
+.fw-root.fw-fill-outcome .fw-view-agents .fw-row[data-span-kind="failed"] .fw-bar.fw-k-pipeline { background: color-mix(in oklab, var(--fw-failed-mark) 65%, transparent); }
+.fw-root.fw-fill-outcome .fw-view-agents .fw-row[data-running] .fw-bar.fw-k-pipeline { background: color-mix(in oklab, var(--fw-live-mark) 65%, transparent); box-shadow: inset -2px 0 0 var(--fw-live-mark); }
+.fw-root .fw-view-agents .fw-bar.fw-k-pipeline { height: 8px; top: calc(50% + var(--fw-bar-shift) - 4px); }
 .fw-root .fw-view-agents .fw-seg { background: var(--fw-ink); box-shadow: none; --fw-seg-ink: light-dark(var(--fw-surface), var(--bg-root)); }
 .fw-root .fw-view-agents .fw-seg-failed { background: var(--fw-failed-mark); }
 .fw-root.fw-root .fw-agent-dot[data-outcome] { --tone: var(--outcome-tone); }
@@ -223,7 +218,7 @@
 .fw-root .fw-legend b { color: var(--fw-text); font-weight: 600; font-variant-numeric: tabular-nums; }
 .fw-root .fw-legend .fw-swatch-step { display: inline-grid; place-items: center; width: 12px; height: 12px; border-radius: 3px; background: var(--fw-well); color: var(--fw-failed); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-failed) 50%, transparent); }
 .fw-root .fw-legend .fw-swatch-step svg { width: 8px; height: 8px; }
-.fw-root .fw-bar.fw-approx { opacity: calc(var(--on) * .7 * var(--fw-recede, 1)); }
+.fw-root .fw-bar.fw-approx { opacity: calc(var(--on) * .7); }
 .fw-root .fw-seg { width: max(calc(var(--w) - 2px), calc(var(--on) * 3px)); pointer-events: none; }
 .fw-root .fw-view-agents .fw-seg { pointer-events: auto; }
 .fw-root .fw-seg-model { background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); }
@@ -391,7 +386,6 @@
 
 
 
-.fw-root.fw-root.fw-root-agents[data-selection] .fw-row:not([aria-selected="true"]) .fw-seg { opacity: var(--on); background: color-mix(in oklab, var(--fw-surface) 80%, var(--tone)); --fw-seg-ink: var(--fw-text); }
 .fw-root[data-frameless] { border: 0; border-radius: 0; }
 /* fill: the waterfall takes its host's height and the rows take what the header leaves (Drew: "GIVE COMPONENTS THE PROPER SPACE"). */
 .fw-root[data-fill] { display: flex; flex-direction: column; box-sizing: border-box; height: 100%; min-height: 0; }

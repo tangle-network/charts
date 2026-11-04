@@ -4,11 +4,12 @@ import { spawn } from 'node:child_process'
 import { mkdirSync, createWriteStream, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { chromium } from 'playwright'
+import { contrastAudit } from './run-ui-color.mjs'
 
 const output = resolve(process.env.CHARTS_PROOF_DIR ?? '/tmp/charts-flow-waterfall-proof')
 mkdirSync(output, { recursive: true })
 let base = process.env.CHARTS_FIXTURE_URL, startup = ''
-const checks = {}
+const checks = {}, contrasts = []
 let server, browser, context
 const log = createWriteStream(`${output}/consumer.log`)
 try {
@@ -262,9 +263,12 @@ try {
       return { left: card.left, top: card.top, bottom: card.bottom, clear: card.top >= row.bottom - 2 || card.bottom <= row.top + 2, inView: card.top >= 0 && card.bottom <= innerHeight }
     })
     assert.ok(Math.abs(placed.left - (pointer.x - 24)) < 2 && placed.clear && placed.inView, `card not at the pointer beside its row: ${JSON.stringify({ pointer, placed })}`)
-    // The host's selection recedes its peers' marks, never their names: they keep the muted ink at full opacity.
+    const contrast = await page.evaluate(contrastAudit)
+    contrasts.push({theme,text:{count:contrast.count,min:contrast.min},graphics:{count:contrast.graphics.count,min:contrast.graphics.min}})
+    assert.deepEqual(contrast.failures, [], `hover text contrast: ${JSON.stringify(contrast.failures)}`)
+    assert.deepEqual(contrast.graphics.failures, [], `mark contrast: ${JSON.stringify(contrast.graphics.failures)}`)
     const peer = await page.locator('[data-span-id="planner"]').evaluate(row => ({ name: getComputedStyle(row.querySelector('.fw-label')).opacity, bar: Number(getComputedStyle(row.querySelector('.fw-bar')).opacity) }))
-    assert.ok(peer.name === '1' && peer.bar < 0.5, `peer row ${JSON.stringify(peer)}`)
+    assert.ok(peer.name === '1' && peer.bar === 1, `peer row ${JSON.stringify(peer)}`)
     await page.screenshot({ path: `${output}/agent-metrics-card-${theme}.png` })
     await page.mouse.move(1, 1)
   }
@@ -442,8 +446,8 @@ try {
     checks.uniqueCapturedIdentities = 'PASS'
     assert.deepEqual(failures, [])
   }
-  writeFileSync(`${output}/checks.json`, JSON.stringify({ checks, passed: Object.keys(checks).length, target: 12 }, null, 2))
-  console.log(JSON.stringify({ checks, passed: Object.keys(checks).length, target: 12, output }))
+  writeFileSync(`${output}/checks.json`, JSON.stringify({ checks, passed: Object.keys(checks).length, contrasts }, null, 2))
+  console.log(JSON.stringify({ checks, passed: Object.keys(checks).length, contrasts, output }))
 } finally {
   await context?.close()
   await browser?.close()
