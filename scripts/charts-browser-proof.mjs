@@ -295,7 +295,6 @@ try {
   assert.equal(await root.locator('[data-span-id]').count(), 53)
   await page.screenshot({ path: `${output}/recorded-desktop-dark.png`, fullPage: true })
   await page.keyboard.press('Control+f')
-  // Focus moves on the next animation frame, which a loaded host can delay; wait for it rather than sample once.
   await page.waitForFunction(() => document.activeElement?.matches('input[type="search"]'), null, { timeout: 5000 })
   await page.getByRole('searchbox', { name: 'Search trace' }).fill('no-such-trace-step')
   await page.getByRole('status').filter({ hasText: 'No matching steps' }).waitFor({ timeout: 3000 })
@@ -314,7 +313,8 @@ try {
     await page.getByRole('searchbox', { name: 'Search trace' }).press('Escape')
     assert.equal(await root.locator('[data-span-id]').count(), 1)
     await page.getByRole('button', { name: 'Expand all', exact: true }).click()
-    assert.equal(await root.locator('[data-span-id]').count(), 53)
+    // ResizeObserver grows the virtual window after expansion; require all rows before checking motion.
+    await page.waitForFunction(() => document.querySelectorAll('[data-flow-waterfall] [data-span-id]').length === 53, null, { timeout: 3000 })
     // Unfold: the rows that just appeared move, then rest; scrolling the virtualized tree never replays it.
     assert.ok(await root.locator('.fw-row.fw-enter').count() > 0)
     await page.waitForFunction(() => !document.querySelector('.fw-row.fw-enter'), null, { timeout: 3000 })
