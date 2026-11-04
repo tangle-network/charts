@@ -65,7 +65,6 @@ export function AgentGraphCanvas({
   nodes, edges, selectedId, onSelect, direction = "TB", className, emptyState,
   live = false, renderEventIcon, showLatestEvents = true, now,
 }: AgentGraphProps) {
-  const card = live ? LIVE_AGENT_CARD : AGENT_CARD;
   const clock = useRunNow(now);
   const animateMotion = useMotionAllowed();
   const detailsId = useId();
@@ -85,6 +84,17 @@ export function AgentGraphCanvas({
   const topologyRef = useRef(nextTopology);
   if (topologyRef.current.key !== nextTopology.key) topologyRef.current = nextTopology;
   const topology = topologyRef.current;
+  const initialTeams = useRef(false);
+  useEffect(() => {
+    if (initialTeams.current || !nodes.length) return;
+    initialTeams.current = true;
+    const successful = new Set(nodes.filter(node => node.status === "done").map(node => node.id));
+    setCollapsed(new Set(topology.groups.filter(group => group.memberIds.every(id => successful.has(id))).map(group => group.id)));
+  }, [topology]);
+  const sizeKey = `${live}:${topology.key}`;
+  const cardRef = useRef<{ key: string; size: { width: number; height: number } }>({ key: "", size: live ? LIVE_AGENT_CARD : AGENT_CARD });
+  if (cardRef.current.key !== sizeKey) cardRef.current = { key: sizeKey, size: live && nodes.every(node => ["done", "stopped", "failed"].includes(node.status)) ? { width: 256, height: 88 } : live ? LIVE_AGENT_CARD : AGENT_CARD };
+  const card = cardRef.current.size;
   const columnKey = `${direction}:${live}:${topology.key}`;
   const columnRef = useRef<{ key: string; columns: number } | null>(null);
   if (canvas && !narrow && columnRef.current?.key !== columnKey) columnRef.current = { key: columnKey, columns: Math.max(1, Math.min(6, Math.floor((canvas.width - 2 * FIT_PADDING - (!live && direction === "LR" ? card.width + 70 : 0)) / (card.width + 10)))) };
@@ -94,7 +104,6 @@ export function AgentGraphCanvas({
   useEffect(() => {
     if (narrow) return;
     let active = true;
-    // Narrow the team grids until the tree fits the canvas at reading size, so entry shows the whole run without shrinking it.
     void (async () => {
       let layout = await layoutAgents(topology, direction, columns, card, collapsed, live);
       for (let cols = columns - 1; direction === "TB" && cols >= 2 && canvas && layout.width * READABLE_ZOOM > canvas.width - 2 * FIT_PADDING; cols--) layout = await layoutAgents(topology, direction, cols, card, collapsed, live);
@@ -205,7 +214,6 @@ export function AgentGraphCanvas({
   useEffect(() => {
     const inst = rfRef.current;
     if (!ready || !inst || !layoutIdentity || !canvas) return;
-    // Settling changes card geometry; it does not replace the reader's view.
     const relayout = framed.current !== cameraKey;
     const preserveView = !relayout;
     if (preserveView && !selection.current) return;
@@ -213,8 +221,6 @@ export function AgentGraphCanvas({
     framed.current = cameraKey;
     const frame = requestAnimationFrame(() => {
       if (preserveView) revealSelection(inst, wrapperRef.current, selection.current!);
-      // Entry fits the run in view at reading size or larger; a run too big for that starts at its top and centers each axis that fits
-      // (4.0.15 centered an unfittable tree's middle, so the root sat off screen and half the canvas was empty).
       else {
         const zoom = Math.min(1, Math.max(READABLE_ZOOM, Math.min((canvas.width - 2 * FIT_PADDING) / layout!.width, (canvas.height - 2 * FIT_PADDING) / layout!.height)));
         const w = layout!.width * zoom, h = layout!.height * zoom;
@@ -256,9 +262,7 @@ export function AgentGraphCanvas({
   useEffect(() => { const at = phoneNodes.findIndex(node => node.id === selectedId); if (at >= 0) setPhonePage(Math.floor(at / PHONE_PAGE)); }, [selectedId]);
   useEffect(() => { if (!narrow || !selectedId) return; const frame = requestAnimationFrame(() => wrapperRef.current?.querySelector<HTMLElement>(`[data-agent-id="${CSS.escape(selectedId)}"]`)?.scrollIntoView({ block: "nearest" })); return () => cancelAnimationFrame(frame); }, [selectedId, phonePage, narrow]);
   const first = Math.min(phonePage * PHONE_PAGE, Math.max(0, Math.ceil(nodes.length / PHONE_PAGE) - 1) * PHONE_PAGE);
-  // One control per state that needs a reader ("8 failed"), never a chip per agent: pressing it lights those agents and dims the rest.
   const attention = (["needs-you", "failed", "quiet"] as const).map(status => ({ status, count: nodes.filter(agent => status === "quiet" ? agentQuietActivity(agent, clock) : agent.status === status).length })).filter(group => group.count);
-  // Lighting a state also brings its agents into view: open their teams, then frame them (or scroll the phone list to the first).
   const light = (status: "needs-you" | "failed" | "quiet") => {
     if (highlight === status) { setHighlight(null); return; }
     setHighlight(status);

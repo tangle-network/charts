@@ -1,3 +1,8 @@
+## 4.0.18
+
+- Successful leaf teams enter folded through their existing team control. Failed teams stay open, and selecting a folded member still opens its team. The initial fold is not reapplied during streaming.
+- A settled live-card tree opens with shorter cards and full-width names; cost moves below the name. Initial card dimensions remain stable through stream updates.
+
 ## 4.0.17
 - A folded team row is quiet when any of its agents is: it carries `data-activity="quiet"`, the Quiet badge and "1 quiet" on its second line, as "2 failed" does (4.0.15 merged the members' activity, so a busy sibling hid a quiet agent).
 

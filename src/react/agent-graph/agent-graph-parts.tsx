@@ -1,13 +1,4 @@
 import { AgentMark } from "./marks";
-/**
- * What `AgentGraph` draws: an agent's card, the frame around a grid of leaf
- * workers, and the curved edge a message or delegation travels along.
- *
- * The visual vocabulary is the workflow graph's own (`node-ui.tsx`): the same
- * model brand mark, status colours, resting elevation and selection ring, so an
- * agent run and a workflow run read as one system.
- */
-
 import {
   BaseEdge,
   type Edge,

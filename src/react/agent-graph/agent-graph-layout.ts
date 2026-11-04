@@ -1,10 +1,3 @@
-/**
- * Stable desktop geometry for AgentGraph. Spawn edges determine the tree and
- * packed leaf groups; message and delegation edges never move cards.
- * ELK lays out candidate column counts; a row-per-depth fallback keeps the
- * graph usable without that optional peer. Narrow containers use Canvas's list.
- */
-
 import type { ElkNode } from "elkjs/lib/elk-api";
 import { loadElk } from "./elk-loader";
 

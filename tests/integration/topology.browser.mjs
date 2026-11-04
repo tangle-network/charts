@@ -191,6 +191,21 @@ try {
       await page.screenshot({ path: `${output}/settled-camera-${width}-${theme}.png` })
     }
     await proveCompactTopology(page, width, theme, output)
+    await page.goto(`${base}/?id=topology&large=1&successful=1&globals=agent-${theme}`)
+    await ready()
+    if (width > 600) {
+      const expand = page.getByRole('button', { name: 'Expand Agent 0 team', exact: true })
+      await expand.waitFor()
+      assert.equal(await page.locator('.react-flow__node-liveAgent').count(), 1, 'successful teams enter as their owner and recorded count')
+      await expand.click()
+      await page.getByRole('button', { name: 'Collapse Agent 0 team', exact: true }).waitFor()
+    }
+    await page.getByRole('button', { name: 'Select last agent', exact: true }).click()
+    const successful = page.locator(width < 600 ? '[data-agent-id="agent-129"]' : '.react-flow__node[data-id="agent-129"]')
+    await successful.waitFor({ state: 'visible' })
+    await successful.focus(); await page.keyboard.press('Enter')
+    assert.equal(await page.getByLabel('Reader selection').textContent(), 'agent-129', 'folding preserves access to a successful agent and its conversation')
+    await page.screenshot({ path: `${output}/successful-team-${width}-${theme}.png` })
     assert.deepEqual(errors, [])
     const video = page.video()
     await context.close()
