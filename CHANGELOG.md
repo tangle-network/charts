@@ -1,5 +1,7 @@
 ## 4.0.18
 
+- Meter steps distinguish a check that ran without a verdict from one that has not run.
+
 - Successful leaf teams enter folded through their existing team control. Failed teams stay open, and selecting a folded member still opens its team. The initial fold is not reapplied during streaming.
 - A settled live-card tree opens with shorter cards and full-width names; cost moves below the name. Initial card dimensions remain stable through stream updates.
 

@@ -296,7 +296,7 @@ export function Meter({ used, total, format = formatCompact, tone, text, segment
   const [hover, setHover] = useState(false), [focus, setFocus] = useState(false)
   if (steps) {
     const current = steps.findIndex(step => step.state !== 'pass')
-    return <ol className="ov-meter-steps" aria-label={text ?? 'Check steps'}>{steps.map((step, i) => <li key={i} data-state={step.state} aria-current={i === current ? 'step' : undefined}><div className="ov-step-head"><strong>{i + 1}</strong><small className="ov-step-state">{step.state === 'pass' ? 'Pass' : step.state === 'fail' ? 'Stuck' : 'Unchecked'}</small></div><span>{step.label}</span></li>)}</ol>
+    return <ol className="ov-meter-steps" aria-label={text ?? 'Check steps'}>{steps.map((step, i) => <li key={i} data-state={step.state} aria-current={i === current ? 'step' : undefined}><div className="ov-step-head"><strong>{i + 1}</strong><small className="ov-step-state">{step.state === 'pass' ? 'Pass' : step.state === 'fail' ? 'Stuck' : step.state === 'undecided' ? 'No verdict' : 'Unchecked'}</small></div><span>{step.label}</span></li>)}</ol>
   }
   const whole = total != null && Number.isFinite(total) && total >= 0 ? total : null
   if (scaleMax !== undefined && (!Number.isFinite(scaleMax) || scaleMax <= 0 || (whole !== null && scaleMax < whole))) throw new RangeError('scaleMax must be finite, positive and at least the recorded total.')
