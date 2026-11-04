@@ -58,8 +58,11 @@
 .ag-latest-dot { flex: none; width: 6px; height: 6px; border-radius: var(--radius-pill); background: hsl(var(--muted-foreground)); }
 .ag-latest-label { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: hsl(var(--muted-foreground)); }
 .ag-latest time { flex: none; color: hsl(var(--muted-foreground)); font-variant-numeric: tabular-nums; }
+.ag-frame-owner .ag-live-chip { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: start; }
+.ag-frame-owner .ag-live-chip .ag-live-thinking-row { margin-top: 0; }
 .ag-frame-owner .ag-live-thinking { -webkit-line-clamp: 1; }
-.ag-live-chip-cost { flex: none; font-size: var(--font-size-xs); line-height: 18px; color: var(--ag-muted); font-variant-numeric: tabular-nums; }
+.ag-live-chip .ag-live-thinking-row { margin-top: auto; justify-content: space-between; }
+.ag-live-chip-cost { margin-left: auto; flex: none; font-size: var(--font-size-xs); line-height: 18px; color: var(--ag-muted); font-variant-numeric: tabular-nums; }
 .ag-live-failure { color: var(--surface-danger-text); }
 .ag-frame-owner :is(.ag-live-meta, .ag-live-events, .ag-live-activity) { display: none; }
 .ag-frame-owner .ag-agent-card { flex-direction: row; align-items: center; gap: 16px; }

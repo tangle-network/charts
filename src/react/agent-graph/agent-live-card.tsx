@@ -55,11 +55,12 @@ export function LiveAgentCardView({ agent, selected, direction = "TB", now: fixe
           <span className="ag-live-mark grayscale hover:grayscale-0"><AgentMark agent={agent} layout="tree" size={18} /></span>
           <span className="ag-live-glyph" title={quiet?.label ?? s.label}><StatusGlyph status={agent.status} size={14} /></span>
           <span className="ag-live-name">{parentLabel && <span className="ag-parent-label">{parentLabel} / </span>}{agent.label}</span>
-          {settled ? cost && <span className="ag-live-chip-cost" title="Cost">{cost}</span> : quiet && <span className="ag-live-quiet">{quiet.label}</span>}
+          {!settled && quiet && <span className="ag-live-quiet">{quiet.label}</span>}
         </div>
         {!settled && (meta || metrics) && <span className="ag-live-meta" title={[meta, metrics].filter(Boolean).join(" · ")}>{[meta, metrics].filter(Boolean).join(" · ")}</span>}
-        {(said || !settled) && <div className="ag-live-thinking-row">
+        {(said || cost || !settled) && <div className="ag-live-thinking-row">
           {said && <p className={`ag-live-thinking${failed ? " ag-live-failure" : ""}`} title={said}>{toolLabel(said)}</p>}
+          {settled && cost && <span className="ag-live-chip-cost" title="Cost">{cost}</span>}
           {!settled && <ActivityChip agent={agent} />}
           {agent.status === "needs-you" && <button type="button" className="ag-live-respond nodrag nopan" disabled={!onOpen} title={onOpen ? undefined : "Responses unavailable in this view"} onClick={event => { event.stopPropagation(); onOpen?.(); }}>Respond</button>}
         </div>}

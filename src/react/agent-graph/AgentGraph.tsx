@@ -1,13 +1,4 @@
 import { GraphMarksProvider, type GraphMarks } from "./marks";
-/**
- * `AgentGraph` — the topology of a multi-agent run, for a run page's side pane.
- *
- * Lazy and error-isolated like `WorkflowGraph`: React Flow and ELK load on
- * first render, a transient chunk failure retries, and a graph that cannot
- * render degrades to a plain list of the agents (still selectable) instead of
- * taking the pane down.
- */
-
 import { lazy, type ReactNode, Suspense, useMemo, useState } from "react";
 import type {
   AgentGraphDirection,
@@ -59,11 +50,7 @@ export interface AgentGraphProps extends GraphMarks {
   now?: number;
   /** Hub layout: the header title. Default "Agent graph". */
   title?: ReactNode;
-  /**
-   * Tree layout: readable task summaries, the latest three events and model/accounting details. Desktop slots stay
-   * fixed through status updates; completed results compact while failures retain their evidence. Phones preserve
-   * their initial attention order. Only the running dot breathes; commands update without routine sliding.
-   */
+  /** Live task, identity and latest event; desktop slots stay fixed through status updates. */
   live?: boolean;
   /** Optional host tool identity for a recorded event. */
   renderEventIcon?: (event: AgentGraphEvent) => ReactNode;

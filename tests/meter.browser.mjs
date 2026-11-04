@@ -66,6 +66,7 @@ try {
   assert.equal(await mode('zero-whole').locator('.ov-meter-text').innerText(),'0 of 0 · —')
   await mode('steps').getByRole('list',{name:'Build checks'}).waitFor()
   assert.equal(await mode('steps').locator('[aria-current="step"]').innerText(),'2\nStuck\nOffline build')
+  assert.deepEqual(await mode('steps').locator('.ov-step-state').allTextContents(),['Pass','Stuck','No verdict','Unchecked'],'a check that ran without a verdict is distinct from one that has not run')
   assert.match(await mode('invalid-axis').innerText(),/scaleMax must be finite, positive and at least the recorded total/)
   assert.match(await mode('invalid-nonfinite-axis').innerText(),/scaleMax must be finite, positive/)
   assert.match(await mode('over-total').innerText(),/Segments sum to 5, more than the total 4/)
