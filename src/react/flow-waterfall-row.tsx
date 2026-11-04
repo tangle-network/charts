@@ -96,7 +96,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   const label = endLabel(row, clockMs)
   const activity = quietActivity(row, clockMs)
   // Only a team or a folded run of steps has a second line; one agent's name stands alone.
-  const summary = agentView ? agentSummary(row) : []
+  const summary = agentView ? [...agentSummary(row), ...(row.members && activity.quietCount ? [`${activity.quietCount} quiet`] : [])] : []
   const inspect = (event: { currentTarget: HTMLElement; clientX: number }) => props.onInspect(row.id, event.currentTarget, event.clientX)
   const family = agentView && row.id.startsWith('family:')
   const step = agentView && row.stepOf !== undefined
@@ -163,7 +163,7 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
             {!isAgent && !row.ok && <span className="fw-glyph"><FailGlyph /></span>}
             {!isAgent && row.ok && row.retry && <span className="fw-glyph"><RetryGlyph /></span>}
           </span>
-          {activity.quiet && <span className="fw-quiet-tail" style={at(activity.last, OPEN_END)} aria-label={`Quiet ${formatSpanDuration(activity.quietMs)}`} />}
+          {activity.quiet && !row.members && <span className="fw-quiet-tail" style={at(activity.last, OPEN_END)} aria-label={`Quiet ${formatSpanDuration(activity.quietMs)}`} />}
           {marks.map((mark, i) => <Segment key={`${mark.id}-${i}`} mark={mark} events={props} agentView={agentView} />)}
           <span className="fw-end" style={at(span.startMs, running ? OPEN_END : span.endMs)}>
             {failedEnd && <span className="fw-outcome-end" title="Recorded end of failed agent; failure instant not reported"><RunStatusIcon status="failed" size={12} /></span>}
