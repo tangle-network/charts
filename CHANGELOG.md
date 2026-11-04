@@ -1,3 +1,9 @@
+## 4.0.16
+
+- `AgentGraph` tree: pressing a state control ("1 failed", "1 need you", "1 quiet") opens those agents' teams and frames them, or scrolls the phone list to the first; 4.0.15 dimmed the rest with the lit card off screen (caught by the tangle-tools Topology adoption test).
+- Entry reads at 0.8-1x: a tree that fits is centered; one too big starts at its top and centers only the axis that fits, so the root is in view and the canvas is not half empty. Team grids narrow to fit only in the top-down layout.
+- Live cards keep the host's agent mark (`renderAgentMark`) beside the state glyph, and the hub's phone list dims the agents a state control leaves unlit.
+
 ## 4.0.15
 
 The release admitter moves 1.x+ releases by patch unless they break, so the run-page work below ships as 4.0.15 (the v4.1.0 tag was refused and never published).

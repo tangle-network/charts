@@ -13,6 +13,7 @@
   border-radius: var(--radius-card); animation: tangle-intro-enter var(--motion-arrive) both; background: var(--ag-surface); color: var(--ag-fg); overflow: hidden;
   transition: height var(--motion-surface), border-radius var(--motion-surface), border-color var(--motion-control), box-shadow var(--motion-control); }
 .ag-live-head { display: flex; align-items: flex-start; gap: 6px; min-width: 0; }
+.ag-live-mark { display: inline-flex; flex: none; }
 .ag-live-glyph { display: inline-flex; flex: none; height: 18px; align-items: center; color: var(--ag-status); }
 .ag-live-name, .ag-card-name { flex: 1; min-width: 0; font-size: var(--font-size-sm); line-height: 18px; font-weight: 600; overflow: hidden; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .ag-live-meta { font-size: var(--font-size-xs); line-height: 16px; color: var(--ag-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }

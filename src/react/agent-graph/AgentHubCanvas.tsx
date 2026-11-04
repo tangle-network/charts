@@ -227,7 +227,7 @@ export function AgentHubCanvas(props: AgentHubCanvasProps) {
           const rank = (e: HubEntity) => e.status === "needs-you" ? 0 : e.status === "failed" ? 1 : e.quiet ? 2 : e.status === "waiting" ? 3 : e.status === "running" ? 4 : 5;
           return rank(a) - rank(b);
         }).map(entity => <li key={entity.id}>
-          <HubNode entity={entity} x={0} y={0} tile={32} dimmed={false} selected={open === entity.id}
+          <HubNode entity={entity} x={0} y={0} tile={32} dimmed={Boolean(lit && !lit.has(entity.id))} selected={open === entity.id}
             buttonRef={buttonRef(entity.id)}
             onOpen={element => openNode(entity.id, element)} onHover={() => {}} onKeyDown={keydown(entity.id)} />
           <div className="ag-tools">{tools.filter(t => visibleCalls.some(c => c.from === entity.id && c.to === t.id || c.to === entity.id && c.from === t.id)).map(t =>

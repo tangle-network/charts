@@ -97,7 +97,7 @@ export function AgentGraphCanvas({
     // Narrow the team grids until the tree fits the canvas at reading size, so entry shows the whole run without shrinking it.
     void (async () => {
       let layout = await layoutAgents(topology, direction, columns, card, collapsed, live);
-      for (let cols = columns - 1; cols >= 2 && canvas && layout.width * READABLE_ZOOM > canvas.width - 2 * FIT_PADDING; cols--) layout = await layoutAgents(topology, direction, cols, card, collapsed, live);
+      for (let cols = columns - 1; direction === "TB" && cols >= 2 && canvas && layout.width * READABLE_ZOOM > canvas.width - 2 * FIT_PADDING; cols--) layout = await layoutAgents(topology, direction, cols, card, collapsed, live);
       if (active) setPlaced({ key: layoutKey, layout });
     })();
     return () => { active = false; };
@@ -213,8 +213,13 @@ export function AgentGraphCanvas({
     framed.current = cameraKey;
     const frame = requestAnimationFrame(() => {
       if (preserveView) revealSelection(inst, wrapperRef.current, selection.current!);
-      // Entry fits the run in view, no smaller than reading size (round s-tier: a 1:1 camera on the root left the team off screen).
-      else void inst.fitView({ padding: `${FIT_PADDING}px`, minZoom: Math.max(minZoom, READABLE_ZOOM), maxZoom: 1, duration: animate ? tokenMilliseconds("--duration-base", wrapperRef.current) : 0 });
+      // Entry fits the run in view at reading size or larger; a run too big for that starts at its top and centers each axis that fits
+      // (4.0.15 centered an unfittable tree's middle, so the root sat off screen and half the canvas was empty).
+      else {
+        const zoom = Math.min(1, Math.max(READABLE_ZOOM, Math.min((canvas.width - 2 * FIT_PADDING) / layout!.width, (canvas.height - 2 * FIT_PADDING) / layout!.height)));
+        const w = layout!.width * zoom, h = layout!.height * zoom;
+        void inst.setViewport({ x: w <= canvas.width - 2 * FIT_PADDING ? (canvas.width - w) / 2 : FIT_PADDING, y: h <= canvas.height - 2 * FIT_PADDING ? (canvas.height - h) / 2 : FIT_PADDING, zoom }, { duration: animate ? tokenMilliseconds("--duration-base", wrapperRef.current) : 0 });
+      }
       setShown(true);
     });
     return () => cancelAnimationFrame(frame);
@@ -253,10 +258,22 @@ export function AgentGraphCanvas({
   const first = Math.min(phonePage * PHONE_PAGE, Math.max(0, Math.ceil(nodes.length / PHONE_PAGE) - 1) * PHONE_PAGE);
   // One control per state that needs a reader ("8 failed"), never a chip per agent: pressing it lights those agents and dims the rest.
   const attention = (["needs-you", "failed", "quiet"] as const).map(status => ({ status, count: nodes.filter(agent => status === "quiet" ? agentQuietActivity(agent, clock) : agent.status === status).length })).filter(group => group.count);
+  // Lighting a state also brings its agents into view: open their teams, then frame them (or scroll the phone list to the first).
+  const light = (status: "needs-you" | "failed" | "quiet") => {
+    if (highlight === status) { setHighlight(null); return; }
+    setHighlight(status);
+    const ids = nodes.filter(agent => status === "quiet" ? agentQuietActivity(agent, clock) : agent.status === status).map(agent => agent.id);
+    const groups = new Set(ids.flatMap(id => topology.groupOf.get(id) ?? []));
+    if (groups.size) setCollapsed(current => [...groups].some(group => current.has(group)) ? new Set([...current].filter(group => !groups.has(group))) : current);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (narrow) { wrapperRef.current?.querySelector<HTMLElement>(`[data-agent-id="${CSS.escape(ids[0] ?? "")}"]`)?.scrollIntoView({ block: "nearest" }); return; }
+      void rfRef.current?.fitView({ nodes: ids.map(id => ({ id })), padding: `${FIT_PADDING * 4}px`, minZoom: READABLE_ZOOM, maxZoom: 1, duration: animateMotion ? tokenMilliseconds("--duration-base", wrapperRef.current) : 0 });
+    }));
+  };
   const caption = <div className="flex min-h-10 shrink-0 flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1 text-xs text-muted-foreground" aria-label="Run status">
     <span className="shrink-0 whitespace-nowrap">{nodes.length} agents</span>
     {attention.map(group => <button type="button" key={group.status} aria-pressed={highlight === group.status} className="ag-status-button rounded-full border border-border px-2 py-1"
-      style={{ color: group.status === "quiet" ? "var(--surface-warning-text)" : agentStatus(group.status).color }} onClick={() => setHighlight(on => on === group.status ? null : group.status)}>
+      style={{ color: group.status === "quiet" ? "var(--surface-warning-text)" : agentStatus(group.status).color }} onClick={() => light(group.status)}>
       <StatusGlyph status={group.status === "quiet" ? "waiting" : group.status} size={14} />{group.count} {group.status === "needs-you" ? "need you" : group.status}</button>)}
   </div>;
   if (nodes.length === 0) {
