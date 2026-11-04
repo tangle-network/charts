@@ -1,3 +1,8 @@
+## 4.0.19
+
+- Hover keeps every agent name readable. Selected peers retain opaque marks with quieter ink, rather than faded text or marks.
+- Lifetime tracks are thin and distinct from solid activity; failed and live tracks retain their semantic inks. Browser proof checks visible text and graphical contrast in both themes.
+
 ## 4.0.18
 
 - Meter steps distinguish a check that ran without a verdict from one that has not run.
