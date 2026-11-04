@@ -60,7 +60,7 @@ export function cardBorder(status: AgentGraphStatus) {
 
 /** The words a reader without the picture receives for one agent. */
 export function agentDescription(agent: AgentGraphNode): string {
-  const cost = fmtCost(agent.costUsd ?? undefined);
+  const cost = knownCost(agent.costUsd);
   const tokens = fmtTokenTotal(agent.tokens);
   return [
     agent.label,
@@ -109,26 +109,37 @@ export function Handles({ direction, source = true }: { direction: AgentGraphDir
   );
 }
 
+/** Why a failed agent failed, from wherever the producer put it; nothing when no one recorded a reason. */
+export const failureReason = (agent: AgentGraphNode): string | undefined => agent.result ?? agent.turn ?? undefined;
+
+/** A recorded cost worth printing: a priced, non-zero one. "$0.00" on an unpriced agent read as free. */
+export const knownCost = (usd: number | null | undefined): string | undefined => usd != null && Number.isFinite(usd) && usd > 0 ? fmtCost(usd) : undefined;
+
+/** A compact card: its state glyph and full name, then only what was recorded (identity, why it failed or what it returned, tokens). */
 export function AgentCardView({ agent, selected, direction, now: fixed, onOpen, parentLabel, handles = false }: AgentCardNode["data"] & { handles?: boolean }) {
   const now = useRunNow(fixed);
   const quiet = agentQuietActivity(agent, now);
-  const s = agentStatus(agent.status);
+  const failed = agent.status === "failed";
+  const identity = [agent.harness, agent.model ? shortModel(agent.model) : null].filter(Boolean).join(" · ");
+  const said = failed ? failureReason(agent) : (agent.status === "done" || agent.status === "stopped") ? agent.result ?? agent.turn : undefined;
+  const tokens = fmtTokenTotal(agent.tokens), cost = knownCost(agent.costUsd);
   return <div data-status={agent.status} data-activity={quiet ? "quiet" : undefined} data-selected={selected || undefined}
     title={agentDescription(agent)} className={`ag-agent-card relative flex h-full w-full flex-col gap-0.5 rounded-[var(--radius-card)] border bg-card px-3 py-2 text-left ${MOTION_CONTROL}`}
     style={{ boxShadow: RESTING_SHADOW, ...cardBorder(agent.status), ...(selected ? SELECTION_OUTLINE : {}) }}>
     {handles && <Handles direction={direction} />}
-    <div className="flex min-w-0 items-center gap-2">
+    <div className="flex min-w-0 items-start gap-2">
       <AgentMark agent={agent} layout="tree" size={24} />
-      <span className="min-w-0 flex-1 truncate text-sm font-semibold leading-[18px]">{parentLabel && <span className="ag-parent-label">{parentLabel} / </span>}{agent.label}</span>
-      <span className="text-[13px] text-muted-foreground tabular-nums" title={agent.costUsd == null ? "Cost not reported" : "Cost"}>{fmtCost(agent.costUsd ?? undefined) ?? "—"}</span>
+      <span className="mt-0.5 flex shrink-0" style={{ color: agentStatus(agent.status).color }} title={agentStatus(agent.status).label}><StatusGlyph status={agent.status} size={14} /></span>
+      <span className="ag-card-name min-w-0 flex-1 text-sm font-semibold leading-[18px]">{parentLabel && <span className="ag-parent-label">{parentLabel} / </span>}{agent.label}</span>
+      {cost && <span className="text-[13px] text-muted-foreground tabular-nums" title="Cost">{cost}</span>}
     </div>
-    <p data-agent-identity="" className="m-0 truncate text-[13px] leading-[18px] text-muted-foreground" title={[agent.harness, agent.model].filter(Boolean).join(" · ")}>{[agent.harness, agent.model ? shortModel(agent.model) : null].filter(Boolean).join(" · ") || "Identity not recorded"}</p>
-    {(agent.status === "failed" || ((agent.status === "done" || agent.status === "stopped") && (agent.result ?? agent.turn))) && <p className="m-0 line-clamp-2 text-[13px] leading-4">{agent.result ?? agent.turn ?? "Failure cause not recorded"}</p>}
-    <div className="mt-auto flex items-center justify-between gap-1 text-[13px]" style={{ color: quiet ? "var(--surface-warning-text)" : s.color }}>
-      <span className="flex items-center gap-1"><StatusGlyph status={agent.status} size={16} />{quiet?.label ?? s.label}</span>
-      <span data-agent-tokens="" title={agent.tokens == null ? "Tokens not recorded" : "Tokens"} className="text-muted-foreground tabular-nums whitespace-nowrap">{fmtTokenTotal(agent.tokens) ?? "—"}</span>
+    {identity && <p data-agent-identity="" className="m-0 truncate text-[13px] leading-[18px] text-muted-foreground" title={identity}>{identity}</p>}
+    {said && <p className="m-0 line-clamp-2 text-[13px] leading-4" style={failed ? { color: agentStatus("failed").color } : undefined} title={said}>{said}</p>}
+    {(quiet || tokens || agent.status === "needs-you") && <div className="mt-auto flex items-center justify-between gap-1 text-[13px]">
+      {quiet && <span style={{ color: "var(--surface-warning-text)" }}>{quiet.label}</span>}
+      {tokens && <span data-agent-tokens="" title="Tokens" className="ml-auto text-muted-foreground tabular-nums whitespace-nowrap">{tokens}</span>}
       {agent.status === "needs-you" && <button type="button" className="ag-live-respond nodrag nopan" disabled={!onOpen} onClick={event => { event.stopPropagation(); onOpen?.(); }}>Respond</button>}
-    </div>
+    </div>}
   </div>;
 }
 

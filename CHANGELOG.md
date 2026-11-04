@@ -1,3 +1,17 @@
+## 4.1.0
+
+Run page, round s-tier (Drew: "the colors in the waterfall are awful", "hella text forward chrome", "GIVE COMPONENTS THE PROPER SPACE").
+
+- `FlowWaterfall` agents view: every lane is a faint lifetime track with its model and tool steps in one neutral ink; no per-agent hues and no hatching. A failed lane takes Brand's danger tint and an end mark, a running lane the accent live edge, a finished lane stays neutral. Lanes without step telemetry are just the track, said once in the key ("Lifetime · N without step telemetry"). `agentFill` is `'outcome'` (default) or `'muted'`; `'agent'` is removed.
+- The agent rows carry one line, the name; only a team adds "3 agents · 2 failed". The status word, model and "Tool calls: N" lines are gone, as is the header's duplicate "N of M failed" button (the key's Failed filter remains).
+- The hover card is three lines: the agent and its state glyph; time · cost · model; the failure reason in danger ink, the team summary, or the last step. It never prints the producer's `facts` (a docked card still does). `renderAgentDetail` is removed: the conversation belongs to the host's inspector.
+- A cost that totals descendants (a team, or an agent priced only through its children) reads "Σ $1.05" in the end label and the card; an agent's own cost prints bare.
+- `maxHeight="fill"` grows the waterfall to its container (give it a height); in the agents view rows take the spare height up to 56 px, and teams unfold when every agent fits (12 rows at least). `frameless` drops the border and radius for full-bleed hosts.
+- Phone axis: at most three whole-unit ticks, none clipped at the end.
+- Tool names read as words everywhere (`mcp__agent-runtime-coordination__submit_result` → "submit result"), via `toolLabel` in `react/agent-graph`.
+- `LatestEvents` is one compact row: name, humanized event, age.
+- `AgentGraph`: failed nodes print `result ?? turn` and never "Failure cause not recorded"; one "8 failed" control (and "need you", "quiet") lights those agents instead of a chip per agent; unknown stats ("— tools", "— calls/min", "— cost", "$0.00", "Identity not recorded") are omitted. Tree cards are compact (state glyph, full name over two lines, cost only when above zero, the reason when failed), the tree fits the canvas on entry at reading size, and the minimap is gone. The hover card is three lines in the canvas corner across from the hovered node. `renderAgentDetail` is removed.
+
 ## 4.0.14
 
 - `CountHeatmap` draws each visible tool column in its own categorical series colour, marked under its header, so equal counts in different tools stay distinct; a collapsed "N more" group and the magnitude key use the neutral tone. An explicit `color` still paints every column in that one colour. `LIVE_SERIES` carries all eight Brand series colours (`--chart-series-1..8`), as `FlowWaterfall` lanes do.

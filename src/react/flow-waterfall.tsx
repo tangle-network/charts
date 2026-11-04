@@ -7,8 +7,8 @@ import { usePlayback, useTraceClock } from './flow-waterfall-clock.js'
 import { FailGlyph, SearchGlyph, TraceGlyph } from './flow-waterfall-icons.js'
 import { PlaybackBar } from './flow-waterfall-playback.js'
 import {
-  quietActivity, agentCallouts, agentViewRows, criticalPathIds, defaultOpenFamilies, busyMs, drawnRow, costSummary, type FlowWaterfallRow, flowWaterfallRows, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
-  toneKey, totalsAt, visibleFlowWaterfallRows, workKind,
+  quietActivity, agentViewRows, criticalPathIds, defaultOpenFamilies, busyMs, drawnRow, costSummary, type FlowWaterfallRow, flowWaterfallRows, formatCount, formatSpanDuration, slowestRow, spanFailed, spanRunning,
+  totalsAt, visibleFlowWaterfallRows,
 } from './flow-waterfall-model.js'
 import { HoverCard, HoverCardContent } from '@tangle-network/ui/primitives/hover-card'
 import type { FlowView } from './flow-waterfall-row.js'
@@ -35,12 +35,13 @@ export interface FlowWaterfallProps {
   graph?: ReactNode
   /** Shared feed after the active view, kept mounted across Agents, Steps and Graph. */
   latestEvents?: ReactNode
-  /** The hovered agent's own stream, drawn by the host (sandbox-ui's timeline rows); the card keeps one line of facts above it. */
-  renderAgentDetail?: (agentId: string) => ReactNode
   /** Host brand marks by span; the inspector draws kind glyphs without it. */
   renderIcon?: (span: FlowSpan) => ReactNode
-  /** Scroll height of the rows; the tree is virtualized beyond it. Defaults to 20 agent rows, or 640 px of steps. */
-  maxHeight?: number
+  /** Scroll height of the rows; the tree is virtualized beyond it. Defaults to 20 agent rows, or 640 px of steps. `fill` grows the
+   *  waterfall to its container's height (give the container one): the rows take whatever the header and key leave. */
+  maxHeight?: number | 'fill'
+  /** No border or radius, for a host that embeds the waterfall full-bleed in its own surface. */
+  frameless?: boolean
   /** Called when a row is opened or a bar is pinned, with that row's span; the built-in behavior still runs. */
   onSelect?: (span: FlowSpan) => void
   /** Labelled instants, such as releases, drawn across the rows and as event dots on the axis; click or N/P jumps to one. */
@@ -49,10 +50,10 @@ export interface FlowWaterfallProps {
   onTimeChange?: (t: number | null) => void
   /** Controlled trace-relative playhead; null shows the whole retained trace or follows live. */
   position?: number | null
-  /** What an agent bar's color means. `agent` (default): each agent or family its own muted hue across dot, bar and handoffs, with
-   * model and tool steps as darker and lighter shades of it; the outcome stays on the row dot and amber marks the slowest (blind round
-   * 25: global step hues made agents blur together). `muted`: one quiet tone, color on state only. `outcome`: the bar takes its outcome. */
-  agentFill?: 'muted' | 'outcome' | 'agent'
+  /** How an agent lane reads. Every lane is a faint lifetime track with its steps in one ink. `outcome` (default): a failed lane
+   *  takes the danger tint and an end mark, a running lane the live edge, a finished one stays neutral. `muted`: state on the row
+   *  dot only. (Round s-tier: per-agent hues and hatching read as muddy and conflated waiting with missing telemetry.) */
+  agentFill?: 'muted' | 'outcome'
   /** One line beside the title saying what the run was for, such as its goal. */
   description?: string
   /** The row the host has selected, such as the agent whose transcript is open: it lifts and, in the agent view, its peers dim.
@@ -121,17 +122,12 @@ function summaryCells(trace: FlowTrace, at: ReturnType<typeof totalsAt> | undefi
   return { cost, tokens, errors, summary }
 }
 const TONE_ORDER = ['failed', 'warn', 'live', 'neutral', 'ok']
-function KindLegend({ rows, fill }: { rows: FlowWaterfallRow[]; fill: NonNullable<FlowWaterfallProps['agentFill']> }) {
-  const has = (kind: string) => rows.some(row => row.own.some(mark => workKind(mark) === kind) || row.span.kind === kind)
-  const keys: [string, string][] = [['model', 'Model call'], ['tool', 'Tool call'], ['waiting', 'Waiting / untraced'], ['handoff', 'Handoff']]
-  const shown = keys.filter(([kind]) => kind === 'waiting' ? rows.some(row => row.kind === 'pipeline') : kind === 'handoff' ? rows.some(row => row.span.handoffTo || row.hasAgents) : has(kind))
-  if (shown.length === 0) return null
+/** The agent view's key: steps in ink over a lifetime track. Lanes without step telemetry are said once, only when there are any. */
+function LaneLegend({ agents }: { agents: FlowWaterfallRow[] }) {
+  const silent = agents.filter(row => row.own.length === 0 && !row.hasAgents).length
   return <ul className="fw-legend fw-kinds" aria-label="Key">
-    {shown.map(([kind, name]) => {
-      const examples = rows.flatMap(owner => owner.own.flatMap(mark => workKind(mark) === kind ? [{ owner, mark }] : []))
-      const example = examples.find(({ mark }) => toneKey(mark.tone) > 0) ?? examples[0]
-      return <li key={kind} data-tone={fill === 'agent' ? toneKey(example?.mark.tone ?? 0) : undefined} data-example={example?.owner.id}><span className={`fw-swatch-${kind === 'waiting' ? 'wait' : kind}`} aria-hidden />{name}</li>
-    })}
+    <li><span className="fw-swatch-ink" aria-hidden />Step</li>
+    <li><span className="fw-swatch-track" aria-hidden />Lifetime{silent > 0 && <span title="These agents reported no model or tool steps, so only their lifetime is drawn"> · {silent} without step telemetry</span>}</li>
   </ul>
 }
 function MarkerLegend({ markers }: { markers?: FlowMarker[] }) {
@@ -166,7 +162,7 @@ function ViewControl({ view, graph, onChange }: { view: FlowView; graph: boolean
 /** Shared trace inspector: the agent timeline and the span waterfall over one clock.
  * Data remains producer-owned; playback, zoom and folding change presentation only. */
 export function FlowWaterfall({
-  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', graph, latestEvents, renderAgentDetail, renderIcon, maxHeight, onSelect, markers, onTimeChange, position: positionProp, agentFill: fillProp, selectedId, onDeselect, description, summary: showSummary = true, criticalPath = false, query: queryProp, onQueryChange, collapsed: collapsedProp, onCollapsedChange, zoom: zoomProp, onZoomChange, matchSpan,
+  trace, live, startedAt, label = 'Trace waterfall', defaultCollapsed = false, defaultView = 'spans', graph, latestEvents, renderIcon, maxHeight, frameless, onSelect, markers, onTimeChange, position: positionProp, agentFill: fillProp, selectedId, onDeselect, description, summary: showSummary = true, criticalPath = false, query: queryProp, onQueryChange, collapsed: collapsedProp, onCollapsedChange, zoom: zoomProp, onZoomChange, matchSpan,
 }: FlowWaterfallProps) {
   const root = useRef<HTMLElement>(null)
   const search = useRef<HTMLInputElement>(null)
@@ -188,7 +184,8 @@ export function FlowWaterfall({
   const [laneElement, setLaneElement] = useState<HTMLElement | null>(null)
   const observedTotal = Number.isFinite(trace.totalMs) && trace.totalMs >= 0 ? trace.totalMs : 0
   const isLive = live ?? trace.spans.some(spanRunning)
-  const agentFill = fillProp ?? 'agent'
+  const agentFill = fillProp ?? 'outcome'
+  const fill = maxHeight === 'fill'
   const dataEnd = useMemo(() => Math.max(observedTotal, ...trace.spans.map(span => Number.isFinite(span.endMs) ? span.endMs : 0)), [trace, observedTotal])
   const trackPx = Math.max(40, laneWidth - LANE_PAD - (root.current && root.current.clientWidth < 600 ? LANE_PAD : Math.min(END_LABEL_GUTTER[view], laneWidth * 0.3)))
   useEffect(() => {
@@ -217,14 +214,15 @@ export function FlowWaterfall({
   const matchesFilter = (row: FlowWaterfallRow) => !filter || (filter === '__quiet' ? quietActivity(row, clockMs).quiet : filter === '__errors' ? row.span.outcome?.tone === 'failed' || !row.ok || Boolean(row.counts?.failed) : (row.span.outcome?.label ?? 'Unknown') === filter)
   const filteredAgents = useMemo(() => agents.filter(matchesFilter), [agents, filter, Math.floor(clockMs / 1000)])
   const sharedDetail = usual(agents.map(row => row.span.detail))
-  const sharedOutcome = usual(agents.map(row => row.span.outcome?.label))
   const [flippedFamilies, setFlippedFamilies] = useState<ReadonlySet<string>>(new Set())
-  const openFamilies = useMemo(() => defaultOpenFamilies(filteredAgents, filter ? Infinity : UNFOLD_ROWS, flippedFamilies), [filteredAgents, filter, flippedFamilies])
+  // Teams unfold when every agent fits the rows' height (12 at least), so a tall frame shows which workers failed.
+  const [bodyPx, setBodyPx] = useState(0)
+  const fitRows = Math.max(UNFOLD_ROWS, Math.floor((typeof maxHeight === 'number' ? maxHeight : bodyPx) / ROW_HEIGHT.agents))
+  const openFamilies = useMemo(() => defaultOpenFamilies(filteredAgents, filter ? Infinity : fitRows, flippedFamilies), [filteredAgents, filter, fitRows, flippedFamilies])
   const [openSteps, setOpenSteps] = useState<ReadonlySet<string>>(new Set())
   const visible = useMemo(() => view === 'agents' ? agentViewRows(filteredAgents, rows, openFamilies, filter ? new Set(filteredAgents.map(row => row.id)) : openSteps) : visibleFlowWaterfallRows(rows, query, collapsed, matchSpan), [view, filteredAgents, filter, rows, openFamilies, openSteps, query, collapsed, matchSpan])
   const slowest = view === 'spans' ? slowestRow(rows, clockMs) : undefined
-  const callouts = useMemo<ReturnType<typeof agentCallouts>>(() => view === 'agents' ? agentCallouts(visible, clockMs) : {}, [view, visible, clockMs])
-  const rowsHeight = maxHeight ?? (view === 'agents' ? ROW_HEIGHT.agents * AGENT_ROWS : 640)
+  const rowsHeight = typeof maxHeight === 'number' ? maxHeight : view === 'agents' ? ROW_HEIGHT.agents * AGENT_ROWS : 640
   const resized = useRef(false)
   useLayoutEffect(() => {
     if (view !== 'agents' || resized.current || !root.current) return
@@ -308,7 +306,6 @@ export function FlowWaterfall({
   const busy = agents.reduce((sum, row) => sum + busyMs(row, limit), 0)
   const speedup = limit > 0 ? busy / limit : 0
   const applyFilter = (label: string) => { setFilter(previous => previous === label || label === "__all" ? null : label); setView('agents') }
-  const failedAgents = agents.filter(row => row.span.outcome ? row.span.outcome.tone === 'failed' : !row.ok).length
   const quietAgents = agents.filter(row => quietActivity(row, clockMs).quiet).length
   const recordedErrors = trace.spans.filter(span => spanFailed(span) && span.kind !== 'pipeline')
   const errorSpans = recordedErrors.length ? recordedErrors : trace.spans.filter(spanFailed)
@@ -330,7 +327,7 @@ export function FlowWaterfall({
       onFollow={playbackControl.follow} onZoom={zoomBy} onFit={zoomControl.fit} />
   )
   return (
-    <HoverCard anchor={card?.anchor} open={!!card && !!cardRow} onOpenChange={open => { if (!open && !card?.pinned) setCard(null) }}><section ref={root} data-flow-waterfall data-follow-live={isLive && position === null && !playing || undefined} aria-label={label} className={`fw-root fw-root-${view} fw-fill-${agentFill}`} data-selection={selectedId ? '' : undefined}
+    <HoverCard anchor={card?.anchor} open={!!card && !!cardRow} onOpenChange={open => { if (!open && !card?.pinned) setCard(null) }}><section ref={root} data-flow-waterfall data-follow-live={isLive && position === null && !playing || undefined} aria-label={label} className={`fw-root fw-root-${view} fw-fill-${agentFill}`} data-selection={selectedId ? '' : undefined} data-fill={fill || undefined} data-frameless={frameless || undefined}
       style={{ '--fw-name-w': `${nameWidth}px`, '--fw-pad': `${LANE_PAD}px`, '--fw-row-h': `${ROW_HEIGHT[view]}px`, '--fw-live': `var(${statusMeta('running').token})`, '--fw-failed': `var(${statusMeta('failed').token})`, '--fw-ok': `var(${statusMeta('done').token})`, '--fw-amber': `var(${statusMeta('needs-you').token})` } as CSSProperties}>
       <header className="fw-heading">
         <div className="fw-title-block">
@@ -341,11 +338,10 @@ export function FlowWaterfall({
             {view === 'agents' && <p className="fw-headline" aria-live="polite">
               {agents.length} {agents.length === 1 ? 'agent' : 'agents'}{sharedDetail ? ` · ${agents.every(row => row.span.detail === sharedDetail) ? '' : 'mostly '}${sharedDetail}` : ''}{done && speedup >= 1.05 ? ` · ${speedup.toFixed(1)}x parallel` : ''}
             </p>}
-            {view !== 'graph' && failedAgents > 0 && <button type="button" className="fw-text-button fw-alert" aria-pressed={filter === '__errors'} onClick={() => applyFilter('__errors')}>{failedAgents} of {agents.length} failed</button>}
             {view !== 'graph' && quietAgents > 0 && <button type="button" className="fw-text-button fw-quiet" aria-pressed={filter === "__quiet"} onClick={() => applyFilter("__quiet")}>{quietAgents} quiet</button>}
             {isLive && <span className="fw-state fw-state-live" data-motion="essential">Live</span>}
           </div>
-          {view !== 'graph' && <div className="fw-legends" role="region" aria-label="Timeline key" tabIndex={0}>{view === 'agents' && <KindLegend rows={visible} fill={agentFill} />}<OutcomeLegend agents={agents} neutral={visible.some(row => row.kind === "pipeline" && !row.span.outcome && !row.outcomes?.length)} selected={filter} onFilter={applyFilter} /><MarkerLegend markers={markers} /></div>}
+          {view !== 'graph' && <div className="fw-legends" role="region" aria-label="Timeline key" tabIndex={0}>{view === 'agents' && <LaneLegend agents={agents} />}<OutcomeLegend agents={agents} neutral={visible.some(row => row.kind === "pipeline" && !row.span.outcome && !row.outcomes?.length)} selected={filter} onFilter={applyFilter} /><MarkerLegend markers={markers} /></div>}
         </div>
         <div className="fw-tools">
           <ViewControl view={view} graph={graph != null} onChange={option => { setView(option); setNameWidth(NAME_WIDTH[option]); setCard(null) }} />
@@ -359,7 +355,7 @@ export function FlowWaterfall({
           </div>}
         </div>
       </header>
-      {view === 'graph' ? graph : <>
+      {view === 'graph' ? <div className="fw-graph">{graph}</div> : <>
       {showSummary && <dl className="fw-summary">
         {summary.map(([name, value, title]) => <div key={name} className={name === 'Errors' && errors !== undefined && errors > 0 ? 'fw-has-errors' : undefined}>
           <dt>{name}</dt>
@@ -367,17 +363,17 @@ export function FlowWaterfall({
         </div>)}
       </dl>}
       {view === 'agents' && playback}
-      <FlowBody rows={visible} byId={byId} totalRows={rows.length} view={view} maxHeight={rowsHeight} collapsed={collapsed} searching={Boolean(query.trim())} query={query} matchSpan={matchSpan}
-        pauses={trace.pauses} errorEnds={errorEnds} cursorLine={isLive || position !== null || playing} sharedDetail={sharedDetail} sharedOutcome={sharedOutcome} expandedIds={view === 'agents' ? new Set([...openFamilies, ...openSteps]) : undefined} holdHeight={isLive} slowestId={slowest?.id ?? callouts.slowestId} costliestId={callouts.costliestId} criticalIds={criticalPath && view === 'spans' ? critical : undefined} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
-        trackPx={trackPx} showCursor={showCursor} markers={markers} fillByAgent={agentFill !== 'outcome'} zoomed={zoom !== null} renderIcon={renderIcon}
+      <FlowBody rows={visible} byId={byId} totalRows={rows.length} view={view} maxHeight={rowsHeight} fill={fill} onViewport={setBodyPx} collapsed={collapsed} searching={Boolean(query.trim())} query={query} matchSpan={matchSpan}
+        pauses={trace.pauses} errorEnds={errorEnds} cursorLine={isLive || position !== null || playing} expandedIds={view === 'agents' ? new Set([...openFamilies, ...openSteps]) : undefined} holdHeight={isLive} slowestId={slowest?.id} criticalIds={criticalPath && view === 'spans' ? critical : undefined} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
+        trackPx={trackPx} showCursor={showCursor} markers={markers} zoomed={zoom !== null} renderIcon={renderIcon}
         emptyText={rows.length === 0 ? 'No spans yet. Waiting for trace events.' : `No matching steps for “${query}”.`}
         onToggle={toggle} onInspect={inspect} onPin={pin} onActivate={row => setActiveId(row.id)}
         onActiveChange={setActiveId} onScrub={scrubTo} onZoom={zoomBy} onPan={pan}
         nameWidth={nameWidth} onNameWidth={px => { resized.current = true; setNameWidth(Math.max(140, Math.min(560, px))) }} onTrack={setLaneElement}
         onExpandAll={rows.some(row => row.hasChildren) ? () => setCollapsed(new Set()) : undefined}
         onCollapseAll={() => setCollapsed(new Set(rows.filter(row => row.hasChildren).map(row => row.id)))} />
-      {card && cardRow && <HoverCardContent role="presentation" container={root.current} side={view === 'agents' ? 'top' : 'bottom'} align="start" collisionPadding={8} className="border-0 bg-transparent p-0 shadow-none" style={{ width: `min(${renderAgentDetail && view === 'agents' ? 420 : 320}px, calc(100vw - 16px))`, maxHeight: "var(--radix-hover-card-content-available-height, calc(100vh - 16px))", overflowY: "auto", zIndex: 20, padding: 0, border: 0, background: "transparent", boxShadow: "none" }} onEscapeKeyDown={event => { event.preventDefault(); closeCard() }} onInteractOutside={event => { if (event.detail.originalEvent.type !== 'pointerdown') return; const target = event.detail.originalEvent.target; if (target instanceof Element && target.closest('.fw-bar, .fw-seg')) event.preventDefault(); else setCard(null) }}>
-        <SpanCard id={cardId} row={cardRow} agent={cardAgent} clockMs={clockMs} mode={card.pinned ? 'pinned' : 'hover'} onClose={closeCard} renderIcon={renderIcon} compact={view === 'agents'} detail={view === 'agents' && renderAgentDetail ? renderAgentDetail((cardAgent ?? cardRow).id) : undefined} />
+      {card && cardRow && <HoverCardContent role="presentation" container={root.current} side={view === 'agents' ? 'top' : 'bottom'} align="start" collisionPadding={8} className="border-0 bg-transparent p-0 shadow-none" style={{ width: `min(${view === 'agents' ? 280 : 320}px, calc(100vw - 16px))`, maxHeight: "var(--radix-hover-card-content-available-height, calc(100vh - 16px))", overflowY: "auto", zIndex: 20, padding: 0, border: 0, background: "transparent", boxShadow: "none" }} onEscapeKeyDown={event => { event.preventDefault(); closeCard() }} onInteractOutside={event => { if (event.detail.originalEvent.type !== 'pointerdown') return; const target = event.detail.originalEvent.target; if (target instanceof Element && target.closest('.fw-bar, .fw-seg')) event.preventDefault(); else setCard(null) }}>
+        <SpanCard id={cardId} row={cardRow} agent={cardAgent} clockMs={clockMs} mode={card.pinned ? 'pinned' : 'hover'} onClose={closeCard} renderIcon={renderIcon} compact={view === 'agents'} />
       </HoverCardContent>}
       {view === 'spans' && playback}
       </>}

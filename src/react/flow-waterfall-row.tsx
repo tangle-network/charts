@@ -4,6 +4,7 @@ import type { FlowSpan } from '../flow-trace.js'
 import { KIND_LABEL } from './flow-waterfall-card.js'
 import { AlertGlyph, ChevronGlyph, FailGlyph, KindGlyph, RetryGlyph } from './flow-waterfall-icons.js'
 import { type FlowSegment, type FlowWaterfallRow, agentSummary, quietActivity, formatCost, rowCostText, formatSpanDuration, spanFact, spanRunning, toneKey, workKind } from './flow-waterfall-model.js'
+import { toolLabel } from './agent-graph/naming.js'
 import type { RowMotion } from './flow-waterfall-motion.js'
 
 export type FlowView = 'spans' | 'agents' | 'graph'
@@ -28,7 +29,6 @@ export interface RowProps extends RowEvents {
   collapsed: boolean
   searching: boolean
   slowest: boolean
-  costliest?: boolean
   critical?: boolean
   /** While searching: the row matched by itself, rather than showing as a match's ancestor. */
   matched?: boolean
@@ -41,10 +41,6 @@ export interface RowProps extends RowEvents {
   /** Clock at 10 Hz; only running rows read it, so idle rows skip re-render. */
   clockMs: number
   renderIcon?: (span: FlowSpan) => ReactNode
-  fillByAgent?: boolean
-  sharedDetail?: string
-  /** The outcome most agents share: the outcome key names it, so only the rows that differ say theirs. */
-  sharedOutcome?: string
   /** Agent view: a family or agent opened in place, its members or steps shown below it. */
   expanded?: boolean
 }
@@ -52,11 +48,11 @@ export interface RowProps extends RowEvents {
 function Segment({ mark, events, agentView }: { mark: FlowSegment; events: RowEvents; agentView: boolean }) {
   const glyph = mark.kind === 'failed' ? 'fail' : mark.retry ? 'retry' : null
   const model = workKind(mark) === 'model'
-  const name = model ? undefined : mark.count === 1 ? mark.name : mark.tool
+  const name = model ? undefined : toolLabel((mark.count === 1 ? mark.name : mark.tool) ?? '') || undefined
   const duration = Number.isFinite(mark.endMs) ? formatSpanDuration(mark.endMs - mark.startMs) : ''
   const meta = [duration, mark.costUsd ? formatCost(mark.costUsd) : ''].filter(Boolean).join(' · ')
   return <span className={`fw-seg fw-seg-${mark.kind}${mark.alt ? ' fw-seg-alt' : ''}`} data-tone={toneKey(mark.tone)} data-model={model || undefined} style={at(mark.startMs, mark.endMs)}
-    title={mark.name ? `${mark.name}${mark.count > 1 ? ` +${mark.count - 1} more` : ''}${meta ? ` · ${meta}` : ''}` : undefined}
+    title={mark.name ? `${toolLabel(mark.name)}${mark.count > 1 ? ` +${mark.count - 1} more` : ''}${meta ? ` · ${meta}` : ''}` : undefined}
     onPointerEnter={agentView ? event => events.onInspect(mark.id, event.currentTarget, event.clientX) : undefined}
     onClick={agentView ? event => { event.stopPropagation(); events.onPin(mark.id, event.currentTarget, event.clientX) } : undefined}>
     {glyph && <span className="fw-glyph" data-glyph={glyph}>{glyph === 'fail' ? <FailGlyph /> : <RetryGlyph />}</span>}
@@ -86,7 +82,7 @@ function endLabel(row: FlowWaterfallRow, clockMs: number): string {
 
 /** One trace row. Geometry comes from CSS variables, so a row re-renders only when its own state changes. */
 export const FlowRow = memo(function FlowRow(props: RowProps) {
-  const { row, view, top, collapsed, searching, slowest, costliest, critical, matched, active, focusable, selected, sticky, clockMs, renderIcon, fillByAgent, motion } = props
+  const { row, view, top, collapsed, searching, slowest, critical, matched, active, focusable, selected, sticky, clockMs, renderIcon, motion } = props
   const span = row.span
   const state = runStatus(span.status ?? 'unknown')
   const meta = statusMeta(state)
@@ -99,8 +95,8 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   const marks = isAgent || row.hasChildren || row.id.startsWith('run:') ? (folded && !agentView ? row.segments : row.own) : []
   const label = endLabel(row, clockMs)
   const activity = quietActivity(row, clockMs)
-  // The model leads the second line unless the header names it for every agent.
-  const summary = [...(span.detail && span.detail !== props.sharedDetail ? [span.detail] : []), ...agentSummary(row).filter(part => part !== props.sharedOutcome && (state === "unknown" || part !== meta.label))]
+  // Only a team or a folded run of steps has a second line; one agent's name stands alone.
+  const summary = agentView ? agentSummary(row) : []
   const inspect = (event: { currentTarget: HTMLElement; clientX: number }) => props.onInspect(row.id, event.currentTarget, event.clientX)
   const family = agentView && row.id.startsWith('family:')
   const step = agentView && row.stepOf !== undefined
@@ -108,14 +104,12 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
   const opens = family || (agentView && isAgent && row.own.length > 0)
   const outcomes = row.outcomes ?? (span.outcome ? [span.outcome] : [])
   const failedEnd = isAgent && !family && state === "failed" && Number.isFinite(span.endMs) && span.endMs <= clockMs
-  const callouts = (slowest || costliest) && <span className="fw-badge" title={costliest ? `${slowest ? 'Longest elapsed; ' : ''}highest reported cost among priced leaf agents` : agentView ? 'Longest elapsed leaf agent' : 'Longest elapsed leaf step'}>
-    {slowest ? agentView ? costliest ? 'Longest · costliest leaf' : 'Longest leaf' : 'Longest step' : 'Costliest leaf'}
-  </span>
+  const callouts = slowest && <span className="fw-badge" title="Longest elapsed leaf step">Longest step</span>
 
   return (
     <div role="row" data-span-id={row.id} data-span-kind={kind} data-slowest={slowest || undefined} data-critical={critical || undefined} data-search={searching ? (matched ? 'match' : 'context') : undefined} data-running={running || undefined} data-activity={activity.quiet ? "quiet" : undefined}
       aria-level={agentView ? undefined : row.depth + 1} aria-expanded={row.hasChildren && !agentView ? !folded : undefined}
-      aria-selected={selected} tabIndex={focusable ? 0 : -1} data-tone={toneKey(row.tone)} data-outcome={fillByAgent ? undefined : span.outcome?.tone}
+      aria-selected={selected} tabIndex={focusable ? 0 : -1} data-tone={toneKey(row.tone)}
       className={`fw-row${active ? ' fw-active' : ''}${sticky ? ' fw-sticky-row' : ''}${isAgent ? ' fw-agent-row' : ''}${step ? ' fw-step' : ''}${motion?.enter !== undefined ? ' fw-enter' : ''}${motion?.settle ? ' fw-settle' : ''}`}
       // The end label's width rides on the row: a label that would run past the lane slides back over its bar's tail, and a stacked name stops short of it.
       style={{ '--row-y': `${top}px`, '--fw-enter-delay': `${motion?.enter ?? 0}ms`, '--fw-end-w': `${endLabelWidth(label) + (failedEnd ? 20 : 0)}px` } as CSSProperties}
@@ -148,26 +142,18 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
               : agentView && !step && <span className="fw-agent-dot" aria-hidden />}
             {/* A live outcome dot already says it runs; a spinner beside it was a second, contradicting mark. */}
             {running && !((isAgent || agentView && !step) && outcomes.length) && <span className="fw-spinner" data-motion={activity.quiet ? undefined : "essential"} role="status" aria-label="running" />}
-            <span className="fw-name-text">{row.name}</span>
+            {agentView && !step && renderIcon && <span className="fw-detail-icon" aria-hidden>{renderIcon(span)}</span>}
+            <span className="fw-name-text">{isAgent ? row.name : toolLabel(row.name)}</span>
             {!agentView && callouts}
-            {(state !== "unknown" && !activity.quiet) && <span className="fw-row-state" style={{ color: `var(${meta.token})` }}>{state !== "running" && <RunStatusIcon status={state} size={16} aria-hidden />}{meta.label}</span>}
+            {!agentView && state !== "unknown" && !activity.quiet && <span className="fw-row-state" style={{ color: `var(${meta.token})` }}>{state !== "running" && <RunStatusIcon status={state} size={16} aria-hidden />}{meta.label}</span>}
             {activity.quiet && <span className="fw-quiet" title="Running; no recorded activity during this interval" aria-label={`Running; Quiet ${formatSpanDuration(activity.quietMs)} since last recorded activity`}>Quiet {formatSpanDuration(activity.quietMs)}</span>}
           </span>
-          {agentView && (
-            <span className="fw-subtitle">
-              {renderIcon && <span className="fw-detail-icon" aria-hidden>{renderIcon(span)}</span>}
-              <span className="fw-subtitle-tail">
-                {callouts}
-                <span className="fw-subtitle-text">{summary[0]}</span>
-                {summary.slice(1).map(part => <span key={part} className="fw-subtitle-extra">· {part}</span>)}
-              </span>
-            </span>
-          )}
+          {summary.length > 0 && <span className="fw-subtitle">{summary.join(' · ')}</span>}
         </span>
         {folded && <span className="fw-count" aria-label={`${row.descendants} hidden steps`}>+{row.descendants}</span>}
         {!row.ok && !agentView && <span className="fw-alert"><AlertGlyph label="failed" /></span>}
       </div>
-      <div role="gridcell" className="fw-lane" data-waterfall-track aria-label={`${KIND_LABEL[span.kind]}, ${label}${slowest ? `, longest leaf ${agentView ? 'agent' : 'step'}` : ''}${costliest ? ', highest reported leaf-agent cost' : ''}${critical ? ', critical path' : ''}`}>
+      <div role="gridcell" className="fw-lane" data-waterfall-track aria-label={`${KIND_LABEL[span.kind]}, ${label}${slowest ? ', longest leaf step' : ''}${critical ? ', critical path' : ''}`}>
         {invalid ? <span className="fw-invalid">—</span> : <>
           {span.marks?.map(mark => <span key={`m-${mark.at}-${mark.label}`} className="fw-mark" data-mark={mark.kind} style={at(mark.at, mark.at)} title={mark.label} aria-label={mark.label} role="img" />)}
           <span className={`fw-bar fw-k-${isAgent ? 'pipeline' : kind}${row.approx ? ' fw-approx' : ''}${marks.length ? ' fw-has-marks' : ''}${row.hasAgents ? ' fw-has-agents' : ''}`}
@@ -188,8 +174,8 @@ export const FlowRow = memo(function FlowRow(props: RowProps) {
     </div>
   )
 }, (a, b) => a.row === b.row && a.view === b.view && a.top === b.top && a.collapsed === b.collapsed && a.searching === b.searching &&
-  a.slowest === b.slowest && a.costliest === b.costliest && a.critical === b.critical && a.matched === b.matched && a.active === b.active && a.focusable === b.focusable && a.selected === b.selected &&
-  a.sticky === b.sticky && a.motion === b.motion && a.renderIcon === b.renderIcon && a.fillByAgent === b.fillByAgent && a.sharedDetail === b.sharedDetail && a.sharedOutcome === b.sharedOutcome && a.expanded === b.expanded && (a.clockMs === b.clockMs || !open(a.row, a.clockMs) && !open(b.row, b.clockMs)))
+  a.slowest === b.slowest && a.critical === b.critical && a.matched === b.matched && a.active === b.active && a.focusable === b.focusable && a.selected === b.selected &&
+  a.sticky === b.sticky && a.motion === b.motion && a.renderIcon === b.renderIcon && a.expanded === b.expanded && (a.clockMs === b.clockMs || !open(a.row, a.clockMs) && !open(b.row, b.clockMs)))
 
 export interface FlowLink { id: string; from: number; to: number; atMs: number; tone: number; dir: 'down' | 'up' }
 

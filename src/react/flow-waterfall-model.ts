@@ -323,22 +323,6 @@ export function criticalPathIds(rows: readonly FlowWaterfallRow[]): ReadonlySet<
   return new Set(best?.chain)
 }
 
-/** The agents a reader should look at first: the longest one by the clock, and the costliest when two or more are priced. */
-export function agentCallouts(agents: FlowWaterfallRow[], clockMs: number): { slowestId?: string; costliestId?: string } {
-  let slowest: FlowWaterfallRow | undefined, slowestMs = -1, costliest: FlowWaterfallRow | undefined, top = -1, priced = 0, timed = 0
-  for (const row of agents) {
-    // Only agents compete: a family's bar is its members' extent and its cost their sum, and an opened step is not an agent.
-    if (row.durationLabel === '—' || row.span.startMs > clockMs || row.kind !== 'pipeline' || row.hasAgents || row.id.startsWith('family:') || row.id.startsWith('run:')) continue
-    const ms = (spanRunning(row.span) ? Math.max(row.span.endMs, clockMs) : Math.min(row.span.endMs, clockMs)) - row.span.startMs
-    if (spanFact(row.span, 'Ran for') === undefined) { timed += 1; if (ms > slowestMs) { slowest = row; slowestMs = ms } }
-    const cost = spanFact(row.span, 'Cost') === undefined ? row.span.costUsd ?? row.rollupCostUsd : undefined
-    if (typeof cost !== 'number' || !Number.isFinite(cost)) continue
-    priced += 1
-    if (cost > top) { costliest = row; top = cost }
-  }
-  return { slowestId: timed > 1 ? slowest?.id : undefined, costliestId: priced > 1 && top > 0 ? costliest?.id : undefined }
-}
-
 /** Busy time per agent row: the union of its own work. Their sum over wall time is the parallel speedup. */
 export function busyMs(row: FlowWaterfallRow, clockMs: number): number {
   let total = 0, end = -Infinity
@@ -431,7 +415,6 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
     const failed = members.filter(row => row.span.outcome ? row.span.outcome.tone === 'failed' : !row.ok).length
     // A family takes its members' outcome when they share one; mixed outcomes leave it without, drawn neutral.
     const outcome = members.every(row => row.span.outcome && row.span.outcome.tone === members[0]!.span.outcome?.tone && !row.span.outcome.ring === !members[0]!.span.outcome?.ring) ? members[0]!.span.outcome : undefined
-    const facts = members.flatMap(row => (row.span.facts ?? []).filter(({ label }) => ['model', 'model calls', 'tool calls', 'model latency', 'failures', 'retries'].includes(label.toLowerCase()) || label.toLowerCase() === 'tokens' && ![row.span.promptTokens, row.span.completionTokens, row.span.cachedTokens].some(Number.isFinite) || label.toLowerCase() === 'cost' && known.length === 0)).map(({ label }) => ({ label, value: 'Not recorded' }))
     out.push({
       // The family hangs off its members' parent, so the spawn elbow reaches it from the agent that started them.
       costFloor: known.length < members.length || members.some(row => row.costFloor),
@@ -443,28 +426,22 @@ export function agentFamilies(agents: readonly FlowWaterfallRow[], open: Readonl
       own: members.flatMap((row, i) => row.own.map(mark => ({ ...mark, tone, alt: i % 2 === 1 }))).sort((a, b) => a.startMs - b.startMs),
       ...(known.length ? { rollupCostUsd: known.reduce((sum, cost) => sum + cost, 0) } : {}),
       ...mergeStats(members),
-      span: { id, kind: 'pipeline', name: role, startMs, endMs, activityAt: members.flatMap(row => row.span.activityAt ?? row.own.flatMap(mark => [mark.startMs, mark.endMs])), status: running ? 'running' : failed ? 'failed' : 'done', ...(outcome ? { outcome } : {}), detail: members.every(row => row.span.detail === members[0]!.span.detail) ? members[0]!.span.detail : undefined, facts, meta: { failedAgents: failed, costPartial: known.length < members.length, members: members.map(row => row.id) } },
+      span: { id, kind: 'pipeline', name: role, startMs, endMs, activityAt: members.flatMap(row => row.span.activityAt ?? row.own.flatMap(mark => [mark.startMs, mark.endMs])), status: running ? 'running' : failed ? 'failed' : 'done', ...(outcome ? { outcome } : {}), detail: members.every(row => row.span.detail === members[0]!.span.detail) ? members[0]!.span.detail : undefined, meta: { failedAgents: failed, costPartial: known.length < members.length, members: members.map(row => row.id) } },
     })
     if (open.has(id)) out.push(...members.map((row, i) => ({ ...row, family: id, inset: 1, tone, own: row.own.map(mark => ({ ...mark, tone, alt: i % 2 === 1 })) })))
   }
   return out
 }
 
-/** The second line of an agent row in parts: how it ended and how much it did (failed, 3 model calls, 412 tool calls; 6 agents, 4 failed).
- * The row shows the parts in order and drops the last ones whole when the line is full, never half a word. */
+/** The second line of a team row (6 agents · 4 failed) or a folded run of steps (all done, 2 failed). A single agent has none:
+ *  its bar carries its activity and its dot its outcome (round s-tier: "Tool calls: 245" under every name was chrome). */
 export function agentSummary(row: FlowWaterfallRow): string[] {
   if (row.id.startsWith('family:')) {
     const failed = Number(row.span.meta?.failedAgents ?? 0)
     return [`${row.descendants} agents`, ...(failed ? [`${failed} failed`] : [])]
   }
-  // A folded run of steps already says its count in its name; its second line says how it ended.
   if (row.id.startsWith('run:')) { const failed = row.own.filter(mark => mark.kind === 'failed').length; return [failed ? `${failed} failed` : 'all done'] }
-  // Host facts describe the full stream; displayed steps may be bounded. Preserve opaque unknowns and measured zero.
-  const facts = new Map((row.span.facts ?? []).map(({ label, value }) => [label.toLowerCase(), value]))
-  const calls = ([['Model calls', row.counts?.model, 'model'], ['Tool calls', row.counts?.tool, 'tool']] as const).map(([label, count, kind]) => facts.has(label.toLowerCase()) ? `${label}: ${facts.get(label.toLowerCase())}` : count ? `${count} ${kind} ${count === 1 ? 'call' : 'calls'}` : '')
-  // An agent without a recorded outcome says only that it runs or failed; a bare "done" read as a verdict the host never gave.
-  const state = row.span.outcome?.label ?? (spanRunning(row.span) ? 'running' : !row.ok ? 'failed' : row.kind === 'pipeline' ? '' : 'done')
-  return [state, ...calls].filter(Boolean)
+  return []
 }
 
 /**
@@ -518,8 +495,11 @@ export function drawnRow(row: FlowWaterfallRow, visible: readonly FlowWaterfallR
   return family ? { ...row, tone: family.tone } : row
 }
 
-/** A row's cost as printed: "≥" when it is a floor. */
-export const rowCostText = (row: FlowWaterfallRow, cost: number | undefined): string => spanFact(row.span, 'Cost') ?? (cost === undefined ? '' : `${row.costFloor ? '≥' : ''}${formatCost(cost)}`)
+/** Whether a row's printed cost sums more than its own work: a team, or an agent priced only through the agents it started. */
+export const costIsTotal = (row: FlowWaterfallRow): boolean => row.id.startsWith('family:') || (row.hasAgents && row.span.costUsd === undefined && spanFact(row.span, 'Cost') === undefined)
+
+/** A row's cost as printed: "≥" when it is a floor, "Σ" when it totals descendants (panel round 2: a team's $1.05 beside its own $0.60). */
+export const rowCostText = (row: FlowWaterfallRow, cost: number | undefined): string => spanFact(row.span, 'Cost') ?? (cost === undefined ? '' : `${costIsTotal(row) ? 'Σ ' : ''}${row.costFloor ? '≥' : ''}${formatCost(cost)}`)
 
 /** Quiet is elapsed silence beyond both five minutes and three median event gaps. */
 export function quietActivity(row: FlowWaterfallRow, now: number) {

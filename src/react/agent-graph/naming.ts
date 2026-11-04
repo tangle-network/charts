@@ -96,6 +96,13 @@ export function humanizeIdentifier(id: string, lead: LeadCase = "sentence"): str
     .join(" ");
 }
 
+/** Tool identifiers as words wherever they appear in a label: `Recorded mcp__agent-runtime-coordination__submit_result` →
+ *  "Recorded submit result". The MCP server prefix is plumbing; the tool's own name is what a reader recognises. */
+export function toolLabel(text: string): string {
+  return text.replace(/\bmcp__[\w-]+?__([\w-]+)/g, (_, tool: string) => humanizeIdentifier(tool, "lower"))
+    .replace(/\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b/g, (word) => humanizeIdentifier(word, "lower"));
+}
+
 /** A model slug without its provider prefix (`anthropic/claude-sonnet-5` →
  *  `claude-sonnet-5`) — the vendor is noise on a card whose width is the scarce
  *  resource, and the full slug stays in the node's config for the detail view. */

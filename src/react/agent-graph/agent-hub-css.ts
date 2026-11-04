@@ -4,7 +4,7 @@ export const AGENT_HUB_CSS = `
   color: var(--ag-fg); font-size: 12px; line-height: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .ag-root * { box-sizing: border-box; }
 .ag-head, .ag-title, .ag-chip, .ag-legend li, .ag-pop-head, .ag-pop-foot { display: flex; align-items: center; gap: 8px; }
-.ag-head { flex-wrap: wrap; flex-shrink: 0; min-height: 40px; }
+.ag-head { flex-wrap: wrap; flex-shrink: 0; min-height: 40px; padding: 0 16px; }
 .ag-title, .ag-pop-name { font-weight: 600; font-size: 14px; line-height: 20px; }
 .ag-title-mark { width: 6px; height: 6px; border-radius: var(--radius-pill); background: var(--ag-accent); }
 .ag-chip, .ag-pill { display: inline-flex; align-items: center; gap: 4px; padding: 0 8px; border: 1px solid var(--ag-border); border-radius: var(--radius-pill); font-size: 12px; font-weight: 500; min-height: 24px; background: transparent; color: var(--ag-muted); }
@@ -32,7 +32,8 @@ export const AGENT_HUB_CSS = `
 .ag-node-you .ag-tile { background: var(--ag-fg); color: var(--ag-surface); }
 .ag-name, .ag-sub { max-width: 176px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ag-name { margin-top: 6px; font-size: 14px; font-weight: 600; line-height: 20px; }
-.ag-sub { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: normal; }
+.ag-name, .ag-sub { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: normal; overflow-wrap: anywhere; }
+.ag-chip[aria-pressed="true"] { background: color-mix(in oklab, currentColor 14%, transparent); border-color: currentColor; }
 .ag-node-tool .ag-name { max-width: 132px; }
 .ag-sub, .ag-node-tool .ag-name { font-size: 12px; font-weight: 400; color: var(--ag-muted); } .ag-canvas .ag-sub { font-size: 13px; line-height: 17px; }
 .ag-badge { position: absolute; top: -5px; right: -5px; display: grid; place-items: center; background: var(--ag-surface); border-radius: var(--radius-pill); box-shadow: 0 0 0 2px var(--ag-surface); }

@@ -4,6 +4,7 @@ import type { AgentGraphNode, AgentGraphStatus } from "./agent-graph-layout";
 import { tokenMilliseconds } from "./run-ui-state";
 import { useRunNow } from "@tangle-network/ui/hooks/use-live-time";
 import { fmtEventTime } from "./format";
+import { toolLabel } from "./naming";
 
 export interface LatestEventsProps {
   agents: readonly AgentGraphNode[];
@@ -17,17 +18,16 @@ export interface LatestEventsProps {
 type Entry = { id: string; agentId: string; name: string; label: string; at?: number; status: AgentGraphStatus; observed?: boolean };
 
 function EventRow({ entry, now, onSelect }: { entry: Entry; now: number; onSelect?: (entry: Entry) => void }) {
-  const meta = statusMeta(entry.observed ? entry.status : "unknown"), age = fmtEventTime(entry.at, now);
-  return <li><button type="button" disabled={!onSelect} onClick={() => onSelect?.(entry)} title={entry.name + ": " + entry.label}>
-    <span className="ag-latest-dot" style={{ background: entry.observed ? "var(" + meta.token + ")" : "transparent", border: entry.observed ? undefined : "1.5px solid var(" + meta.token + ")" }} aria-hidden />
+  const meta = statusMeta(entry.observed ? entry.status : "unknown"), age = fmtEventTime(entry.at, now), label = toolLabel(entry.label);
+  return <li><button type="button" disabled={!onSelect} onClick={() => onSelect?.(entry)} title={`${entry.name}: ${label}`}>
+    {entry.observed && entry.status !== "running" ? <RunStatusIcon status={entry.status} size={12} aria-label={meta.label} style={{ color: `var(${meta.token})` }} /> : <span className="ag-latest-dot" aria-hidden />}
     <strong>{entry.name}</strong>
-    {entry.observed && <span className="ag-latest-state" style={{ color: "var(" + meta.token + ")" }}>{entry.status !== "running" && <RunStatusIcon status={entry.status} size={14} aria-hidden />}{meta.label}</span>}
-    <span className="ag-latest-label">{entry.label}</span>
-    <time>{entry.observed ? "Observed " : ""}{age}{age !== "now" && age !== "—" ? " ago" : ""}</time>
+    <span className="ag-latest-label">{label}</span>
+    {age !== "—" && <time>{age}{age !== "now" ? " ago" : ""}</time>}
   </button></li>;
 }
 
-/** Recorded events and locally observed state changes. Hover or focus holds the reading position. */
+/** One line of the newest recorded events and locally observed state changes, tool names in words. Hover or focus holds the reading position. */
 export function LatestEvents({ agents, n = 5, now, live = now === undefined, selectedId, onSelect }: LatestEventsProps) {
   const clock = useRunNow(now), limit = Number.isFinite(n) ? Math.max(1, Math.trunc(n)) : 5;
   const latest = useMemo(() => agents.flatMap(agent => (agent.events ?? []).map(event => ({
@@ -65,11 +65,12 @@ export function LatestEvents({ agents, n = 5, now, live = now === undefined, sel
   useLayoutEffect(() => { if (!paused) held.current = current; }, [current, paused]);
   const visible = paused ? held.current : current;
   const refresh = () => { setRows([...source.current]); held.current = [...pins, ...source.current.filter(entry => !pins.some(pin => pin.agentId === entry.agentId))].slice(0, limit); };
+  if (!visible.length) return <span className="sr-only" role="status" aria-live="polite">{announcement}</span>;
   return <section className="ag-latest" aria-label="Latest activity" tabIndex={0} onPointerEnter={() => setHovered(true)} onPointerLeave={() => setHovered(false)}
     onFocusCapture={() => setFocused(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}>
-    <header><strong>Latest activity</strong><span>{paused ? "Paused while reading" : "Recorded events · age"}</span>{paused && <button type="button" onClick={refresh}>Show latest</button>}</header>
-    <ol tabIndex={0} aria-label="Recorded activity events">
-      {visible.length ? visible.map(entry => <EventRow key={entry.id} entry={entry} now={clock} onSelect={onSelect ? item => { setPins(old => old.filter(pin => pin.agentId !== item.agentId)); onSelect(item.agentId); } : undefined} />) : <li className="ag-latest-empty">No activity events were reported.</li>}
+    <header>{paused ? <button type="button" onClick={refresh} title="Paused while reading">Show latest</button> : <strong>Latest</strong>}</header>
+    <ol aria-label="Recorded activity events">
+      {visible.map(entry => <EventRow key={entry.id} entry={entry} now={clock} onSelect={onSelect ? item => { setPins(old => old.filter(pin => pin.agentId !== item.agentId)); onSelect(item.agentId); } : undefined} />)}
     </ol>
     <span className="sr-only" role="status" aria-live="polite">{announcement}</span>
   </section>;

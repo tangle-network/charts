@@ -7,7 +7,9 @@ import { type CSSProperties, type KeyboardEvent, type ReactNode, type Ref, useRe
 import type { AgentGraphNode, AgentGraphStatus } from "./agent-graph-layout";
 import type { AgentGraphCall, AgentGraphCallKind, AgentGraphTool, HubNodeKind } from "./agent-hub-layout";
 import { HoverCardContent } from "@tangle-network/ui/primitives/hover-card";
-import { fmtCost } from "./format";
+import { failureReason, knownCost } from "./agent-graph-parts";
+import type { cornerAnchor } from "./canvas-theme";
+import { toolLabel } from "./naming";
 import { formatSpanDuration as fmtMs } from "../../format.js";
 import { ambientStyle, syncAmbient, useAttention } from "./run-ui-state";
 
@@ -66,7 +68,8 @@ export function HubNode({ entity, x, y, tile, dimmed, selected, buttonRef, onOpe
   useAttention(attentionRef, entity.status ?? "unknown");
   const attention = entity.status === "needs-you" || entity.status === "failed";
   const tone = attention ? `var(${statusMeta(entity.status!).token})` : undefined;
-  const sub = entity.quiet ?? (entity.status === "needs-you" ? "Needs you · Respond" : entity.status === "waiting" ? entity.agent?.turn || "Waiting on peer" : entity.status === "failed" ? entity.agent?.result ?? entity.agent?.turn ?? "Failure cause not recorded" : entity.sub ? `${statusMeta(entity.status ?? "unknown").label} · ${entity.sub}` : entity.status ? statusMeta(entity.status).label : undefined);
+  // The tile's badge carries the state; the line under the name says only what the agent recorded (why it failed, what it returned).
+  const sub = entity.quiet ?? (entity.status === "needs-you" ? "Needs you · Respond" : entity.status === "waiting" ? entity.agent?.turn || "Waiting on peer" : entity.status === "failed" ? entity.agent && failureReason(entity.agent) : entity.sub);
   return (
     <button
       ref={(el) => { attentionRef.current = el; if (typeof buttonRef === "function") buttonRef(el); else if (buttonRef) buttonRef.current = el; }}
@@ -91,7 +94,7 @@ export function HubNode({ entity, x, y, tile, dimmed, selected, buttonRef, onOpe
         <StatusBadge status={entity.status} quiet={entity.quiet} />
       </span>
       <span className="ag-name">{entity.label}</span>
-      {sub && <span className="ag-sub" style={tone ? { color: tone } : undefined}>{entity.quiet ? <>{statusMeta(entity.status ?? "running").label} · <span style={{ color: "var(--surface-warning-text)" }}>{sub}</span></> : sub}</span>}
+      {sub && <span className="ag-sub" style={tone ? { color: tone } : entity.quiet ? { color: "var(--surface-warning-text)" } : undefined} title={sub}>{toolLabel(sub)}</span>}
     </button>
   );
 }
@@ -103,20 +106,21 @@ export interface HubPopoverProps {
   calls?: readonly AgentGraphCall[];
   now: number;
   container: HTMLElement | null;
-  side: "bottom" | "right";
+  /** Where the details open: see `cornerAnchor`. */
+  place?: ReturnType<typeof cornerAnchor>;
   summary?: ReactNode;
   onClose: () => void;
 }
 
 /** A node's recent calls: who it called or was called by, what for, how long, and what failed. */
-export function HubPopover({ entity, entities, calls, now, container, side, summary, onClose }: HubPopoverProps) {
+export function HubPopover({ entity, entities, calls, now, container, place, summary, onClose }: HubPopoverProps) {
   const mine = (calls ?? []).filter((c) => (c.from === entity.id || c.to === entity.id) && c.startedAt <= now).sort((a, b) => b.startedAt - a.startedAt);
   const recent = mine.slice(0, 5);
   const lastMinute = mine.filter((c) => now - c.startedAt <= 60_000).length;
   const status = entity.status ? statusMeta(entity.status).label : undefined;
   const cost = entity.agent?.costUsd;
   return (
-    <HoverCardContent container={container} side={side} align="start" collisionPadding={8} role="dialog" aria-label={`${entity.label} calls`} className="ag-popover" onOpenAutoFocus={event => { (event.target as HTMLElement).querySelector<HTMLButtonElement>(".ag-close")?.focus({ preventScroll: true }); }} onEscapeKeyDown={event => { event.preventDefault(); onClose(); }}>
+    <HoverCardContent container={container} side={place?.side ?? "bottom"} align={place?.align ?? "start"} collisionPadding={8} role="dialog" aria-label={`${entity.label} calls`} className="ag-popover" onOpenAutoFocus={event => { (event.target as HTMLElement).querySelector<HTMLButtonElement>(".ag-close")?.focus({ preventScroll: true }); }} onEscapeKeyDown={event => { event.preventDefault(); onClose(); }}>
       <div className="ag-pop-head">
         <span className="ag-tile ag-tile-mini" style={{ "--ag-tile": "28px" } as CSSProperties}><NodeIcon entity={entity} size={28} /></span>
         <span className="ag-pop-title">
@@ -144,10 +148,10 @@ export function HubPopover({ entity, entities, calls, now, container, side, summ
           );
         })}
       </ul>}
-      <p className="ag-pop-foot">
-        {cost != null && <b>{fmtCost(cost)}</b>}
-        <span title={calls === undefined ? "Call history not reported" : undefined}>{calls === undefined ? "—" : lastMinute} {lastMinute === 1 ? "call" : "calls"} in the last minute</span>
-      </p>
+      {(knownCost(cost) || lastMinute > 0) && <p className="ag-pop-foot">
+        {knownCost(cost) && <b>{knownCost(cost)}</b>}
+        {lastMinute > 0 && <span>{lastMinute} {lastMinute === 1 ? "call" : "calls"} in the last minute</span>}
+      </p>}
     </HoverCardContent>
   );
 }

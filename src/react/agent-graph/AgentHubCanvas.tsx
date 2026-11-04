@@ -12,6 +12,7 @@ import { agentQuietActivity, tokenMilliseconds, useMotionAllowed } from "./run-u
 import { useRunNow } from "@tangle-network/ui/hooks/use-live-time";
 import { RunStatusIcon, statusMeta } from "@tangle-network/ui/run/status-meta";
 import { fmtCost } from "./format";
+import { cornerAnchor } from "./canvas-theme";
 
 const PAD_X = 84;
 const PAD_Y = 36;
@@ -162,7 +163,9 @@ export function AgentHubCanvas(props: AgentHubCanvasProps) {
   const lastMinute = visibleCalls.filter((c) => now - c.startedAt <= 60_000).length;
   const costs = nodes.map((n) => n.costUsd);
   const cost = costs.every((c) => c != null && Number.isFinite(c) && c >= 0) ? costs.reduce<number>((s, c) => s + (c ?? 0), 0) : undefined;
-  const chips = nodes.filter((n) => n.status === "needs-you" || n.status === "failed" || agentQuietActivity(n, now));
+  const [highlight, setHighlight] = useState<"needs-you" | "failed" | "quiet" | null>(null);
+  const attention = (["needs-you", "failed", "quiet"] as const).map(status => ({ status, ids: new Set(nodes.filter(n => status === "quiet" ? agentQuietActivity(n, now) : n.status === status).map(n => n.id)) })).filter(group => group.ids.size);
+  const lit = highlight ? attention.find(group => group.status === highlight)?.ids : undefined;
 
   const openNode = (id: string, invoker?: HTMLButtonElement) => {
     const next = open === id ? null : { id, invoker };
@@ -192,25 +195,31 @@ export function AgentHubCanvas(props: AgentHubCanvasProps) {
   };
 
   const openEntity = open ? entities.get(open) : undefined;
+  const invoker = selection?.invoker ?? (open ? buttons.current.get(open) : undefined);
+  // The details open in the canvas corner across from the node, never over it or the agents around it.
+  const place = useMemo(() => invoker ? cornerAnchor(invoker, list ? null : wrap.current) : undefined, [invoker, list]);
   const popover = openEntity && (() => {
     const summary = openEntity.kind === "you" ? (typeof you === "object" ? you.summary : undefined)
       : openEntity.agent?.turn ?? openEntity.sub ?? undefined;
-    return <HubPopover key={openEntity.id} entity={openEntity} entities={entities} calls={props.calls === undefined ? undefined : visibleCalls} now={now} container={wrap.current} side={list ? "bottom" : "right"} summary={summary}
+    return <HubPopover key={openEntity.id} entity={openEntity} entities={entities} calls={props.calls === undefined ? undefined : visibleCalls} now={now} container={wrap.current} place={place} summary={summary}
       onClose={() => setSelection(null)} />;
   })();
 
 
   return (
-    <HoverCard anchor={selection?.invoker ?? (open ? buttons.current.get(open) : null)} open={!!openEntity}><section className={`ag-root ${className ?? ""}`} aria-label={typeof title === "string" ? title : "Agent graph"}>
+    <HoverCard anchor={place?.anchor ?? null} open={!!openEntity}><section className={`ag-root ${className ?? ""}`} aria-label={typeof title === "string" ? title : "Agent graph"}>
       <style>{AGENT_HUB_CSS}</style>
       <header className="ag-head">
         <span className="ag-title"><span className="ag-title-mark" aria-hidden />{title}</span>
-        {chips.map(n => <button type="button" key={n.id} className={`ag-chip ag-chip-${n.status}`} onClick={event => openNode(n.id, event.currentTarget)}><RunStatusIcon status={agentQuietActivity(n, now) ? "waiting" : n.status} aria-hidden />{n.label} {agentQuietActivity(n, now)?.label ?? statusMeta(n.status).label}</button>)}
+        {/* One control per state that needs a reader ("8 failed"); pressing it lights those agents and dims the rest. */}
+        {attention.map(group => <button type="button" key={group.status} aria-pressed={highlight === group.status} className={`ag-chip ag-chip-${group.status === "quiet" ? "waiting" : group.status}`} onClick={() => setHighlight(on => on === group.status ? null : group.status)}>
+          <RunStatusIcon status={group.status === "quiet" ? "waiting" : group.status} aria-hidden />{group.ids.size} {group.status === "needs-you" ? "need you" : group.status}</button>)}
+        {/* Only what was recorded: an unreported inventory or an unpriced agent drops its stat rather than printing a dash. */}
         <span className="ag-stats">
           <span><b>{nodes.length}</b> {nodes.length === 1 ? "agent" : "agents"}</span>
-          <span title={props.tools === undefined ? "Tool history not reported" : undefined}><b>{props.tools?.length ?? "—"}</b> {tools.length === 1 ? "tool" : "tools"}</span>
-          <span title={props.calls === undefined ? "Call history not reported" : undefined}><b>{props.calls === undefined ? "—" : lastMinute}</b> calls/min</span>
-          <span title={cost === undefined ? "Not every agent recorded its cost" : "Total recorded agent cost"}><b>{cost === undefined ? "—" : fmtCost(cost)}</b> cost</span>
+          {props.tools !== undefined && tools.length > 0 && <span><b>{tools.length}</b> {tools.length === 1 ? "tool" : "tools"}</span>}
+          {props.calls !== undefined && lastMinute > 0 && <span><b>{lastMinute}</b> calls/min</span>}
+          {cost !== undefined && cost > 0 && <span title="Total recorded agent cost"><b>{fmtCost(cost)}</b> cost</span>}
         </span>
       </header>
       <div ref={wrap} className={`ag-canvas-wrap${list ? " ag-list-mode" : ""}`} style={list ? undefined : { height: h * scale }} onKeyDown={(e) => { if (e.key === "Escape") setSelection(null); }}>
@@ -242,7 +251,7 @@ export function AgentHubCanvas(props: AgentHubCanvasProps) {
             const entity = entities.get(p.id)!;
             const { x, y } = at(p.id);
             const tile = p.kind === "hub" ? metrics.hubTile : p.kind === "you" ? metrics.tile - 8 : metrics.tile;
-            return <HubNode key={p.id} entity={entity} x={x} y={y} tile={tile} dimmed={Boolean(related && !related.has(p.id))}
+            return <HubNode key={p.id} entity={entity} x={x} y={y} tile={tile} dimmed={Boolean(lit ? entity.agent && !lit.has(p.id) : related && !related.has(p.id))}
               selected={open === p.id} buttonRef={buttonRef(p.id)}
               onOpen={element => openNode(p.id, element)} onHover={(on) => setHover((prev) => (on ? p.id : prev === p.id ? null : prev))} onKeyDown={keydown(p.id)} />;
           })}
