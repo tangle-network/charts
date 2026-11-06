@@ -2,9 +2,8 @@ import type { CSSProperties, ReactNode } from 'react'
 import { RunStatusIcon, runStatus, statusMeta } from '@tangle-network/ui/run/status-meta'
 import type { FlowSpan } from '../flow-trace.js'
 import { CloseGlyph, KindGlyph } from './flow-waterfall-icons.js'
-import { type FlowWaterfallRow, agentSummary, rowCostText, formatCount, formatSpanDuration, spanFact, spanRunning, toneKey } from './flow-waterfall-model.js'
+import { type FlowWaterfallRow, agentSummary, percentile, rowCostText, formatCount, formatSpanDuration, spanFact, spanRunning, toneKey } from './flow-waterfall-model.js'
 import { toolLabel } from './agent-graph/naming.js'
-
 
 /** Names wrap between words, never at their hyphens ("memscale-engineer-" / "2" read as two names). */
 const keepWords = (name: string) => name.replace(/-/g, '‑')
@@ -29,8 +28,6 @@ export interface SpanCardProps {
 
 const count = (n: number, unit: string) => <span title={`${n.toLocaleString()} ${unit}`}>{formatCount(n)} {unit}</span>
 const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString()} ${n === 1 ? one : many}`
-/** Nearest-rank percentile of ascending values. */
-const percentile = (sorted: readonly number[], p: number) => sorted[Math.min(sorted.length - 1, Math.ceil(p * sorted.length) - 1)]!
 const TOOLS_SHOWN = 4
 
 /** The card's table: what the row recorded, every value with its unit. A value nobody recorded is left out, never printed as zero. */
@@ -47,7 +44,7 @@ function metrics(row: FlowWaterfallRow, clockMs: number, withFacts: boolean): [s
     out.push(['Tokens', parts.length ? <span className={`fw-card-parts${parts.length > 2 ? ' fw-card-stack' : ''}`}>{parts.map((part, i) => <span key={i}>{part}</span>)}</span> : <span title="Tokens not reported">—</span>])
   }
   const latency = row.modelMs
-  if (latency?.length) out.push(['Model latency', <span className="fw-card-parts"><span>{formatSpanDuration(percentile(latency, 0.5))} median</span>{latency.length >= 10 && <span>{formatSpanDuration(percentile(latency, 0.95))} p95</span>}</span>])
+  if (latency?.length) out.push(['Model latency', <span className="fw-card-parts"><span>{formatSpanDuration(percentile(latency, 50)!)} median</span>{latency.length >= 10 && <span>{formatSpanDuration(percentile(latency, 95)!)} p95</span>}</span>])
   const cost = span.costUsd ?? row.rollupCostUsd
   if (cost !== undefined) out.push(['Cost', rowCostText(row, cost)])
   const counts = row.counts

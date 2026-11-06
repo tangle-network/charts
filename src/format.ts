@@ -28,6 +28,9 @@ export function kn(k: number, n: number): string {
   return `${k}/${n}`;
 }
 
+/** The nearest-rank percentile of `values` at `p` (0 to 100); null for none. The values need no order. */
+export const percentile = (values: readonly number[], p: number): number | null => values.length ? [...values].sort((a, b) => a - b)[Math.min(values.length - 1, Math.max(0, Math.ceil((p / 100) * values.length) - 1))]! : null;
+
 export const METHOD_NAME: Record<IntervalMethod, string> = {
   "student-t": "Student's t",
   "binomial-ranks": "binomial rank",
