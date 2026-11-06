@@ -1,6 +1,6 @@
 import { runStatus, statusMeta } from '@tangle-network/ui/run/status-meta'
-import { formatSpanDuration, formatCost, formatCount } from '../format.js'
-export { formatSpanDuration, formatCost, formatCount } from '../format.js'
+import { formatSpanDuration, formatCost, formatCount, percentile } from '../format.js'
+export { formatSpanDuration, formatCost, formatCount, percentile } from '../format.js'
 import { type FlowOutcome, type FlowSpan, type FlowTrace, finiteNumber, reportedCount, sumReportedCounts } from '../flow-trace.js'
 
 /** A minimap mark on a parent row: merged descendant activity of one kind. */
