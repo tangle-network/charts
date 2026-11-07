@@ -5,7 +5,7 @@ import { HoverCard, HoverCardContent } from "@tangle-network/ui/primitives/hover
 import { fmtTokenTotal } from "./format";
 import { LatestEvents } from "./latest-events";
 import { AGENT_CARD, FRAME_CAPTION, type AgentGraphStatus, LIVE_AGENT_CARD, type AgentLayout, buildAgentTopology, layoutAgents } from "./agent-graph-layout";
-import { AGENT_NODE_CLASS, AgentCard, AgentCardView, type AgentCardNode, AgentFrameBox, type AgentFrameNode, type AgentMessageEdge, AgentMessageEdgeView, agentStatus, agentDescription, failureReason, knownCost, MESSAGE_EDGE_COLOR, StatusGlyph } from "./agent-graph-parts";
+import { AGENT_NODE_CLASS, AgentCard, AgentCardView, type AgentCardNode, AgentFrameBox, type AgentFrameNode, type AgentMessageEdge, AgentMessageEdgeView, agentStatus, agentDescription, type AttentionStatus, failureReason, knownCost, MESSAGE_EDGE_COLOR, StatusCaption, StatusGlyph } from "./agent-graph-parts";
 import { shortModel, toolLabel } from "./naming";
 import { LiveAgentCard, LiveAgentCardView, type LiveAgentCardNode } from "./agent-live-card";
 import { cornerAnchor, useColorMode } from "./canvas-theme";
@@ -74,7 +74,7 @@ export function AgentGraphCanvas({
   const hideDetails = () => setHovered(null);
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const [phonePage, setPhonePage] = useState(0);
-  const [highlight, setHighlight] = useState<string | null>(null);
+  const [highlight, setHighlight] = useState<AttentionStatus | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const place = useMemo(() => hovered && cornerAnchor(hovered.anchor, wrapperRef.current?.querySelector<HTMLElement>(".ag-graph-viewport") ?? null), [hovered]);
   const [canvas, measureCanvas] = useCanvasSize();
@@ -262,8 +262,7 @@ export function AgentGraphCanvas({
   useEffect(() => { const at = phoneNodes.findIndex(node => node.id === selectedId); if (at >= 0) setPhonePage(Math.floor(at / PHONE_PAGE)); }, [selectedId]);
   useEffect(() => { if (!narrow || !selectedId) return; const frame = requestAnimationFrame(() => wrapperRef.current?.querySelector<HTMLElement>(`[data-agent-id="${CSS.escape(selectedId)}"]`)?.scrollIntoView({ block: "nearest" })); return () => cancelAnimationFrame(frame); }, [selectedId, phonePage, narrow]);
   const first = Math.min(phonePage * PHONE_PAGE, Math.max(0, Math.ceil(nodes.length / PHONE_PAGE) - 1) * PHONE_PAGE);
-  const attention = (["needs-you", "failed", "quiet"] as const).map(status => ({ status, count: nodes.filter(agent => status === "quiet" ? agentQuietActivity(agent, clock) : agent.status === status).length })).filter(group => group.count);
-  const light = (status: "needs-you" | "failed" | "quiet") => {
+  const light = (status: AttentionStatus) => {
     if (highlight === status) { setHighlight(null); return; }
     setHighlight(status);
     const ids = nodes.filter(agent => status === "quiet" ? agentQuietActivity(agent, clock) : agent.status === status).map(agent => agent.id);
@@ -274,12 +273,7 @@ export function AgentGraphCanvas({
       void rfRef.current?.fitView({ nodes: ids.map(id => ({ id })), padding: `${FIT_PADDING * 4}px`, minZoom: READABLE_ZOOM, maxZoom: 1, duration: animateMotion ? tokenMilliseconds("--duration-base", wrapperRef.current) : 0 });
     }));
   };
-  const caption = <div className="flex min-h-10 shrink-0 flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1 text-xs text-muted-foreground" aria-label="Run status">
-    <span className="shrink-0 whitespace-nowrap">{nodes.length} agents</span>
-    {attention.map(group => <button type="button" key={group.status} aria-pressed={highlight === group.status} className="ag-status-button rounded-full border border-border px-2 py-1"
-      style={{ color: group.status === "quiet" ? "var(--surface-warning-text)" : agentStatus(group.status).color }} onClick={() => light(group.status)}>
-      <StatusGlyph status={group.status === "quiet" ? "waiting" : group.status} size={14} />{group.count} {group.status === "needs-you" ? "need you" : group.status}</button>)}
-  </div>;
+  const caption = <StatusCaption nodes={nodes} now={clock} highlight={highlight} onHighlight={light} />;
   if (nodes.length === 0) {
     return (
       <div

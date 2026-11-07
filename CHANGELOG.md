@@ -1,3 +1,9 @@
+## 4.0.21
+
+- `AgentGraph` takes `layout="grid"`: every agent's card at once in reading order (root first, then each spawn subtree by start time), no edges, no camera, no React Flow or ELK; a run of a hundred agents scrolls like a list and a status update never moves a card. The cards are the tree's, so the grid, the tree and the hub share one node model; arrow keys move across the grid as drawn. `gridOrder` is exported for hosts that list agents in the same order.
+- Live cards print the agent's harness before its model ("opencode · glm-5.3 · high"), as the recorded cards already did.
+- The tree's caption ("130 agents", "1 failed", "1 need you", "2 quiet") is one `StatusCaption`, shared with the grid.
+
 ## 4.0.19
 
 - Hover keeps every agent name readable. Selected peers retain opaque marks with quieter ink, rather than faded text or marks.

@@ -39,7 +39,7 @@ export function LiveAgentCardView({ agent, selected, direction = "TB", now: fixe
   const settled = failed || agent.status === "done" || agent.status === "stopped";
   const quiet = agentQuietActivity(agent, now);
   const s = agentStatus(agent.status);
-  const meta = [agent.model ? shortModel(agent.model) : undefined, agent.effort].filter(Boolean).join(" · ");
+  const meta = [agent.harness, agent.model ? shortModel(agent.model) : undefined, agent.effort].filter(Boolean).join(" · ");
   const events = (agent.events ?? []).slice(-1);
   const cost = knownCost(agent.costUsd);
   const metrics = [cost, agent.startedAt != null ? `${fmtEventTime(agent.startedAt, now, false)} elapsed` : undefined, Number.isFinite(agent.commits) ? `${agent.commits} ${agent.commits === 1 ? "commit" : "commits"}` : undefined].filter(Boolean).join(" · ");

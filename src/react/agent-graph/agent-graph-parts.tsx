@@ -68,6 +68,25 @@ export function agentDescription(agent: AgentGraphNode): string {
     .join(", ");
 }
 
+export type AttentionStatus = "needs-you" | "failed" | "quiet";
+
+/** The states that need a reader, with the agents in each; a state with no agent is left out. */
+export function attentionGroups(nodes: readonly AgentGraphNode[], now: number) {
+  return (["needs-you", "failed", "quiet"] as const satisfies readonly AttentionStatus[])
+    .map((status) => ({ status, ids: nodes.filter((agent) => (status === "quiet" ? agentQuietActivity(agent, now) : agent.status === status)).map((agent) => agent.id) }))
+    .filter((group) => group.ids.length);
+}
+
+/** The run's one caption: the agent count and one control per state that needs a reader; pressing one lights those agents. */
+export function StatusCaption({ nodes, now, highlight, onHighlight }: { nodes: readonly AgentGraphNode[]; now: number; highlight: AttentionStatus | null; onHighlight: (status: AttentionStatus) => void }) {
+  return <div className="flex min-h-10 shrink-0 flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1 text-xs text-muted-foreground" aria-label="Run status">
+    <span className="shrink-0 whitespace-nowrap">{nodes.length} agents</span>
+    {attentionGroups(nodes, now).map((group) => <button type="button" key={group.status} aria-pressed={highlight === group.status} className="ag-status-button rounded-full border border-border px-2 py-1"
+      style={{ color: group.status === "quiet" ? "var(--surface-warning-text)" : agentStatus(group.status).color }} onClick={() => onHighlight(group.status)}>
+      <StatusGlyph status={group.status === "quiet" ? "waiting" : group.status} size={14} />{group.ids.length} {group.status === "needs-you" ? "need you" : group.status}</button>)}
+  </div>;
+}
+
 export type AgentCardNode = Node<
   { agent: AgentGraphNode; selected: boolean; direction: AgentGraphDirection; now?: number; onOpen?: () => void; parentLabel?: string },
   "agent"
