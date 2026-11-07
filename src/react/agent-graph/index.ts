@@ -1,4 +1,5 @@
 export * from "./AgentGraph";
+export { gridOrder } from "./AgentGridCanvas";
 export * from "./agent-graph-layout";
 export * from "./agent-hub-layout";
 export * from "./latest-events";

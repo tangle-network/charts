@@ -6,6 +6,7 @@ import type {
   AgentGraphEdge,
   AgentGraphNode,
 } from "./agent-graph-layout";
+import { AgentGridCanvas } from "./AgentGridCanvas";
 import { AgentHubCanvas } from "./AgentHubCanvas";
 import type { AgentGraphCall, AgentGraphTool } from "./agent-hub-layout";
 import { GraphErrorBoundary, retryImport } from "./graph-lazy";
@@ -37,9 +38,12 @@ export interface AgentGraphProps extends GraphMarks {
   /**
    * `tree` (default) lays out a spawn tree of cards for large runs. `hub` draws
    * the run around its orchestrator: You, the agents, the tools they call, and
-   * each call travelling along its edge in its kind's colour.
+   * each call travelling along its edge in its kind's colour. `grid` draws every
+   * agent's card at once in reading order (root first, then each spawn subtree
+   * by start time) with no edges or camera, so a run of a hundred agents scrolls
+   * like a list; it needs neither React Flow nor ELK.
    */
-  layout?: "tree" | "hub";
+  layout?: "tree" | "hub" | "grid";
   /** Hub tools/services. Omit unreported inventory; [] records no tools. */
   tools?: readonly AgentGraphTool[];
   /** Hub calls, newest last. Omit unreported history; [] records no calls. They colour edges and fill popovers. */
@@ -106,6 +110,7 @@ function AgentListFallback({
 }
 
 function AgentGraphBody(props: AgentGraphProps) {
+  if (props.layout === "grid") return <AgentGridCanvas {...props} />;
   if (props.layout === "hub") {
     if (props.nodes.length === 0 && props.emptyState) return <>{props.emptyState}</>;
     return <AgentHubCanvas {...props} />;

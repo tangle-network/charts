@@ -2,7 +2,7 @@ import { runStatus } from '@tangle-network/ui/run/status-meta'
 // Recorded agents exercise the format boundary; the explicit 130-agent case
 // exercises windowing, selection and updates beyond the initial viewport.
 function Topology() {
- const [selectedId, onSelect] = useState(null), [layout, setLayout] = useState('tree')
+ const [selectedId, onSelect] = useState(null), [layout, setLayout] = useState(params.get('layout') ?? 'tree')
  const [tick, setTick] = useState(0)
  const [settled, setSettled] = useState(false)
  useEffect(() => { if (settled) return; const timer = setInterval(() => setTick(t => t + 1), 1000); return () => clearInterval(timer) }, [settled])

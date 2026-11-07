@@ -75,6 +75,39 @@ async function proveCompactTopology(page, width, theme, output) {
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false)
 }
 
+/** The grid layout: every agent at once in reading order, each card with its host mark, harness and model, lit by the shared state controls. */
+async function proveGrid(page, width, theme, output) {
+  await page.goto(`${base}/?id=topology&large=1&layout=grid&globals=agent-${theme}`)
+  await page.locator('.agent-graph[data-layout="grid"]').waitFor()
+  const cards = page.locator('.ag-grid > li')
+  assert.equal(await cards.count(), 130, 'the grid draws every agent, not a bounded window')
+  assert.equal(await page.locator('.ag-grid [data-host-mark]').count(), 130, 'every grid card carries the host mark')
+  // agent-6 runs (every third agent does); a settled card compacts to its cost, as the tree's does.
+  assert.match(await page.locator('.ag-grid [data-agent-id="agent-6"] .ag-live-meta').innerText(), /opencode · glm-5\.3/, 'a running grid card names its harness and model')
+  const ids = await page.locator('.ag-grid [data-agent-id]').evaluateAll(nodes => nodes.slice(0, 3).map(node => node.dataset.agentId))
+  assert.deepEqual(ids, ['agent-0', 'agent-1', 'agent-2'], 'the root opens the grid, its children follow in start order')
+  const caption = await page.locator('.agent-graph [aria-label="Run status"]').boundingBox(), first = await page.locator('.ag-grid [data-agent-id="agent-0"]').boundingBox()
+  assert.ok(first.y >= caption.y + caption.height - 1, 'the grid starts under the one-line caption')
+  // Columns follow the pane's width (248 px cards, 10 px gaps): one on a phone, as many as fit on a desktop.
+  const { columns, pane } = await page.locator('.ag-grid').evaluate(list => ({ columns: getComputedStyle(list).gridTemplateColumns.split(' ').length, pane: list.clientWidth }))
+  assert.equal(columns, Math.max(1, Math.floor((pane - 24 + 10) / 258)), `grid columns at ${width}px in a ${pane}px pane: ${columns}`)
+  assert.ok(width < 600 ? columns === 1 : columns >= 3, `grid columns at ${width}px in a ${pane}px pane: ${columns}`)
+  await page.locator('.ag-grid [data-agent-id="agent-7"]').click()
+  assert.equal(await page.getByLabel('Reader selection').textContent(), 'agent-7')
+  assert.equal(await page.locator('.ag-grid [data-agent-id="agent-7"]').getAttribute('aria-pressed'), 'true')
+  await page.locator('.ag-grid [data-agent-id="agent-0"]').focus()
+  await page.keyboard.press('ArrowRight')
+  assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-agent-id')), 'agent-1', 'ArrowRight moves one card')
+  await page.keyboard.press('ArrowDown')
+  assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-agent-id')), `agent-${1 + columns}`, 'ArrowDown moves one row')
+  await page.getByRole('button', { name: /^1 failed/ }).click()
+  await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('.ag-grid > li:has([data-status="running"])')).opacity) < .5)
+  assert.equal(await page.locator('.ag-grid > li:has([data-status="failed"])').evaluate(node => getComputedStyle(node).opacity), '1', 'the lit state keeps its agents opaque')
+  await page.screenshot({ path: `${output}/grid-${width}-${theme}.png` })
+  await page.getByRole('button', { name: /^1 failed/ }).click()
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
+}
+
 const output = process.env.CHARTS_PROOF_DIR
 assert.ok(output, 'Retain topology evidence outside the gate cache')
 await mkdir(output, { recursive: true })
@@ -191,6 +224,7 @@ try {
       await page.screenshot({ path: `${output}/settled-camera-${width}-${theme}.png` })
     }
     await proveCompactTopology(page, width, theme, output)
+    await proveGrid(page, width, theme, output)
     await page.goto(`${base}/?id=topology&large=1&successful=1&globals=agent-${theme}`)
     await ready()
     if (width > 600) {
