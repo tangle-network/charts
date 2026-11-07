@@ -82,7 +82,8 @@ async function proveGrid(page, width, theme, output) {
   const cards = page.locator('.ag-grid > li')
   assert.equal(await cards.count(), 130, 'the grid draws every agent, not a bounded window')
   assert.equal(await page.locator('.ag-grid [data-host-mark]').count(), 130, 'every grid card carries the host mark')
-  assert.match(await page.locator('.ag-grid [data-agent-id="agent-5"] .ag-live-meta').innerText(), /opencode · glm-5\.3/, 'a live grid card names its harness and model')
+  // agent-6 runs (every third agent does); a settled card compacts to its cost, as the tree's does.
+  assert.match(await page.locator('.ag-grid [data-agent-id="agent-6"] .ag-live-meta').innerText(), /opencode · glm-5\.3/, 'a running grid card names its harness and model')
   const ids = await page.locator('.ag-grid [data-agent-id]').evaluateAll(nodes => nodes.slice(0, 3).map(node => node.dataset.agentId))
   assert.deepEqual(ids, ['agent-0', 'agent-1', 'agent-2'], 'the root opens the grid, its children follow in start order')
   const caption = await page.locator('.agent-graph [aria-label="Run status"]').boundingBox(), first = await page.locator('.ag-grid [data-agent-id="agent-0"]').boundingBox()
