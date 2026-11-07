@@ -88,8 +88,10 @@ async function proveGrid(page, width, theme, output) {
   assert.deepEqual(ids, ['agent-0', 'agent-1', 'agent-2'], 'the root opens the grid, its children follow in start order')
   const caption = await page.locator('.agent-graph [aria-label="Run status"]').boundingBox(), first = await page.locator('.ag-grid [data-agent-id="agent-0"]').boundingBox()
   assert.ok(first.y >= caption.y + caption.height - 1, 'the grid starts under the one-line caption')
-  const columns = await page.locator('.ag-grid').evaluate(list => getComputedStyle(list).gridTemplateColumns.split(' ').length)
-  assert.ok(width < 600 ? columns === 1 : columns >= 4, `grid columns at ${width}px: ${columns}`)
+  // Columns follow the pane's width (248 px cards, 10 px gaps): one on a phone, as many as fit on a desktop.
+  const { columns, pane } = await page.locator('.ag-grid').evaluate(list => ({ columns: getComputedStyle(list).gridTemplateColumns.split(' ').length, pane: list.clientWidth }))
+  assert.equal(columns, Math.max(1, Math.floor((pane - 24 + 10) / 258)), `grid columns at ${width}px in a ${pane}px pane: ${columns}`)
+  assert.ok(width < 600 ? columns === 1 : columns >= 3, `grid columns at ${width}px in a ${pane}px pane: ${columns}`)
   await page.locator('.ag-grid [data-agent-id="agent-7"]').click()
   assert.equal(await page.getByLabel('Reader selection').textContent(), 'agent-7')
   assert.equal(await page.locator('.ag-grid [data-agent-id="agent-7"]').getAttribute('aria-pressed'), 'true')
