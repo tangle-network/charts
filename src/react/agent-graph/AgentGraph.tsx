@@ -60,8 +60,10 @@ export interface AgentGraphProps extends GraphMarks {
   renderEventIcon?: (event: AgentGraphEvent) => ReactNode;
   /** Live tree activity; false when a shared workspace already supplies its strip. */
   showLatestEvents?: boolean;
-  /** Live cards wrap each agent's newest words whole; by default they clamp to
-   *  two lines (one inside an owner frame). */
+  /** Live cards wrap each agent's newest words whole where a card sizes to its
+   *  content — the grid layout and the narrow phone list — instead of clamping
+   *  them to two lines (one inside an owner frame). The tree canvas lays out
+   *  fixed-height cards and keeps the clamp. */
   wholeClaims?: boolean;
 }
 

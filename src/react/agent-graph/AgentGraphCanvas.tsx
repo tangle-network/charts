@@ -152,7 +152,7 @@ export function AgentGraphCanvas({
         ariaRole: "button",
         ariaLabel: agentDescription(agent),
         domAttributes: { "aria-pressed": selected, "aria-describedby": hovered?.id === id ? detailsId : undefined },
-        data: { agent, selected, direction, now: clock, onOpen: onSelect ? () => onSelect(agent.id) : undefined, renderEventIcon, whole: wholeClaims },
+        data: { agent, selected, direction, now: clock, onOpen: onSelect ? () => onSelect(agent.id) : undefined, renderEventIcon },
       } as AgentCardNode | LiveAgentCardNode);
     }
     return [...frames, ...cards];
