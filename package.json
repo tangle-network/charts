@@ -111,5 +111,10 @@
     "charts",
     "benchmarks",
     "svg"
-  ]
+  ],
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
 }
