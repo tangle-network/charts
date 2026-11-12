@@ -39,7 +39,7 @@ try {
       assert.match(await rest.getAttribute('title'), /recorded_tool_4: 3[\s\S]*recorded_tool_5: 2[\s\S]*recorded_tool_6: 1 · 1 failed/)
       await page.screenshot({ path: `${output}/shared-facts-${width}-${theme}.png` })
       await page.goto(`${base}/?id=live-names&globals=agent-${theme}`)
-      const bar = page.locator('.fw-bar').first()
+      const bar = page.locator('.fw-seg').first()
       await bar.waitFor()
       await page.evaluate(() => { window.hoverAt = null; window.openedAt = null; document.addEventListener('pointerover', () => { window.hoverAt ??= performance.now() }, { once: true }); const observer = new MutationObserver(() => { if (document.querySelector('.fw-card')?.getBoundingClientRect().width) { window.openedAt ??= performance.now(); observer.disconnect() } }); observer.observe(document.body, { subtree: true, childList: true, attributes: true }) })
       await bar.hover()
