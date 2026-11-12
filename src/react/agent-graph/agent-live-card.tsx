@@ -13,7 +13,7 @@ import { agentQuietActivity, useAttention } from "./run-ui-state";
 import { useRunNow } from "@tangle-network/ui/hooks/use-live-time";
 
 export type LiveAgentCardNode = Node<
-  { agent: AgentGraphNode; selected: boolean; direction: AgentGraphDirection; now?: number; onOpen?: () => void; parentLabel?: string; renderEventIcon?: (event: AgentGraphEvent) => ReactNode }, "liveAgent"
+  { agent: AgentGraphNode; selected: boolean; direction: AgentGraphDirection; now?: number; onOpen?: () => void; parentLabel?: string; renderEventIcon?: (event: AgentGraphEvent) => ReactNode; whole?: boolean }, "liveAgent"
 >;
 
 /** Each activity's icon and label; looping alone takes the serious status colour. */
@@ -29,8 +29,8 @@ function ActivityChip({ agent }: { agent: AgentGraphNode }) {
 
 /** One shell survives settling. A settled or failed agent compacts to its glyph, full name and what it returned or why it failed;
  *  a running one adds what it is doing and its last events. Nothing unrecorded is printed (round s-tier: "—", "$0.00", "Done" twice). */
-export function LiveAgentCardView({ agent, selected, direction = "TB", now: fixed, handles = false, onOpen, parentLabel, renderEventIcon }: {
-  agent: AgentGraphNode; selected: boolean; direction?: AgentGraphDirection; now?: number; handles?: boolean; onOpen?: () => void; parentLabel?: string; renderEventIcon?: (event: AgentGraphEvent) => ReactNode;
+export function LiveAgentCardView({ agent, selected, direction = "TB", now: fixed, handles = false, onOpen, parentLabel, renderEventIcon, whole }: {
+  agent: AgentGraphNode; selected: boolean; direction?: AgentGraphDirection; now?: number; handles?: boolean; onOpen?: () => void; parentLabel?: string; renderEventIcon?: (event: AgentGraphEvent) => ReactNode; whole?: boolean;
 }) {
   const now = useRunNow(fixed);
   const ref = useRef<HTMLDivElement>(null);
@@ -59,7 +59,7 @@ export function LiveAgentCardView({ agent, selected, direction = "TB", now: fixe
         </div>
         {!settled && (meta || metrics) && <span className="ag-live-meta" title={[meta, metrics].filter(Boolean).join(" · ")}>{[meta, metrics].filter(Boolean).join(" · ")}</span>}
         {(said || cost || !settled) && <div className="ag-live-thinking-row">
-          {said && <p className={`ag-live-thinking${failed ? " ag-live-failure" : ""}`} title={said}>{toolLabel(said)}</p>}
+          {said && <p className={`ag-live-thinking${failed ? " ag-live-failure" : ""}`} data-whole={whole || undefined} title={said}>{toolLabel(said)}</p>}
           {settled && cost && <span className="ag-live-chip-cost" title="Cost">{cost}</span>}
           {!settled && <ActivityChip agent={agent} />}
           {agent.status === "needs-you" && <button type="button" className="ag-live-respond nodrag nopan" disabled={!onOpen} title={onOpen ? undefined : "Responses unavailable in this view"} onClick={event => { event.stopPropagation(); onOpen?.(); }}>Respond</button>}

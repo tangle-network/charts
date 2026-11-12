@@ -60,6 +60,9 @@ export interface AgentGraphProps extends GraphMarks {
   renderEventIcon?: (event: AgentGraphEvent) => ReactNode;
   /** Live tree activity; false when a shared workspace already supplies its strip. */
   showLatestEvents?: boolean;
+  /** Live cards wrap each agent's newest words whole; by default they clamp to
+   *  two lines (one inside an owner frame). */
+  wholeClaims?: boolean;
 }
 
 function lazyCanvas() {

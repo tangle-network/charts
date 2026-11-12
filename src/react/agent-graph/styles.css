@@ -64,6 +64,7 @@
 .ag-frame-owner .ag-live-chip { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: start; }
 .ag-frame-owner .ag-live-chip .ag-live-thinking-row { margin-top: 0; }
 .ag-frame-owner .ag-live-thinking { -webkit-line-clamp: 1; }
+.ag-live-thinking[data-whole] { -webkit-line-clamp: none; }
 .ag-live-chip .ag-live-thinking-row { margin-top: auto; justify-content: space-between; }
 .ag-live-chip-cost { margin-left: auto; flex: none; font-size: var(--font-size-xs); line-height: 18px; color: var(--ag-muted); font-variant-numeric: tabular-nums; }
 .ag-live-failure { color: var(--surface-danger-text); }

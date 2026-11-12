@@ -63,7 +63,7 @@ function revealSelection(inst: ReactFlowInstance, wrapper: HTMLDivElement | null
 
 export function AgentGraphCanvas({
   nodes, edges, selectedId, onSelect, direction = "TB", className, emptyState,
-  live = false, renderEventIcon, showLatestEvents = true, now,
+  live = false, renderEventIcon, showLatestEvents = true, now, wholeClaims = false,
 }: AgentGraphProps) {
   const clock = useRunNow(now);
   const animateMotion = useMotionAllowed();
@@ -152,7 +152,7 @@ export function AgentGraphCanvas({
         ariaRole: "button",
         ariaLabel: agentDescription(agent),
         domAttributes: { "aria-pressed": selected, "aria-describedby": hovered?.id === id ? detailsId : undefined },
-        data: { agent, selected, direction, now: clock, onOpen: onSelect ? () => onSelect(agent.id) : undefined, renderEventIcon },
+        data: { agent, selected, direction, now: clock, onOpen: onSelect ? () => onSelect(agent.id) : undefined, renderEventIcon, whole: wholeClaims },
       } as AgentCardNode | LiveAgentCardNode);
     }
     return [...frames, ...cards];
@@ -305,7 +305,7 @@ export function AgentGraphCanvas({
           <div role="button" tabIndex={0} aria-pressed={selectedId === agent.id} aria-label={agentDescription(agent)} data-agent-id={agent.id} className="ag-phone-select"
             onClick={() => select(agent.id)} onKeyDown={e => { if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) { e.preventDefault(); select(agent.id); } }}>
             {live
-              ? <LiveAgentCardView agent={agent} parentLabel={byId.get(parentOf.get(agent.id) ?? "")?.label} selected={selectedId === agent.id} now={clock} renderEventIcon={renderEventIcon} onOpen={onSelect ? () => select(agent.id) : undefined} />
+              ? <LiveAgentCardView agent={agent} parentLabel={byId.get(parentOf.get(agent.id) ?? "")?.label} selected={selectedId === agent.id} now={clock} renderEventIcon={renderEventIcon} onOpen={onSelect ? () => select(agent.id) : undefined} whole={wholeClaims} />
               : <AgentCardView agent={agent} parentLabel={byId.get(parentOf.get(agent.id) ?? "")?.label} selected={selectedId === agent.id} now={clock} direction={direction} onOpen={onSelect ? () => select(agent.id) : undefined} />}
           </div>
         </li>)}
