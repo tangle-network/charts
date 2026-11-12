@@ -156,7 +156,7 @@ try {
       await page.goto(`${base}/?id=clock-precision&globals=agent-${theme}`)
       await page.locator('.fw-axis-track .fw-tick').first().waitFor()
       const clockLabels=await page.locator('.fw-axis-track .fw-tick').allTextContents()
-      assert.ok(clockLabels.length>=3)
+      assert.ok(clockLabels.length >= (width < 600 ? 2 : 3), 'phone ticks reserve the final label width: '+JSON.stringify(clockLabels))
       assert.equal(new Set(clockLabels).size,clockLabels.length,'distinct zoomed axis positions have distinct labels: '+JSON.stringify(clockLabels))
       if(width===1512)for(const tick of ['10.2s','10.4s','10.6s'])assert.ok(clockLabels.includes(tick),tick+' remains readable in the actual zoomed waterfall')
       await page.goto(`${base}/?id=controlled-position&globals=agent-${theme}`)

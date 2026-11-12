@@ -114,7 +114,7 @@ export function SpanCard({ id, row, agent, clockMs, mode, onClose, renderIcon, c
         <span className={`fw-pill fw-pill-${state}`}>{meta.label}</span>
         {close}
       </div>
-      <AgentFacts facts={metrics(row, clockMs, mode === 'docked')} tools={span.tools ?? Object.entries(row.counts?.tools ?? {}).map(([name, calls]) => ({ name, calls }))} />
+      <AgentFacts facts={metrics(row, clockMs, mode === 'docked')} tools={clockMs >= span.endMs ? span.tools ?? Object.entries(row.counts?.tools ?? {}).map(([name, calls]) => ({ name, calls })) : undefined} />
       {!row.ok && !span.output && !failure && <p className="fw-card-error">Failure detail not reported</p>}
       {span.input && <div className="fw-card-text"><div className="fw-card-label">Input</div><p>{span.input}</p></div>}
       {span.output && <div className="fw-card-text"><div className="fw-card-label">{row.ok ? 'Output' : 'Recorded output'}</div><p>{span.output}</p></div>}
