@@ -1,4 +1,6 @@
 export { useRunNow } from "@tangle-network/ui/hooks/use-live-time";
+import { tokenMilliseconds } from "@tangle-network/ui/utils";
+export { tokenMilliseconds };
 import { formatSpanDuration, quietGap } from "../flow-waterfall-model";
 import { statusMeta } from "@tangle-network/ui/run/status-meta";
 import { type AnimationEvent, type CSSProperties, type RefObject, useEffect, useSyncExternalStore } from "react";
@@ -12,11 +14,6 @@ const subscribeMotion = (listener: () => void) => {
 };
 export function useMotionAllowed() {
   return useSyncExternalStore(subscribeMotion, () => motionQuery()?.matches === false, () => false);
-}
-export function tokenMilliseconds(token: string, element?: Element | null) {
-  if (typeof document === "undefined") return 0;
-  const value = getComputedStyle(element ?? document.documentElement).getPropertyValue(token).trim();
-  return (parseFloat(value) || 0) * (value.endsWith("ms") ? 1 : 1000);
 }
 export const ambientStyle: CSSProperties = { animation: "tangle-breathe var(--motion-ambient) infinite" };
 /** The document timeline is the page's epoch, including marks mounted later. */

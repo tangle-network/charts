@@ -103,7 +103,7 @@ main{max-width:1000px;margin:16px auto;padding:16px;min-width:0;box-sizing:borde
 [data-chart-tooltip]{box-shadow:0 4px 16px #0002}table{border-collapse:collapse;width:100%;text-align:left}th,td{padding:8px;border-bottom:1px solid #8884}details{margin-top:16px}
 </style><div id="root"></div><script type="module" src="/app.js"></script></html>`
 const graphCss = '@layer utilities {.flex{display:flex}.text-xs{font-size:17px}}' + readFileSync(peerRequire.resolve('@tangle-network/charts/react/agent-graph.css'),'utf8') + '.topology-pane{height:680px}';
-const styles = {'/live.css':process.env.CHARTS_SOURCE?join(root,'src/react/live.css'):peerRequire.resolve('@tangle-network/charts/react/live.css'),'/figure.css':process.env.CHARTS_SOURCE?join(root,'src/figure.css'):peerRequire.resolve('@tangle-network/charts/figure.css')};
+const styles = {'/live.css':process.env.CHARTS_SOURCE?join(root,'src/react/live.css'):peerRequire.resolve('@tangle-network/charts/react/live.css'),'/figure.css':process.env.CHARTS_SOURCE?join(root,'src/figure.css'):peerRequire.resolve('@tangle-network/charts/figure.css'),...(process.env.CHARTS_SOURCE?{'/hbars.css':join(root,'src/react/hbars.css')}:{})};
 const server=createServer(async(req,res)=>{
  if(req.url==='/formatter-proof.json') {
   const api=await import(peerRequire.resolve('@tangle-network/charts'))
