@@ -38,6 +38,8 @@ export interface FlowSpan {
   outcome?: FlowOutcome
   /** Authoritative host rows: replace same-label inferred card metrics and lane model/count/duration/cost labels, case-insensitively; unknowns stay unknown. */
   facts?: readonly { label: string; value: string }[]
+  /** Whole-run tool aggregates; separate from generic facts so every inspector shares the tool cap. */
+  tools?: readonly { name: string; calls: number; failures?: number; detail?: string }[]
   /** Moments on this span's own bar, such as a restart: a notch at `at`, the state stays the span's. */
   marks?: readonly FlowSpanMark[]
   meta?: Record<string, unknown>

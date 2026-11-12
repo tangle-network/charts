@@ -105,6 +105,9 @@ try {
    assert.equal(await lines.locator('text').count(),2,'one timestamp has one date label and one missing-value label')
    await lines.getByRole('link',{name:'rc5: No stage score',exact:true}).hover()
    assert.match(await page.getByRole('tooltip').innerText(),/rc5\s+No stage score/,'unknown-only hover has an explicit value line')
+   await lines.getByRole('link',{name:'rc5: No stage score',exact:true}).click()
+   await page.waitForURL(/release=rc5/)
+   assert.equal(await page.locator('output').innerText(),'rc5','the hovered marker centre follows its release link through the crosshair')
    assert.deepEqual(errors,[])
   } finally {await context.close()}
  }

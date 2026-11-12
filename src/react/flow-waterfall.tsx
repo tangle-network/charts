@@ -179,6 +179,7 @@ export function FlowWaterfall({
   const [nameWidth, setNameWidth] = useState(NAME_WIDTH[defaultView])
   const [laneWidth, setLaneWidth] = useState(0)
   const [card, setCard] = useState<CardState | null>(null)
+  const hoverChange = useCallback((open: boolean) => { if (!open) setCard(current => current?.pinned ? current : null) }, [])
   const [filter, setFilter] = useState<string | null>(null)
   const [activeId, setActiveId] = useState<string>()
   const [laneElement, setLaneElement] = useState<HTMLElement | null>(null)
@@ -327,7 +328,7 @@ export function FlowWaterfall({
       onFollow={playbackControl.follow} onZoom={zoomBy} onFit={zoomControl.fit} />
   )
   return (
-    <HoverCard anchor={card?.anchor} open={!!card && !!cardRow} onOpenChange={open => { if (!open && !card?.pinned) setCard(null) }}><section ref={root} data-flow-waterfall data-follow-live={isLive && position === null && !playing || undefined} aria-label={label} className={`fw-root fw-root-${view} fw-fill-${agentFill}`} data-selection={selectedId ? '' : undefined} data-fill={fill || undefined} data-frameless={frameless || undefined}
+    <HoverCard anchor={cardRow ? card?.anchor : null} open={card?.pinned ? !!cardRow : undefined} onOpenChange={hoverChange}><section ref={root} data-flow-waterfall data-follow-live={isLive && position === null && !playing || undefined} aria-label={label} className={`fw-root fw-root-${view} fw-fill-${agentFill}`} data-selection={selectedId ? '' : undefined} data-fill={fill || undefined} data-frameless={frameless || undefined}
       style={{ '--fw-name-w': `${nameWidth}px`, '--fw-pad': `${LANE_PAD}px`, '--fw-row-h': `${ROW_HEIGHT[view]}px`, '--fw-live': `var(${statusMeta('running').token})`, '--fw-failed': `var(${statusMeta('failed').token})`, '--fw-ok': `var(${statusMeta('done').token})`, '--fw-amber': `var(${statusMeta('needs-you').token})` } as CSSProperties}>
       <header className="fw-heading">
         <div className="fw-title-block">

@@ -4,6 +4,7 @@ import type { FlowSpan } from '../flow-trace.js'
 import { CloseGlyph, KindGlyph } from './flow-waterfall-icons.js'
 import { type FlowWaterfallRow, agentSummary, percentile, rowCostText, formatCount, formatSpanDuration, spanFact, spanRunning, toneKey } from './flow-waterfall-model.js'
 import { toolLabel } from './agent-graph/naming.js'
+import { HBars } from './live.js'
 
 /** Names wrap between words, never at their hyphens ("memscale-engineer-" / "2" read as two names). */
 const keepWords = (name: string) => name.replace(/-/g, '‑')
@@ -31,7 +32,7 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString
 const TOOLS_SHOWN = 4
 
 /** The card's table: what the row recorded, every value with its unit. A value nobody recorded is left out, never printed as zero. */
-function metrics(row: FlowWaterfallRow, clockMs: number, withFacts: boolean): [string, ReactNode][] {
+function metrics(row: FlowWaterfallRow, clockMs: number, withFacts: boolean) {
   const span = row.span
   const out: [string, ReactNode][] = []
   if (span.detail) out.push([span.kind === 'tool' ? 'Provider' : 'Model', span.detail])
@@ -49,14 +50,7 @@ function metrics(row: FlowWaterfallRow, clockMs: number, withFacts: boolean): [s
   if (cost !== undefined) out.push(['Cost', rowCostText(row, cost)])
   const counts = row.counts
   if (counts?.model) out.push(['Model calls', counts.model.toLocaleString()])
-  if (counts?.tool) {
-    const tools = Object.entries(counts.tools).sort(([a, x], [b, y]) => y - x || a.localeCompare(b))
-    const rest = tools.length - TOOLS_SHOWN
-
-    out.push(['Tool calls', <>{counts.tool.toLocaleString()}<span className="fw-card-tools" title={tools.map(([tool, n]) => `${tool} ${n}`).join(', ')}>
-      {tools.slice(0, rest > 1 ? TOOLS_SHOWN : tools.length).map(([tool, n]) => <span key={tool}><span>{tool}</span><span>{n.toLocaleString()}</span></span>)}
-      {rest > 1 && <span><span>{rest} more tools</span><span>{tools.slice(TOOLS_SHOWN).reduce((sum, [, n]) => sum + n, 0).toLocaleString()}</span></span>}</span></>])
-  }
+  if (counts?.tool) out.push(['Tool calls', counts.tool.toLocaleString()])
   if (counts?.failed) out.push(['Failures', plural(counts.failed, 'failed step')])
   const restarts = span.marks?.filter(mark => mark.kind === 'restart').length ?? 0
   if (counts?.retried || restarts) out.push(['Retries', [counts?.retried ? plural(counts.retried, 'step retried', 'steps retried') : '', restarts ? plural(restarts, 'restart') : ''].filter(Boolean).join(' · ')])
@@ -64,11 +58,15 @@ function metrics(row: FlowWaterfallRow, clockMs: number, withFacts: boolean): [s
 
   // The producer's facts are the inspector's (a docked card); a hover card keeps to what the chart measured.
   const facts = (withFacts ? span.facts ?? [] : []).map(({ label, value }): [string, ReactNode] => [label, value])
-  return [...new Map([...out, ...facts].map(row => [row[0].toLowerCase(), row])).values()]
+  return [...new Map([...out, ...facts].map(row => [row[0].toLowerCase(), row])).values()].map(([label, value]) => ({ label, value }))
 }
 
-function Table({ rows }: { rows: [string, ReactNode][] }) {
-  return <dl className="fw-card-table">{rows.map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl>
+/** Recorded facts and ranked tool calls, shared by the span card and agent inspectors. */
+export function AgentFacts({ facts = [], tools = [], className = 'fw-card-table' }: { facts?: readonly { label: string; value: ReactNode }[]; tools?: FlowSpan['tools']; className?: string }) {
+  return <>
+    {facts.length > 0 && <dl className={className}>{facts.map(({ label, value }, index) => <div key={index} className="contents"><dt>{label}</dt><dd>{value}</dd></div>)}</dl>}
+    {tools.length > 0 && <HBars limit={TOOLS_SHOWN} rows={[...tools].sort((a, b) => b.calls - a.calls || a.name.localeCompare(b.name)).map(tool => ({ label: toolLabel(tool.name), value: tool.calls, title: `${tool.name}: ${tool.calls.toLocaleString()}${tool.failures ? ` · ${tool.failures} failed` : ''}${tool.detail ? ` · ${tool.detail}` : ''}`, note: [tool.failures ? `${tool.failures} failed` : '', tool.detail].filter(Boolean).join(' · ') || undefined }))} format={value => value.toLocaleString()} />}
+  </>
 }
 
 /** The span card: what ran, for how long, on what tokens and at what recorded cost, then its input and output. */
@@ -116,7 +114,7 @@ export function SpanCard({ id, row, agent, clockMs, mode, onClose, renderIcon, c
         <span className={`fw-pill fw-pill-${state}`}>{meta.label}</span>
         {close}
       </div>
-      <Table rows={metrics(row, clockMs, mode === 'docked')} />
+      <AgentFacts facts={metrics(row, clockMs, mode === 'docked')} tools={clockMs >= span.endMs ? span.tools ?? Object.entries(row.counts?.tools ?? {}).map(([name, calls]) => ({ name, calls })) : undefined} />
       {!row.ok && !span.output && !failure && <p className="fw-card-error">Failure detail not reported</p>}
       {span.input && <div className="fw-card-text"><div className="fw-card-label">Input</div><p>{span.input}</p></div>}
       {span.output && <div className="fw-card-text"><div className="fw-card-label">{row.ok ? 'Output' : 'Recorded output'}</div><p>{span.output}</p></div>}

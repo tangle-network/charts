@@ -1,0 +1,11 @@
+.ov-hbars { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, max-content) minmax(33%, 1fr) max-content; gap: 4px 12px; }
+.ov-hbars li { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; }
+.ov-hbars li > a, .ov-hbars li > div { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; row-gap: 0; align-items: center; padding: 4px; border-radius: 6px; color: inherit; text-decoration: none; }
+.ov-hbars-more { grid-column: 1 / -1; padding: 0 4px; font-size: 14px; color: var(--chart-live-faint, var(--text-dim)); }
+.ov-hbars li > a:hover, .ov-hbars li > div:hover { background: var(--chart-live-hover, var(--bg-hover)); text-decoration: none; }
+.ov-hbar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; line-height: 20px; color: var(--chart-live-fg, var(--text-primary)); }
+.ov-hbar-track { height: 8px; border-radius: 3px; background: color-mix(in srgb, var(--chart-live-faint, var(--text-dim)) 14%, transparent); overflow: hidden; }
+.ov-hbar-track > span { display: block; height: 100%; border-radius: 3px; transform-origin: left center; transition: transform var(--motion-stream); }
+.ov-hbar-value { font-size: 14px; line-height: 20px; font-family: inherit; font-variant-numeric: tabular-nums; text-align: right; color: var(--chart-live-fg, var(--text-primary)); }
+.ov-hbar-note { grid-column: 1 / -1; font-size: 14px; color: var(--chart-live-faint, var(--text-dim)); }
+@media (prefers-reduced-motion: reduce) { .ov-hbar-track > span { transition: none; } }

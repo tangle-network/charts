@@ -119,7 +119,7 @@ export function HBars({ rows, format = formatCompact, color = LIVE_SERIES[0], ma
         )
         return <li key={row.label}>{row.href ? <a href={row.href} title={title}>{content}</a> : <div title={title}>{content}</div>}</li>
       })}
-      {rest.length > 0 && <li className="ov-hbars-more">+{rest.length} more · {format(rest.reduce((a, row) => a + row.value, 0))}</li>}
+      {rest.length > 0 && <li className="ov-hbars-more" tabIndex={0} title={rest.map(row => row.title ?? `${row.label}: ${format(row.value)}${row.note ? ` · ${row.note}` : ''}`).join('\n')}>+{rest.length} more · {format(rest.reduce((a, row) => a + row.value, 0))}</li>}
     </ol>
   )
 }
@@ -224,7 +224,7 @@ export function Lines({ series, format = formatCompact, rows = 13, axis, marks =
           </a>
         })}
         {[...marks].sort((a, b) => a.at - b.at).map((mark, i) => <Mark key={`mark-${i}`} mark={mark} x={x(mark.at)} top={8} bottom={8 + plotH} row={i % 3} em={em} flip={x(mark.at) > left + plotW * .62} />)}
-        {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={8} y2={missing.length ? stripY : 8 + plotH} className="ov-crosshair" />}
+        {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={8} y2={missing.length ? stripY : 8 + plotH} className="ov-crosshair" pointerEvents="none" />}
         {hover !== null && !cursor?.key && series.filter(s => s.points.length).map(s => {
           const p = s.points[nearest(s)]!
           return <circle key={s.name} cx={x(p[0])} cy={y(p[1])} r={Math.max(4, em / 4)} fill={s.color} stroke="var(--chart-live-surface, var(--bg-card))" strokeWidth={2} pointerEvents="none" />

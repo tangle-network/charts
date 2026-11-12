@@ -71,7 +71,7 @@ export function AgentGraphCanvas({
   const hoverTarget = useRef<HTMLElement | null>(null);
   const returningFocus = useRef(false);
   const [hovered, setHovered] = useState<{ id: string; anchor: HTMLElement } | null>(null);
-  const hideDetails = () => setHovered(null);
+  const hideDetails = useCallback((open?: boolean) => { if (!open) setHovered(null); }, []);
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const [phonePage, setPhonePage] = useState(0);
   const [highlight, setHighlight] = useState<AttentionStatus | null>(null);
@@ -284,7 +284,7 @@ export function AgentGraphCanvas({
     );
   }
   return (
-    <HoverCard anchor={place?.anchor} open={!!hovered} onOpenChange={open => { if (!open) hideDetails(); }}><div
+    <HoverCard anchor={place?.anchor ?? null} onOpenChange={hideDetails}><div
       ref={(el) => {
         wrapperRef.current = el;
         measureCanvas(el);

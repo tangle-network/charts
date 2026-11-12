@@ -82,7 +82,7 @@ export function useTraceClock(input: TraceClockInput): TraceClock {
     let last = performance.now()
     let lastText = 0
     const step = (now: number) => {
-      const delta = now - last
+      const delta = Math.max(0, now - last)
       last = now
       let t: number
       const limit = liveNow()
