@@ -306,7 +306,7 @@ export function AgentGraphCanvas({
             onClick={() => select(agent.id)} onKeyDown={e => { if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) { e.preventDefault(); select(agent.id); } }}>
             {live
               ? <LiveAgentCardView agent={agent} parentLabel={byId.get(parentOf.get(agent.id) ?? "")?.label} selected={selectedId === agent.id} now={clock} renderEventIcon={renderEventIcon} onOpen={onSelect ? () => select(agent.id) : undefined} whole={wholeClaims} />
-              : <AgentCardView agent={agent} parentLabel={byId.get(parentOf.get(agent.id) ?? "")?.label} selected={selectedId === agent.id} now={clock} direction={direction} onOpen={onSelect ? () => select(agent.id) : undefined} />}
+              : <AgentCardView agent={agent} parentLabel={byId.get(parentOf.get(agent.id) ?? "")?.label} selected={selectedId === agent.id} now={clock} direction={direction} onOpen={onSelect ? () => select(agent.id) : undefined} whole={wholeClaims} />}
           </div>
         </li>)}
         {nodes.length > PHONE_PAGE && <li className="flex items-center justify-between gap-2 border-t border-border pt-3 text-sm" aria-label="Agent pages">

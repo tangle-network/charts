@@ -68,7 +68,7 @@ export function AgentGridCanvas({ nodes, edges, selectedId, onSelect, className,
               onClick={open} onKeyDown={(event) => { if ((event.key === "Enter" || event.key === " ") && event.target === event.currentTarget) { event.preventDefault(); open?.(); } else move(event, index); }}>
               {live
                 ? <LiveAgentCardView agent={agent} parentLabel={parentLabel} selected={selected} now={clock} renderEventIcon={renderEventIcon} onOpen={open} whole={wholeClaims} />
-                : <AgentCardView agent={agent} parentLabel={parentLabel} selected={selected} now={clock} direction="TB" onOpen={open} />}
+                : <AgentCardView agent={agent} parentLabel={parentLabel} selected={selected} now={clock} direction="TB" onOpen={open} whole={wholeClaims} />}
             </div>
           </li>;
         })}
