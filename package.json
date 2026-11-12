@@ -78,7 +78,7 @@
   },
   "scripts": {
     "gen:css": "node scripts/gen-css.mjs",
-    "build": "node scripts/check-run-tokens.mjs && node scripts/gen-css.mjs --check && tsdown && cp src/figure.css dist/figure.css && cp src/react/live.css dist/react/live.css && cp src/react/flow-waterfall.css dist/react/flow-waterfall.css && node scripts/build-agent-graph-css.mjs",
+    "build": "node scripts/check-run-tokens.mjs && node scripts/gen-css.mjs --check && tsdown && cp src/figure.css dist/figure.css && node scripts/build-styles.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "check:run-tokens": "node scripts/check-run-tokens.mjs"

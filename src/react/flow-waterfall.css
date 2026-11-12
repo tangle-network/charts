@@ -1,3 +1,4 @@
+@import "./hbars.css";
 .fw-root {
   --fw-text: var(--text-primary);
   --fw-muted: var(--text-muted);

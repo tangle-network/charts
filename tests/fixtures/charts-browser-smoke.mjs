@@ -37,7 +37,7 @@ const runE = JSON.parse(readFileSync(join(root,'docs/fixtures/observation-run-e.
 const app = `
 import React, { useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Sparkline, StackedBarChart, FlowWaterfall, Gantt, Meter, VersionGraph, CountHeatmap, HBars, DayBars, TimelineView, Gap, DotMap, Lines, BehaviorStrip, DotStrip } from '@tangle-network/charts/react'
+import { AgentFacts, Sparkline, StackedBarChart, FlowWaterfall, Gantt, Meter, VersionGraph, CountHeatmap, HBars, DayBars, TimelineView, Gap, DotMap, Lines, BehaviorStrip, DotStrip } from '@tangle-network/charts/react'
 import { AgentGraph } from '@tangle-network/charts/react/agent-graph'
 ${meterApp}
 function App() {
@@ -87,7 +87,7 @@ const params = new URLSearchParams(location.search)
 if(params.has('nonzero-motion'))document.documentElement.style.setProperty('--motion-stream','420ms linear')
 const name = (params.get('id') ?? '').replace('chatcontrols-flowwaterfall--','')
 document.documentElement.dataset.theme=params.get('globals')?.includes('agent-light')?'light':'dark'
-createRoot(document.getElementById('root')).render(name === 'meter-modes' ? <MeterModes/> : name === 'behavior' ? <Behavior/> : name === 'progress-lines' ? <ProgressLines/> : name === 'palette-contracts' ? <PaletteContracts/> : name === 'timeline-tree' ? <RecordedTimeline/> : name === 'analytics-counts' ? <AnalyticsCounts/> : name === 'versions' ? <Versions/> : name === 'topology' ? <Topology/> : name === 'journey' ? <Journey/> : name ? <FlowApp name={name}/> : <App />)
+createRoot(document.getElementById('root')).render(name === 'agent-facts' ? <main className="fw-root"><AgentFacts facts={[{label:'Model calls',value:'413'}]} tools={Array.from({length:7},(_,i)=>({name:'recorded_tool_'+i,calls:7-i,failures:i===6?1:0}))}/></main> : name === 'meter-modes' ? <MeterModes/> : name === 'behavior' ? <Behavior/> : name === 'progress-lines' ? <ProgressLines/> : name === 'palette-contracts' ? <PaletteContracts/> : name === 'timeline-tree' ? <RecordedTimeline/> : name === 'analytics-counts' ? <AnalyticsCounts/> : name === 'versions' ? <Versions/> : name === 'topology' ? <Topology/> : name === 'journey' ? <Journey/> : name ? <FlowApp name={name}/> : <App />)
 `
 writeFileSync(join(dir, 'app.jsx'), app)
 await build({entryPoints:[join(dir,'app.jsx')],bundle:true,outfile:join(dir,'app.js'),jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'},alias:{...(process.env.CHARTS_SOURCE?{'@tangle-network/charts/react':join(root,'src/react/index.ts'),'@tangle-network/charts/react/agent-graph':join(root,'src/react/agent-graph/index.ts')}:{}),react:dirname(peerRequire.resolve('react/package.json')),'react-dom':dirname(peerRequire.resolve('react-dom/package.json'))}})
@@ -110,5 +110,5 @@ const server=createServer(async(req,res)=>{
   const rows=[1e-20,1e-10,1.2].map((price,i)=>({id:'recorded-cost-'+i,label:'Recorded cost '+i,rank:null,attempts:10,solved:5,rate:.5,estimate:'bootstrap',interval:{lower:.2,upper:.8,level:.95,method:'task-cluster-bootstrap'},tiers:null,cost:{perSolvedUsd:price,basis:'receipts',receipts:10},medianWallMs:1000,onFront:null}))
   res.setHeader('Content-Type','application/json');res.end(JSON.stringify({figure:api.costFrontier(rows,{measure:'solve rate'}),formatted:[0,1e-20,1e-10,.0032,1.2,-1,NaN,Infinity].map(value=>api.formatCost(value))}));return
  }
- res.setHeader('Content-Type', styles[req.url]?'text/css':req.url==='/app.js'?'text/javascript':'text/html');res.end(styles[req.url]?readFileSync(styles[req.url]):req.url==='/app.js'?readFileSync(join(dir,'app.js')):(req.url.includes('id=topology')||req.url.includes('id=behavior')?html.replace('</style>',graphCss+'</style>'):req.url.includes('id=palette-contracts')?html.replace(tokens,brandTokens):html).replace('<style>','<link rel="stylesheet" href="/live.css"><style>'))})
+ res.setHeader('Content-Type', styles[req.url]?'text/css':req.url==='/app.js'?'text/javascript':'text/html');res.end(styles[req.url]?readFileSync(styles[req.url]):req.url==='/app.js'?readFileSync(join(dir,'app.js')):(req.url.includes('id=topology')||req.url.includes('id=behavior')?html.replace('</style>',graphCss+'</style>'):req.url.includes('id=palette-contracts')?html.replace(tokens,brandTokens):html).replace('<style>',req.url.includes('id=agent-facts')?'<style>':'<link rel="stylesheet" href="/live.css"><style>'))})
 server.listen(Number(process.env.PORT ?? 0),'127.0.0.1',()=>console.log(JSON.stringify({consumer:dir,tarball:packed,react:JSON.parse(readFileSync(peerRequire.resolve('react/package.json'),'utf8')).version,source:!!process.env.CHARTS_SOURCE,url:'http://127.0.0.1:'+server.address().port})))

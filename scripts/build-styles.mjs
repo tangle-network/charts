@@ -25,3 +25,5 @@ result.root.walkAtRules("layer", layer => {
 const css = result.root.toString();
 if (/@import\s/.test(css)) throw new Error("Unresolved graph stylesheet import");
 await writeFile(new URL("../dist/react/agent-graph.css", import.meta.url), css);
+
+for (const name of ["live", "flow-waterfall"]) { const from = new URL(`../src/react/${name}.css`, import.meta.url); await writeFile(new URL(`../dist/react/${name}.css`, import.meta.url), (await postcss([tailwindcss()]).process(await readFile(from, "utf8"), { from: from.pathname })).css); }
