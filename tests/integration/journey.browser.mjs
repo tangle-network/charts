@@ -171,6 +171,7 @@ try {
       await page.waitForTimeout(2100)
       const timing=await page.evaluate(()=>({wallMs:performance.now()-window.__fwWallStart,reports:window.__fwTimeSamples.filter(sample=>typeof sample.trace==='number')}))
       assert.ok(timing.reports.length>=16&&timing.reports.length<=25,'controlled echo preserves the original10Hz React cadence: '+JSON.stringify(timing))
+      assert.ok(timing.reports.every(sample=>sample.trace>=0), 'the first RAF timestamp never moves playback before its start: '+JSON.stringify(timing))
       const progress=timing.reports.at(-1).trace
       assert.ok(progress/timing.wallMs>=.85&&progress/timing.wallMs<=1.15,'controlled1x playback preserves real elapsed time: '+JSON.stringify(timing))
       console.log('controlled-clock-metrics',JSON.stringify({theme,width,...timing}))
