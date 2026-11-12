@@ -1,6 +1,6 @@
 export { useRunNow } from "@tangle-network/ui/hooks/use-live-time";
-import { tokenMilliseconds } from "@tangle-network/ui/utils";
-export { tokenMilliseconds };
+import { tokenMilliseconds as readTimeToken } from "@tangle-network/ui/utils";
+export const tokenMilliseconds = (token: string, element?: Element | null) => readTimeToken(token, element) ?? 0;
 import { formatSpanDuration, quietGap } from "../flow-waterfall-model";
 import { statusMeta } from "@tangle-network/ui/run/status-meta";
 import { type AnimationEvent, type CSSProperties, type RefObject, useEffect, useSyncExternalStore } from "react";
