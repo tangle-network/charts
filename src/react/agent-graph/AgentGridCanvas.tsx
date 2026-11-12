@@ -33,7 +33,7 @@ export function gridOrder(nodes: readonly AgentGraphNode[], edges: readonly Agen
   return out;
 }
 
-export function AgentGridCanvas({ nodes, edges, selectedId, onSelect, className, emptyState, live = false, renderEventIcon, now }: AgentGraphProps) {
+export function AgentGridCanvas({ nodes, edges, selectedId, onSelect, className, emptyState, live = false, renderEventIcon, now, wholeClaims = false }: AgentGraphProps) {
   const clock = useRunNow(now);
   const [highlight, setHighlight] = useState<AttentionStatus | null>(null);
   const root = useRef<HTMLDivElement>(null);
@@ -67,8 +67,8 @@ export function AgentGridCanvas({ nodes, edges, selectedId, onSelect, className,
             <div role="button" tabIndex={0} aria-pressed={selected} aria-label={agentDescription(agent)} data-agent-id={agent.id} className="ag-phone-select"
               onClick={open} onKeyDown={(event) => { if ((event.key === "Enter" || event.key === " ") && event.target === event.currentTarget) { event.preventDefault(); open?.(); } else move(event, index); }}>
               {live
-                ? <LiveAgentCardView agent={agent} parentLabel={parentLabel} selected={selected} now={clock} renderEventIcon={renderEventIcon} onOpen={open} />
-                : <AgentCardView agent={agent} parentLabel={parentLabel} selected={selected} now={clock} direction="TB" onOpen={open} />}
+                ? <LiveAgentCardView agent={agent} parentLabel={parentLabel} selected={selected} now={clock} renderEventIcon={renderEventIcon} onOpen={open} whole={wholeClaims} />
+                : <AgentCardView agent={agent} parentLabel={parentLabel} selected={selected} now={clock} direction="TB" onOpen={open} whole={wholeClaims} />}
             </div>
           </li>;
         })}
