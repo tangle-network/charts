@@ -119,7 +119,7 @@ export function HBars({ rows, format = formatCompact, color = LIVE_SERIES[0], ma
         )
         return <li key={row.label}>{row.href ? <a href={row.href} title={title}>{content}</a> : <div title={title}>{content}</div>}</li>
       })}
-      {rest.length > 0 && <li className="ov-hbars-more">+{rest.length} more · {format(rest.reduce((a, row) => a + row.value, 0))}</li>}
+      {rest.length > 0 && <li className="ov-hbars-more" tabIndex={0} title={rest.map(row => row.title ?? `${row.label}: ${format(row.value)}${row.note ? ` · ${row.note}` : ''}`).join('\n')}>+{rest.length} more · {format(rest.reduce((a, row) => a + row.value, 0))}</li>}
     </ol>
   )
 }

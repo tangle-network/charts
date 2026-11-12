@@ -289,10 +289,6 @@
 .fw-root .fw-card-parts > * { white-space: nowrap; }
 .fw-root .fw-card-parts:not(.fw-card-stack) > * + *::before { content: "· "; color: var(--fw-muted); }
 .fw-root .fw-card-stack { flex-direction: column; }
-.fw-root .fw-card-tools { display: grid; grid-template-columns: minmax(0, max-content) max-content; justify-content: start; column-gap: 16px; margin-top: 4px; color: var(--fw-muted); font-weight: 400; }
-.fw-root .fw-card-tools > span { display: contents; }
-.fw-root .fw-card-tools > span > :first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fw-root .fw-card-tools > span > :last-child { text-align: right; }
 .fw-root .fw-card-text { margin-top: 12px; }
 .fw-root .fw-card-compact .fw-card-agent { margin-bottom: 2px; font-size: 14px; line-height: 20px; }
 .fw-root .fw-card-who { min-width: 0; flex: 1; overflow: hidden; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
