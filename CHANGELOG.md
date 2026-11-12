@@ -1,3 +1,9 @@
+## 4.0.23
+
+- Share AgentFacts and its tool-row cap across inspectors. Keep overflow tool counts and failures readable.
+- Use the UI owner’s delegated HoverCard policy and scoped CSS time reader; bundle shared bar styles in both documented stylesheets.
+- Keep release-marker links clickable through the decorative crosshair.
+
 ## 4.0.21
 
 - `AgentGraph` takes `layout="grid"`: every agent's card at once in reading order (root first, then each spawn subtree by start time), no edges, no camera, no React Flow or ELK; a run of a hundred agents scrolls like a list and a status update never moves a card. The cards are the tree's, so the grid, the tree and the hub share one node model; arrow keys move across the grid as drawn. `gridOrder` is exported for hosts that list agents in the same order.
