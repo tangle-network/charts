@@ -13,6 +13,60 @@ for (const stream of [server.stdout, server.stderr]) stream.on('data', bytes => 
 let base
 let browser, observedPage, activeCase
 const checks = []
+const motionChecks = []
+async function proveNativeMotion(page, width, theme) {
+  for (const [name, route, scope] of [
+    ['waterfall', 'live-names', '.fw-root'],
+    ['grid', 'topology&large=1&layout=grid', '.agent-graph'],
+    ['tree', 'topology&large=1', '.agent-graph'],
+    ['hub', 'topology&large=1&layout=hub', '.ag-root'],
+    ['timeline', 'journey&agents=100', '.ov-gantt'],
+  ]) {
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await page.goto(`${base}/?id=${route}&globals=agent-${theme}`)
+    await page.locator(scope).waitFor()
+    const state = () => page.evaluate(scope => {
+      const root = document.querySelector(scope)
+      return {
+        reduced: matchMedia('(prefers-reduced-motion: reduce)').matches,
+        loops: root.getAnimations({ subtree: true }).filter(animation => animation.playState === 'running' && animation.effect?.getTiming().iterations === Infinity).map(animation => ({
+          name: animation.animationName ?? 'Web Animation', target: animation.effect.target?.getAttribute('class'),
+        })),
+        indicators: [...root.querySelectorAll('[data-motion="essential"], .fw-spinner, [data-open] rect')].map(node => ({
+          name: getComputedStyle(node).animationName, before: getComputedStyle(node, '::before').animationName,
+        })),
+      }
+    }, scope)
+    await page.waitForFunction(scope => document.querySelector(scope).getAnimations({ subtree: true }).some(animation => animation.playState === 'running' && animation.effect?.getTiming().iterations === Infinity), scope)
+    const normal = await state()
+    assert.equal(normal.reduced, false)
+    assert.ok(normal.loops.length > 0 && normal.indicators.length > 0, `${name}: normal live indicators breathe`)
+    await page.screenshot({ path: `${output}/motion-${name}-${width}-${theme}-normal.png` })
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.waitForFunction(scope => matchMedia('(prefers-reduced-motion: reduce)').matches && !document.querySelector(scope).getAnimations({ subtree: true }).some(animation => animation.playState === 'running' && animation.effect?.getTiming().iterations === Infinity), scope)
+    const reduced = await state()
+    assert.equal(reduced.reduced, true)
+    assert.deepEqual(reduced.loops, [], `${name}: native reduced motion removes every loop`)
+    assert.equal(reduced.indicators.length, normal.indicators.length, `${name}: indicators remain mounted`)
+    const counter = name === 'waterfall' ? ['main[data-live-update]', 'data-live-update'] : name === 'timeline' ? ['[data-lane="agent-3"] [data-open] rect', 'width'] : ['output[aria-label="Stream update"]', null]
+    const before = await page.locator(counter[0]).evaluate((node, attribute) => attribute ? node.getAttribute(attribute) : node.textContent, counter[1])
+    await page.waitForFunction(({ counter, before }) => { const node = document.querySelector(counter[0]); return (counter[1] ? node.getAttribute(counter[1]) : node.textContent) !== before }, { counter, before })
+    if (name === 'waterfall') {
+      const clock = await page.getByLabel('Playback position').getAttribute('max')
+      await page.waitForFunction(clock => document.querySelector('input[aria-label="Playback position"]').max !== clock, clock)
+    }
+    await page.screenshot({ path: `${output}/motion-${name}-${width}-${theme}-reduced.png` })
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await page.waitForFunction(scope => document.querySelector(scope).getAnimations({ subtree: true }).some(animation => animation.playState === 'running' && animation.effect?.getTiming().iterations === Infinity), scope)
+    const restored = await state()
+    assert.equal(restored.reduced, false)
+    assert.ok(restored.loops.length > 0, `${name}: the native preference alone controls looping`)
+    motionChecks.push({ name, width, theme, normal, reduced, restored, dataBefore: before, result: 'PASS' })
+    await writeFile(`${output}/motion-checks.json`, JSON.stringify(motionChecks, null, 2))
+  }
+  // The existing 100-agent SVG/row/marker/keyboard journey also runs under the native reduced preference.
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+}
 try {
   const deadline = Date.now() + 120000
   while (true) {
@@ -29,6 +83,7 @@ try {
     const currentStyle = (selector, property) => page.evaluate(({selector, property}) => getComputedStyle(document.querySelector(selector))[property], {selector, property})
     page.on('pageerror', error => errors.push(error.message))
     if (agents === 100) {
+      await proveNativeMotion(page, width, theme)
       await page.goto(`${base}/?id=agent-facts&globals=agent-${theme}`)
       await page.getByText('413', { exact: true }).waitFor()
       assert.equal(await page.locator('link[href="/live.css"]').count(), 0, 'the documented Waterfall stylesheet alone styles facts')
