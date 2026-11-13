@@ -62,5 +62,5 @@ export const AGENT_HUB_CSS = `
 .ag-tools { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0 44px; }
 .ag-tools button { color: var(--ag-muted); background: transparent; border: 1px solid var(--ag-border); border-radius: var(--radius-pill); min-height: 28px; padding: 0 8px; font: inherit; cursor: pointer; }
 .ag-available { padding: 8px; border-top: 1px solid var(--ag-border); color: var(--ag-muted); } .ag-available .ag-tools { margin: 8px 0 0; }
-@media (prefers-reduced-motion: reduce) { .ag-root *, .ag-root *::before { animation: none !important; transition: opacity var(--duration-fast) !important; } .ag-root .ag-running-dot { animation: tangle-breathe var(--motion-ambient) infinite !important; } }
+@media (prefers-reduced-motion: reduce) { .ag-root *, .ag-root *::before { animation: none !important; transition: opacity var(--duration-fast) !important; } }
 `;

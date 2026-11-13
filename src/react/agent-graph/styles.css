@@ -41,7 +41,7 @@
 .ag-grid :is(.ag-live-card, .ag-agent-card) { height: auto; min-height: 104px; }
 .agent-graph .react-flow__node-liveAgent:focus-visible .ag-live-card, .agent-graph .react-flow__node-agent:focus-visible > div, .ag-phone-select:focus-visible { outline: 2px solid hsl(var(--foreground) / .7); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) {
-.ag-live-card { animation: none; transition: opacity var(--duration-fast); }
+.agent-graph *, .agent-graph *::before { animation: none !important; transition: opacity var(--duration-fast) !important; }
 }
 .ag-status-button { display: inline-flex; flex: none; align-items: center; gap: 6px; font-weight: 600; }
 @container (width < 600px) {
