@@ -1,3 +1,7 @@
+## 4.0.24
+
+- Honor native reduced motion for live Waterfall, tree, grid and hub indicators; keep the static running state and live data updates. Normal motion retains its live pulse.
+
 ## 4.0.23
 
 - Share AgentFacts and its tool-row cap across inspectors. Keep overflow tool counts and failures readable.
