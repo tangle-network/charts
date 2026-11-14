@@ -106,6 +106,15 @@ async function proveGrid(page, width, theme, output) {
   await page.screenshot({ path: `${output}/grid-${width}-${theme}.png` })
   await page.getByRole('button', { name: /^1 failed/ }).click()
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
+  // A whole claim with a token longer than its card (a path) wraps inside the claim box, cut nowhere.
+  await page.goto(`${base}/?id=topology&large=1&layout=grid&whole=1&globals=agent-${theme}`)
+  const claim = page.locator('.ag-grid [data-agent-id="agent-6"] .ag-live-thinking[data-whole]')
+  await claim.waitFor()
+  // Every line box, as the design gate of disco.tangle.tools measures it (rule o); the text is a production claim of 2026-11-14.
+  const fit = await claim.evaluate(node => { const range = document.createRange(); range.selectNodeContents(node); const box = node.getBoundingClientRect(); return { right: Math.max(...[...range.getClientRects()].map(r => r.right)), box: box.right } })
+  console.log('Whole claim fit', JSON.stringify({ width, theme, ...fit }))
+  assert.ok(fit.right <= fit.box + 1, `a whole claim stays inside its card: ${JSON.stringify(fit)}`)
+  assert.match(await claim.innerText(), /`primary`\/`transaction`\.$/, 'the whole claim keeps its last word')
 }
 
 const output = process.env.CHARTS_PROOF_DIR

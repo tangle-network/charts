@@ -9,7 +9,7 @@ function Topology() {
  const boundary = params.has('large'), compact = params.has('compact')
  const nodes = boundary ? Array.from({ length: 130 }, (_, i) => ({
    id: 'agent-' + i, label: 'Agent ' + i, status: params.has('successful') ? 'done' : i === 1 ? 'failed' : i === 129 ? 'stopped' : settled ? 'done' : i === 2 ? 'needs-you' : i % 3 === 0 ? 'running' : 'done',
-   turn: 'Recorded boundary task ' + tick, costUsd: i === 3 ? null : i / 100, tokens: i * 1000 + tick * 1000, model: 'glm-5.3', harness: 'opencode',
+   turn: i === 6 ? 'Recorded boundary task ' + tick + '. The slow SQLite receipts live in `products/platform/api/src/lib/db.ts` (`monitorLocalSqliteClientPrimaryTransactionRateLimitConnections`), which labels connections only as `primary`/`transaction`.' : 'Recorded boundary task ' + tick, costUsd: i === 3 ? null : i / 100, tokens: i * 1000 + tick * 1000, model: 'glm-5.3', harness: 'opencode',
    events: [{ id: 'event-' + i, label: 'Read source ' + tick, at: Date.now() - (params.has('quiet') && i === 0 ? 5166 * 60000 : 0) }],
  })) : recorded.spans.filter(span => span.kind === 'pipeline').map(span => ({
    id: span.id, label: span.name, status: runStatus(span.status),
@@ -27,7 +27,7 @@ function Topology() {
    <button onClick={() => setSettled(true)}>Settle run</button>
    <output aria-label="Reader selection">{selectedId ?? 'No selection'}</output>
    <output aria-label="Stream update">{tick}</output>
-   <AgentGraph nodes={nodes} edges={edges} layout={layout} direction={compact ? 'LR' : 'TB'} live={!compact && !settled} now={Date.now()}
+   <AgentGraph nodes={nodes} edges={edges} layout={layout} direction={compact ? 'LR' : 'TB'} live={!compact && !settled} now={Date.now()} wholeClaims={params.has('whole')}
      selectedId={selectedId} onSelect={onSelect} tools={sharedTools} calls={sharedCalls}
      className="topology-pane" renderAgentMark={node => <span data-host-mark={node.id}>A</span>} />
  </main>

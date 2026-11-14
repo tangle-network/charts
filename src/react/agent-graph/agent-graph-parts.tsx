@@ -144,7 +144,7 @@ export function AgentCardView({ agent, selected, direction, now: fixed, onOpen, 
       {cost && <span className="text-[13px] text-muted-foreground tabular-nums" title="Cost">{cost}</span>}
     </div>
     {identity && <p data-agent-identity="" className="m-0 truncate text-[13px] leading-[18px] text-muted-foreground" title={identity}>{identity}</p>}
-    {said && <p className={`m-0 text-[13px] leading-4 ${whole ? "line-clamp-none" : "line-clamp-2"}`} style={failed ? { color: agentStatus("failed").color } : undefined} title={said}>{said}</p>}
+    {said && <p className={`m-0 text-[13px] leading-4 ${whole ? "line-clamp-none" : "line-clamp-2"}`} style={{ ...(failed ? { color: agentStatus("failed").color } : {}), ...(whole ? { overflowWrap: "anywhere" as const } : {}) }} title={said}>{said}</p>}
     {(quiet || tokens || agent.status === "needs-you") && <div className="mt-auto flex items-center justify-between gap-1 text-[13px]">
       {quiet && <span style={{ color: "var(--surface-warning-text)" }}>{quiet.label}</span>}
       {tokens && <span data-agent-tokens="" title="Tokens" className="ml-auto text-muted-foreground tabular-nums whitespace-nowrap">{tokens}</span>}

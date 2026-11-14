@@ -64,7 +64,9 @@
 .ag-frame-owner .ag-live-chip { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: start; }
 .ag-frame-owner .ag-live-chip .ag-live-thinking-row { margin-top: 0; }
 .ag-frame-owner .ag-live-thinking { -webkit-line-clamp: 1; }
-.ag-live-thinking[data-whole] { -webkit-line-clamp: none; }
+/* A whole claim breaks inside a long token (a path, a URL) rather than run past its card: on 2026-11-14 a path in an
+   agent's newest line overflowed the 186 px claim box with no ellipsis. */
+.ag-live-thinking[data-whole] { -webkit-line-clamp: none; overflow-wrap: anywhere; }
 .ag-live-chip .ag-live-thinking-row { margin-top: auto; justify-content: space-between; }
 .ag-live-chip-cost { margin-left: auto; flex: none; font-size: var(--font-size-xs); line-height: 18px; color: var(--ag-muted); font-variant-numeric: tabular-nums; }
 .ag-live-failure { color: var(--surface-danger-text); }
