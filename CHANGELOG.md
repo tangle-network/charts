@@ -1,3 +1,7 @@
+## 4.0.25
+
+- A whole claim (`wholeClaims`) breaks inside a token longer than its card, such as a path or a URL, instead of running past the card's edge uncut; live and recorded cards alike.
+
 ## 4.0.24
 
 - Honor native reduced motion for live Waterfall, tree, grid and hub indicators; keep the static running state and live data updates. Normal motion retains its live pulse.

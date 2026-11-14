@@ -106,6 +106,13 @@ async function proveGrid(page, width, theme, output) {
   await page.screenshot({ path: `${output}/grid-${width}-${theme}.png` })
   await page.getByRole('button', { name: /^1 failed/ }).click()
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
+  // A whole claim with a token longer than its card (a path) wraps inside the claim box, cut nowhere.
+  await page.goto(`${base}/?id=topology&large=1&layout=grid&whole=1&globals=agent-${theme}`)
+  const claim = page.locator('.ag-grid [data-agent-id="agent-6"] .ag-live-thinking[data-whole]')
+  await claim.waitFor()
+  const fit = await claim.evaluate(node => { const range = document.createRange(); range.selectNodeContents(node); const text = range.getBoundingClientRect(), box = node.getBoundingClientRect(); return { text: [text.left, text.right], box: [box.left, box.right], scroll: node.scrollWidth, client: node.clientWidth } })
+  assert.ok(fit.text[0] >= fit.box[0] - 1 && fit.text[1] <= fit.box[1] + 1 && fit.scroll <= fit.client + 1, `a whole claim stays inside its card: ${JSON.stringify(fit)}`)
+  assert.match(await claim.innerText(), /monitorLocalSqliteClient\.ts/, 'the whole claim keeps its last word')
 }
 
 const output = process.env.CHARTS_PROOF_DIR
