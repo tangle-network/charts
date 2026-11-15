@@ -93,8 +93,9 @@ export function HubNode({ entity, x, y, tile, dimmed, selected, buttonRef, onOpe
         <NodeIcon entity={entity} size={tile} />
         <StatusBadge status={entity.status} quiet={entity.quiet} />
       </span>
-      <span className="ag-name">{entity.label}</span>
-      {sub && <span className="ag-sub" style={tone ? { color: tone } : entity.quiet ? { color: "var(--surface-warning-text)" } : undefined} title={sub}>{toolLabel(sub)}</span>}
+      {/* Names and subtitles clamp to two lines; each title holds the whole text shown (and the raw subtitle when it was renamed). */}
+      <span className="ag-name" title={entity.label}>{entity.label}</span>
+      {sub && <span className="ag-sub" style={tone ? { color: tone } : entity.quiet ? { color: "var(--surface-warning-text)" } : undefined} title={toolLabel(sub) === sub ? sub : `${toolLabel(sub)} (${sub})`}>{toolLabel(sub)}</span>}
     </button>
   );
 }

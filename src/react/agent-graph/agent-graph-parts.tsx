@@ -140,7 +140,7 @@ export function AgentCardView({ agent, selected, direction, now: fixed, onOpen, 
     <div className="flex min-w-0 items-start gap-2">
       <AgentMark agent={agent} layout="tree" size={24} />
       <span className="mt-0.5 flex shrink-0" style={{ color: agentStatus(agent.status).color }} title={agentStatus(agent.status).label}><StatusGlyph status={agent.status} size={14} /></span>
-      <span className="ag-card-name min-w-0 flex-1 text-sm font-semibold leading-[18px]">{parentLabel && <span className="ag-parent-label">{parentLabel} / </span>}{agent.label}</span>
+      <span className="ag-card-name min-w-0 flex-1 text-sm font-semibold leading-[18px]" title={parentLabel ? `${parentLabel} / ${agent.label}` : agent.label}>{parentLabel && <span className="ag-parent-label">{parentLabel} / </span>}{agent.label}</span>
       {cost && <span className="text-[13px] text-muted-foreground tabular-nums" title="Cost">{cost}</span>}
     </div>
     {identity && <p data-agent-identity="" className="m-0 truncate text-[13px] leading-[18px] text-muted-foreground" title={identity}>{identity}</p>}
