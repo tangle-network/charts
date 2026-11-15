@@ -54,7 +54,7 @@ export function LiveAgentCardView({ agent, selected, direction = "TB", now: fixe
         <div className="ag-live-head">
           <span className="ag-live-mark grayscale hover:grayscale-0"><AgentMark agent={agent} layout="tree" size={18} /></span>
           <span className="ag-live-glyph" title={quiet?.label ?? s.label}><StatusGlyph status={agent.status} size={14} /></span>
-          <span className="ag-live-name">{parentLabel && <span className="ag-parent-label">{parentLabel} / </span>}{agent.label}</span>
+          <span className="ag-live-name" title={parentLabel ? `${parentLabel} / ${agent.label}` : agent.label}>{parentLabel && <span className="ag-parent-label">{parentLabel} / </span>}{agent.label}</span>
           {!settled && quiet && <span className="ag-live-quiet">{quiet.label}</span>}
         </div>
         {!settled && (meta || metrics) && <span className="ag-live-meta" title={[meta, metrics].filter(Boolean).join(" · ")}>{[meta, metrics].filter(Boolean).join(" · ")}</span>}

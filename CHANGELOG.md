@@ -1,3 +1,7 @@
+## 4.0.26
+
+- An agent's name or subtitle clamped to two lines (hub nodes, tree and grid cards, live cards) carries a title with the whole text it shows, parent included ("root / name"), so a long name stays readable on hover.
+
 ## 4.0.25
 
 - A whole claim (`wholeClaims`) breaks inside a token longer than its card, such as a path or a URL, instead of running past the card's edge uncut; live and recorded cards alike.
