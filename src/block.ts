@@ -17,25 +17,39 @@ const slug = (id: string) => id.replace(/[^a-z0-9-]+/gi, "-").toLowerCase();
 
 const STATUS: Record<FigureStatus, string> = { measured: "Measured", captured: "Captured", illustrative: "Illustrative" };
 
-/** The scope line's items (status, period, unit), or "" when the producer recorded none. */
+const text = (f: Figure, field: string, value: unknown): string => {
+  if (value === undefined) return "";
+  if (typeof value !== "string") throw new Error(`renderFigure: figure ${f.id} ${field} must be a string.`);
+  return value.trim();
+};
+
+/** The scope line's items (status, period, unit), space-separated, or "" when the producer recorded none. */
 export function contextItems(f: Figure): string {
-  if (f.status !== undefined && !Object.hasOwn(STATUS, f.status)) throw new Error(`renderFigure: figure ${f.id} has unknown status ${String(f.status)}.`);
+  if (f.status !== undefined && (typeof f.status !== "string" || !Object.hasOwn(STATUS, f.status))) throw new Error(`renderFigure: figure ${f.id} has unknown status ${String(f.status)}.`);
+  const period = text(f, "period", f.period);
+  const unit = text(f, "unit", f.unit);
   return [
     f.status ? `<span class="tgc-status" data-status="${f.status}">${STATUS[f.status]}</span>` : "",
-    f.period?.trim() ? `<span class="tgc-period">${esc(f.period.trim())}</span>` : "",
-    f.unit?.trim() ? `<span class="tgc-unit">${esc(f.unit.trim())}</span>` : "",
-  ].join("");
+    period ? `<span class="tgc-period">${esc(period)}</span>` : "",
+    unit ? `<span class="tgc-unit">${esc(unit)}</span>` : "",
+  ].filter(Boolean).join(" ");
 }
 
 /** The source links that end the caption, or "" when the producer recorded none. */
 export function sourceItems(f: Figure): string {
-  if (!f.sources?.length) return "";
+  if (f.sources === undefined || (Array.isArray(f.sources) && f.sources.length === 0)) return "";
+  if (!Array.isArray(f.sources)) throw new Error(`renderFigure: figure ${f.id} sources must be an array.`);
   const links = f.sources.map((source) => {
-    if (!source.label.trim()) throw new Error(`renderFigure: figure ${f.id} has a source without a label.`);
-    if (!/^(https?:\/\/|\/(?!\/)|#)/.test(source.href)) throw new Error(`renderFigure: figure ${f.id} source "${source.label}" needs an http(s), root-relative or fragment link.`);
-    return `<a href="${esc(source.href)}">${esc(source.label.trim())}</a>`;
+    const label = text(f, "source label", source?.label);
+    const href = text(f, "source href", source?.href);
+    if (!label) throw new Error(`renderFigure: figure ${f.id} has a source without a label.`);
+    // Browsers drop tabs and newlines and read "\" as "/" in a URL, so "/\\host" would leave the page: refuse them.
+    if (href !== source.href || /[\u0000-\u0020\u007f\\]/.test(href) || !/^(https?:\/\/|\/(?!\/)|#)/.test(href)) {
+      throw new Error(`renderFigure: figure ${f.id} source "${label}" needs an http(s), root-relative or fragment link.`);
+    }
+    return `<a href="${esc(href)}">${esc(label)}</a>`;
   });
-  return `${f.sources.length === 1 ? "Source" : "Sources"}: ${links.join(" · ")}`;
+  return `${links.length === 1 ? "Source" : "Sources"}: ${links.join(" · ")}`;
 }
 
 const context = (f: Figure) => {
