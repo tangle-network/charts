@@ -167,9 +167,9 @@ function sandbox(hero: Extract<Hero, { motif: "sandbox" }>, id: string): string 
         + `<line x1="${r(ex - px)}" y1="${r(ey - py)}" x2="${r(ex + px)}" y2="${r(ey + py)}" stroke="${C.stop}" stroke-width="6" stroke-linecap="round"/>`;
     }
   });
-  out += rays;
+  // The boundary first, then the probes over it, so a stop bar reads across the edge it holds.
   out += `<rect x="${r(bx)}" y="${r(by)}" width="${bw}" height="${bh}" rx="26" fill="${C.field}" fill-opacity=".72" stroke="url(#${id}-rise)" stroke-width="5"/>` + inside;
-  return out;
+  return out + rays;
 }
 
 function trace(hero: Extract<Hero, { motif: "trace" }>, id: string): string {
