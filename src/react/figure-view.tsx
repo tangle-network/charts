@@ -1,6 +1,7 @@
 /** Embeds a static Figure or Refusal in React: the wide or phone render chosen by the container's width, the data
  * table in a disclosure. The SVG and table strings come from this library's figure functions, which escape input. */
 import { useMemo } from 'react'
+import { contextItems, sourceItems } from '../block.js'
 import { NARROW, WIDE } from '../svg.js'
 import { type Figure, isRefusal, type Refusal } from '../types.js'
 import { useWidth } from './live-presentation.js'
@@ -31,14 +32,24 @@ export function FigureView({ figure: given, presentation = 'chart', onPointSelec
   const layout = width > 0 && width < WIDE ? (figure.svg.narrow ? 'narrow' : 'table') : 'wide'
   const plot = layout === 'wide' ? figure.svg.wide : layout === 'narrow' ? figure.svg.narrow! : figure.table
   const method = [figure.note.method, figure.note.n, ...figure.note.exclusions].join(' ')
+  let context: string, sources: string
+  try {
+    context = contextItems(figure)
+    sources = sourceItems(figure)
+  } catch (error) {
+    // Provenance the producer got wrong is refused like a figure is, not thrown through the host's tree.
+    return <p className="ov-refusal" role="note" data-refused={figure.id}>{(error as Error).message.replace(/^renderFigure: /, '')}</p>
+  }
+  const scope = context && <p className="tgc-context" dangerouslySetInnerHTML={{ __html: context }} />
   return (
     <figure ref={ref} className="tgc-figure tgc-figure-chart tgc-figure-view" data-figure={figure.id} data-layout={layout} aria-label={figure.finding}>
-      {presentation === 'report' && (
+      {presentation === 'report' ? (
         <>
           <h3 className="tgc-finding">{figure.finding}</h3>
+          {scope}
           <p className="tgc-lede">{figure.lede}</p>
         </>
-      )}
+      ) : scope}
       <div className={`tgc-view-plot tgc-view-${layout}`} data-point-actions={onPointSelect ? '' : undefined}
         onPointerMove={onPointSelect ? event => { const point = nearestPoint(event.currentTarget, event.clientX, event.clientY); for (const old of event.currentTarget.querySelectorAll('[data-near]')) old.removeAttribute('data-near'); point?.setAttribute('data-near', '') } : undefined}
         onPointerLeave={onPointSelect ? event => { for (const old of event.currentTarget.querySelectorAll('[data-near]')) old.removeAttribute('data-near') } : undefined}
@@ -46,6 +57,7 @@ export function FigureView({ figure: given, presentation = 'chart', onPointSelec
         onKeyDown={onPointSelect ? event => { const point = event.target instanceof Element ? event.target.closest('[data-point]') : null; if (point && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onPointSelect(Number(point.getAttribute('data-point'))) } } : undefined}
         role={interactive ? 'group' : 'img'} aria-label={`${figure.finding} ${figure.lede}`}
         style={layout === 'narrow' ? { maxWidth: NARROW } : undefined} dangerouslySetInnerHTML={{ __html: interactive ? plot.replace(' aria-hidden="true" focusable="false"', '') : plot }} />
+      {sources && <p className="tgc-sources" dangerouslySetInnerHTML={{ __html: sources }} />}
       <details className="tgc-data">
         <summary>Data and method</summary>
         <p className="tgc-lede">{figure.lede}</p>

@@ -17,6 +17,8 @@ export {
   type Estimate,
   type Exclusion,
   type Figure,
+  type FigureSource,
+  type FigureStatus,
   type Interval,
   type IntervalMethod,
   isRefusal,

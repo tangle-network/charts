@@ -228,6 +228,9 @@ describe("play page figures from the Magnetar runs", () => {
     const lane = { id: "root", label: "Root", spans: [{ start: t, end: t + 3_600_000, state: "work" }], ticks: OUTCOME_ORDER.map((outcome, i) => ({ at: t + (i + 1) * 300_000, outcome })) };
     const f = figure(timeline([lane], { measure: "attempts" }));
     for (const outcome of OUTCOME_ORDER) expect(f.svg.wide).toContain(`tgc-tick tgc-tick-${outcome}`);
-    for (const outcome of ["ok", "quota", "lost", "rate-limit", "oom", "refused"]) expect(figureCss).toMatch(new RegExp(`--chart-outcome-${outcome}: light-dark\\(#[0-9a-f]{6}, #[0-9a-f]{6}\\)`));
+    for (const outcome of ["ok", "quota", "lost", "rate-limit", "oom", "refused"]) expect(figureCss).toMatch(new RegExp(`--chart-outcome-${outcome}: (var\\(--chart-category-\\d, )?light-dark\\(#[0-9a-f]{6}, #[0-9a-f]{6}\\)`));
+    // Brand owns ok and quota (its category hues); the literal pair is only the fallback for a page without Brand.
+    expect(figureCss).toContain("--chart-outcome-ok: var(--chart-category-3, light-dark(#1baf7a, #199e70));");
+    expect(figureCss).toContain("--chart-outcome-quota: var(--chart-category-2, light-dark(#eb6834, #d95926));");
   });
 });
