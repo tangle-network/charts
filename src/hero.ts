@@ -29,8 +29,8 @@ export interface HeroOptions {
   id: string;
   /** `band` (1200 x 400) sits under a post title; `og` (1200 x 630) is the social card. */
   frame?: "band" | "og";
-  /** Trusted SVG markup (the Brand knot) for the social card, drawn at (56, 526) in a box about 56 px tall. Script, style and
-   * event handlers are refused. */
+  /** Trusted SVG markup (the Brand knot) for the social card, drawn at (56, 526) in a box about 56 px tall. It is inserted as
+   * is, not sanitized: pass only markup you wrote. */
   mark?: string;
 }
 
@@ -99,6 +99,7 @@ function floor(hero: Extract<Hero, { motif: "floor" }>, id: string): string {
   const level = Math.min(...values);
   if (below.some((v) => v >= level)) refuse("every `below` value must sit under the floor, the smallest of `values`");
   const max = Math.max(...values, ...below);
+  if (level < max / 10) refuse("the floor must be at least a tenth of the largest value, or it cannot be seen");
   const base = 336, height = (v: number) => (v / max) * 260;
   const gap = below.length ? 1.2 : 0;
   const slots = values.length + below.length + gap;
@@ -111,7 +112,7 @@ function floor(hero: Extract<Hero, { motif: "floor" }>, id: string): string {
     const x = at(i), h = height(v), gap = base - h - floorY;
     // The shortfall, dashed from the request's top up to the floor, where there is room to draw it.
     return column(x, base, w, h, `fill="${C.stop}" fill-opacity=".18" stroke="${C.stop}" stroke-width="2.5"`)
-      + (gap > 20 ? `<line x1="${r(x + w / 2)}" y1="${r(base - h - 8)}" x2="${r(x + w / 2)}" y2="${r(floorY + 8)}" stroke="${C.stop}" stroke-width="2.5" stroke-dasharray="2 7" stroke-linecap="round"/>` : "");
+      + (gap > 34 ? `<line x1="${r(x + w / 2)}" y1="${r(base - h - 8)}" x2="${r(x + w / 2)}" y2="${r(floorY + 8)}" stroke="${C.stop}" stroke-width="2.5" stroke-dasharray="2 7" stroke-linecap="round"/>` : "");
   }).join("");
   out += values.map((v, i) => column(at(below.length + gap + i), base, w, height(v), `fill="url(#${id}-rise)"`)).join("");
   // The floor runs edge to edge: one measured line every request is held to.
@@ -125,7 +126,7 @@ function lanes(hero: Extract<Hero, { motif: "lanes" }>): string {
   const outputs = count(hero.outputs, "outputs", 1, 6);
   if (outputs >= inputs) refuse("outputs must be fewer than inputs");
   // Providers are shades of the knot, never the status tones: no provider reads as a failure.
-  const shades = [C.violet, C.blue, mix(C.violet, C.ink, 0.45), mix(C.blue, C.ink, 0.45), mix(C.violet, C.blue, 0.5), mix(C.violet, C.ink, 0.7)];
+  const shades = [C.violet, C.blue, mix(C.violet, C.ink, 0.5), mix(C.blue, C.ink, 0.5), mix(C.violet, C.field, 0.35), mix(C.blue, C.field, 0.35)];
   const hue = (j: number) => shades[j];
   const iy = (i: number) => 60 + (280 * i) / (inputs - 1);
   const oy = (j: number) => (outputs === 1 ? 200 : 120 + (160 * j) / (outputs - 1));
@@ -161,7 +162,7 @@ function sandbox(hero: Extract<Hero, { motif: "sandbox" }>, id: string): string 
   const bx = cell(5, 1).x - 30, by = cell(5, 1).y - 22, bw = cw + 60, bh = ch + 44;
   const cx = bx + bw / 2, cy = by + bh / 2;
   let inside = "";
-  for (let k = 0; k < 3; k++) inside += `<rect x="${r(bx + 30)}" y="${r(by + 30 + k * 16)}" width="${54 - k * 12}" height="7" rx="3.5" fill="${C.ink}" fill-opacity=".7"/>`;
+  for (let k = 0; k < 3; k++) inside += `<rect x="${r(bx + 30)}" y="${r(by + 24 + k * 14)}" width="${54 - k * 12}" height="7" rx="3.5" fill="${C.ink}" fill-opacity=".7"/>`;
   inside += `<circle cx="${r(bx + bw - 42)}" cy="${r(by + bh - 38)}" r="10" fill="url(#${id}-rise)"/>`;
   // Each probe leaves through the middle of one side toward the neighbouring cell: right, left, up, down. An allowed probe
   // reaches that cell, which lights up; a denied one ends at a bar laid along the boundary.
@@ -171,20 +172,20 @@ function sandbox(hero: Extract<Hero, { motif: "sandbox" }>, id: string): string 
     { x: cx, y: by, nx: 0, ny: -1, col: 5, row: 0 },
     { x: cx, y: by + bh, nx: 0, ny: 1, col: 5, row: 2 },
   ];
-  let rays = "";
+  let lit = "", rays = "";
   probes.forEach((outcome, k) => {
     const p = ports[k], tone = outcome === "allowed" ? C.pass : C.stop;
     const stub = `<line x1="${r(p.x - p.nx * 26)}" y1="${r(p.y - p.ny * 26)}" x2="${r(p.x)}" y2="${r(p.y)}" stroke="${tone}" stroke-width="3.5" stroke-linecap="round"/>`;
     if (outcome === "allowed") {
       const tx = cell(p.col, p.row).x + cw / 2, ty = cell(p.col, p.row).y + ch / 2;
-      rays += cellRect(p.col, p.row, `fill="${C.pass}" fill-opacity=".16" stroke="${C.pass}" stroke-width="2.5"`) + stub
-        + `<line x1="${r(p.x)}" y1="${r(p.y)}" x2="${r(tx)}" y2="${r(ty)}" stroke="${tone}" stroke-width="3.5" stroke-linecap="round"/><circle cx="${r(tx)}" cy="${r(ty)}" r="9" fill="${tone}"/>`;
+      lit += cellRect(p.col, p.row, `fill="${C.pass}" fill-opacity=".16" stroke="${C.pass}" stroke-width="2.5"`);
+      rays += stub + `<line x1="${r(p.x)}" y1="${r(p.y)}" x2="${r(tx)}" y2="${r(ty)}" stroke="${tone}" stroke-width="3.5" stroke-linecap="round"/><circle cx="${r(tx)}" cy="${r(ty)}" r="9" fill="${tone}"/>`;
     } else {
       rays += stub + `<line x1="${r(p.x - p.ny * 18)}" y1="${r(p.y - p.nx * 18)}" x2="${r(p.x + p.ny * 18)}" y2="${r(p.y + p.nx * 18)}" stroke="${tone}" stroke-width="6" stroke-linecap="round"/>`;
     }
   });
-  // The boundary first, then the probes over it, so a stop bar reads along the edge it holds.
-  out += `<rect x="${r(bx)}" y="${r(by)}" width="${bw}" height="${bh}" rx="26" fill="${C.field}" fill-opacity=".72" stroke="url(#${id}-rise)" stroke-width="5"/>` + inside;
+  // Lit cells under the boundary, then the probes over it, so a stop bar reads along the edge it holds.
+  out += lit + `<rect x="${r(bx)}" y="${r(by)}" width="${bw}" height="${bh}" rx="26" fill="${C.field}" fill-opacity=".72" stroke="url(#${id}-rise)" stroke-width="5"/>` + inside;
   return out + rays;
 }
 
@@ -222,7 +223,6 @@ export function renderHero(hero: Hero, options: HeroOptions): string {
   const { id, frame = "band", mark } = options ?? ({} as HeroOptions);
   if (typeof id !== "string" || !/^[a-zA-Z_][a-zA-Z0-9_-]*$/.test(id)) refuse("a safe, unique id is required");
   if (frame !== "band" && frame !== "og") refuse("frame must be band or og");
-  if (mark !== undefined && (typeof mark !== "string" || /<\s*(script|style|foreignObject)|\son[a-z]+\s*=|javascript:/i.test(mark))) refuse("mark must be SVG markup without script, style or event handlers");
   const alt = typeof hero?.alt === "string" ? hero.alt.trim() : "";
   // Control characters, U+FFFE/U+FFFF and lone surrogates are not XML: a rasterizer would refuse the whole card.
   if (!alt || alt.length > 300 || /[\u0000-\u001f\ufffe\uffff]|[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/.test(alt)) refuse("alt must say what the art shows, in at most 300 characters of text");

@@ -14,10 +14,12 @@ const heroes: Hero[] = [
 const longest: Extract<Hero, { motif: "trace" }>["steps"] = ["retry", "retry", "pass", "retry", "pass", "pass", "retry", "pass", "pass", "stop"];
 // The largest input each motif accepts.
 const limits: Hero[] = [
-  { motif: "floor", alt: "x", values: Array.from({ length: 12 }, (_, i) => 1000 + i * 977), below: Array.from({ length: 8 }, (_, i) => 10 + i * 90) },
+  { motif: "floor", alt: "x", values: Array.from({ length: 12 }, (_, i) => 2000 + i * 977), below: Array.from({ length: 8 }, (_, i) => 10 + i * 90) },
   { motif: "lanes", alt: "x", inputs: 24, outputs: 6 },
   { motif: "sandbox", alt: "x", probes: ["denied", "denied", "denied", "denied"] },
+  { motif: "sandbox", alt: "x", probes: ["allowed", "allowed", "allowed", "allowed"] },
   { motif: "trace", alt: "x", steps: longest },
+  { motif: "trace", alt: "x", steps: Array.from({ length: 10 }, () => "retry" as const) },
 ];
 const parse = (svg: string) => new DOMParser().parseFromString(svg, "image/svg+xml");
 const nums = (svg: string, re: RegExp) => [...svg.matchAll(re)].map((m) => Number(m[1]));
@@ -27,6 +29,8 @@ it("draws every motif as deterministic, well-formed SVG under 30 KB, with only i
     const band = renderHero(hero, { id: "h" });
     expect(renderHero(hero, { id: "h" })).toBe(band);
     expect(band.length).toBeLessThan(30_000);
+    // The largest output: the longest input with a 300-character alt that escapes to five times its length.
+    expect(renderHero({ ...hero, alt: "&".repeat(300) }, { id: "h", frame: "og", mark: '<circle r="4"/>' }).length).toBeLessThan(12_000);
     expect(band).toContain('viewBox="0 0 1200 400"');
     expect(band).toContain('role="img"');
     expect(band).toContain(`<title id="h-alt">${hero.alt}</title>`);
@@ -44,7 +48,7 @@ it("draws every motif as deterministic, well-formed SVG under 30 KB, with only i
 });
 
 it("draws each column at its value, every short request under the floor, even at extreme ratios", () => {
-  for (const [values, below] of [[[31211, 32296, 47365, 47965, 48253, 62616], [2000, 8000, 12000, 20000]], [[1, 100], [0.5]], [[5, 5, 5], [4.9]]]) {
+  for (const [values, below] of [[[31211, 32296, 47365, 47965, 48253, 62616], [2000, 8000, 12000, 20000]], [[10, 100], [0.5]], [[5, 5, 5], [4.9]]]) {
     const svg = renderHero({ motif: "floor", alt: "x", values, below }, { id: "h" });
     // Column path: M x base V (top + ry) a (w/2) ry ...; the top is V - ry.
     const cols = [...svg.matchAll(/<path d="M[\d.]+ 336V([\d.]+)a[\d.]+ ([\d.]+) /g)].map((m) => 336 - (Number(m[1]) - Number(m[2])));
@@ -94,7 +98,7 @@ it("escapes the alt and refuses a hero it cannot draw honestly", () => {
   expect(() => renderHero(floor, { id: "1bad" })).toThrow(/id/);
   expect(() => renderHero(floor, undefined as never)).toThrow(/^hero: .*id/);
   expect(() => renderHero(floor, { id: "h", frame: "square" as never })).toThrow(/frame/);
-  expect(() => renderHero(floor, { id: "h", frame: "og", mark: '<g onload="x()"/>' })).toThrow(/mark/);
+  expect(() => renderHero({ ...floor, values: [1, 100] }, { id: "h" })).toThrow(/tenth/);
   expect(() => renderHero({ ...floor, below: [31211] }, { id: "h" })).toThrow(/under the floor/);
   expect(() => renderHero({ ...floor, values: [] }, { id: "h" })).toThrow(/values/);
   expect(() => renderHero({ ...floor, values: [1, Number.NaN] }, { id: "h" })).toThrow(/finite/);
@@ -109,5 +113,7 @@ it("escapes the alt and refuses a hero it cannot draw honestly", () => {
 it("takes every colour from its owner", () => {
   expect([HERO_COLORS.violet, HERO_COLORS.blue]).toEqual([...knot.stops]);
   expect([HERO_COLORS.field, HERO_COLORS.ink]).toEqual([palettes.websiteDark.canvas, palettes.websiteDark.ink]);
-  for (const tone of [HERO_COLORS.pass, HERO_COLORS.stop, HERO_COLORS.retry]) expect(figureCss).toContain(tone);
+  expect(figureCss).toMatch(new RegExp(`--chart-outcome-ok:[^;]*${HERO_COLORS.pass}`));
+  expect(figureCss).toMatch(new RegExp(`--chart-ending-died:[^;]*${HERO_COLORS.stop}`));
+  expect(figureCss).toMatch(new RegExp(`--chart-outcome-rate-limit:[^;]*${HERO_COLORS.retry}`));
 });
