@@ -285,6 +285,29 @@ Dedicated phone SVGs retain their intended width inside a keyboard-accessible sc
 Wide plots reserve side gutters so enlarged labels remain visible.
 These typography rules do not apply to report or chart presentation.
 
+### Post hero art
+
+`renderHero(hero, { id })` returns the band of art that sits under a post's title, drawn from numbers the post states, so a reader can name the post's idea from the art alone.
+
+```ts
+import { renderHero } from "@tangle-network/charts";
+
+const svg = renderHero(
+  { motif: "floor", alt: "Six measured runs stand on a floor at the smallest; four requested budgets fall short of it.", values: [31211, 32296, 47365, 47965, 48253, 62616], below: [2000, 8000, 12000, 20000] },
+  { id: "hero-budget-floor" },
+);
+```
+
+| Motif | Input | Draws |
+|---|---|---|
+| `floor` | `values` (1-12), optional `below` (0-8, each under the floor) | Measured bars on a floor at the smallest value, then the `below` bars that fall short of it, each refused at the floor. A floor under a tenth of the largest value is refused, since it cannot be seen |
+| `lanes` | `inputs` (2-24), `outputs` (1-6, fewer than inputs) | Request lanes weaving into a few providers |
+| `trace` | `steps`: `pass`, `retry` or `stop` (2-10; `stop` only last) | A run with a check after each step; a failed check (`retry`) is amber and loops back once; `stop` halts the run |
+
+The band is 1200 x 400 with its subject in the central 700 x 300, cropped with `xMidYMid slice`: a box from 7:4 to 4:1 (width to height) shows all of it, such as 390 x 220 on a phone and up to 1600 x 400 on a desktop.
+`{ frame: "og", mark }` draws the same art as a 1200 x 630 social card, with mark markup (such as Brand's knot, about 56 px tall) at (56, 526). The mark is inserted as is, not sanitized, so pass only markup you wrote. Rasterize the card at build time.
+The `alt` becomes the SVG's title, so write what the art shows. Nothing moves, so reduced motion needs nothing.
+
 ## Optional React renderers
 
 ```tsx

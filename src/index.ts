@@ -31,6 +31,7 @@ export {
 } from "./types.js";
 
 export { metricBars, type MetricBarsOptions, type MetricRow } from "./metric-bars.js";
+export { HERO_COLORS, type Hero, type HeroMotif, type HeroOptions, renderHero } from "./hero.js";
 export { timeSeries, type TimePoint, type TimeSeriesOptions, type TimeSeriesRow } from "./time-series.js";
 export { type XCategory, type YScale, type YTarget, type YTick } from "./axis.js";
 export { type PointFields, type PointGlyph } from "./points.js";
