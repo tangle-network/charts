@@ -52,12 +52,14 @@ it("draws each column at its value, every short request under the floor, even at
     const svg = renderHero({ motif: "floor", alt: "x", values, below }, { id: "h" });
     // Column path: M x base V (top + ry) a (w/2) ry ...; the top is V - ry.
     const cols = [...svg.matchAll(/<path d="M[\d.]+ 336V([\d.]+)a[\d.]+ ([\d.]+) /g)].map((m) => 336 - (Number(m[1]) - Number(m[2])));
-    const heights = [...below, ...values].map((v) => (v / Math.max(...values, ...below)) * 260);
+    const heights = [...values, ...below].map((v) => (v / Math.max(...values, ...below)) * 260);
     expect(cols).toHaveLength(heights.length);
     cols.forEach((h, i) => expect(Math.abs(h - heights[i]!)).toBeLessThan(0.3));
     const floorY = nums(svg, /<line x1="0" y1="([\d.]+)" x2="1200" y2="[\d.]+" stroke="#e4e4e4" stroke-width="3"/g)[0]!;
     expect(Math.abs(floorY - (336 - (Math.min(...values) / Math.max(...values, ...below)) * 260))).toBeLessThan(0.1);
-    cols.slice(0, below.length).forEach((h) => expect(336 - h).toBeGreaterThan(floorY));
+    cols.slice(values.length).forEach((h) => expect(336 - h).toBeGreaterThan(floorY));
+    // Each short request is refused at the floor.
+    expect(svg.match(/l18 18M/g)).toHaveLength(below.length);
   }
 });
 

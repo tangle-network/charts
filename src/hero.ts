@@ -12,13 +12,15 @@
 import { esc } from "./text.js";
 
 export type Hero =
-  /** Bars for measured values standing on a floor at the smallest one; `below` are requests that fall short of it. */
+  /** Bars for measured values standing on a floor at the smallest one; `below` are requests that fall short of it, drawn
+   * after the measured bars and refused at the floor. */
   | { motif: "floor"; alt: string; values: number[]; below?: number[] }
   /** `inputs` request lanes routed across `outputs` providers. */
   | { motif: "lanes"; alt: string; inputs: number; outputs: number }
   /** One workspace in a grid of isolated cells; up to four probes reach a neighbouring cell (`allowed`) or stop at its boundary (`denied`). */
   | { motif: "sandbox"; alt: string; probes: ("allowed" | "denied")[] }
-  /** A run trace with a check after every step; `retry` loops back once, `stop` ends the run at a failed check. */
+  /** A run trace with a check after every step; at a `retry` the check fails and the step runs again, `stop` ends the run at a
+   * failed check. */
   | { motif: "trace"; alt: string; steps: ("pass" | "retry" | "stop")[] };
 
 export type HeroMotif = Hero["motif"];
@@ -108,17 +110,20 @@ function floor(hero: Extract<Hero, { motif: "floor" }>, id: string): string {
   const floorY = base - height(level);
   const at = (i: number) => x0 + slot * i + (slot - w) / 2;
   let out = `<line x1="0" y1="${base}" x2="${W}" y2="${base}" stroke="${C.ink}" stroke-opacity=".16" stroke-width="2"/>`;
+  // Read left to right: the measured runs set the floor, then each request that falls short is refused at it.
+  out += values.map((v, i) => column(at(i), base, w, height(v), `fill="url(#${id}-rise)"`)).join("");
+  let refusals = "";
   out += below.map((v, i) => {
-    const x = at(i), h = height(v), short = base - h - floorY;
+    const x = at(values.length + gap + i), cx = x + w / 2, h = height(v), short = base - h - floorY;
+    refusals += `<path d="M${r(cx - 9)} ${r(floorY - 27)}l18 18M${r(cx + 9)} ${r(floorY - 27)}l-18 18" stroke="${C.stop}" stroke-width="4" stroke-linecap="round"/>`;
     // The shortfall, dashed from the request's top up to the floor, where there is room to draw it.
     return column(x, base, w, h, `fill="${C.stop}" fill-opacity=".18" stroke="${C.stop}" stroke-width="2.5"`)
-      + (short > 34 ? `<line x1="${r(x + w / 2)}" y1="${r(base - h - 8)}" x2="${r(x + w / 2)}" y2="${r(floorY + 8)}" stroke="${C.stop}" stroke-width="2.5" stroke-dasharray="2 7" stroke-linecap="round"/>` : "");
+      + (short > 34 ? `<line x1="${r(cx)}" y1="${r(base - h - 8)}" x2="${r(cx)}" y2="${r(floorY + 8)}" stroke="${C.stop}" stroke-width="2.5" stroke-dasharray="2 7" stroke-linecap="round"/>` : "");
   }).join("");
-  out += values.map((v, i) => column(at(below.length + gap + i), base, w, height(v), `fill="url(#${id}-rise)"`)).join("");
   // The floor runs edge to edge: one measured line every request is held to.
   out += `<line x1="0" y1="${r(floorY)}" x2="${W}" y2="${r(floorY)}" stroke="${C.ink}" stroke-opacity=".22" stroke-width="10"/>`;
   out += `<line x1="0" y1="${r(floorY)}" x2="${W}" y2="${r(floorY)}" stroke="${C.ink}" stroke-width="3"/>`;
-  return out;
+  return out + refusals;
 }
 
 function lanes(hero: Extract<Hero, { motif: "lanes" }>): string {
@@ -209,11 +214,14 @@ function trace(hero: Extract<Hero, { motif: "trace" }>, id: string): string {
       out += `<path d="M${r(sx - 6)} ${y - 30}l${r(10)} ${12}l${r(9)} ${-11}" fill="none" stroke="${C.retry}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>`;
     }
     out += `<rect x="${r(sx)}" y="${y - 16}" width="${r(pitch * 0.4)}" height="32" rx="16" fill="url(#${id}-rise)"/>`;
-    const tone = step === "stop" ? C.stop : C.pass;
+    // A retried step's check is amber with no tick: it failed, and the loop runs the step again.
+    const tone = step === "stop" ? C.stop : step === "retry" ? C.retry : C.pass;
     out += `<circle cx="${r(cx)}" cy="${y}" r="14" fill="${C.field}" stroke="${tone}" stroke-width="3.5"/>`;
     out += step === "stop"
       ? `<path d="M${r(cx - 6)} ${y - 6}l12 12M${r(cx + 6)} ${y - 6}l-12 12" stroke="${tone}" stroke-width="3.5" stroke-linecap="round"/><line x1="${r(cx + 24)}" y1="${y - 26}" x2="${r(cx + 24)}" y2="${y + 26}" stroke="${tone}" stroke-width="5" stroke-linecap="round"/>`
-      : `<path d="M${r(cx - 6)} ${y + 1}l4.5 4.5l8 -9" fill="none" stroke="${tone}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+      : step === "retry"
+        ? `<line x1="${r(cx - 6)}" y1="${y}" x2="${r(cx + 6)}" y2="${y}" stroke="${tone}" stroke-width="3.5" stroke-linecap="round"/>`
+        : `<path d="M${r(cx - 6)} ${y + 1}l4.5 4.5l8 -9" fill="none" stroke="${tone}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>`;
   });
   return out;
 }
