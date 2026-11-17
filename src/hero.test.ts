@@ -1,6 +1,6 @@
+// @vitest-environment jsdom
 import { palettes } from "@tangle-network/brand";
 import { knot } from "@tangle-network/brand/knot";
-import { JSDOM } from "jsdom";
 import { expect, it } from "vitest";
 import { figureCss } from "./css.generated.js";
 import { HERO_COLORS, type Hero, renderHero } from "./index.js";
@@ -19,7 +19,7 @@ const limits: Hero[] = [
   { motif: "sandbox", alt: "x", probes: ["denied", "denied", "denied", "denied"] },
   { motif: "trace", alt: "x", steps: longest },
 ];
-const parse = (svg: string) => new new JSDOM().window.DOMParser().parseFromString(svg, "image/svg+xml");
+const parse = (svg: string) => new DOMParser().parseFromString(svg, "image/svg+xml");
 const nums = (svg: string, re: RegExp) => [...svg.matchAll(re)].map((m) => Number(m[1]));
 
 it("draws every motif as deterministic, well-formed SVG under 30 KB, with only its own ids, in the band and the card", () => {
