@@ -302,11 +302,11 @@ const svg = renderHero(
 |---|---|---|
 | `floor` | `values`, optional `below` | Bars on a floor at the smallest value; `below` bars fall short of it |
 | `lanes` | `inputs` (2-24), `outputs` (1-6, fewer than inputs) | Request lanes weaving into a few providers |
-| `sandbox` | `probes`: `allowed` or `denied` (1-6) | One workspace in a grid of cells; allowed probes cross its boundary, denied ones stop at it |
+| `sandbox` | `probes`: `allowed` or `denied` (1-4: right, left, up, down) | One workspace in a grid of cells; an allowed probe reaches the neighbouring cell, a denied one stops at the boundary |
 | `trace` | `steps`: `pass`, `retry` or `stop` (2-10; `stop` only last) | A run with a check after each step, a retry loop and a halt |
 
-The band is 1200 x 400 with its subject in the central 700 x 300: give the SVG `width: 100%` and a fixed height and it crops with `xMidYMid slice` down to a phone.
-`{ frame: "og", mark }` draws the same art as a 1200 x 630 social card, with trusted mark markup (such as Brand's knot) in its lower left; rasterize it at build time.
+The band is 1200 x 400 with its subject in the central 700 x 300, cropped with `xMidYMid slice`: a box from 7:4 to 4:1 (width to height) shows all of it, such as 390 x 220 on a phone and up to 1600 x 400 on a desktop.
+`{ frame: "og", mark }` draws the same art as a 1200 x 630 social card, with mark markup (such as Brand's knot, about 56 px tall) at (56, 526); a mark with script, style or event handlers is refused. Rasterize the card at build time.
 The `alt` becomes the SVG's title, so write what the art shows. Nothing moves, so reduced motion needs nothing.
 
 ## Optional React renderers
