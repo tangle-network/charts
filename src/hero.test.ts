@@ -8,7 +8,6 @@ import { HERO_COLORS, type Hero, renderHero } from "./index.js";
 const heroes: Hero[] = [
   { motif: "floor", alt: "Six bars above a floor line; four short bars below it.", values: [31211, 32296, 47365, 47965, 48253, 62616], below: [2000, 8000, 12000, 20000] },
   { motif: "lanes", alt: "Twelve lanes weave into three.", inputs: 12, outputs: 3 },
-  { motif: "sandbox", alt: "One workspace in a grid; two probes reach a neighbouring cell and two stop at its boundary.", probes: ["allowed", "denied", "allowed", "denied"] },
   { motif: "trace", alt: "Six steps, each checked; the third retries once and the last stops.", steps: ["pass", "pass", "retry", "pass", "pass", "stop"] },
 ];
 const longest: Extract<Hero, { motif: "trace" }>["steps"] = ["retry", "retry", "pass", "retry", "pass", "pass", "retry", "pass", "pass", "stop"];
@@ -16,8 +15,6 @@ const longest: Extract<Hero, { motif: "trace" }>["steps"] = ["retry", "retry", "
 const limits: Hero[] = [
   { motif: "floor", alt: "x", values: Array.from({ length: 12 }, (_, i) => 2000 + i * 977), below: Array.from({ length: 8 }, (_, i) => 10 + i * 90) },
   { motif: "lanes", alt: "x", inputs: 24, outputs: 6 },
-  { motif: "sandbox", alt: "x", probes: ["denied", "denied", "denied", "denied"] },
-  { motif: "sandbox", alt: "x", probes: ["allowed", "allowed", "allowed", "allowed"] },
   { motif: "trace", alt: "x", steps: longest },
   { motif: "trace", alt: "x", steps: Array.from({ length: 10 }, () => "retry" as const) },
 ];
@@ -74,10 +71,6 @@ it("draws one mark per input, inside the part a phone keeps", () => {
   // Providers are never drawn in the status tones.
   expect(lanes).not.toMatch(new RegExp(`${HERO_COLORS.pass}|${HERO_COLORS.stop}|${HERO_COLORS.retry}`));
 
-  const sandbox = renderHero({ motif: "sandbox", alt: "x", probes: ["allowed", "denied", "allowed", "denied"] }, { id: "h" });
-  expect(sandbox.match(/<circle [^>]*r="9" fill="#1baf7a"/g)).toHaveLength(2);
-  expect(sandbox.match(/stroke="#e05252" stroke-width="6"/g)).toHaveLength(2);
-
   for (const steps of [["retry", "stop"], longest] as const) {
     const trace = renderHero({ motif: "trace", alt: "x", steps: [...steps] }, { id: "h" });
     expect(trace.match(/<circle [^>]*r="14"/g)).toHaveLength(steps.length);
@@ -107,8 +100,6 @@ it("escapes the alt and refuses a hero it cannot draw honestly", () => {
   expect(() => renderHero({ ...floor, values: new Array(3) }, { id: "h" })).toThrow(/finite/);
   expect(() => renderHero({ motif: "lanes", alt: "x", inputs: 3, outputs: 3 }, { id: "h" })).toThrow(/fewer/);
   expect(() => renderHero({ motif: "trace", alt: "x", steps: ["stop", "pass"] }, { id: "h" })).toThrow(/last step/);
-  expect(() => renderHero({ motif: "sandbox", alt: "x", probes: ["maybe" as never] }, { id: "h" })).toThrow(/allowed, denied/);
-  expect(() => renderHero({ motif: "sandbox", alt: "x", probes: ["allowed", "allowed", "allowed", "allowed", "allowed"] }, { id: "h" })).toThrow(/probes/);
   expect(() => renderHero({ motif: "spiral", alt: "x" } as never, { id: "h" })).toThrow(/unknown motif/);
 });
 

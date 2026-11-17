@@ -1,7 +1,7 @@
 /**
  * Post heroes: a band of art that draws a post's argument from a few numbers the post states. Each motif is one idea a
  * reader should name from the art alone: a measured floor that requests fall short of, requests routed across a few
- * providers, a workspace boundary that allows or denies, a run that checks each step before the next.
+ * providers, a run that checks each step before the next.
  *
  * The output is deterministic SVG with concrete Brand colours and no CSS, script, text or bitmap, so the same string
  * renders inline and rasterizes to a 1200 x 630 social card. The band is drawn at 1200 x 400 and keeps its subject in
@@ -17,8 +17,6 @@ export type Hero =
   | { motif: "floor"; alt: string; values: number[]; below?: number[] }
   /** `inputs` request lanes routed across `outputs` providers. */
   | { motif: "lanes"; alt: string; inputs: number; outputs: number }
-  /** One workspace in a grid of isolated cells; up to four probes reach a neighbouring cell (`allowed`) or stop at its boundary (`denied`). */
-  | { motif: "sandbox"; alt: string; probes: ("allowed" | "denied")[] }
   /** A run trace with a check after every step; at a `retry` the check fails and the step runs again, `stop` ends the run at a
    * failed check. */
   | { motif: "trace"; alt: string; steps: ("pass" | "retry" | "stop")[] };
@@ -38,8 +36,8 @@ export interface HeroOptions {
 
 /**
  * Each colour has an owner, pinned by a test: the knot's two gradient stops and the website's dark canvas and ink (Brand),
- * and the status tones of `figure.css` that read on that canvas: green for a check passed or a probe allowed, red for one
- * stopped, amber for a retry.
+ * and the status tones of `figure.css` that read on that canvas: green for a check passed, red for a stop or a refusal,
+ * amber for a retry.
  */
 export const HERO_COLORS = {
   field: "#0c0b1d",
@@ -151,49 +149,6 @@ function lanes(hero: Extract<Hero, { motif: "lanes" }>): string {
   return out;
 }
 
-function sandbox(hero: Extract<Hero, { motif: "sandbox" }>, id: string): string {
-  const probes = list(hero.probes, "probes", 1, 4, oneOf(["allowed", "denied"] as const, "each probe"));
-  const cw = 100, ch = 84, gap = 20, cols = 11, rows = 3;
-  const gx0 = W / 2 - (cols * cw + (cols - 1) * gap) / 2, gy0 = H / 2 - (rows * ch + (rows - 1) * gap) / 2;
-  const cell = (col: number, row: number) => ({ x: gx0 + col * (cw + gap), y: gy0 + row * (ch + gap) });
-  const cellRect = (col: number, row: number, attrs: string) => `<rect x="${r(cell(col, row).x)}" y="${r(cell(col, row).y)}" width="${cw}" height="${ch}" rx="16" ${attrs}/>`;
-  let out = "";
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      if (row !== 1 || col !== 5) out += cellRect(col, row, `fill="${C.ink}" fill-opacity=".03" stroke="${C.ink}" stroke-opacity=".14" stroke-width="2"`);
-    }
-  }
-  // The workspace: the centre cell, its boundary in the knot gradient, with files and a process inside.
-  const bx = cell(5, 1).x - 30, by = cell(5, 1).y - 22, bw = cw + 60, bh = ch + 44;
-  const cx = bx + bw / 2, cy = by + bh / 2;
-  let inside = "";
-  for (let k = 0; k < 3; k++) inside += `<rect x="${r(bx + 30)}" y="${r(by + 24 + k * 14)}" width="${54 - k * 12}" height="7" rx="3.5" fill="${C.ink}" fill-opacity=".7"/>`;
-  inside += `<circle cx="${r(bx + bw - 42)}" cy="${r(by + bh - 38)}" r="10" fill="url(#${id}-rise)"/>`;
-  // Each probe leaves through the middle of one side toward the neighbouring cell: right, left, up, down. An allowed probe
-  // reaches that cell, which lights up; a denied one ends at a bar laid along the boundary.
-  const ports = [
-    { x: bx + bw, y: cy, nx: 1, ny: 0, col: 6, row: 1 },
-    { x: bx, y: cy, nx: -1, ny: 0, col: 4, row: 1 },
-    { x: cx, y: by, nx: 0, ny: -1, col: 5, row: 0 },
-    { x: cx, y: by + bh, nx: 0, ny: 1, col: 5, row: 2 },
-  ];
-  let lit = "", rays = "";
-  probes.forEach((outcome, k) => {
-    const p = ports[k], tone = outcome === "allowed" ? C.pass : C.stop;
-    const stub = `<line x1="${r(p.x - p.nx * 18)}" y1="${r(p.y - p.ny * 18)}" x2="${r(p.x)}" y2="${r(p.y)}" stroke="${tone}" stroke-width="3.5" stroke-linecap="round"/>`;
-    if (outcome === "allowed") {
-      const tx = cell(p.col, p.row).x + cw / 2, ty = cell(p.col, p.row).y + ch / 2;
-      lit += cellRect(p.col, p.row, `fill="${C.pass}" fill-opacity=".16" stroke="${C.pass}" stroke-width="2.5"`);
-      rays += stub + `<line x1="${r(p.x)}" y1="${r(p.y)}" x2="${r(tx)}" y2="${r(ty)}" stroke="${tone}" stroke-width="3.5" stroke-linecap="round"/><circle cx="${r(tx)}" cy="${r(ty)}" r="9" fill="${tone}"/>`;
-    } else {
-      rays += stub + `<line x1="${r(p.x - p.ny * 18)}" y1="${r(p.y - p.nx * 18)}" x2="${r(p.x + p.ny * 18)}" y2="${r(p.y + p.nx * 18)}" stroke="${tone}" stroke-width="6" stroke-linecap="round"/>`;
-    }
-  });
-  // Lit cells under the boundary, then the probes over it, so a stop bar reads along the edge it holds.
-  out += lit + `<rect x="${r(bx)}" y="${r(by)}" width="${bw}" height="${bh}" rx="26" fill="${C.field}" fill-opacity=".72" stroke="url(#${id}-rise)" stroke-width="5"/>` + inside;
-  return out + rays;
-}
-
 function trace(hero: Extract<Hero, { motif: "trace" }>, id: string): string {
   const steps = list(hero.steps, "steps", 2, 10, oneOf(["pass", "retry", "stop"] as const, "each step"));
   if (steps.slice(0, -1).includes("stop")) refuse("only the last step may stop the run");
@@ -236,9 +191,8 @@ export function renderHero(hero: Hero, options: HeroOptions): string {
   if (!alt || alt.length > 300 || /[\u0000-\u001f\ufffe\uffff]|[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/.test(alt)) refuse("alt must say what the art shows, in at most 300 characters of text");
   const art = hero.motif === "floor" ? floor(hero, id)
     : hero.motif === "lanes" ? lanes(hero)
-    : hero.motif === "sandbox" ? sandbox(hero, id)
     : hero.motif === "trace" ? trace(hero, id)
-    : refuse(`unknown motif ${String((hero as { motif?: unknown })?.motif)}; use floor, lanes, sandbox or trace`);
+    : refuse(`unknown motif ${String((hero as { motif?: unknown })?.motif)}; use floor, lanes or trace`);
   const height = frame === "og" ? 630 : H;
   const dy = (height - H) / 2;
   const defs = `<defs><linearGradient id="${id}-rise" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="${C.blue}"/><stop offset="1" stop-color="${C.violet}"/></linearGradient>`
