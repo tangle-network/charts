@@ -48,11 +48,14 @@ it("prints status, period, unit and sources in every presentation, scope before 
 
 it("leaves a figure without provenance byte-identical to its render with the fields stripped", () => {
   const partial: Figure = { ...bare, unit: "  ", sources: [] };
+  // JSON producers write null for a field they did not record.
+  const nulls = { ...bare, status: null, period: null, unit: null, sources: null } as unknown as Figure;
   for (const presentation of presentations) {
     const options = presentation ? { presentation } : {};
     const html = renderFigure(bare, 2, options);
     expect(html).not.toMatch(/tgc-context|tgc-sources|tgc-status/);
     expect(renderFigure(partial, 2, options)).toBe(html);
+    expect(renderFigure(nulls, 2, options)).toBe(html);
   }
 });
 
