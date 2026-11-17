@@ -1,3 +1,7 @@
+## 4.0.28
+
+- `renderHero(hero, { id, frame?, mark? })` draws a post's hero art from a few numbers the post states, as deterministic SVG in Brand's knot colours on the dark field: `floor` (measured values standing on a floor at the smallest, with the requests that fall short of it), `lanes` (request lanes routed across fewer providers), `sandbox` (one workspace in a grid of cells; each probe crosses its boundary or stops at it) and `trace` (a run that checks each step, with a retry loop and a stop). The band is 1200 x 400 with its subject in the central 700 x 300, so it crops to a 390 px phone; `frame: "og"` draws the same art as a 1200 x 630 social card with an optional mark. No text, bitmap, script or CSS, so it rasterizes the same everywhere; each motif is under 7 KB. Input it cannot draw honestly (a short request at or above the floor, a stop before the last step, as many providers as lanes) is refused.
+
 ## 4.0.27
 
 - A figure takes optional provenance: `status` (`measured`, `captured` or `illustrative`), `period`, `unit` and `sources: { label, href }[]`. Every presentation prints them, `panel` and `FigureView` included: a scope line (status tag, period, unit) above the plot and the source links at the end of the caption. A source link that is not http(s), root-relative or a fragment is refused. A figure without these fields renders byte for byte as in 4.0.26.
