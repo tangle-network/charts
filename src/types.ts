@@ -100,6 +100,16 @@ export interface Exclusion {
   why: string;
 }
 
+/** How a figure's values were obtained: measured by an instrument, captured from a record, or illustrative (not data). */
+export type FigureStatus = "measured" | "captured" | "illustrative";
+
+/** One place a figure's numbers come from: a record, a commit, a page or a note on the same page. */
+export interface FigureSource {
+  label: string;
+  /** An http(s) URL, a root-relative path or a fragment such as `#note-1`. */
+  href: string;
+}
+
 export interface Figure {
   id: string;
   /** Generated from the input; no function accepts heading text. */
@@ -113,6 +123,14 @@ export interface Figure {
   /** An HTML table with every number the plot shows. */
   table: string;
   note: { method: string; n: string; exclusions: string[] };
+  /** Provenance the producer attaches; every presentation prints what is present in the caption and omits the rest. */
+  status?: FigureStatus;
+  /** When the values were observed, such as "1 Aug 2026" or "17–23 Sep 2026". */
+  period?: string;
+  /** The unit the marks are drawn in, such as "input tokens". */
+  unit?: string;
+  /** Where the numbers come from, in order; the caption ends with these links. */
+  sources?: FigureSource[];
 }
 
 export interface Refusal {

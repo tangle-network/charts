@@ -81,6 +81,16 @@ Each figure returns:
 - `table`: an HTML table with every number the plot shows.
 - `note`: the method, the n and every exclusion, rendered by `renderNotes`.
 
+The producer may attach provenance to a returned figure; every presentation (report, chart, plot, panel and `FigureView`) prints what is present and omits the rest:
+
+- `status`: `"measured"`, `"captured"` (copied from a record) or `"illustrative"` (not data; its tag is dashed).
+- `period` and `unit`: when the values were observed and what the marks count. With `status` they form the scope line above the plot.
+- `sources`: `{ label, href }[]`, the links that end the caption, such as the run record and `#note-1`. An `href` is http(s), root-relative or a fragment; anything else is refused.
+
+```ts
+const html = renderFigure({ ...fig, status: "measured", period: "1–7 Nov 2026", unit: "solve rate", sources: [{ label: "Board record", href: "https://example.com/board.json" }, { label: "Method", href: "#note-1" }] }, 1);
+```
+
 ## Colour
 
 Marks carry classes, and `figure.css` maps them to the `--chart-*` tokens in `@tangle-network/brand` tokens.css.

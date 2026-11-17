@@ -174,6 +174,48 @@
   text-decoration: none;
 }
 
+/* Provenance: the scope line (status, period, unit) above the plot and the source links that end the caption. */
+.tgc-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin: 0 0 12px;
+  font-family: var(--font-mono, "JetBrains Mono", ui-monospace, monospace);
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--chart-ink-muted);
+}
+.tgc-status {
+  padding: 0 6px;
+  border: 1px solid var(--chart-ink-muted);
+  border-radius: 4px;
+  color: var(--chart-ink);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+/* Illustrative values are not data: a dashed tag says so without colour. */
+.tgc-status[data-status="illustrative"] {
+  border-style: dashed;
+}
+.tgc-sources {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--chart-ink-muted);
+}
+.tgc-sources a {
+  color: var(--chart-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--chart-rule);
+  text-underline-offset: 2px;
+}
+.tgc-sources a:hover,
+.tgc-sources a:focus-visible {
+  color: var(--chart-accent);
+  text-decoration-color: currentColor;
+}
+
 .tgc-refusals {
   margin: 8px 0 0;
   padding-left: 20px;
@@ -447,18 +489,19 @@
  * the light surface and on #161616; `aborted` and `other` are two distinct greys. Checkers take hues no status uses
  * (blue for the current checker, then magenta, cyan and violet for older ones) and pass as adjacent series; their
  * marks also carry a vN label. Run endings reuse those colours. `scripts/palette-check.mjs` re-runs the validator. A
- * page may override any of these properties; :where() keeps them at zero specificity.
+ * page may override any of these properties; :where() keeps them at zero specificity. Ok, quota and the current
+ * checker are Brand's --chart-category-3, -2 and -1; the literal after each is the fallback for a page without Brand.
  */
 :where(:root) {
-  --chart-outcome-ok: light-dark(#1baf7a, #199e70);
-  --chart-outcome-quota: light-dark(#eb6834, #d95926);
+  --chart-outcome-ok: var(--chart-category-3, light-dark(#1baf7a, #199e70));
+  --chart-outcome-quota: var(--chart-category-2, light-dark(#eb6834, #d95926));
   --chart-outcome-lost: light-dark(#0f9fb8, #1a9cb3);
   --chart-outcome-rate-limit: light-dark(#eda100, #c98500);
   --chart-outcome-oom: light-dark(#e87ba4, #d55181);
   --chart-outcome-refused: light-dark(#6250d6, #9085e9);
   --chart-outcome-neutral: #898781;
   --chart-outcome-other: #b5b3ac;
-  --chart-checker-0: light-dark(#2a78d6, #3987e5);
+  --chart-checker-0: var(--chart-category-1, light-dark(#2a78d6, #3987e5));
   --chart-checker-1: light-dark(#b8478f, #c2408f);
   --chart-checker-2: light-dark(#0f9fb8, #1a9cb3);
   --chart-checker-3: light-dark(#6250d6, #8c7ce6);

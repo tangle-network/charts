@@ -1,3 +1,8 @@
+## 4.0.27
+
+- A figure takes optional provenance: `status` (`measured`, `captured` or `illustrative`), `period`, `unit` and `sources: { label, href }[]`. Every presentation prints them, `panel` and `FigureView` included: a scope line (status tag, period, unit) above the plot and the source links at the end of the caption. A source link that is not http(s), root-relative or a fragment is refused. A figure without these fields renders byte for byte as in 4.0.26.
+- `figure.css` reads ok, quota and the current checker from Brand's `--chart-category-3`, `-2` and `-1`, keeping the same values as fallbacks for pages without Brand.
+
 ## 4.0.26
 
 - An agent's name or subtitle clamped to two lines (hub nodes, tree and grid cards, live cards) carries a title with the whole text it shows, parent included ("root / name"), so a long name stays readable on hover.

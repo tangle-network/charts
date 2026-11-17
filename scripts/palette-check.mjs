@@ -16,7 +16,8 @@ if (!validator) {
 }
 const { validate } = await import(pathToFileURL(path.resolve(validator)).href)
 const css = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'src', 'figure.css'), 'utf8')
-const pairs = (prefix) => [...css.matchAll(new RegExp(`--chart-${prefix}-([a-z0-9-]+):\\s*light-dark\\((#[0-9a-f]{6}),\\s*(#[0-9a-f]{6})\\)`, 'gi'))]
+// A colour Brand also owns reads `var(--chart-category-N, light-dark(...))`; its fallback pair is the one validated.
+const pairs = (prefix) => [...css.matchAll(new RegExp(`--chart-${prefix}-([a-z0-9-]+):\\s*(?:var\\(--chart-category-\\d+,\\s*)?light-dark\\((#[0-9a-f]{6}),\\s*(#[0-9a-f]{6})\\)`, 'gi'))]
   .map(([, name, light, dark]) => ({ name, light, dark }))
 const surfaces = { light: '#fcfcfb', dark: '#161616' }
 let failed = false
