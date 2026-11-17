@@ -109,10 +109,10 @@ function floor(hero: Extract<Hero, { motif: "floor" }>, id: string): string {
   const at = (i: number) => x0 + slot * i + (slot - w) / 2;
   let out = `<line x1="0" y1="${base}" x2="${W}" y2="${base}" stroke="${C.ink}" stroke-opacity=".16" stroke-width="2"/>`;
   out += below.map((v, i) => {
-    const x = at(i), h = height(v), gap = base - h - floorY;
+    const x = at(i), h = height(v), short = base - h - floorY;
     // The shortfall, dashed from the request's top up to the floor, where there is room to draw it.
     return column(x, base, w, h, `fill="${C.stop}" fill-opacity=".18" stroke="${C.stop}" stroke-width="2.5"`)
-      + (gap > 34 ? `<line x1="${r(x + w / 2)}" y1="${r(base - h - 8)}" x2="${r(x + w / 2)}" y2="${r(floorY + 8)}" stroke="${C.stop}" stroke-width="2.5" stroke-dasharray="2 7" stroke-linecap="round"/>` : "");
+      + (short > 34 ? `<line x1="${r(x + w / 2)}" y1="${r(base - h - 8)}" x2="${r(x + w / 2)}" y2="${r(floorY + 8)}" stroke="${C.stop}" stroke-width="2.5" stroke-dasharray="2 7" stroke-linecap="round"/>` : "");
   }).join("");
   out += values.map((v, i) => column(at(below.length + gap + i), base, w, height(v), `fill="url(#${id}-rise)"`)).join("");
   // The floor runs edge to edge: one measured line every request is held to.
@@ -175,7 +175,7 @@ function sandbox(hero: Extract<Hero, { motif: "sandbox" }>, id: string): string 
   let lit = "", rays = "";
   probes.forEach((outcome, k) => {
     const p = ports[k], tone = outcome === "allowed" ? C.pass : C.stop;
-    const stub = `<line x1="${r(p.x - p.nx * 26)}" y1="${r(p.y - p.ny * 26)}" x2="${r(p.x)}" y2="${r(p.y)}" stroke="${tone}" stroke-width="3.5" stroke-linecap="round"/>`;
+    const stub = `<line x1="${r(p.x - p.nx * 18)}" y1="${r(p.y - p.ny * 18)}" x2="${r(p.x)}" y2="${r(p.y)}" stroke="${tone}" stroke-width="3.5" stroke-linecap="round"/>`;
     if (outcome === "allowed") {
       const tx = cell(p.col, p.row).x + cw / 2, ty = cell(p.col, p.row).y + ch / 2;
       lit += cellRect(p.col, p.row, `fill="${C.pass}" fill-opacity=".16" stroke="${C.pass}" stroke-width="2.5"`);

@@ -29,8 +29,8 @@ it("draws every motif as deterministic, well-formed SVG under 30 KB, with only i
     const band = renderHero(hero, { id: "h" });
     expect(renderHero(hero, { id: "h" })).toBe(band);
     expect(band.length).toBeLessThan(30_000);
-    // The largest output: the longest input with a 300-character alt that escapes to five times its length.
-    expect(renderHero({ ...hero, alt: "&".repeat(300) }, { id: "h", frame: "og", mark: '<circle r="4"/>' }).length).toBeLessThan(12_000);
+    // The largest output: the longest input with a 300-character alt that escapes to six times its length, before the mark.
+    expect(renderHero({ ...hero, alt: '"'.repeat(300) }, { id: "h", frame: "og" }).length).toBeLessThan(12_000);
     expect(band).toContain('viewBox="0 0 1200 400"');
     expect(band).toContain('role="img"');
     expect(band).toContain(`<title id="h-alt">${hero.alt}</title>`);

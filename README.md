@@ -300,7 +300,7 @@ const svg = renderHero(
 
 | Motif | Input | Draws |
 |---|---|---|
-| `floor` | `values`, optional `below` | Bars on a floor at the smallest value; `below` bars fall short of it |
+| `floor` | `values` (1-12), optional `below` (0-8, each under the floor) | Bars on a floor at the smallest value; `below` bars fall short of it. A floor under a tenth of the largest value is refused, since it cannot be seen |
 | `lanes` | `inputs` (2-24), `outputs` (1-6, fewer than inputs) | Request lanes weaving into a few providers |
 | `sandbox` | `probes`: `allowed` or `denied` (1-4: right, left, up, down) | One workspace in a grid of cells; an allowed probe reaches the neighbouring cell, a denied one stops at the boundary |
 | `trace` | `steps`: `pass`, `retry` or `stop` (2-10; `stop` only last) | A run with a check after each step, a retry loop and a halt |
