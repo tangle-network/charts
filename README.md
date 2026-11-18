@@ -307,6 +307,7 @@ const svg = renderHero(
 The band is 1200 x 400 with its subject in the central 700 x 300, cropped with `xMidYMid slice`: a box from 7:4 to 4:1 (width to height) shows all of it, such as 390 x 220 on a phone and up to 1600 x 400 on a desktop.
 `{ frame: "og", mark }` draws the same art as a 1200 x 630 social card, with mark markup (such as Brand's knot, about 56 px tall) at (56, 526). The mark is inserted as is, not sanitized, so pass only markup you wrote. Rasterize the card at build time.
 The `alt` becomes the SVG's title, so write what the art shows. Nothing moves, so reduced motion needs nothing.
+A hero ships only when blind readers shown the art alone match it to its post's title in at least 15 of 16 trials and name the post's idea in free text in at least 3 of 4.
 
 ## Optional React renderers
 
