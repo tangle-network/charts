@@ -337,6 +337,7 @@ export function AgentGraphCanvas({
         zoomOnPinch
         zoomOnDoubleClick={false}
         panOnDrag
+        panActivationKeyCode={null}
         minZoom={minZoom}
         maxZoom={1.75}
         aria-label="Agent topology"
