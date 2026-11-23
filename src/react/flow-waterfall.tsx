@@ -365,7 +365,7 @@ export function FlowWaterfall({
       </dl>}
       {view === 'agents' && playback}
       <FlowBody rows={visible} byId={byId} totalRows={rows.length} view={view} maxHeight={rowsHeight} fill={fill} onViewport={setBodyPx} collapsed={collapsed} searching={Boolean(query.trim())} query={query} matchSpan={matchSpan}
-        pauses={trace.pauses} errorEnds={errorEnds} cursorLine={isLive || position !== null || playing} expandedIds={view === 'agents' ? new Set([...openFamilies, ...openSteps]) : undefined} holdHeight={isLive} slowestId={slowest?.id} criticalIds={criticalPath && view === 'spans' ? critical : undefined} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
+        pauses={trace.pauses} errorEnds={errorEnds} cursorLine={isLive || position !== null || playing} expandedIds={view === 'agents' ? new Set([...openFamilies, ...openSteps]) : undefined} startedAt={startedAt} holdHeight={isLive} slowestId={slowest?.id} criticalIds={criticalPath && view === 'spans' ? critical : undefined} activeId={activeId} selectedId={selection} focusId={cardAgent?.id ?? (view === 'agents' ? activeId : undefined)} clockMs={clockMs} window={win}
         trackPx={trackPx} showCursor={showCursor} markers={markers} zoomed={zoom !== null} renderIcon={renderIcon}
         emptyText={rows.length === 0 ? 'No spans yet. Waiting for trace events.' : `No matching steps for “${query}”.`}
         onToggle={toggle} onInspect={inspect} onPin={pin} onActivate={row => setActiveId(row.id)}

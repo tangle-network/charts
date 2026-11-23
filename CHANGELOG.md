@@ -1,3 +1,7 @@
+## 4.0.31
+
+- `FlowWaterfall` with `startedAt` (epoch ms of trace time 0) adds a row of absolute UTC wall-clock ticks (`HH:MMZ`) under the relative axis ticks, one label per minute, so a bar ties to the UTC stamps a host shows elsewhere. Without `startedAt` the axis is unchanged.
+
 ## 4.0.30
 
 - `AgentGraph` spawn edges read their agents' labels to screen readers ("Planner started Agent 0 team"), falling back to an id only for an agent without a label, instead of React Flow's default "Edge from <id> to <id>".
