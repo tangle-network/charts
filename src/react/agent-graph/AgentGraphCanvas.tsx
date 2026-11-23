@@ -161,6 +161,8 @@ export function AgentGraphCanvas({
     if (!layout) return [];
     const out: Edge[] = [];
     const seen = new Set<string>();
+    const label = (id: string) => byId.get(id)?.label ?? id;
+    const team = (id: string) => { const group = topology.groups.find(g => g.id === id); return group ? `${label(group.parentId)} team` : label(id); };
     for (const s of topology.spawns) {
       const source = (live && topology.groups.find(group => group.parentId === s.from)?.id) || s.from, target = topology.groupOf.get(s.to) ?? s.to;
       if (source === target) continue;
@@ -175,6 +177,7 @@ export function AgentGraphCanvas({
         pathOptions: { borderRadius: 14 },
         selectable: false,
         focusable: false,
+        ariaLabel: `${label(s.from)} started ${team(target)}`,
         style: { stroke: edgeColor(undefined), strokeWidth: 1.5 },
       } as Edge);
     }

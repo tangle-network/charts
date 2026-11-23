@@ -18,6 +18,8 @@ async function proveCompactTopology(page, width, theme, output) {
     assert.ok(zoom >= 0.8 && zoom <= 1, `entry zoom ${zoom}`)
     const rootBox = await page.locator('.react-flow__node[data-id="agent-0"]').boundingBox(), canvasBox = await page.locator('.ag-graph-viewport').boundingBox()
     assert.ok(rootBox.x >= canvasBox.x && rootBox.y >= canvasBox.y && rootBox.x + rootBox.width <= canvasBox.x + canvasBox.width && rootBox.y - canvasBox.y < 64, `root starts the view: ${JSON.stringify({ rootBox, canvasBox })}`)
+    // Spawn edges read node labels, not React Flow's default 'Edge from <id> to <id>' (#140).
+    assert.deepEqual(await page.locator('.react-flow__edge[data-id^="spawn:"]').evaluateAll(edges => edges.map(edge => edge.getAttribute('aria-label'))), ['Agent 0 started Agent 0 team'])
     const colors = await page.evaluate(() => ({frame:getComputedStyle(document.querySelector('.ag-team-frame')).backgroundColor, card:getComputedStyle(document.querySelector('.ag-agent-card')).backgroundColor}))
     assert.notEqual(colors.frame, colors.card, 'raised cards have a distinct surface from the team')
   }
@@ -161,6 +163,7 @@ try {
     assert.ok(await page.locator('[data-host-mark]').count() > 0, 'host identity reaches the canonical renderer')
     await page.getByRole('button', { name: 'Select last agent', exact: true }).press('Space')
     assert.equal(await page.getByLabel('Reader selection').textContent(), 'agent-1', 'Space activates the host control with the graph mounted')
+    if (width > 600) assert.deepEqual(await page.locator('.react-flow__edge[data-id^="spawn:"]').evaluateAll(edges => edges.map(edge => edge.getAttribute('aria-label'))), ['Discovery orchestrator started Echo worker'], 'spawn edges read agent labels, not raw ids')
     await page.screenshot({ path: `${output}/recorded-tree-${width}-${theme}.png` })
     await page.getByRole('button', { name: 'Switch layout', exact: true }).click()
     const hubNode = page.locator('[data-agent-graph-node="agent-1"]')
