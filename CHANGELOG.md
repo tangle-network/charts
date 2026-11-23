@@ -1,3 +1,7 @@
+## 4.0.30
+
+- `AgentGraph` spawn edges read their agents' labels to screen readers ("Planner started Agent 0 team"), falling back to an id only for an agent without a label, instead of React Flow's default "Edge from <id> to <id>".
+
 ## 4.0.29
 
 - Hosting an agent topology preserves Space activation on the page’s own buttons and disclosures. The read-only tree supports pointer dragging and keyboard navigation between agents.
