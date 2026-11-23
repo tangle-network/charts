@@ -6,6 +6,7 @@
 import { type CSSProperties, type KeyboardEvent, type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { resolveColors } from './dot-map.js'
 import { type Tip, Tooltip, useWidth } from './live-presentation.js'
+import { formatUtcMinute as clock } from './flow-waterfall-time.js'
 
 /** Hues read as reading, writing and verifying; `neutral` is a ladder step, `serious` the status colour reserved for looping, `event` a tick. */
 export type BehaviorFamily = 'reading' | 'writing' | 'verifying' | 'neutral' | 'serious' | 'event'
@@ -82,7 +83,6 @@ export function timeTicks(startedAt: number, windowMs: number, windowCount: numb
 
 const ROW = 16, HEAD = 28, [INK, MUTED, SURFACE, HOVER, FAINT] = [7, 8, 9, 10, 11]
 const ROLES = [...['reading', 'writing', 'verifying', 'serious', 'neutral-1', 'neutral-2', 'neutral-3'].map(slot => `var(--tgc-behavior-${slot})`), 'var(--chart-live-fg, var(--text-primary))', 'var(--chart-live-muted, var(--text-muted))', 'var(--chart-live-surface, var(--bg-card))', 'var(--chart-live-hover, var(--bg-hover))', 'var(--chart-live-faint, var(--text-dim))']
-const clock = (t: number) => `${new Date(t).toISOString().slice(11, 16)}Z`
 /** The role a paint fills with: its family's hue, or its neutral step; events use the ink. */
 const roleOf = (paint: BehaviorPaint) => paint.family === 'neutral' ? 3 + (paint.step ?? 3) : paint.family === 'event' ? INK : ['reading', 'writing', 'verifying', 'serious'].indexOf(paint.family)
 
