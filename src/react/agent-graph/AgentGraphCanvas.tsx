@@ -171,6 +171,7 @@ export function AgentGraphCanvas({
         id,
         source,
         target,
+        ariaLabel: `${byId.get(s.from)?.label || s.from} started ${byId.get(s.to)?.label || s.to}`,
         type: "smoothstep",
         pathOptions: { borderRadius: 14 },
         selectable: false,

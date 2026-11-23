@@ -143,6 +143,8 @@ try {
     const ready = () => page.locator(`.agent-graph[data-layout="${width < 600 ? 'list' : 'ready'}"]`).waitFor()
     await page.goto(`${base}/?id=topology&globals=agent-${theme}`)
     await ready()
+    const spawnEdge = page.locator('.react-flow__edge')
+    if (width > 600) assert.equal(await spawnEdge.getAttribute('aria-label'), 'Discovery orchestrator started Echo worker')
     assert.deepEqual(await page.locator('[data-host-canary]').evaluate(el => ({ display: getComputedStyle(el).display, fontSize: getComputedStyle(el).fontSize })), { display: 'flex', fontSize: '17px' }, 'graph CSS preserves host utilities')
     assert.equal(await page.locator('.agent-graph').evaluate(el => getComputedStyle(el).display), 'flex', 'graph utilities apply to the scope root')
     const responsiveHost = await page.addStyleTag({content:'@layer utilities {.hidden {display:none} @media(min-width:600px){.sm\\:flex {display:flex}}}'})
@@ -189,6 +191,11 @@ try {
       const chip = page.locator('.ag-chip').first(); await chip.click(); assert.equal(await chip.getAttribute('aria-pressed'), 'true')
       assert.ok(await page.locator('.ag-node.ag-dimmed').count() > 0, 'the lit state dims the other agents')
       await chip.click(); assert.equal(await chip.getAttribute('aria-pressed'), 'false'); assert.equal(await page.locator('[data-kind="agent"].ag-dimmed, [data-kind="hub"].ag-dimmed').count(), 0)
+    } else {
+      for (const [unnamed, expected] of [['agent-0', 'agent-0 started Echo worker'], ['agent-1', 'Discovery orchestrator started agent-1']]) {
+        await page.goto(`${base}/?id=topology&unnamed=${unnamed}&globals=agent-${theme}`)
+        assert.equal(await spawnEdge.getAttribute('aria-label'), expected)
+      }
     }
     await page.emulateMedia({ reducedMotion: 'no-preference' })
     await page.goto(`${base}/?id=topology&large=1&globals=agent-${theme}`)

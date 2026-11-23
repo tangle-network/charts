@@ -12,7 +12,7 @@ function Topology() {
    turn: i === 6 ? 'Recorded boundary task ' + tick + '. The slow SQLite receipts live in `products/platform/api/src/lib/db.ts` (`monitorLocalSqliteClientPrimaryTransactionRateLimitConnections`), which labels connections only as `primary`/`transaction`.' : 'Recorded boundary task ' + tick, costUsd: i === 3 ? null : i / 100, tokens: i * 1000 + tick * 1000, model: 'glm-5.3', harness: 'opencode',
    events: [{ id: 'event-' + i, label: 'Read source ' + tick, at: Date.now() - (params.has('quiet') && i === 0 ? 5166 * 60000 : 0) }],
  })) : recorded.spans.filter(span => span.kind === 'pipeline').map(span => ({
-   id: span.id, label: span.name, status: runStatus(span.status),
+   id: span.id, label: span.id === params.get('unnamed') ? '' : span.name, status: runStatus(span.status),
    turn: 'Imported from discovery-waterfall.json',
  }))
  const sharedTools = params.has('shared-tool') ? [{ id: 'shared-tool', label: 'Read source' }] : []
