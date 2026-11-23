@@ -161,12 +161,14 @@ export function AgentGraphCanvas({
     if (!layout) return [];
     const out: Edge[] = [];
     const seen = new Set<string>();
+    const label = (id: string) => byId.get(id)?.label || id;
     for (const s of topology.spawns) {
       const source = (live && topology.groups.find(group => group.parentId === s.from)?.id) || s.from, target = topology.groupOf.get(s.to) ?? s.to;
       if (source === target) continue;
       const id = `spawn:${source}:${target}`;
       if (seen.has(id)) continue;
       seen.add(id);
+      const group = topology.groups.find(g => g.id === target);
       out.push({
         id,
         source,
@@ -176,6 +178,9 @@ export function AgentGraphCanvas({
         selectable: false,
         focusable: false,
         style: { stroke: edgeColor(undefined), strokeWidth: 1.5 },
+        ariaLabel: group && group.memberIds.length > 1
+          ? `${label(s.from)} started ${group.memberIds.length} agents`
+          : `${label(s.from)} started ${label(s.to)}`,
       } as Edge);
     }
     const ids = new Set(layout.positions.keys());
@@ -196,7 +201,7 @@ export function AgentGraphCanvas({
         focusable: false,
         zIndex: 0,
         markerEnd: { type: MarkerType.ArrowClosed, width: 12, height: 12, color },
-        ariaLabel: `${e.kind === "delegation" ? "Delegation" : "Message"} from ${byId.get(e.from)?.label ?? e.from} to ${byId.get(e.to)?.label ?? e.to}${count > 1 ? `, ${count} times` : ""}`,
+        ariaLabel: `${e.kind === "delegation" ? "Delegation" : "Message"} from ${label(e.from)} to ${label(e.to)}${count > 1 ? `, ${count} times` : ""}`,
         data: { kind: e.kind, count, label: e.label ?? prior?.data?.label },
       });
     }
