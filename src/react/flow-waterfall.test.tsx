@@ -100,6 +100,28 @@ describe("FlowWaterfall host-owned state", () => {
   });
 });
 
+describe("FlowWaterfall wall-clock axis", () => {
+  const at = (element: Element) => Number((element as HTMLElement).style.getPropertyValue("--s"));
+  it("labels relative ticks with the UTC minute of startedAt plus the tick", () => {
+    const startedAt = Date.UTC(2026, 10, 23, 14, 5, 30);
+    const { container } = render(<FlowWaterfall trace={{ ...trace, totalMs: 300_000 }} startedAt={startedAt} />);
+    const relative = [...container.querySelectorAll(".fw-axis-track .fw-tick")].map(at);
+    const utc = [...container.querySelectorAll(".fw-axis-track .fw-tick-utc")];
+    expect(utc[0]!.textContent).toBe("14:05Z");
+    for (const label of utc) {
+      expect(relative).toContain(at(label));
+      expect(label.textContent).toBe(`${new Date(startedAt + at(label)).toISOString().slice(11, 16)}Z`);
+    }
+    expect(new Set(utc.map((label) => label.textContent)).size).toBe(utc.length);
+  });
+
+  it("keeps the axis relative without startedAt", () => {
+    const { container } = render(<FlowWaterfall trace={trace} />);
+    expect(container.querySelector(".fw-axis-track .fw-tick")).not.toBeNull();
+    expect(container.querySelector(".fw-tick-utc, .fw-axis-utc")).toBeNull();
+  });
+});
+
 describe("FlowWaterfall cost", () => {
   // A Codex agent records tool runs but no priced model call (Discovery 31c, Drew 10-31: lanes read "$0.00").
   const agents: FlowTrace = {

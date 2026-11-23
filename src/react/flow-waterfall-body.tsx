@@ -3,7 +3,7 @@ import type { FlowMarker, FlowPause, FlowSpan } from '../flow-trace.js'
 import { type FlowWaterfallRow, searchMatchIds, spanRunning } from './flow-waterfall-model.js'
 import { type FlowLink, type FlowView, FlowRow, LinkMark, type RowEvents } from './flow-waterfall-row.js'
 import { useRowMotion } from './flow-waterfall-motion.js'
-import { clockTicks, formatClock, type ViewWindow } from './flow-waterfall-time.js'
+import { clockTicks, formatClock, formatUtcMinute, type ViewWindow } from './flow-waterfall-time.js'
 import { duration } from '../format.js'
 
 export const ROW_HEIGHT: Record<FlowView, number> = { spans: 36, agents: 40, graph: 40 }
@@ -44,6 +44,8 @@ export interface BodyProps extends RowEvents {
   /** The agent whose handoff connectors draw at full strength; the rest stay dim in the agent view. */
   focusId?: string
   clockMs: number
+  /** Epoch ms of trace time 0; adds a row of UTC wall-clock ticks under the relative ones. */
+  startedAt?: number
   window: ViewWindow
   trackPx: number
   showCursor: boolean
@@ -130,6 +132,9 @@ export function FlowBody(props: BodyProps) {
   // A phone axis keeps three whole-unit ticks at most, none so close to the end that its label would clip (round s-tier: "33m 31.633s").
   const ticks = narrow ? clockTicks(win.startMs, win.endMs, trackPx, trackPx / 2.5).filter(tick => (tick - win.startMs) / msPerPx <= trackPx - 40).slice(0, 3)
     : clockTicks(win.startMs, tickEnd, Math.max(1, trackPx + (view === 'spans' ? 72 : 0)))
+  // Wall-clock labels sit under the relative ticks; ticks inside one minute share the first's label.
+  const utcTicks = props.startedAt === undefined ? [] : ticks.map(tick => ({ tick, label: formatUtcMinute(props.startedAt! + tick) }))
+    .filter((item, i, all) => i === 0 || item.label !== all[i - 1]!.label)
 
   const markerLabels = useMemo(() => {
     const shown = new Map<FlowMarker, 'right' | 'left'>()
@@ -259,7 +264,7 @@ export function FlowBody(props: BodyProps) {
   }
 
   const axis = (
-    <div className="fw-axis fw-axis-top">
+    <div className={`fw-axis fw-axis-top${utcTicks.length ? ' fw-axis-utc' : ''}`}>
       <div className="fw-axis-label">
         {view === 'spans' && <>
           {props.onExpandAll && <span className="fw-branch-controls">
@@ -275,6 +280,7 @@ export function FlowBody(props: BodyProps) {
       </div>
       <div className="fw-axis-track" data-fw-track ref={props.onTrack} onPointerDown={scrub} title="Drag to scrub">
         {ticks.map(tick => <span key={tick} className="fw-tick" style={{ '--s': tick } as CSSProperties}>{formatClock(tick)}</span>)}
+        {utcTicks.map(({ tick, label }) => <span key={`u-${tick}`} className="fw-tick-utc" data-lead={tick === ticks[0] || undefined} style={{ '--s': tick } as CSSProperties}>{label}</span>)}
         {props.markers?.map(marker => <button key={`e-${marker.at}-${marker.label}`} type="button" className="fw-event" data-tone={marker.tone ?? 'neutral'}
           style={{ '--s': marker.at } as CSSProperties} title={marker.kind ? `${marker.kind}: ${marker.label}` : marker.label}
           aria-label={`Jump to ${marker.kind ? `${marker.kind} ` : ''}${marker.label}`} aria-pressed={jumped === marker}

@@ -25,6 +25,11 @@ export function clockTicks(startMs: number, endMs: number, widthPx: number, minG
   return ticks
 }
 
+/** HH:MMZ of an epoch-ms instant, the stamp Conversations and Built use. */
+export function formatUtcMinute(epochMs: number): string {
+  return `${new Date(epochMs).toISOString().slice(11, 16)}Z`
+}
+
 export interface ViewWindow { startMs: number; endMs: number }
 
 /** Zoom about an anchor time; the window never inverts, never narrows below 50 ms and never leaves [0, limit]. */

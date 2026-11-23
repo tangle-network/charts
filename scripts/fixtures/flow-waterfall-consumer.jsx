@@ -67,7 +67,7 @@ function FlowApp({ name }) {
   }) }
 
  }
- return <main data-live-update={now}>{controlled&&<><button onClick={()=>setPosition(3000)}>Read cited instant</button><button onClick={()=>setPosition(null)}>Show full record</button><output data-retained-position>{String(position)}</output></>}{name==='discovery-streaming-replay'&&<p>Recorded Discovery replay ·20x; final totals arrive at settlement</p>}<FlowWaterfall trace={trace} live={live} maxHeight={1800}
+ return <main data-live-update={now}>{controlled&&<><button onClick={()=>setPosition(3000)}>Read cited instant</button><button onClick={()=>setPosition(null)}>Show full record</button><output data-retained-position>{String(position)}</output></>}{name==='discovery-streaming-replay'&&<p>Recorded Discovery replay ·20x; final totals arrive at settlement</p>}<FlowWaterfall trace={trace} live={live} maxHeight={1800} startedAt={name==='clock-precision'?Date.UTC(2026,10,23,14,4,49,500):undefined}
   markers={name==='healthy'?[{at:Math.round(trace.totalMs/2),label:'Release v2',tone:'ok'},{at:Math.round(trace.totalMs/2)+50,label:'Release v3'},{at:trace.totalMs-50,label:'Release v4'}]:undefined}
   onSelect={span=>{window.__fwSelected=[...(window.__fwSelected??[]),span.id??span.name]}}
   position={controlled?position:undefined} onTimeChange={t=>{window.__fwTime=t;(window.__fwTimeSamples??=[]).push({wall:performance.now(),trace:t});if(controlled)setPosition(t)}}
